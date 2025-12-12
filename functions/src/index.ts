@@ -1,7 +1,26 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
-admin.initializeApp();
+// Initialize Admin SDK using service account stored in env (FIREBASE_SERVICE_ACCOUNT) when available.
+// This avoids committing sensitive service account JSON to the repository.
+try {
+  const serviceAccountRaw = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (serviceAccountRaw) {
+    const serviceAccount = typeof serviceAccountRaw === 'string'
+      ? JSON.parse(serviceAccountRaw)
+      : serviceAccountRaw;
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount as any),
+    });
+  } else {
+    // Fallback to default initialization (e.g., when running locally with GOOGLE_APPLICATION_CREDENTIALS)
+    admin.initializeApp();
+  }
+} catch (e) {
+  // If parsing or initialization fails, log and rethrow so deployment fails fast.
+  console.error('Failed to initialize Firebase Admin SDK from env FIREBASE_SERVICE_ACCOUNT', e);
+  throw e;
+}
 
 /**
  * Cloud Function to automatically delete empty rooms older than 24 hours
