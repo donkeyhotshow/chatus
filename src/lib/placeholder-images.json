@@ -1,0 +1,28 @@
+{
+  "placeholderImages": [
+    {
+      "id": "background-1",
+      "description": "Squirrel on a branch",
+      "imageUrl": "https://images.unsplash.com/photo-1552838376-b3e85a4843a8?q=80&w=2070",
+      "imageHint": "squirrel branch"
+    },
+    {
+      "id": "background-2",
+      "description": "Squirrel eating a nut",
+      "imageUrl": "https://images.unsplash.com/photo-1518799439632-1590a8417e25?q=80&w=2070",
+      "imageHint": "squirrel nut"
+    },
+    {
+      "id": "background-3",
+      "description": "Curious squirrel peeking",
+      "imageUrl": "https://images.unsplash.com/photo-1589928339389-c3527379f055?q=80&w=2070",
+      "imageHint": "squirrel curious"
+    },
+    {
+      "id": "background-4",
+      "description": "Squirrel in the snow",
+      "imageUrl": "https://images.unsplash.com/photo-1612732986799-442043684a24?q=80&w=2070",
+      "imageHint": "squirrel snow"
+    }
+  ]
+}

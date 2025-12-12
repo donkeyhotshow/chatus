@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Кооперативная Головоломка - Уровень 1</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    padding: 20px;
+    color: #fff;
+    min-height: 100vh;
+}
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+h2 {
+    text-align: center;
+    color: #fff;
+    margin-bottom: 15px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    align-items: center;
+}
+.controls input {
+    padding: 8px 12px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
+}
+.controls button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    background: #4CAF50;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+.controls button:hover {
+    background: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+.controls button:active {
+    transform: translateY(0);
+}
+.controls button.secondary {
+    background: #2196F3;
+}
+.controls button.secondary:hover {
+    background: #0b7dda;
+}
+.controls button.danger {
+    background: #f44336;
+}
+.controls button.danger:hover {
+    background: #da190b;
+}
+#game {
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    display: block;
+    margin: 0 auto 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    background: #f0f0f0;
+}
+#chat {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+#messages {
+    flex: 1;
+    height: 120px;
+    overflow-y: auto;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    font-size: 13px;
+    line-height: 1.6;
+}
+#messages div {
+    margin-bottom: 5px;
+    padding: 4px 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+#messages div:last-child {
+    margin-bottom: 0;
+}
+#input {
+    flex: 0 0 200px;
+    padding: 8px 12px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
+}
+.status {
+    text-align: center;
+    padding: 10px;
+    margin-bottom: 15px;
+    background: rgba(76, 175, 80, 0.2);
+    border-radius: 6px;
+    font-weight: 600;
+}
+.status.disconnected {
+    background: rgba(244, 67, 54, 0.2);
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <h2>🎯 Кооперативная Головоломка - Уровень 1</h2>
+    <div id="status" class="status disconnected">Отключено</div>
+    
+    <div class="controls">
+        <label>Комната:</label>
+        <input id="room" type="text" value="room1" placeholder="room1">
+        <label>Имя:</label>
+        <input id="name" type="text" value="player1" placeholder="player1">
+        <button id="connectBtn" class="secondary">Подключиться</button>
+        <button id="addBox" disabled>➕ Куб</button>
+        <button id="addCircle" disabled>⚪ Шар</button>
+        <button id="addLever" disabled>⚖️ Рычаг</button>
+    </div>
+
+    <canvas id="game" width="800" height="600"></canvas>
+
+    <div id="chat">
+        <div id="messages"></div>
+        <input id="input" type="text" placeholder="Введите сообщение..." disabled>
+        <button id="send" disabled>Отправить</button>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('game');
+const engine = Matter.Engine.create();
+const world = engine.world;
+const render = Matter.Render.create({
+    canvas,
+    engine,
+    options: { 
+        width: 800, 
+        height: 600, 
+        wireframes: false, 
+        background: '#f0f0f0',
+        showAngleIndicator: false,
+        showVelocity: false
+    }
+});
+
+Matter.Engine.run(engine);
+Matter.Render.run(render);
+
+let ws = null;
+let playerName = '';
+let roomName = '';
+const objects = new Map();
+let currentDragId = null;
+let isConnected = false;
+
+// Платформа (пол)
+const ground = Matter.Bodies.rectangle(400, 590, 810, 20, { 
+    isStatic: true,
+    render: { fillStyle: '#8B4513' }
+});
+Matter.World.add(world, ground);
+
+// Целевая кнопка (оранжевая)
+const targetButton = Matter.Bodies.circle(720, 550, 25, { 
+    isStatic: true, 
+    render: { 
+        fillStyle: "#f97316",
+        strokeStyle: "#c2410c",
+        lineWidth: 3
+    }
+});
+Matter.World.add(world, targetButton);
+
+// Визуальная метка цели
+const targetLabel = Matter.Bodies.rectangle(720, 520, 60, 20, {
+    isStatic: true,
+    isSensor: true,
+    render: { 
+        fillStyle: "rgba(249, 115, 22, 0.3)",
+        strokeStyle: "#f97316",
+        lineWidth: 2
+    }
+});
+Matter.World.add(world, targetLabel);
+
+function addMessage(msg, isSystem = false) {
+    const m = document.getElementById("messages");
+    const div = document.createElement("div");
+    div.textContent = msg;
+    if (isSystem) {
+        div.style.fontWeight = 'bold';
+        div.style.color = '#4CAF50';
+    }
+    m.appendChild(div);
+    m.scrollTop = m.scrollHeight;
+}
+
+function updateStatus(connected) {
+    isConnected = connected;
+    const statusEl = document.getElementById('status');
+    const connectBtn = document.getElementById('connectBtn');
+    const addBox = document.getElementById('addBox');
+    const addCircle = document.getElementById('addCircle');
+    const addLever = document.getElementById('addLever');
+    const input = document.getElementById('input');
+    const send = document.getElementById('send');
+    
+    if (connected) {
+        statusEl.textContent = `✅ Подключено: ${roomName} | Игрок: ${playerName}`;
+        statusEl.className = 'status';
+        connectBtn.textContent = 'Отключиться';
+        addBox.disabled = false;
+        addCircle.disabled = false;
+        addLever.disabled = false;
+        input.disabled = false;
+        send.disabled = false;
+    } else {
+        statusEl.textContent = '❌ Отключено';
+        statusEl.className = 'status disconnected';
+        connectBtn.textContent = 'Подключиться';
+        addBox.disabled = true;
+        addCircle.disabled = true;
+        addLever.disabled = true;
+        input.disabled = true;
+        send.disabled = true;
+    }
+}
+
+// WebSocket соединение
+function connectWS() {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.close();
+        return;
+    }
+    
+    ws = new WebSocket(`ws://localhost:8000/ws/${roomName}/${playerName}`);
+    
+    ws.onopen = () => {
+        updateStatus(true);
+        addMessage(`✅ Подключено к комнате "${roomName}"`, true);
+    };
+    
+    ws.onclose = () => {
+        updateStatus(false);
+        addMessage('❌ Соединение закрыто', true);
+    };
+    
+    ws.onerror = (error) => {
+        addMessage('❌ Ошибка соединения. Убедитесь, что сервер запущен!', true);
+        console.error('WebSocket error:', error);
+    };
+    
+    ws.onmessage = (e) => {
+        try {
+            const msg = JSON.parse(e.data);
+            
+            if (msg.type === "init") {
+                // Инициализация: загружаем существующие объекты и историю чата
+                msg.objects?.forEach(o => spawnObject(o, true));
+                msg.chat?.forEach(c => addMessage(`${c.player}: ${c.message}`));
+                addMessage(`📦 Загружено ${msg.objects?.length || 0} объектов`, true);
+            }
+            else if (msg.type === "spawn") {
+                spawnObject(msg, true);
+                if (!msg.isRemote) {
+                    addMessage(`➕ ${msg.player || 'Кто-то'} добавил ${getTypeName(msg.type)}`, true);
+                }
+            }
+            else if (msg.type === "update") {
+                updateObject(msg, true);
+            }
+            else if (msg.type === "remove") {
+                removeObject(msg, true);
+                addMessage(`🗑️ ${msg.player || 'Кто-то'} удалил объект`, true);
+            }
+            else if (msg.type === "chat") {
+                addMessage(`${msg.player}: ${msg.message}`);
+            }
+        } catch (err) {
+            console.error('Error parsing message:', err);
+        }
+    };
+}
+
+function getTypeName(type) {
+    const names = {
+        'box': 'куб',
+        'circle': 'шар',
+        'lever': 'рычаг'
+    };
+    return names[type] || type;
+}
+
+document.getElementById('connectBtn').onclick = () => {
+    roomName = document.getElementById('room').value.trim();
+    playerName = document.getElementById('name').value.trim();
+    
+    if (!roomName || !playerName) {
+        alert('Введите название комнаты и имя игрока!');
+        return;
+    }
+    
+    if (isConnected) {
+        ws?.close();
+    } else {
+        connectWS();
+    }
+};
+
+// Регистрация объектов
+function registerObject(id, type, body) {
+    objects.set(id, { type, body });
+    body.plugin = { id };
+}
+
+// Создание объектов
+function spawnObject(data, isRemote = false) {
+    const { 
+        id = crypto.randomUUID(), 
+        type, 
+        x, 
+        y, 
+        w = 60, 
+        h = 60, 
+        r = 20, 
+        length = 100 
+    } = data;
+    
+    let body;
+    let color = '#3498db';
+    
+    if (type === "box") {
+        body = Matter.Bodies.rectangle(x, y, w, h, { 
+            restitution: 0.3, 
+            friction: 0.2,
+            render: { fillStyle: color }
+        });
+    }
+    else if (type === "circle") {
+        body = Matter.Bodies.circle(x, y, r, { 
+            restitution: 0.5, 
+            friction: 0.1,
+            render: { fillStyle: color }
+        });
+    }
+    else if (type === "lever") {
+        body = Matter.Bodies.rectangle(x, y, length, 20, { 
+            restitution: 0.2, 
+            density: 0.002,
+            render: { fillStyle: '#9b59b6' }
+        });
+        
+        const pivot = Matter.Constraint.create({ 
+            pointA: { x, y }, 
+            bodyB: body, 
+            pointB: { x: 0, y: 0 }, 
+            stiffness: 1,
+            render: { strokeStyle: '#7d3c98', lineWidth: 2 }
+        });
+        
+        Matter.World.add(world, pivot);
+    }
+    
+    if (body) {
+        Matter.World.add(world, body);
+        registerObject(id, type, body);
+        
+        if (!isRemote && ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+                ...data,
+                type: "spawn",
+                id,
+                player: playerName
+            }));
+        }
+    }
+}
+
+// Интерполяция для плавного движения
+const interpolationFactor = 0.3; // Скорость интерполяции (0-1)
+
+function updateObject(data, isRemote = false) {
+    const obj = objects.get(data.id);
+    if (obj && isRemote) {
+        const targetX = data.x;
+        const targetY = data.y;
+        const currentX = obj.body.position.x;
+        const currentY = obj.body.position.y;
+        
+        // Плавная интерполяция вместо мгновенного скачка
+        const newX = currentX * (1 - interpolationFactor) + targetX * interpolationFactor;
+        const newY = currentY * (1 - interpolationFactor) + targetY * interpolationFactor;
+        
+        Matter.Body.setPosition(obj.body, { x: newX, y: newY });
+        
+        if (data.angle !== undefined) {
+            const currentAngle = obj.body.angle;
+            const targetAngle = data.angle;
+            // Нормализация угла для плавного поворота
+            let angleDiff = targetAngle - currentAngle;
+            if (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+            if (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+            const newAngle = currentAngle + angleDiff * interpolationFactor;
+            Matter.Body.setAngle(obj.body, newAngle);
+        }
+    }
+}
+
+function removeObject(data, isRemote = false) {
+    const obj = objects.get(data.id);
+    if (obj) {
+        Matter.World.remove(world, obj.body);
+        objects.delete(data.id);
+        
+        if (!isRemote && ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+                type: "remove",
+                id: data.id,
+                player: playerName
+            }));
+        }
+    }
+}
+
+// Добавление объектов кнопками
+document.getElementById('addBox').onclick = () => {
+    spawnObject({
+        type: "box",
+        x: Math.random() * 700 + 50,
+        y: 50,
+        w: 60,
+        h: 60
+    });
+};
+
+document.getElementById('addCircle').onclick = () => {
+    spawnObject({
+        type: "circle",
+        x: Math.random() * 700 + 50,
+        y: 50,
+        r: 20
+    });
+};
+
+document.getElementById('addLever').onclick = () => {
+    spawnObject({
+        type: "lever",
+        x: Math.random() * 700 + 50,
+        y: Math.random() * 300 + 50,
+        length: 100
+    });
+};
+
+// Drag & Drop
+const mouse = Matter.Mouse.create(canvas);
+const mouseConstraint = Matter.MouseConstraint.create(engine, { 
+    mouse,
+    constraint: {
+        stiffness: 0.9,
+        render: { visible: false }
+    }
+});
+Matter.World.add(world, mouseConstraint);
+
+Matter.Events.on(mouseConstraint, "startdrag", (e) => {
+    currentDragId = e.body.plugin?.id;
+});
+
+Matter.Events.on(mouseConstraint, "enddrag", () => {
+    currentDragId = null;
+});
+
+// Throttle update для синхронизации
+function sendUpdate(obj, id) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+            type: "update",
+            id,
+            x: obj.position.x,
+            y: obj.position.y,
+            angle: obj.angle,
+            player: playerName
+        }));
+    }
+}
+
+const sendUpdateThrottled = throttle(sendUpdate, 50);
+
+function throttle(fn, ms) {
+    let last = 0;
+    return (...args) => {
+        const now = Date.now();
+        if (now - last > ms) {
+            last = now;
+            fn(...args);
+        }
+    };
+}
+
+Matter.Events.on(engine, "afterUpdate", () => {
+    if (!currentDragId) return;
+    const obj = objects.get(currentDragId);
+    if (obj) {
+        sendUpdateThrottled(obj.body, currentDragId);
+    }
+});
+
+// Проверка достижения цели
+let goalAchieved = false;
+Matter.Events.on(engine, "collisionStart", (event) => {
+    if (goalAchieved) return;
+    
+    event.pairs.forEach(pair => {
+        const { bodyA, bodyB } = pair;
+        if ((bodyA === targetButton || bodyB === targetButton) && 
+            (bodyA === targetButton ? bodyB : bodyA).plugin?.id) {
+            goalAchieved = true;
+            addMessage("🎉 ЦЕПОЧКА СРАБОТАЛА! ОТЛИЧНАЯ РАБОТА! 🎉", true);
+            
+            // Визуальный эффект
+            targetButton.render.fillStyle = "#10b981";
+            Matter.Render.setPixelRatio(render, 1);
+            
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: "chat",
+                    message: "🎉 Цепочка завершена! Уровень пройден!",
+                    player: "Система"
+                }));
+            }
+        }
+    });
+});
+
+// Чат
+document.getElementById("send").onclick = () => {
+    const input = document.getElementById("input");
+    const msg = input.value.trim();
+    if (ws && ws.readyState === WebSocket.OPEN && msg) {
+        ws.send(JSON.stringify({
+            type: "chat",
+            message: msg,
+            player: playerName
+        }));
+        addMessage(`Вы: ${msg}`);
+        input.value = "";
+    }
+};
+
+document.getElementById("input").addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+        document.getElementById("send").click();
+    }
+});
+
+// Готовый стартовый уровень
+function setupLevel() {
+    // Платформы для организации цепочки
+    spawnObject({
+        type: "box",
+        x: 400,
+        y: 500,
+        w: 200,
+        h: 20,
+        id: "platform1"
+    }, true);
+    
+    spawnObject({
+        type: "box",
+        x: 600,
+        y: 400,
+        w: 200,
+        h: 20,
+        id: "platform2"
+    }, true);
+    
+    // Стартовый шар (уже на сцене)
+    spawnObject({
+        type: "circle",
+        x: 100,
+        y: 50,
+        r: 20,
+        id: "startBall"
+    }, true);
+    
+    // Рычаги для совместного управления
+    spawnObject({
+        type: "lever",
+        x: 350,
+        y: 480,
+        length: 100,
+        id: "lever1"
+    }, true);
+    
+    spawnObject({
+        type: "lever",
+        x: 580,
+        y: 380,
+        length: 100,
+        id: "lever2"
+    }, true);
+    
+    addMessage("🎮 Уровень загружен! Совместно завершите цепочку!", true);
+    addMessage("💡 Подсказка: Используйте рычаги и добавляйте объекты для создания пути шара к оранжевой кнопке", true);
+}
+
+// Инициализация уровня при загрузке
+setupLevel();
+
+// Очистка при закрытии страницы
+window.addEventListener('beforeunload', () => {
+    if (ws) {
+        ws.close();
+    }
+});
+</script>
+</body>
+</html>
+
