@@ -185,6 +185,9 @@ let roomName = '';
 const objects = new Map();
 let currentDragId = null;
 let isConnected = false;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 6;
+const RECONNECT_BASE_DELAY = 1000;
 
 // Платформа (пол)
 const ground = Matter.Bodies.rectangle(400, 590, 810, 20, { 
@@ -276,6 +279,16 @@ function connectWS() {
     ws.onclose = () => {
         updateStatus(false);
         addMessage('❌ Соединение закрыто', true);
+        if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+            const delay = RECONNECT_BASE_DELAY * (2 ** reconnectAttempts);
+            reconnectAttempts++;
+            setTimeout(() => {
+                addMessage(`Переподключение (попытка ${reconnectAttempts})...`, true);
+                connectWS();
+            }, delay);
+        } else {
+            addMessage('Повторные попытки подключения исчерпаны', true);
+        }
     };
     
     ws.onerror = (error) => {
@@ -284,8 +297,10 @@ function connectWS() {
     };
     
     ws.onmessage = (e) => {
+        if (!e?.data) return;
         try {
             const msg = JSON.parse(e.data);
+            if (!msg) return;
             
             if (msg.type === "init") {
                 // Инициализация: загружаем существующие объекты и историю чата
@@ -310,7 +325,7 @@ function connectWS() {
                 addMessage(`${msg.player}: ${msg.message}`);
             }
         } catch (err) {
-            console.error('Error parsing message:', err);
+            console.error('WS message parse error:', err);
         }
     };
 }
@@ -324,9 +339,13 @@ function getTypeName(type) {
     return names[type] || type;
 }
 
-document.getElementById('connectBtn').onclick = () => {
-    roomName = document.getElementById('room').value.trim();
-    playerName = document.getElementById('name').value.trim();
+const connectBtnEl = document.getElementById('connectBtn');
+if (connectBtnEl) {
+  connectBtnEl.onclick = () => {
+    const roomEl = document.getElementById('room');
+    const nameEl = document.getElementById('name');
+    roomName = roomEl ? roomEl.value.trim() : '';
+    playerName = nameEl ? nameEl.value.trim() : '';
     
     if (!roomName || !playerName) {
         alert('Введите название комнаты и имя игрока!');
@@ -338,7 +357,8 @@ document.getElementById('connectBtn').onclick = () => {
     } else {
         connectWS();
     }
-};
+  };
+}
 
 // Регистрация объектов
 function registerObject(id, type, body) {
@@ -456,7 +476,9 @@ function removeObject(data, isRemote = false) {
 }
 
 // Добавление объектов кнопками
-document.getElementById('addBox').onclick = () => {
+const addBoxBtn = document.getElementById('addBox');
+if (addBoxBtn) {
+  addBoxBtn.onclick = () => {
     spawnObject({
         type: "box",
         x: Math.random() * 700 + 50,
@@ -464,25 +486,32 @@ document.getElementById('addBox').onclick = () => {
         w: 60,
         h: 60
     });
-};
+  };
+}
 
-document.getElementById('addCircle').onclick = () => {
+const addCircleBtn = document.getElementById('addCircle');
+if (addCircleBtn) {
+  addCircleBtn.onclick = () => {
     spawnObject({
         type: "circle",
         x: Math.random() * 700 + 50,
         y: 50,
         r: 20
     });
-};
+  };
+}
 
-document.getElementById('addLever').onclick = () => {
+const addLeverBtn = document.getElementById('addLever');
+if (addLeverBtn) {
+  addLeverBtn.onclick = () => {
     spawnObject({
         type: "lever",
         x: Math.random() * 700 + 50,
         y: Math.random() * 300 + 50,
         length: 100
     });
-};
+  };
+}
 
 // Drag & Drop
 const mouse = Matter.Mouse.create(canvas);
@@ -566,8 +595,11 @@ Matter.Events.on(engine, "collisionStart", (event) => {
 });
 
 // Чат
-document.getElementById("send").onclick = () => {
+const sendBtn = document.getElementById("send");
+if (sendBtn) {
+  sendBtn.onclick = () => {
     const input = document.getElementById("input");
+    if (!input) return;
     const msg = input.value.trim();
     if (ws && ws.readyState === WebSocket.OPEN && msg) {
         ws.send(JSON.stringify({
@@ -578,13 +610,18 @@ document.getElementById("send").onclick = () => {
         addMessage(`Вы: ${msg}`);
         input.value = "";
     }
-};
+  };
+}
 
-document.getElementById("input").addEventListener("keypress", (e) => {
+const inputEl = document.getElementById("input");
+if (inputEl) {
+  inputEl.addEventListener("keypress", (e) => {
     if (e.key === "Enter") {
-        document.getElementById("send").click();
+        const sendInner = document.getElementById("send");
+        if (sendInner) sendInner.click();
     }
-});
+  });
+}
 
 // Готовый стартовый уровень
 function setupLevel() {

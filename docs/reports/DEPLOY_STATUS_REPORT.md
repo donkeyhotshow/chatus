@@ -133,13 +133,12 @@ firebase deploy --only hosting
 ## 📞 Поддержка
 
 При проблемах:
+
 - Проверьте логи в GitHub Actions
 - Проверьте Vercel dashboard
 - Убедитесь, что все токены корректны
 - Следуйте `DEPLOYMENT_CHECKLIST.md`
 
-**Проект полностью готов к production деплою! 🚀**</contents>
-</xai:function_call"> 
+**Проект полностью готов к production деплою! 🚀**
 
-<xai:function_call name="todo_write">
-<parameter name="merge">true
+

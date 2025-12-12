@@ -60,3 +60,5 @@ Write-Host "https://chatus-app.vercel.app" -ForegroundColor White
 Write-Host ""
 Write-Host "🔍 Проверьте в браузере (F12 → Console):" -ForegroundColor Yellow
 Write-Host 'console.log(process.env.NEXT_PUBLIC_FIREBASE_API_KEY)' -ForegroundColor White
+
+

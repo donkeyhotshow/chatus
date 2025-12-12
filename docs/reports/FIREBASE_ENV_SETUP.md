@@ -53,3 +53,5 @@ NEXT_PUBLIC_FIREBASE_APP_ID=1:671791091944:web:9d7f3ec08cfe73c283f95d
 - Файл `.env.local` уже добавлен в `.gitignore`
 - Переменные автоматически загрузятся при запуске Next.js
 - Для продакшена demo mode должен быть отключен
+
+

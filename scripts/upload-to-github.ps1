@@ -33,3 +33,5 @@ Write-Host "`n📋 Next steps:" -ForegroundColor Yellow
 Write-Host "1. Go to Settings > Secrets and variables > Actions" -ForegroundColor White
 Write-Host "2. Add secrets: FIREBASE_TOKEN, FIREBASE_PROJECT_ID, VERCEL_TOKEN, etc." -ForegroundColor White
 Write-Host "3. First push will trigger CI/CD pipeline" -ForegroundColor White
+
+

@@ -88,3 +88,5 @@ Write-Host "3. Нажмите 'Run workflow'" -ForegroundColor White
 Write-Host ""
 Write-Host "🚀 После деплоя приложение будет доступно:" -ForegroundColor Green
 Write-Host "https://chatforus.vercel.app" -ForegroundColor Cyan
+
+

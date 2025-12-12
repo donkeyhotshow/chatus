@@ -102,3 +102,5 @@ Write-Host "🚀 После деплоя приложение будет дос�
 Write-Host "https://chatforus.vercel.app" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "⚠️  Важно: Убедитесь, что код загружен в репозиторий!" -ForegroundColor Yellow
+
+

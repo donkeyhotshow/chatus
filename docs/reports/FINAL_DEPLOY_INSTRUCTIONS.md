@@ -60,8 +60,8 @@ git push origin main
 ### Автоматическая настройка:
 
 ```powershell
-# Установите токен (уже сделано)
-$env:GH_TOKEN = 'ghp_H2wxPtCCTTcj6LPNfkb7CTjTTKzdX0RmHSe'
+:# Установите токен (уже сделано)
+$env:GH_TOKEN = '<YOUR_GITHUB_PAT_HERE>'
 
 # Запустите скрипт
 .\setup-secrets-final.ps1
@@ -147,3 +147,5 @@ $env:GH_TOKEN = 'ghp_H2wxPtCCTTcj6LPNfkb7CTjTTKzdX0RmHSe'
 4. Следуйте инструкциям в логах ошибок
 
 **Проект полностью готов к production деплою!** 🚀
+
+

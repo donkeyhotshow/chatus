@@ -40,3 +40,5 @@ Write-Host ""
 Write-Host "`n🔗 After deployment:" -ForegroundColor Green
 Write-Host "- Vercel: https://chatforus.vercel.app" -ForegroundColor Cyan
 Write-Host "- Firebase: Backend API will work automatically" -ForegroundColor Cyan
+
+

@@ -1,5 +1,10 @@
 import { vi } from 'vitest';
 
+// Polyfill для WebSocket, чтобы избежать ReferenceError в Node/Vitest
+if (!(globalThis as any).WebSocket) {
+  (globalThis as any).WebSocket = { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 };
+}
+
 // Условный импорт @testing-library/jest-dom (если установлен)
 try {
   require('@testing-library/jest-dom');

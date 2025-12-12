@@ -135,8 +135,6 @@ ChatForUs/
 
 ---
 
-*Консолидация выполнена успешно. Проект готов к деплою.*</contents>
-</xai:function_call"> 
+*Консолидация выполнена успешно. Проект готов к деплою.*
 
-<xai:function_call name="todo_write">
-<parameter name="merge">true
+

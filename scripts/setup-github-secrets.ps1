@@ -69,3 +69,5 @@ if ($vercelProjectId) {
 
 Write-Host "`n🎉 Все секреты настроены!" -ForegroundColor Green
 Write-Host "🚀 Следующий push в main ветку запустит автоматический деплой" -ForegroundColor Blue
+
+
