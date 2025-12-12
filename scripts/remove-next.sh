@@ -1,3 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "Удаление .next (и опционально node_modules/dist)"
+rm -rf .next/ || true
+echo ".next удалён."
+
 #!/bin/bash
 #
 # Remove .next build artifacts from git index (unstage) and ensure .gitignore contains .next

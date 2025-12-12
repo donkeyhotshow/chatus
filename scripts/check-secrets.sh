@@ -1,5 +1,70 @@
 #!/usr/bin/env bash
 set -euo pipefail
+
+echo "=== scripts/check-secrets.sh — проверка .env и возможных секретов в репо ==="
+
+REPO_ROOT="$(pwd)"
+
+# 1) Проверка наличия .env.local
+if [ -f ".env.local" ]; then
+  echo "Найден .env.local (локальные секреты). Убедитесь, что он в .gitignore."
+  if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    if git ls-files --error-unmatch .env.local >/dev/null 2>&1; then
+      echo "ERROR: .env.local закоммичен в репозиторий! Уберите его и сделайте git rm --cached .env.local"
+      FOUND_TRACKED_ENV=true
+    else
+      FOUND_TRACKED_ENV=false
+    fi
+  else
+    echo "Не git-репозиторий — пропускаем проверку трекинга .env.local."
+    FOUND_TRACKED_ENV=false
+  fi
+else
+  echo "Файл .env.local не найден."
+  FOUND_TRACKED_ENV=false
+fi
+
+echo ""
+echo "Поиск потенциальных секретов в файловом дереве (исключая .git)"
+
+# patterns to search for (case-insensitive)
+PATTERNS=(
+  "FIREBASE_API_KEY"
+  "API_KEY"
+  "SECRET"
+  "PRIVATE_KEY"
+  "AWS_SECRET_ACCESS_KEY"
+  "GITHUB_TOKEN"
+  "TOKEN="
+)
+
+FOUND_ANY=false
+for p in "${PATTERNS[@]}"; do
+  # show matches but ignore common build artifacts and node_modules
+  if grep -R --line-number --exclude-dir=.git --exclude-dir=node_modules -i -n "$p" . >/dev/null 2>&1; then
+    echo "Matches for pattern '$p':"
+    grep -R --line-number --exclude-dir=.git --exclude-dir=node_modules -i -n "$p" .
+    FOUND_ANY=true
+  fi
+done
+
+echo ""
+if $FOUND_ANY; then
+  echo "Внимание: найдены потенциальные секреты/ключи. Проверьте вывод выше и удалите/переместите в безопасное хранилище."
+else
+  echo "Не найдено очевидных секретов по базовым паттернам."
+fi
+
+if $FOUND_TRACKED_ENV || $FOUND_ANY; then
+  echo "Результат: FAIL (найдены потенциальные секреты или .env.local закоммичен)"
+  exit 2
+else
+  echo "Результат: OK"
+  exit 0
+fi
+
+#!/usr/bin/env bash
+set -euo pipefail
 #
 # check-secrets.sh
 # Простейший скрипт для поиска потенциально закоммиченных секретов и .env файлов.

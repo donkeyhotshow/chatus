@@ -1,0 +1,17 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "messages": {
+      "$messageId": {
+        ".validate": "newData.hasChildren(['text','ts','senderId']) && newData.child('text').isString() && newData.child('text').val().length <= 1000 && newData.child('ts').isNumber() && newData.child('senderId').isString() && newData.child('senderId').val() === auth.uid"
+      }
+    },
+    "test": {
+      ".read": "auth != null",
+      ".write": "auth != null"
+    }
+  }
+}
+
+

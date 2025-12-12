@@ -9,6 +9,7 @@ service cloud.firestore {
       function isParticipant() {
         return request.auth.uid in resource.data.participants;
       }
+      // Allow read only for participants or explicitly public rooms
       allow read: if isParticipant() || (resource.data.public == true);
 
       allow create: if request.resource.data.participants.size() == 1 &&

@@ -6,16 +6,58 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  prepr:
+    name: prepr-checks
     runs-on: ubuntu-latest
+    outputs:
+      overall_status: ${{ steps.report.outputs.overall_status }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Use Node.js 18
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
+
+      - name: Ensure scripts executable
+        run: chmod +x scripts/*.sh || true
+
+      - name: Run prepr checks
+        id: run
+        run: bash scripts/prepr-checks.sh || true
+
+      - name: Upload prepr-report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prepr-report
+          path: prepr-report.json
+
+      - name: Read report
+        id: report
+        if: always()
+        run: |
+          if [ -f prepr-report.json ]; then
+            jq -r '.overall_status' prepr-report.json > overall.txt || echo "FAIL" > overall.txt
+            echo "::set-output name=overall_status::$(cat overall.txt)"
+          else
+            echo "::set-output name=overall_status::FAIL"
+          fi
+
+  deploy:
+    name: Deploy Firebase & Vercel
+    runs-on: ubuntu-latest
+    needs: prepr
+    if: needs.prepr.outputs.overall_status == 'PASS'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
       - name: Install dependencies and CLIs
         run: |

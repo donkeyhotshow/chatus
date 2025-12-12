@@ -10,13 +10,13 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
-  ...compat.extends("next/core-web-vitals"),
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
     rules: {
       // Разрешаем использование any в крайних случаях
       "@typescript-eslint/no-explicit-any": "warn",
       // Разрешаем неиспользуемые переменные с _ префиксом
-      "@typescript-eslint/no-unused-vars": ["error", { 
+      "@typescript-eslint/no-unused-vars": ["error", {
         "argsIgnorePattern": "^_",
         "varsIgnorePattern": "^_"
       }],

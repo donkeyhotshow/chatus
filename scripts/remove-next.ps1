@@ -1,3 +1,11 @@
+Write-Host "Удаление .next (PowerShell)"
+if (Test-Path ".next") {
+  Remove-Item -Recurse -Force .next
+  Write-Host ".next удалён."
+} else {
+  Write-Host ".next не найден — ничего не делаем."
+}
+
 # PowerShell helper to remove .next from git index and ensure .gitignore contains .next
 if (Test-Path -Path ".next") {
     Write-Host "Removing .next from git index..."
