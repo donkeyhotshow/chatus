@@ -204,7 +204,7 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
         return (
             <div className="h-full w-full flex flex-col items-center justify-center text-center p-4">
                <h3 className="text-lg font-bold text-white">Maze Active</h3>
-               <p className="text-sm text-neutral-400 mb-4">Go to the 'Canvas' tab to solve it together.</p>
+               <p className="text-sm text-neutral-400 mb-4">Go to the &apos;Canvas&apos; tab to solve it together.</p>
                <Button onClick={handleEndGame} variant="destructive">
                  End Maze
                </Button>

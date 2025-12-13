@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, useMemo, lazy, Suspense, useCallback } from 'react';
 import type { GameState, UserProfile } from '@/lib/types';
 import { PenTool, Gamepad2, Users, FilePlus, ChevronLeft, ChevronRight, Maximize2, Minimize2, Plus } from 'lucide-react';
 import { UserList } from './UserList';
@@ -64,16 +64,7 @@ export function CollaborationSpace({
     }
   }, [activeGame]);
 
-  useEffect(() => {
-    if (!sheetsLoading && sheets?.length === 0) {
-      handleCreateNewSheet();
-    } else if (!sheetsLoading && sheets && sheets.length > 0 && !activeSheetId) {
-      setActiveSheetId(sheets[0].id);
-    }
-  }, [sheets, sheetsLoading, activeSheetId]);
-
-
-  const handleCreateNewSheet = async () => {
+  const handleCreateNewSheet = useCallback(async () => {
     if(!user || !service) return;
     const newSheetName = `Sheet ${(sheets?.length || 0) + 1}`;
     try {
@@ -84,7 +75,15 @@ export function CollaborationSpace({
       console.error("Error creating new sheet:", error);
       toast({ title: 'Could not create new sheet', variant: 'destructive' });
     }
-  };
+  }, [user, service, sheets, setActiveSheetId, toast]);
+
+  useEffect(() => {
+    if (!sheetsLoading && sheets?.length === 0) {
+      handleCreateNewSheet();
+    } else if (!sheetsLoading && sheets && sheets.length > 0 && !activeSheetId) {
+      setActiveSheetId(sheets[0].id);
+    }
+  }, [sheets, sheetsLoading, activeSheetId, handleCreateNewSheet]);
 
   const navigateSheet = (direction: 'next' | 'prev') => {
     if (!activeSheetId || !sheets || sheets.length < 2) return;

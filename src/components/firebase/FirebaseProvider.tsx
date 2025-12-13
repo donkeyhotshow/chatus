@@ -90,7 +90,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
     } else {
         console.error('[ERROR] FirebaseProvider: Failed to get Firebase instances.');
     }
-  }, []);
+  }, [sanitizeFetchEnabled]);
 
   // Prevent hydration mismatch by rendering the same on server and client initially
   if (!isMounted || !firebaseInstances) {

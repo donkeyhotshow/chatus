@@ -53,7 +53,7 @@ export default function DoodlePad({ onClose, onSend }: DoodlePadProps) {
 
     window.addEventListener('resize', resizeCanvas);
     return () => window.removeEventListener('resize', resizeCanvas);
-  }, []);
+  }, [color, lineWidth]);
 
   // Update drawing context when settings change
   useEffect(() => {

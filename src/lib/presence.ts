@@ -62,9 +62,9 @@ if (typeof window !== 'undefined') {
  * Hook for React components to register cleanup
  */
 export function usePresenceCleanup(callback: CleanupCallback) {
-  if (typeof window === 'undefined') return;
-
   React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const unregister = registerCleanup(callback);
     return () => {
       unregister();

@@ -111,7 +111,7 @@ export const ChatArea = memo(function ChatArea({
     }
 
     lastMessageCountRef.current = persistedMessages.length;
-  }, [persistedMessages.length, isInitialLoad, user.id]);
+  }, [persistedMessages, isInitialLoad, user.id]);
 
   // Cleanup audio on unmount
   useEffect(() => {

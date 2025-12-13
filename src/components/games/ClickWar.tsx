@@ -91,23 +91,25 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
   });
 
   // Throttle для частых кликов (максимум 10 раз в секунду)
+  const handleClick = useCallback(() => {
+    if (!isActive || timeLeft <= 0) return;
+
+    // Оптимистичное обновление UI
+    setOptimisticScore(prev => prev + 1);
+
+    // Обновление на сервере
+    const newScores = { ...gameState.scores, [user.id]: myScore + 1 };
+    updateGameState({ scores: newScores });
+
+    hapticFeedback('light');
+  }, [isActive, timeLeft, gameState.scores, myScore, updateGameState, user.id]);
+
   const handleClickThrottled = useCallback(
-    throttle(() => {
-      if (!isActive || timeLeft <= 0) return;
-      
-      // Оптимистичное обновление UI
-      setOptimisticScore(prev => prev + 1);
-      
-      // Обновление на сервере
-      const newScores = { ...gameState.scores, [user.id]: myScore + 1 };
-      updateGameState({ scores: newScores });
-      
-      hapticFeedback('light');
-    }, 100), // 100ms = максимум 10 кликов в секунду
-    [isActive, timeLeft, gameState.scores, myScore, updateGameState]
+    () => throttle(handleClick, 100)(), // 100ms = максимум 10 кликов в секунду
+    [handleClick]
   );
 
-  const handleClick = guard(() => {
+  const handleClickGuarded = guard(() => {
     handleClickThrottled();
   });
 
@@ -170,7 +172,7 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
                     </Button>
                 ) : (
                     <Button 
-                      onClick={handleClick} 
+                      onClick={handleClickGuarded} 
                       className="w-full h-24 text-2xl font-bold transition-transform active:scale-95" 
                       variant="destructive"
                     >
