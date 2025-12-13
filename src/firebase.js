@@ -2,7 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getDatabase, connectDatabaseEmulator } from "firebase/database";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
-import { logger } from "./lib/logger.js";
+import { logger } from "./lib/logger";
 
 // Firebase public config (client-safe values) from environment variables
 const firebaseConfig = {
