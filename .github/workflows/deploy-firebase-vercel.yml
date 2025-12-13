@@ -67,7 +67,7 @@ jobs:
           echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > "${{ github.workspace }}/firebase-sa.json"
           chmod 600 "${{ github.workspace }}/firebase-sa.json"
 
-      - name: Firebase: deploy backend (rules, storage, functions)
+      - name: "Firebase: deploy backend (rules, storage, functions)"
         if: ${{ secrets.FIREBASE_TOKEN != '' }}
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
@@ -76,7 +76,7 @@ jobs:
           echo "Deploying Firebase backend to project $FIREBASE_PROJECT_ID"
           firebase deploy --only firestore:rules,storage:rules,functions --project "$FIREBASE_PROJECT_ID" --token "$FIREBASE_TOKEN"
 
-      - name: Vercel: deploy
+      - name: "Vercel: deploy"
         if: ${{ secrets.VERCEL_TOKEN != '' }}
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
