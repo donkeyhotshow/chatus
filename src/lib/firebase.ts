@@ -11,7 +11,7 @@ import { logger } from "./logger";
 let app: FirebaseApp;
 let analytics: Analytics | null = null;
 let firestore: Firestore;
-let rtdb: Database;
+let rtdb: Database | null = null;
 let auth: Auth;
 let storage: FirebaseStorage;
 
@@ -40,15 +40,19 @@ try {
   storage = getStorage(app);
   
   // Initialize Realtime Database (optional, requires databaseURL)
-  try {
-    rtdb = getDatabase(app, firebaseConfig.databaseURL);
-  } catch (dbError) {
-    logger.warn("Failed to initialize Realtime Database", { 
-      error: dbError,
-      hasDatabaseURL: !!firebaseConfig.databaseURL 
-    });
-    // Create a dummy database reference that will fail gracefully if used
-    rtdb = null as any;
+  if (firebaseConfig.databaseURL) {
+    try {
+      rtdb = getDatabase(app, firebaseConfig.databaseURL);
+    } catch (dbError) {
+      logger.warn("Failed to initialize Realtime Database", { 
+        error: dbError,
+        databaseURL: firebaseConfig.databaseURL 
+      });
+      rtdb = null;
+    }
+  } else {
+    logger.info("Realtime Database not initialized: databaseURL not configured");
+    rtdb = null;
   }
 
   // Analytics only in browser
@@ -79,14 +83,18 @@ try {
     storage = getStorage(app);
     
     // Try to initialize Realtime Database (optional)
-    try {
-      rtdb = getDatabase(app, firebaseConfig.databaseURL);
-    } catch (dbError) {
-      logger.warn("Failed to initialize Realtime Database in fallback", { 
-        error: dbError,
-        hasDatabaseURL: !!firebaseConfig.databaseURL 
-      });
-      rtdb = null as any;
+    if (firebaseConfig.databaseURL) {
+      try {
+        rtdb = getDatabase(app, firebaseConfig.databaseURL);
+      } catch (dbError) {
+        logger.warn("Failed to initialize Realtime Database in fallback", { 
+          error: dbError,
+          databaseURL: firebaseConfig.databaseURL 
+        });
+        rtdb = null;
+      }
+    } else {
+      rtdb = null;
     }
   } else {
     throw error;
@@ -118,7 +126,9 @@ const useEmulators = process.env.NODE_ENV === "development" || process.env.NEXT_
 if (useEmulators) {
   try {
     connectFirestoreEmulator(firestore, process.env.FIRESTORE_EMULATOR_HOST || "localhost", Number(process.env.FIRESTORE_EMULATOR_PORT || 8080));
-    connectDatabaseEmulator(rtdb, process.env.RTDB_EMULATOR_HOST || "localhost", Number(process.env.RTDB_EMULATOR_PORT || 9000));
+    if (rtdb) {
+      connectDatabaseEmulator(rtdb, process.env.RTDB_EMULATOR_HOST || "localhost", Number(process.env.RTDB_EMULATOR_PORT || 9000));
+    }
     connectAuthEmulator(auth, `http://${process.env.AUTH_EMULATOR_HOST || "localhost"}:${Number(process.env.AUTH_EMULATOR_PORT || 9099)}`, { disableWarnings: true });
     connectStorageEmulator(storage, process.env.STORAGE_EMULATOR_HOST || "localhost", Number(process.env.STORAGE_EMULATOR_PORT || 9199));
     logger.info("Firebase emulators connected");

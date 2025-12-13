@@ -36,6 +36,11 @@ export class TypingManager {
   constructor(roomId: string, userId: string) {
     this.roomId = roomId;
     this.userId = userId;
+    
+    if (!rtdb) {
+      throw new Error('Realtime Database not initialized. Please configure NEXT_PUBLIC_FIREBASE_DATABASE_URL');
+    }
+    
     this.typingRef = ref(rtdb, `typing/${roomId}/${userId}`);
 
     // Debounced typing indicator (300ms delay)
@@ -63,6 +68,11 @@ export class TypingManager {
    * Subscribe to typing changes for the room
    */
   subscribeToTyping(callback: (typingUsers: string[]) => void) {
+    if (!rtdb) {
+      logger.warn('Realtime Database not available, typing indicators disabled');
+      return;
+    }
+    
     const roomTypingRef = ref(rtdb, `typing/${this.roomId}`);
 
     this.unsubscribe = onValue(roomTypingRef, (snapshot) => {
@@ -104,6 +114,11 @@ export class PresenceManager {
 
   constructor(userId: string) {
     this.userId = userId;
+    
+    if (!rtdb) {
+      throw new Error('Realtime Database not initialized. Please configure NEXT_PUBLIC_FIREBASE_DATABASE_URL');
+    }
+    
     this.statusRef = ref(rtdb, `status/${userId}`);
   }
 
@@ -145,6 +160,11 @@ export class PresenceManager {
    * Subscribe to presence changes for all users
    */
   subscribeToPresence(callback: (presence: { [userId: string]: PresenceState }) => void) {
+    if (!rtdb) {
+      logger.warn('Realtime Database not available, presence tracking disabled');
+      return;
+    }
+    
     const allStatusRef = ref(rtdb, 'status');
 
     this.unsubscribe = onValue(allStatusRef, (snapshot) => {
