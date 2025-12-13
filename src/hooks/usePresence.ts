@@ -1,136 +1,111 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { doc, updateDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
-import { useFirebase } from '@/components/firebase/FirebaseProvider';
-import { UserProfile } from '@/lib/types';
-import { logger } from '@/lib/logger';
-import { registerCleanup } from '@/lib/presence';
+import { useEffect, useState, useRef } from 'react';
+import { PresenceManager, PresenceState } from '@/lib/realtime';
 import { isDemoMode } from '@/lib/demo-mode';
 
-interface PresenceState {
+interface UsePresenceReturn {
   isOnline: boolean;
   lastSeen: Date | null;
+  updatePresence: (isOnline: boolean) => Promise<void>;
 }
 
 /**
- * Hook for managing user presence (online/offline status)
- * 
- * Features:
- * - Updates isOnline status in Firestore
- * - Updates lastSeen timestamp
- * - Handles cleanup on unmount/disconnect
- * - Handles network status changes
+ * Hook for managing user presence using Realtime Database
  */
-export function usePresence(roomId: string, userId: string | null) {
-  const firebaseContext = useFirebase();
+export function usePresence(roomId: string, userId: string | null): UsePresenceReturn {
   const [presence, setPresence] = useState<PresenceState>({
-    isOnline: false,
-    lastSeen: null,
+    state: 'offline',
+    lastChanged: new Date(),
   });
-  const updateIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const presenceManagerRef = useRef<PresenceManager | null>(null);
   const isMountedRef = useRef(true);
 
   // Update presence status
-  const updatePresence = useCallback(async (isOnline: boolean) => {
-    if (!firebaseContext?.db || !userId) return;
+  const updatePresence = async (isOnline: boolean) => {
+    if (!userId) return;
 
-    // In demo mode, update local state only
     if (isDemoMode()) {
       setPresence({
-        isOnline,
-        lastSeen: new Date(),
+        state: isOnline ? 'online' : 'offline',
+        lastChanged: new Date(),
       });
       return;
     }
 
-    try {
-      const userRef = doc(firebaseContext.db, 'users', userId);
-      await updateDoc(userRef, {
-        isOnline,
-        lastSeen: serverTimestamp(),
-      });
+    if (!presenceManagerRef.current) return;
 
-      setPresence({
-        isOnline,
-        lastSeen: new Date(),
-      });
-    } catch (error) {
-      const err = error as any;
-      // Suppress offline errors in demo mode
-      if (isDemoMode() || 
-          err.message?.includes('client is offline') ||
-          err.message?.includes('Failed to get document') ||
-          err.code === 'unavailable' ||
-          err.code === 'permission-denied') {
-        // Update local state only
-        setPresence({
-          isOnline,
-          lastSeen: new Date(),
-        });
-        return;
-      }
-      logger.error('Failed to update presence', error as Error, { userId, isOnline });
+    if (isOnline) {
+      await presenceManagerRef.current.setOnline();
+    } else {
+      await presenceManagerRef.current.setOffline();
     }
-  }, [firebaseContext, userId]);
+  };
 
-  // Set online status
   useEffect(() => {
     if (!userId) return;
 
-    // Set online on mount
-    updatePresence(true);
+    if (isDemoMode()) {
+      // In demo mode, just set online
+      setPresence({
+        state: 'online',
+        lastChanged: new Date(),
+      });
+      return;
+    }
 
-    // Update lastSeen periodically (every 30 seconds)
-    updateIntervalRef.current = setInterval(() => {
-      if (isMountedRef.current) {
-        updatePresence(true);
+    // Initialize presence manager
+    presenceManagerRef.current = new PresenceManager(userId);
+
+    // Set online on mount
+    presenceManagerRef.current.setOnline();
+
+    // Subscribe to presence changes
+    presenceManagerRef.current.subscribeToPresence((presenceData) => {
+      if (!isMountedRef.current) return;
+
+      const userPresence = presenceData[userId];
+      if (userPresence) {
+        setPresence({
+          state: userPresence.state,
+          lastChanged: new Date(userPresence.lastChanged),
+        });
       }
-    }, 30000);
+    });
 
     // Handle network status changes
     const handleOnline = () => {
-      if (isMountedRef.current) {
-        updatePresence(true);
+      if (isMountedRef.current && presenceManagerRef.current) {
+        presenceManagerRef.current.setOnline();
       }
     };
 
     const handleOffline = () => {
-      if (isMountedRef.current) {
-        updatePresence(false);
+      if (isMountedRef.current && presenceManagerRef.current) {
+        presenceManagerRef.current.setOffline();
       }
     };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Register cleanup for beforeunload
-    const unregisterCleanup = registerCleanup(async () => {
-      await updatePresence(false);
-    });
-
     return () => {
       isMountedRef.current = false;
-      
-      // Cleanup
-      if (updateIntervalRef.current) {
-        clearInterval(updateIntervalRef.current);
-      }
-      
+
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      unregisterCleanup();
-      
-      // Set offline on unmount
-      updatePresence(false).catch(err => {
-        logger.error('Failed to set offline on unmount', err as Error);
-      });
+
+      // Cleanup
+      if (presenceManagerRef.current) {
+        presenceManagerRef.current.disconnect();
+        presenceManagerRef.current = null;
+      }
     };
-  }, [userId, updatePresence]);
+  }, [userId]);
 
   return {
-    isOnline: presence.isOnline,
-    lastSeen: presence.lastSeen,
+    isOnline: presence.state === 'online',
+    lastSeen: presence.lastChanged,
     updatePresence,
   };
 }

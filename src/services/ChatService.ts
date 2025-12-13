@@ -1,8 +1,9 @@
 
-import { 
-  collection, query, orderBy, onSnapshot, addDoc, 
-  serverTimestamp, where, Unsubscribe, deleteDoc, doc, runTransaction, limit, updateDoc, arrayUnion, arrayRemove, setDoc, getDoc, Firestore, DocumentData, deleteField, writeBatch, getDocs, DocumentReference, DocumentSnapshot, startAfter, Timestamp, increment
+import {
+  collection, query, orderBy, onSnapshot, addDoc,
+  serverTimestamp, where, Unsubscribe, deleteDoc, doc, runTransaction, limit, updateDoc, setDoc, getDoc, Firestore, DocumentData, writeBatch, getDocs, DocumentReference, DocumentSnapshot, startAfter, Timestamp
 } from "firebase/firestore";
+import { TypingManager } from '@/lib/realtime';
 import { ref, uploadBytes, getDownloadURL, FirebaseStorage } from "firebase/storage";
 import { Message, CanvasPath, Reaction, UserProfile, GameState, Room, TDTower, TDEnemy } from "@/lib/types";
 import { Auth, signInAnonymously } from "firebase/auth";
@@ -72,6 +73,9 @@ export class ChatService {
 
   private messageQueue = getMessageQueue();
 
+  // RTDB managers
+  private typingManager: TypingManager | null = null;
+
   constructor(roomId: string, firestore: Firestore, auth: Auth, storage: FirebaseStorage) {
     this.roomId = roomId;
     this.firestore = firestore;
@@ -101,13 +105,12 @@ export class ChatService {
 
     this.loadInitialMessages();
 
-    // Listen to room participants
+    // Listen to room participants (without typing - moved to RTDB)
     const roomRef = doc(this.firestore, 'rooms', this.roomId);
     const roomUnsub = onSnapshot(roomRef, (snapshot) => {
       if (snapshot.exists()) {
         const roomData = snapshot.data() as Room;
         this.onlineUsers = roomData.participantProfiles || [];
-        this.typingUsers = (roomData.typing || []).filter(name => name !== this.currentUser?.name);
         this.notify();
       }
     }, (error) => {
@@ -148,6 +151,24 @@ export class ChatService {
     });
 
     this.unsubscribes.push(roomUnsub, gamesUnsub);
+  }
+
+  /**
+   * Initialize RTDB subscriptions (called after user joins)
+   */
+  private initRealtimeSubscriptions() {
+    if (!this.currentUser || !this.typingManager) return;
+
+    // Subscribe to typing indicators
+    this.typingManager.subscribeToTyping((typingUsers) => {
+      // Get usernames from online users
+      const typingUsernames = typingUsers
+        .map(userId => this.onlineUsers.find(u => u.id === userId)?.name)
+        .filter(Boolean) as string[];
+
+      this.typingUsers = typingUsernames;
+      this.notify();
+    });
   }
 
   // --- Message Loading with Pagination ---
@@ -247,23 +268,34 @@ export class ChatService {
       const newMessages = snapshot.docs
         .map(doc => {
           const data = doc.data();
-          return { 
-            id: doc.id, 
+          return {
+            id: doc.id,
             ...data,
             // Ensure senderId exists (backward compatibility)
             senderId: data.senderId || data.user?.id || '',
+            // Ensure boolean fields exist (backward compatibility)
+            delivered: data.delivered ?? false,
+            seen: data.seen ?? false,
           } as Message;
         })
         .filter(msg => {
           // Deduplicate by message ID and clientMessageId
           const dedupeKey = msg.id || msg.clientMessageId;
           if (!dedupeKey) return true; // Keep if no ID
-          
+
           if (this.receivedMessageIds.has(dedupeKey)) {
             return false; // Skip duplicate
           }
           this.receivedMessageIds.add(dedupeKey);
           return true;
+        })
+        .map(msg => {
+          // Mark messages from other users as delivered
+          if (msg.senderId !== this.currentUser?.id && !msg.delivered) {
+            updateDoc(doc.ref, { delivered: true }).catch(() => {});
+            msg.delivered = true;
+          }
+          return msg;
         });
       
       // Cleanup old received IDs (keep last 500)
@@ -414,6 +446,9 @@ export class ChatService {
     this.joinPromise = (async () => {
       try {
         this.currentUser = user;
+
+        // Initialize RTDB managers
+        this.typingManager = new TypingManager(this.roomId, user.id);
         
         const roomRef = doc(this.firestore, 'rooms', this.roomId);
         
@@ -427,7 +462,7 @@ export class ChatService {
           
           if (!roomDoc.exists()) {
             // Create room with full structure (only if validation is not required)
-            transaction.set(roomRef, { 
+            transaction.set(roomRef, {
               id: this.roomId,
               participants: [user.id],
               participantProfiles: [user],
@@ -440,6 +475,13 @@ export class ChatService {
           }
 
           const roomData = roomDoc.data() as Room;
+
+          // Check if room already has 2 participants (maximum for 1-on-1 chat)
+          const currentParticipants = roomData.participants || [];
+          if (currentParticipants.length >= 2 && !currentParticipants.includes(user.id)) {
+            throw new Error('Эта комната уже занята. Выберите другой код комнаты или договоритесь с собеседником о коде.');
+          }
+
           const participantIds = new Set(roomData.participants || []);
           participantIds.add(user.id);
           const updatedIds = Array.from(participantIds);
@@ -456,6 +498,9 @@ export class ChatService {
             lastUpdated: serverTimestamp()
           });
         }), { timeoutMs: 30_000, attempts: 3, backoffMs: 500 });
+
+        // Initialize RTDB subscriptions after successful join
+        this.initRealtimeSubscriptions();
       } catch (error) {
         const err = error as any;
         // In demo mode or if permission denied, silently fail and use local state
@@ -533,7 +578,7 @@ export class ChatService {
 
   // --- Messages with Rate Limiting ---
   
-  public async sendMessage(messageData: Omit<Message, 'id' | 'createdAt' | 'reactions' | 'readBy'>, clientMessageId?: string) {
+  public async sendMessage(messageData: Omit<Message, 'id' | 'createdAt' | 'reactions' | 'delivered' | 'seen'>, clientMessageId?: string) {
     if (!this.currentUser) {
       logger.warn('[DEMO MODE] sendMessage called but currentUser is not set', {
         roomId: this.roomId,
@@ -588,7 +633,8 @@ export class ChatService {
         senderId: this.currentUser.id,
         createdAt: Timestamp.now(),
         reactions: [],
-        readBy: [this.currentUser.id],
+        delivered: true, // In demo mode, consider delivered immediately
+        seen: true, // In demo mode, consider seen immediately
       };
       // Create new array to ensure React detects the change
       const newMessages = [...this.messages, demoMessage];
@@ -617,7 +663,8 @@ export class ChatService {
         clientMessageId: msgId, // Store for deduplication on receive
         createdAt: serverTimestamp(),
         reactions: [],
-        readBy: [],
+        delivered: false, // Initially not delivered
+        seen: false, // Initially not seen
         }),
         { timeoutMs: 30_000, attempts: 3, backoffMs: 500 }
       );
@@ -635,7 +682,8 @@ export class ChatService {
           senderId: this.currentUser.id,
           createdAt: Timestamp.now(),
           reactions: [],
-          readBy: [this.currentUser.id],
+          delivered: true, // Consider delivered in offline mode
+          seen: true, // Consider seen in offline mode
         };
         this.messages.push(offlineMessage);
         this.notify();
@@ -794,17 +842,36 @@ export class ChatService {
     }
   }
   
-  public async setTypingStatus(username: string, isTyping: boolean) {
-    const roomRef = doc(this.firestore, 'rooms', this.roomId);
-    try {
-      if (isTyping) {
-        await updateDoc(roomRef, { typing: arrayUnion(username) });
-      } else {
-        await updateDoc(roomRef, { typing: arrayRemove(username) });
+  /**
+   * Send typing indicator (RTDB)
+   */
+  public sendTyping() {
+    this.typingManager?.sendTyping();
+  }
+
+  /**
+   * Mark messages as seen (only when chat is open and tab is active)
+   */
+  public async markMessagesAsSeen() {
+    if (!this.currentUser) return;
+
+    const batch = writeBatch(this.firestore);
+    let hasUpdates = false;
+
+    this.messages.forEach(msg => {
+      if (msg.senderId !== this.currentUser!.id && !msg.seen) {
+        const msgRef = doc(this.firestore, 'rooms', this.roomId, 'messages', msg.id);
+        batch.update(msgRef, { seen: true });
+        hasUpdates = true;
       }
-    } catch (error) {
-      // Fail silently for typing status, but log it
-      logger.warn("Error updating typing status", { roomId: this.roomId, username, isTyping, error });
+    });
+
+    if (hasUpdates) {
+      try {
+        await batch.commit();
+      } catch (error) {
+        logger.error("Error marking messages as seen", error as Error, { roomId: this.roomId });
+      }
     }
   }
 
@@ -823,7 +890,7 @@ export class ChatService {
     }
 
     const safeFileName = Date.now().toString();
-    const storagePath = `chat_images/${this.roomId}/${safeFileName}`;
+    const storagePath = `chat_images/${this.roomId}/${this.currentUser!.id}/${safeFileName}`;
     const storageRef = ref(this.storage, storagePath);
     
     try {
@@ -1026,7 +1093,12 @@ export class ChatService {
   public async disconnect() {
     if (this.currentUser) {
       await this.leaveRoom();
-      await this.setTypingStatus(this.currentUser.name, false);
+    }
+
+    // Disconnect RTDB managers
+    if (this.typingManager) {
+      this.typingManager.disconnect();
+      this.typingManager = null;
     }
     
     // Clear all subscriptions

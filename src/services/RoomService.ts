@@ -1,6 +1,6 @@
 'use client';
 
-import { doc, getDoc, Firestore } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { Room } from '@/lib/types';
 import { logger } from '@/lib/logger';
 import { isDemoMode } from '@/lib/demo-mode';

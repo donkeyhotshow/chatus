@@ -21,7 +21,8 @@ export interface Message {
   user: UserProfile;
   senderId: string; // Quick access to sender ID for filtering/indexing
   reactions: Reaction[];
-  readBy: string[];
+  delivered: boolean; // True when received by the other user
+  seen: boolean; // True when read by the other user (only when chat is open)
   disappearAt?: Timestamp;
   type?: 'text' | 'sticker' | 'image' | 'doodle' | 'system';
   replyTo?: { id: string; text: string; senderName: string } | null;
@@ -32,7 +33,6 @@ export interface Room {
     id: string;
     participants: string[];
     participantProfiles: UserProfile[];
-    typing?: string[];
     createdAt?: Timestamp | Date;
     lastUpdated?: Timestamp | Date;
     settings?: {
@@ -54,7 +54,7 @@ export interface CanvasPath {
   tool: 'pen' | 'eraser';
   brush: BrushType;
   velocities?: number[];
-  createdAt: any; // Can be Date for local, or Timestamp for Firestore
+  createdAt: Timestamp | Date; // Can be Date for local, or Timestamp for Firestore
   clientStrokeId?: string; // For deduplication on reconnect
 }
 

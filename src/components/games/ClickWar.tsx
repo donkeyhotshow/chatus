@@ -74,7 +74,7 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
     // Only the host can start the game
     if (user.id !== gameState.hostId && gameState.hostId) return;
 
-    let scores: {[key: string]: number} = {[user.id]: 0};
+    const scores: {[key: string]: number} = {[user.id]: 0};
     if (otherUser) {
         scores[otherUser.id] = 0;
     }

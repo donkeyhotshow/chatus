@@ -1,8 +1,6 @@
 "use client";
 
 import { UserProfile } from '@/lib/types';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Users } from 'lucide-react';
 
 type UserListProps = {
   users: UserProfile[];
@@ -16,7 +14,7 @@ export function UserList({ users }: UserListProps) {
     <div className="p-6 text-white flex-1 flex flex-col">
       <div className="flex justify-between items-center mb-6">
         <span className="text-xs font-bold uppercase tracking-widest text-neutral-500">
-          Users ({userCount})
+          Участники ({userCount})
         </span>
       </div>
       <div className="flex flex-col gap-4">
@@ -35,7 +33,7 @@ export function UserList({ users }: UserListProps) {
             );
           })
         ) : (
-          <p className="text-center text-neutral-500 text-sm mt-4">Only you are here.</p>
+          <p className="text-center text-neutral-500 text-sm mt-4">Ожидание собеседника...</p>
         )}
       </div>
     </div>

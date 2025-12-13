@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Plus, Users } from 'lucide-react';
+import { ArrowRight, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import { isDemoMode } from '@/lib/demo-mode';
 
 export function HomeClient() {
   const [roomCode, setRoomCode] = useState('');
+  const [username, setUsername] = useState('');
   const [demoMode, setDemoMode] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
@@ -20,22 +21,28 @@ export function HomeClient() {
     setDemoMode(isDemoMode());
   }, []);
 
-  const handleCreateRoom = () => {
-    const newRoomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    router.push(`/chat/${newRoomCode}`);
-  };
-
   const handleJoinRoom = (e: React.FormEvent) => {
     e.preventDefault();
-    if (roomCode.trim()) {
-      router.push(`/chat/${roomCode.trim()}`);
-    } else {
+    if (!username.trim()) {
       toast({
-        title: "Invalid Code",
-        description: "Please enter a valid room code.",
+        title: "Введите ник",
+        description: "Пожалуйста, введите ваше имя или ник.",
         variant: "destructive",
       });
+      return;
     }
+    if (!roomCode.trim()) {
+      toast({
+        title: "Введите код комнаты",
+        description: "Пожалуйста, введите код комнаты.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Сохраняем ник в localStorage для использования в чате
+    localStorage.setItem('chatUsername', username.trim());
+    router.push(`/chat/${roomCode.trim().toUpperCase()}`);
   };
 
   return (
@@ -50,35 +57,34 @@ export function HomeClient() {
         ЧАТ ДЛЯ НАС
       </h1>
       <p className="mt-4 text-lg text-neutral-400 max-w-xl animate-in fade-in slide-in-from-top-6 duration-500 delay-100">
-        A monochrome collaboration space.
+        Приватный чат 1 на 1 с вашим собеседником.
       </p>
       
       <Card className="w-full max-w-md mt-10 bg-neutral-900/50 border border-white/10 backdrop-blur-md animate-in fade-in zoom-in-95 duration-500 delay-200 text-white">
         <CardHeader>
-          <CardTitle className="text-xl font-medium flex items-center justify-center gap-2"><Users/> Join a Room</CardTitle>
-          <CardDescription className="text-neutral-400">Enter a room code to start chatting.</CardDescription>
+          <CardTitle className="text-xl font-medium flex items-center justify-center gap-2"><MessageCircle/> Войти в комнату</CardTitle>
+          <CardDescription className="text-neutral-400">Введите ваш ник и код комнаты для приватного чата 1 на 1.</CardDescription>
         </CardHeader>
         <form onSubmit={handleJoinRoom}>
-          <CardContent>
+          <CardContent className="space-y-4">
+            <Input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="ВАШ НИК ИЛИ ИМЯ"
+              className="text-center font-mono text-lg tracking-widest h-14 bg-black/50 border-white/10 focus:ring-white/50 text-white placeholder:text-neutral-500"
+              maxLength={20}
+            />
             <Input
               value={roomCode}
               onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-              placeholder="ENTER ROOM CODE"
+              placeholder="КОД КОМНАТЫ"
               className="text-center font-mono text-lg tracking-widest h-14 bg-black/50 border-white/10 focus:ring-white/50 text-white placeholder:text-neutral-500"
               maxLength={6}
             />
           </CardContent>
-          <CardFooter className="flex flex-col gap-4 px-6 pb-6">
-            <Button type="submit" className="w-full font-bold bg-white text-black hover:bg-neutral-200" size="lg" disabled={!roomCode.trim()}>
-              Join Room <ArrowRight className="ml-2"/>
-            </Button>
-            <div className="relative flex py-2 items-center w-full">
-              <div className="flex-grow border-t border-white/10"></div>
-              <span className="flex-shrink mx-4 text-neutral-500 text-xs font-bold">OR</span>
-              <div className="flex-grow border-t border-white/10"></div>
-            </div>
-            <Button onClick={handleCreateRoom} variant="secondary" className="w-full font-bold bg-neutral-800 text-white hover:bg-neutral-700" size="lg">
-              <Plus className="mr-2"/> Create New Room
+          <CardFooter className="px-6 pb-6">
+            <Button type="submit" className="w-full font-bold bg-white text-black hover:bg-neutral-200" size="lg" disabled={!username.trim() || !roomCode.trim()}>
+              Войти в чат <ArrowRight className="ml-2"/>
             </Button>
           </CardFooter>
         </form>

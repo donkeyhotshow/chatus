@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Send, Mic, Paperclip, Brush, Smile } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StickerPicker } from './StickerPicker';
@@ -53,8 +53,8 @@ export function MessageInput({ onSendMessage, onImageSend, onDoodleClick, onInpu
     if (file) {
       if (file.size > 5 * 1024 * 1024) { // 5MB limit
         toast({
-          title: "File is too large",
-          description: "Please select an image smaller than 5MB.",
+          title: "Файл слишком большой",
+          description: "Пожалуйста, выберите изображение размером менее 5MB.",
           variant: "destructive",
         });
         return;
@@ -96,7 +96,7 @@ export function MessageInput({ onSendMessage, onImageSend, onDoodleClick, onInpu
       <div className="relative flex items-center gap-2 bg-neutral-900/80 border border-white/10 rounded-full px-2 py-2 shadow-2xl ring-1 ring-white/5 focus-within:ring-white/20 transition-all">
         <input 
           type="text" 
-          placeholder="Type a message..." 
+          placeholder="Напишите сообщение..." 
           value={text}
           onChange={handleTextChange}
           onKeyDown={handleKeyDown}

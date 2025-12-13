@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { doc, getDoc, Firestore, updateDoc, arrayUnion, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, arrayUnion, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirebase } from '@/components/firebase/FirebaseProvider';
 import { Room } from '@/lib/types';
 import { logger } from '@/lib/logger';

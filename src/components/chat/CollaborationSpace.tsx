@@ -3,13 +3,13 @@
 
 import { useState, useEffect, useRef, useMemo, lazy, Suspense, useCallback } from 'react';
 import type { GameState, UserProfile } from '@/lib/types';
-import { PenTool, Gamepad2, Users, FilePlus, ChevronLeft, ChevronRight, Maximize2, Minimize2, Plus } from 'lucide-react';
+import { PenTool, Gamepad2, Users, ChevronLeft, ChevronRight, Maximize2, Minimize2, Plus } from 'lucide-react';
 import { UserList } from './UserList';
 
 // Lazy load heavy components
 const SharedCanvas = lazy(() => import('../canvas/SharedCanvas').then(m => ({ default: m.SharedCanvas })));
 const GameLobby = lazy(() => import('../games/GameLobby').then(m => ({ default: m.GameLobby })));
-import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useChatService } from '@/hooks/useChatService';
 import { useFirebase } from '../firebase/FirebaseProvider';
@@ -133,7 +133,6 @@ export function CollaborationSpace({
   }, [isFullscreen]);
 
   const activeSheet = sheets?.find(s => s.id === activeSheetId);
-  const activeSheetIndex = sheets?.findIndex(s => s.id === activeSheetId) ?? -1;
 
   const tabs = [
     { id: 'canvas' as const, label: 'Canvas', icon: PenTool },

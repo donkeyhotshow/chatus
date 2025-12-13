@@ -2,11 +2,33 @@
   "rules": {
     ".read": "auth != null",
     ".write": "auth != null",
+
+    // Typing indicators - user can write only to their own typing status
+    "typing": {
+      "$chatId": {
+        "$userId": {
+          ".write": "auth.uid === $userId",
+          ".validate": "newData.isBoolean()"
+        }
+      }
+    },
+
+    // Presence status - user can write only to their own status
+    "status": {
+      "$userId": {
+        ".write": "auth.uid === $userId",
+        ".validate": "newData.hasChildren(['state', 'lastChanged']) && newData.child('state').isString() && (newData.child('state').val() === 'online' || newData.child('state').val() === 'offline')"
+      }
+    },
+
+    // Legacy messages (if any)
     "messages": {
       "$messageId": {
         ".validate": "newData.hasChildren(['text','ts','senderId']) && newData.child('text').isString() && newData.child('text').val().length <= 1000 && newData.child('ts').isNumber() && newData.child('senderId').isString() && newData.child('senderId').val() === auth.uid"
       }
     },
+
+    // Test data for development
     "test": {
       ".read": "auth != null",
       ".write": "auth != null"

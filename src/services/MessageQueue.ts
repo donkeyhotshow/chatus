@@ -11,7 +11,7 @@ import { logger } from '@/lib/logger';
 interface PendingMessage {
   id: string;
   clientMessageId: string;
-  messageData: Omit<Message, 'id' | 'createdAt' | 'reactions' | 'readBy'>;
+  messageData: Omit<Message, 'id' | 'createdAt' | 'reactions' | 'delivered' | 'seen'>;
   timestamp: number;
   retryCount: number;
 }
@@ -26,7 +26,7 @@ export class MessageQueue {
   private db: IDBDatabase | null = null;
   private isOnline: boolean = true;
   private retryTimer: NodeJS.Timeout | null = null;
-  private sendCallback: ((messageData: Omit<Message, 'id' | 'createdAt' | 'reactions' | 'readBy'>, clientMessageId?: string) => Promise<void>) | null = null;
+  private sendCallback: ((messageData: Omit<Message, 'id' | 'createdAt' | 'reactions' | 'delivered' | 'seen'>, clientMessageId?: string) => Promise<void>) | null = null;
 
   constructor() {
     // Only initialize in browser environment
@@ -88,7 +88,7 @@ export class MessageQueue {
    * Set the callback function for sending messages
    */
   setSendCallback(
-    callback: (messageData: Omit<Message, 'id' | 'createdAt' | 'reactions' | 'readBy'>, clientMessageId?: string) => Promise<void>
+    callback: (messageData: Omit<Message, 'id' | 'createdAt' | 'reactions' | 'delivered' | 'seen'>, clientMessageId?: string) => Promise<void>
   ): void {
     this.sendCallback = callback;
   }
@@ -97,7 +97,7 @@ export class MessageQueue {
    * Add a message to the queue
    */
   async add(
-    messageData: Omit<Message, 'id' | 'createdAt' | 'reactions' | 'readBy'>,
+    messageData: Omit<Message, 'id' | 'createdAt' | 'reactions' | 'delivered' | 'seen'>,
     clientMessageId: string
   ): Promise<void> {
     if (!this.db) {

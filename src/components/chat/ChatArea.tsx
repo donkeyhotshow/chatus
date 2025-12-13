@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useEffect, useCallback, useRef, memo } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import type { Message, Room, UserProfile } from '@/lib/types';
 import { ChatHeader } from './ChatHeader';
 import MessageList from './MessageList';
@@ -225,7 +225,8 @@ export const ChatArea = memo(function ChatArea({
       senderId: user.id,
       createdAt: new Timestamp(Math.floor(Date.now() / 1000), 0),
       reactions: [],
-      readBy: [user.id],
+      delivered: true,
+      seen: true,
       type: 'image',
     };
 
@@ -282,7 +283,9 @@ export const ChatArea = memo(function ChatArea({
 
   useEffect(() => {
     if (!service) return;
-    service.setTypingStatus(user.name, debouncedIsTyping);
+    if (debouncedIsTyping) {
+      service.sendTyping();
+    }
   }, [debouncedIsTyping, service, user.name]);
 
   // Cleanup typing timeout on unmount
@@ -293,6 +296,27 @@ export const ChatArea = memo(function ChatArea({
       }
     };
   }, []);
+
+  // Handle window focus/blur for typing and seen status
+  useEffect(() => {
+    const handleFocus = () => setIsTabActive(true);
+    const handleBlur = () => setIsTabActive(false);
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('blur', handleBlur);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, []);
+
+  // Mark messages as seen when chat is open and tab is active
+  useEffect(() => {
+    if (service) {
+      service.markMessagesAsSeen();
+    }
+  }, [service]);
 
   const handleInputChange = useCallback(() => {
     setIsTyping(true);
@@ -336,7 +360,7 @@ export const ChatArea = memo(function ChatArea({
                   <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce delay-300"></span>
                </div>
                <span className="text-xs text-cyan-400 font-mono">
-                 {typingUsers.join(", ")} is typing...
+                 {typingUsers.join(", ")} печатает...
                </span>
             </div>
           )}
