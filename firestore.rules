@@ -19,7 +19,7 @@ service cloud.firestore {
                         // Ensure room starts with exactly 1 participant
                         request.resource.data.participants.size() == 1;
       
-      allow read, update: if request.auth.uid in resource.data.participants;
+      // Allow update for participants only
 
       // Allow a user to add themself to participants (join) by performing an update
       // that only appends the current auth.uid to participants and participantProfiles.
@@ -67,6 +67,9 @@ service cloud.firestore {
         // Allow update only for reactions, delivered, seen (sender cannot change delivered/seen)
         allow update: if request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.participants &&
                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'delivered', 'seen']) &&
+                      // Limit reactions array size to prevent DoS attacks
+                      (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['reactions']) 
+                       || request.resource.data.reactions.size() <= 50) &&
                       // Sender cannot modify delivered/seen fields
                       (request.auth.uid != resource.data.senderId ||
                        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['delivered', 'seen']));
@@ -76,7 +79,12 @@ service cloud.firestore {
         function isParticipant() {
           return request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.participants;
         }
-        allow read, create: if isParticipant();
+        allow read: if isParticipant();
+        allow create: if isParticipant() &&
+                      request.resource.data.keys().hasAll(['createdAt', 'createdBy']) &&
+                      request.resource.data.createdBy is string &&
+                      request.resource.data.createdBy == request.auth.uid &&
+                      request.resource.data.createdAt is timestamp;
         allow delete: if false;
       }
       
@@ -84,7 +92,16 @@ service cloud.firestore {
         function isParticipant() {
           return request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.participants;
         }
-        allow read, create: if isParticipant();
+        allow read: if isParticipant();
+        allow create: if isParticipant() &&
+                      request.resource.data.keys().hasAll(['points', 'color', 'width', 'createdBy', 'createdAt']) &&
+                      request.resource.data.points is list &&
+                      request.resource.data.points.size() <= 10000 &&
+                      request.resource.data.color is string &&
+                      request.resource.data.width is number &&
+                      request.resource.data.createdBy is string &&
+                      request.resource.data.createdBy == request.auth.uid &&
+                      request.resource.data.createdAt is timestamp;
         allow delete: if isParticipant();
       }
       
@@ -92,7 +109,14 @@ service cloud.firestore {
         function isParticipant() {
           return request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.participants;
         }
-        allow read, write: if isParticipant();
+        allow read: if isParticipant();
+        allow write: if isParticipant() &&
+                     request.resource.data.keys().hasAll(['type', 'state', 'createdBy', 'createdAt']) &&
+                     request.resource.data.type is string &&
+                     request.resource.data.type in ['tictactoe', 'chess', 'checkers', 'connect4'] &&
+                     request.resource.data.state is map &&
+                     request.resource.data.createdBy is string &&
+                     request.resource.data.createdAt is timestamp;
       }
     }
 

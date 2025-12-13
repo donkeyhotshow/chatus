@@ -6,7 +6,6 @@ on:
 
 jobs:
   prepr-checks:
-    if: false
     name: Run pre-PR checks
     runs-on: ubuntu-latest
     steps:
