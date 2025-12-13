@@ -47,3 +47,15 @@ if (useEmulators) {
 }
 
 export default app;
+
+// Backwards-compat helper for modules that import getFirebase()
+export function getFirebase() {
+  return {
+    app,
+    db: firestore,
+    auth,
+    storage,
+    rtdb,
+    analytics,
+  };
+}
