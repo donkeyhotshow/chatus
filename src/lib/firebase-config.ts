@@ -36,9 +36,9 @@ const projectIdHasCRLF = /[\\r\\n]/.test(rawProjectId);
 const authDomainHasCRLF = /[\\r\\n]/.test(rawAuthDomain);
 
 logger.debug('Firebase config loaded', {
-  projectId: firebaseConfig.projectId,
+  projectId: maskSensitive(firebaseConfig.projectId),
   hasApiKey: !!firebaseConfig.apiKey,
-  authDomain: firebaseConfig.authDomain,
+  authDomain: maskSensitive(firebaseConfig.authDomain),
   projectIdRawLength: rawProjectId.length,
   projectIdRawContainsCRLF: projectIdHasCRLF,
   authDomainRawContainsCRLF: authDomainHasCRLF
