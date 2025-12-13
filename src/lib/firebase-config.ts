@@ -12,13 +12,18 @@ function sanitizeEnv(value: unknown) {
   return s.trim().replace(/[\r\n]+/g, '');
 }
 
+const databaseURL = sanitizeEnv(process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL);
+const measurementId = sanitizeEnv(process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID);
+
 export const firebaseConfig = {
   apiKey: sanitizeEnv(process.env.NEXT_PUBLIC_FIREBASE_API_KEY) || "dummy-api-key",
   authDomain: sanitizeEnv(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN) || "dummy-project-id.firebaseapp.com",
+  ...(databaseURL && { databaseURL }),
   projectId: sanitizeEnv(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) || "dummy-project-id",
   storageBucket: sanitizeEnv(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET) || "dummy-project-id.appspot.com",
   messagingSenderId: sanitizeEnv(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID) || "dummy-sender-id",
   appId: sanitizeEnv(process.env.NEXT_PUBLIC_FIREBASE_APP_ID) || "dummy-app-id",
+  ...(measurementId && { measurementId }),
 };
 
 // Mask sensitive strings for logging (do not reveal full API keys)

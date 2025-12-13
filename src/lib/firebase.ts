@@ -1,37 +1,125 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import { getFirestore, enableIndexedDbPersistence, connectFirestoreEmulator } from "firebase/firestore";
-import { getDatabase, connectDatabaseEmulator } from "firebase/database";
-import { getAuth, connectAuthEmulator } from "firebase/auth";
-import { getStorage, connectStorageEmulator } from "firebase/storage";
+import { initializeApp, getApps, FirebaseApp } from "firebase/app";
+import { getAnalytics, Analytics } from "firebase/analytics";
+import { getFirestore, enableIndexedDbPersistence, connectFirestoreEmulator, Firestore } from "firebase/firestore";
+import { getDatabase, connectDatabaseEmulator, Database } from "firebase/database";
+import { getAuth, connectAuthEmulator, Auth } from "firebase/auth";
+import { getStorage, connectStorageEmulator, FirebaseStorage } from "firebase/storage";
 import { firebaseConfig } from "./firebase-config";
 import { logger } from "./logger";
 
-// Initialize app idempotently
-const app = !getApps().length ? initializeApp(firebaseConfig as any) : getApps()[0];
+// Initialize app idempotently with better safeguards
+let app: FirebaseApp;
+let analytics: Analytics | null = null;
+let firestore: Firestore;
+let rtdb: Database | null = null;
+let auth: Auth;
+let storage: FirebaseStorage;
+const isBrowser = typeof window !== "undefined";
 
-// Analytics only in browser
-export const analytics = typeof window !== "undefined" ? getAnalytics(app) : null;
-
-// Export services
-export const firestore = getFirestore(app);
-export const rtdb = getDatabase(app);
-export const auth = getAuth(app);
-export const storage = getStorage(app);
-
-// Enable IndexedDB persistence (best-effort)
 try {
-  enableIndexedDbPersistence(firestore).catch((err: any) => {
-    if (err?.code === "failed-precondition") {
-      logger.warn("Firestore persistence failed: multiple tabs open. Disabled.", { error: err });
-    } else if (err?.code === "unimplemented") {
-      logger.warn("Firestore persistence not available in this environment. Disabled.", { error: err });
-    } else {
-      logger.warn("Firestore persistence failed to enable", { error: err });
+  const existingApps = getApps();
+  
+  if (!existingApps.length) {
+    logger.info("Initializing Firebase app", { 
+      projectId: firebaseConfig.projectId,
+      authDomain: firebaseConfig.authDomain,
+      hasDatabaseURL: !!firebaseConfig.databaseURL
+    });
+    app = initializeApp(firebaseConfig);
+  } else {
+    logger.info("Using existing Firebase app", { 
+      appName: existingApps[0].name,
+      projectId: existingApps[0].options.projectId,
+      existingAppsCount: existingApps.length
+    });
+    app = existingApps[0];
+  }
+
+  // Initialize services
+  firestore = getFirestore(app);
+  auth = getAuth(app);
+  storage = getStorage(app);
+  
+  // Initialize Realtime Database (optional, requires databaseURL)
+  if (firebaseConfig.databaseURL) {
+    try {
+      rtdb = getDatabase(app, firebaseConfig.databaseURL);
+    } catch (dbError) {
+      logger.warn("Failed to initialize Realtime Database", { 
+        error: dbError,
+        databaseURL: firebaseConfig.databaseURL 
+      });
+      rtdb = null;
+    }
+  } else {
+    logger.info("Realtime Database not initialized: databaseURL not configured");
+    rtdb = null;
+  }
+
+  // Analytics only in browser
+  if (isBrowser) {
+    try {
+      analytics = getAnalytics(app);
+    } catch (error) {
+      logger.warn("Failed to initialize Analytics", { error });
+    }
+  }
+
+} catch (error) {
+  logger.error("Failed to initialize Firebase", error as Error, { 
+    config: {
+      projectId: firebaseConfig.projectId,
+      authDomain: firebaseConfig.authDomain,
+      hasDatabaseURL: !!firebaseConfig.databaseURL
     }
   });
-} catch (e) {
-  logger.warn("Unexpected error enabling Firestore persistence", { error: e });
+  
+  // Fallback: try to use existing app if initialization fails
+  const existingApps = getApps();
+  if (existingApps.length > 0) {
+    logger.warn("Using fallback: existing Firebase app");
+    app = existingApps[0];
+    firestore = getFirestore(app);
+    auth = getAuth(app);
+    storage = getStorage(app);
+    
+    // Try to initialize Realtime Database (optional)
+    if (firebaseConfig.databaseURL) {
+      try {
+        rtdb = getDatabase(app, firebaseConfig.databaseURL);
+      } catch (dbError) {
+        logger.warn("Failed to initialize Realtime Database in fallback", { 
+          error: dbError,
+          databaseURL: firebaseConfig.databaseURL 
+        });
+        rtdb = null;
+      }
+    } else {
+      rtdb = null;
+    }
+  } else {
+    throw error;
+  }
+}
+
+// Export services
+export { app, analytics, firestore, rtdb, auth, storage };
+
+// Enable IndexedDB persistence (best-effort)
+if (isBrowser) {
+  try {
+    enableIndexedDbPersistence(firestore).catch((err: any) => {
+      if (err?.code === "failed-precondition") {
+        logger.warn("Firestore persistence failed: multiple tabs open. Disabled.", { error: err });
+      } else if (err?.code === "unimplemented") {
+        logger.warn("Firestore persistence not available in this environment. Disabled.", { error: err });
+      } else {
+        logger.warn("Firestore persistence failed to enable", { error: err });
+      }
+    });
+  } catch (e) {
+    logger.warn("Unexpected error enabling Firestore persistence", { error: e });
+  }
 }
 
 // Connect emulators in development when requested
@@ -39,9 +127,12 @@ const useEmulators = process.env.NODE_ENV === "development" || process.env.NEXT_
 if (useEmulators) {
   try {
     connectFirestoreEmulator(firestore, process.env.FIRESTORE_EMULATOR_HOST || "localhost", Number(process.env.FIRESTORE_EMULATOR_PORT || 8080));
-    connectDatabaseEmulator(rtdb, process.env.RTDB_EMULATOR_HOST || "localhost", Number(process.env.RTDB_EMULATOR_PORT || 9000));
+    if (rtdb) {
+      connectDatabaseEmulator(rtdb, process.env.RTDB_EMULATOR_HOST || "localhost", Number(process.env.RTDB_EMULATOR_PORT || 9000));
+    }
     connectAuthEmulator(auth, `http://${process.env.AUTH_EMULATOR_HOST || "localhost"}:${Number(process.env.AUTH_EMULATOR_PORT || 9099)}`, { disableWarnings: true });
     connectStorageEmulator(storage, process.env.STORAGE_EMULATOR_HOST || "localhost", Number(process.env.STORAGE_EMULATOR_PORT || 9199));
+    logger.info("Firebase emulators connected");
   } catch (e) {
     logger.warn("Failed to connect Firebase emulators", { error: e });
   }

@@ -1,5 +1,5 @@
 import { ref, set, onValue, onDisconnect, serverTimestamp as rtdbServerTimestamp, DatabaseReference } from 'firebase/database';
-import { db } from '@/firebase';
+import { rtdb } from '@/lib/firebase';
 import { logger } from './logger';
 
 // Simple debounce implementation
@@ -36,7 +36,12 @@ export class TypingManager {
   constructor(roomId: string, userId: string) {
     this.roomId = roomId;
     this.userId = userId;
-    this.typingRef = ref(db, `typing/${roomId}/${userId}`);
+    
+    if (!rtdb) {
+      throw new Error('Realtime Database not initialized. Please configure NEXT_PUBLIC_FIREBASE_DATABASE_URL');
+    }
+    
+    this.typingRef = ref(rtdb, `typing/${roomId}/${userId}`);
 
     // Debounced typing indicator (300ms delay)
     this.sendTypingDebounced = debounce(async () => {
@@ -63,7 +68,12 @@ export class TypingManager {
    * Subscribe to typing changes for the room
    */
   subscribeToTyping(callback: (typingUsers: string[]) => void) {
-    const roomTypingRef = ref(db, `typing/${this.roomId}`);
+    if (!rtdb) {
+      logger.warn('Realtime Database not available, typing indicators disabled');
+      return;
+    }
+    
+    const roomTypingRef = ref(rtdb, `typing/${this.roomId}`);
 
     this.unsubscribe = onValue(roomTypingRef, (snapshot) => {
       const data = snapshot.val() || {};
@@ -104,7 +114,12 @@ export class PresenceManager {
 
   constructor(userId: string) {
     this.userId = userId;
-    this.statusRef = ref(db, `status/${userId}`);
+    
+    if (!rtdb) {
+      throw new Error('Realtime Database not initialized. Please configure NEXT_PUBLIC_FIREBASE_DATABASE_URL');
+    }
+    
+    this.statusRef = ref(rtdb, `status/${userId}`);
   }
 
   /**
@@ -145,7 +160,12 @@ export class PresenceManager {
    * Subscribe to presence changes for all users
    */
   subscribeToPresence(callback: (presence: { [userId: string]: PresenceState }) => void) {
-    const allStatusRef = ref(db, 'status');
+    if (!rtdb) {
+      logger.warn('Realtime Database not available, presence tracking disabled');
+      return;
+    }
+    
+    const allStatusRef = ref(rtdb, 'status');
 
     this.unsubscribe = onValue(allStatusRef, (snapshot) => {
       const data = snapshot.val() || {};
