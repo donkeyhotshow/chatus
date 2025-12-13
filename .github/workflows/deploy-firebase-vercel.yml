@@ -67,7 +67,7 @@ jobs:
           echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > "${{ github.workspace }}/firebase-sa.json"
           chmod 600 "${{ github.workspace }}/firebase-sa.json"
 
-      - name: Firebase: deploy backend (rules, storage, functions)
+      - name: "Firebase: deploy backend (rules, storage, functions)"
         if: ${{ secrets.FIREBASE_TOKEN != '' }}
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
