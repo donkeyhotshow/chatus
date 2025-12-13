@@ -37,7 +37,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
     tdBaseHealth, 
     tdResources, 
     tdStatus, 
-    tdPaths,
+    tdPathsFlat,
     tdScores,
     tdSelectedTower,
     hostId 
@@ -86,10 +86,11 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
       // --- ОБНОВЛЕНИЕ ВРАГОВ ---
       let enemiesReachedBase = 0;
       let updatedEnemies = localEnemies.map(enemy => {
-        if (!tdPaths || tdPaths.length === 0) return enemy;
+        if (!tdPathsFlat || Object.keys(tdPathsFlat).length === 0) return enemy;
         
-        const path = tdPaths[enemy.pathId || 0];
-        if (enemy.pathIndex >= path.length - 1) {
+        const pathKey = enemy.pathId !== undefined ? `path${enemy.pathId}` : 'path0';
+        const path = tdPathsFlat[pathKey];
+        if (!path || enemy.pathIndex >= path.length - 1) {
           // Враг достиг базы
           enemiesReachedBase++;
           return null;
@@ -226,8 +227,8 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
       });
 
       // Дорожки (визуализация)
-      if (tdPaths) {
-        tdPaths.forEach((path, pathIdx) => {
+      if (tdPathsFlat) {
+        Object.entries(tdPathsFlat).forEach(([pathKey, path], pathIdx) => {
           ctx.strokeStyle = pathIdx === 0 ? '#3b82f6' : pathIdx === 1 ? '#8b5cf6' : '#ec4899';
           ctx.lineWidth = 3;
           ctx.beginPath();
@@ -326,7 +327,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [tdStatus, localEnemies, localTowers, projectiles, tdGrid, tdPaths, selectedTowerId, tdEnemies, tdTowers, tdBaseHealth, tdResources, updateGameState, updateScore]);
+  }, [tdStatus, localEnemies, localTowers, projectiles, tdGrid, tdPathsFlat, selectedTowerId, tdEnemies, tdTowers, tdBaseHealth, tdResources, updateGameState, updateScore]);
 
   // Построение башни
   const handleBuildTower = (x: number, y: number) => {
@@ -403,15 +404,18 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
     const nextWave = (tdWave || 0) + 1;
     const enemiesToSpawn: TDEnemy[] = [];
     
-    if (!tdPaths || tdPaths.length === 0) return;
+    if (!tdPathsFlat || Object.keys(tdPathsFlat).length === 0) return;
 
     const enemyHealthBase = 50;
     const enemyCount = 5 + nextWave * 2;
     const waveMultiplier = 1 + nextWave * 0.2;
+    
+    const pathKeys = Object.keys(tdPathsFlat);
 
     for (let i = 0; i < enemyCount; i++) {
-      const pathId = Math.floor(Math.random() * tdPaths.length);
-      const path = tdPaths[pathId];
+      const pathIdx = Math.floor(Math.random() * pathKeys.length);
+      const pathKey = pathKeys[pathIdx];
+      const path = tdPathsFlat[pathKey];
       if (path.length === 0) continue;
       
       const startPos = path[0];
@@ -436,7 +440,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
         pathIndex: 0,
         position: { x: startPos.x - (i * CELL_SIZE * 0.5), y: startPos.y },
         value: spec.value,
-        pathId,
+        pathId: pathIdx,
       });
     }
     
@@ -449,7 +453,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
 
   // Автоматический спавн врагов во время волны
   useEffect(() => {
-    if (tdStatus !== 'in-progress' || !tdPaths || tdPaths.length === 0) {
+    if (tdStatus !== 'in-progress' || !tdPathsFlat || Object.keys(tdPathsFlat).length === 0) {
       if (waveTimerRef.current) {
         clearInterval(waveTimerRef.current);
         waveTimerRef.current = null;
@@ -471,10 +475,12 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
     // Автоматический спавн каждые 3 секунды во время волны
     if (!waveTimerRef.current) {
       waveTimerRef.current = setInterval(() => {
-        if (tdStatus !== 'in-progress' || !tdPaths) return;
+        if (tdStatus !== 'in-progress' || !tdPathsFlat) return;
         
-        const pathId = Math.floor(Math.random() * tdPaths.length);
-        const path = tdPaths[pathId];
+        const pathKeys = Object.keys(tdPathsFlat);
+        const pathIdx = Math.floor(Math.random() * pathKeys.length);
+        const pathKey = pathKeys[pathIdx];
+        const path = tdPathsFlat[pathKey];
         if (path.length === 0) return;
         
         const startPos = path[0];
@@ -498,7 +504,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
           pathIndex: 0,
           position: startPos,
           value: spec.value,
-          pathId,
+          pathId: pathIdx,
         };
 
         updateGameState({
@@ -513,7 +519,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
         waveTimerRef.current = null;
       }
     };
-  }, [tdStatus, tdPaths, tdEnemies, tdWave, updateGameState]);
+  }, [tdStatus, tdPathsFlat, tdEnemies, tdWave, updateGameState]);
 
   // Интерактивная сетка
   const renderGridForInteraction = () => {

@@ -42,7 +42,7 @@ type GameLobbyProps = {
   otherUser?: UserProfile;
 };
 
-const generateTDGrid = (width: number, height: number): { grid: TDGrid; paths: { x: number; y: number }[][] } => {
+const generateTDGrid = (width: number, height: number): { grid: TDGrid; pathsFlat: { [pathId: string]: { x: number; y: number }[] } } => {
     const grid: TDNode[] = [];
     const paths: { x: number; y: number }[][] = [];
     
@@ -115,14 +115,16 @@ const generateTDGrid = (width: number, height: number): { grid: TDGrid; paths: {
     }
     
     // Конвертируем пути в координаты пикселей для врагов
-    const pixelPaths = paths.map(path => 
-        path.map(p => ({ 
+    // Flatten to avoid nested arrays - use map with string keys
+    const pathsFlat: { [pathId: string]: { x: number; y: number }[] } = {};
+    paths.forEach((path, idx) => {
+        pathsFlat[`path${idx}`] = path.map(p => ({ 
             x: p.x * 40 + 20, // CELL_SIZE / 2
             y: p.y * 40 + 20 
-        }))
-    );
+        }));
+    });
     
-    return { grid, paths: pixelPaths };
+    return { grid, pathsFlat };
 };
 
 
@@ -156,10 +158,10 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
         'click-war': { scores: {}, active: false, startTime: null, hostId },
         'dice-roll': { diceRoll: {}, hostId },
         'tower-defense': (() => {
-          const { grid, paths } = generateTDGrid(15, 11);
+          const { grid, pathsFlat } = generateTDGrid(15, 11);
           return {
             tdGrid: grid,
-            tdPaths: paths,
+            tdPathsFlat: pathsFlat,
             tdTowers: [], 
             tdEnemies: [], 
             tdWave: 0, 
