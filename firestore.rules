@@ -116,11 +116,10 @@ service cloud.firestore {
           return request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.participants;
         }
         
-        // Add data validation for games
+        // Allow flexible game state updates - only require type field on creation
         allow create: if isParticipant() &&
-                         request.resource.data.keys().hasAll(['type', 'active']) &&
-                         request.resource.data.type is string &&
-                         request.resource.data.active is bool;
+                         request.resource.data.keys().hasAll(['type']) &&
+                         request.resource.data.type is string;
         
         allow read: if isParticipant();
         allow update: if isParticipant();

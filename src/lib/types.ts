@@ -138,7 +138,7 @@ export interface GameState {
     tdBaseHealth?: number;
     tdResources?: number;
     tdStatus?: 'waiting' | 'in-progress' | 'game-over-win' | 'game-over-loss';
-    tdPaths?: { x: number; y: number }[][]; // Несколько дорожек для врагов
+    tdPathsFlat?: { [pathId: string]: { x: number; y: number }[] }; // Flattened paths to avoid nested arrays
     tdScores?: { [userId: string]: number }; // Очки игроков (leaderboard)
     tdSelectedTower?: string | null; // ID выбранной башни для апгрейда
 }

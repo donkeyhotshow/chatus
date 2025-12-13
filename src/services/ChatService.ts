@@ -1001,6 +1001,17 @@ export class ChatService {
       await setDoc(gameRef, cleanedState, { merge: true });
     } catch (error) {
       const err = error as FirebaseError;
+      
+      // Check for nested arrays error
+      if (err.message?.includes('Nested arrays are not supported')) {
+        logger.error("Nested arrays detected in game state", error as Error, { 
+          roomId: this.roomId, 
+          gameId,
+          hint: 'Use flattened structure or maps instead of nested arrays'
+        });
+        throw new Error('Game state contains nested arrays which are not supported by Firestore. Please restructure the data.');
+      }
+      
       // Suppress offline/permission errors
       if (err.message?.includes('client is offline') ||
           err.message?.includes('Failed to get document') ||
