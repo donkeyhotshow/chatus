@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Coop Physics Sandbox</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+  <style>
+    body { margin:0; font-family: Arial, sans-serif; background:#f5f5f5; }
+    header { padding:10px 16px; background:#1f2937; color:white; display:flex; align-items:center; gap:8px; }
+    header input { padding:6px; border-radius:4px; border:1px solid #ccc; }
+    header button { padding:6px 10px; border-radius:4px; border:1px solid #0f172a; background:#22c55e; color:white; cursor:pointer; }
+    #toolbar { padding:8px 16px; display:flex; gap:8px; align-items:center; background:#e2e8f0; }
+    #toolbar button { padding:6px 10px; border-radius:4px; border:1px solid #94a3b8; background:white; cursor:pointer; }
+    #status { margin-left:auto; font-size:12px; color:#0f172a; }
+    #layout { display:flex; gap:12px; padding:12px; }
+    #game { border:1px solid #cbd5e1; background:#edf2f7; }
+    #chat { width:320px; display:flex; flex-direction:column; gap:6px; }
+    #messages { flex:1; background:white; border:1px solid #cbd5e1; padding:8px; overflow-y:auto; min-height:200px; }
+    #inputRow { display:flex; gap:6px; }
+    #inputRow input { flex:1; padding:6px; border:1px solid #cbd5e1; border-radius:4px; }
+    #inputRow button { padding:6px 10px; border-radius:4px; border:1px solid #94a3b8; background:#22c55e; color:white; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <header>
+    Комната: <input id="room" value="room1" />
+    Имя: <input id="name" value="player1" />
+    <button id="connectBtn">Подключиться</button>
+    <div id="status">offline</div>
+  </header>
+
+  <div id="toolbar">
+    <button id="addBox">Добавить коробку</button>
+    <button id="addCircle">Добавить шар</button>
+    <button id="addLever">Добавить рычаг</button>
+    <span style="color:#475569;">Цель: вместе постройте цепочку, чтобы шар коснулся кнопки.</span>
+  </div>
+
+  <div id="layout">
+    <canvas id="game" width="900" height="600"></canvas>
+    <div id="chat">
+      <div id="messages"></div>
+      <div id="inputRow">
+        <input id="input" placeholder="Сообщение" />
+        <button id="send">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const WS_HOST = "ws://localhost:8000/ws";
+    const canvas = document.getElementById("game");
+    const engine = Matter.Engine.create();
+    const render = Matter.Render.create({
+      canvas,
+      engine,
+      options: { width: 900, height: 600, wireframes: false, background: "#edf2f7" }
+    });
+    const runner = Matter.Runner.create();
+    Matter.Render.run(render);
+    Matter.Runner.run(runner, engine);
+
+    const world = engine.world;
+    world.gravity.y = 1;
+
+    const ground = Matter.Bodies.rectangle(450, 590, 900, 20, { isStatic: true, render:{fillStyle:"#94a3b8"} });
+    const leftWall = Matter.Bodies.rectangle(10, 300, 20, 600, { isStatic: true });
+    const rightWall = Matter.Bodies.rectangle(890, 300, 20, 600, { isStatic: true });
+    Matter.World.add(world, [ground, leftWall, rightWall]);
+
+    let ws = null;
+    let playerName = "";
+    let roomName = "";
+    let connected = false;
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 6;
+    const RECONNECT_BASE_DELAY = 1000;
+
+    const objects = new Map(); // id -> {shape, body, constraint?}
+    let currentDragId = null;
+    let lastSent = 0;
+
+    const throttleMs = 40;
+    function throttle(fn, delay) {
+      return function(...args) {
+        const now = Date.now();
+        if (now - lastSent >= delay) {
+          lastSent = now;
+          fn(...args);
+        }
+      };
+    }
+
+    function setStatus(text) { 
+      const s = document.getElementById("status");
+      if (s) s.textContent = text;
+    }
+
+    function registerObject(id, shape, body, constraint) {
+      body.plugin = body.plugin || {};
+      body.plugin.objectId = id;
+      objects.set(id, { shape, body, constraint });
+    }
+
+    function spawnBox({ id = crypto.randomUUID(), x, y, w = 60, h = 60, isRemote = false }) {
+      const body = Matter.Bodies.rectangle(x, y, w, h, { restitution: 0.3, friction: 0.2 });
+      registerObject(id, "box", body);
+      Matter.World.add(world, body);
+      if (!isRemote) sendWS({ type: "spawn", shape: "box", id, x, y, w, h });
+      return id;
+    }
+
+    function spawnCircle({ id = crypto.randomUUID(), x, y, r = 25, isRemote = false }) {
+      const body = Matter.Bodies.circle(x, y, r, { restitution: 0.6, friction: 0.1 });
+      registerObject(id, "circle", body);
+      Matter.World.add(world, body);
+      if (!isRemote) sendWS({ type: "spawn", shape: "circle", id, x, y, r });
+      return id;
+    }
+
+    function spawnLever({ id = crypto.randomUUID(), x, y, length = 140, isRemote = false }) {
+      const lever = Matter.Bodies.rectangle(x, y, length, 18, { restitution: 0.2, density: 0.002 });
+      const pivot = Matter.Constraint.create({
+        pointA: { x, y },
+        bodyB: lever,
+        pointB: { x: 0, y: 0 },
+        stiffness: 1
+      });
+      registerObject(id, "lever", lever, pivot);
+      Matter.World.add(world, [lever, pivot]);
+      if (!isRemote) sendWS({ type: "spawn", shape: "lever", id, x, y, length });
+      return id;
+    }
+
+    function removeObject(id, isRemote = false) {
+      const entry = objects.get(id);
+      if (!entry) return;
+      Matter.World.remove(world, entry.body);
+      if (entry.constraint) Matter.World.remove(world, entry.constraint);
+      objects.delete(id);
+      if (!isRemote) sendWS({ type: "remove", id });
+    }
+
+    function rebuildFromSnapshot(snapshot) {
+      (snapshot || []).forEach(obj => {
+        if (obj.shape === "box") spawnBox({ ...obj, isRemote: true });
+        if (obj.shape === "circle") spawnCircle({ ...obj, isRemote: true });
+        if (obj.shape === "lever") spawnLever({ ...obj, isRemote: true });
+      });
+    }
+
+    function applyRemoteUpdate(msg) {
+      const entry = objects.get(msg.id);
+      if (!entry) return;
+      if (currentDragId === msg.id) return; // локальный драг имеет приоритет
+      const { body } = entry;
+      Matter.Body.setPosition(body, { x: msg.x, y: msg.y });
+      Matter.Body.setAngle(body, msg.angle || 0);
+      Matter.Body.setVelocity(body, { x: msg.vx || 0, y: msg.vy || 0 });
+    }
+
+    function sendWS(payload) {
+      if (ws && connected) {
+        ws.send(JSON.stringify(payload));
+      }
+    }
+
+    // Подключение
+    const connectBtn = document.getElementById("connectBtn");
+    if (connectBtn) {
+      connectBtn.onclick = () => {
+        const roomEl = document.getElementById("room");
+        const nameEl = document.getElementById("name");
+        roomName = roomEl ? roomEl.value : '';
+        playerName = nameEl ? nameEl.value : '';
+        if (!roomName || !playerName) return;
+
+        ws = new WebSocket(`${WS_HOST}/${roomName}/${playerName}`);
+        setStatus("connecting...");
+
+        ws.onopen = () => { connected = true; setStatus("online"); };
+
+        ws.onclose = () => { 
+          connected = false; 
+          setStatus("offline");
+          if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+            const delay = RECONNECT_BASE_DELAY * (2 ** reconnectAttempts);
+            reconnectAttempts++;
+            setTimeout(() => {
+              setStatus("reconnecting...");
+              connectBtn.click();
+            }, delay);
+          } else {
+            setStatus("offline - reconnect attempts exhausted");
+          }
+        };
+
+        ws.onmessage = (event) => {
+          if (!event?.data) return;
+          try {
+            const msg = JSON.parse(event.data);
+            switch (msg.type) {
+              case "init":
+                rebuildFromSnapshot(msg.objects);
+                (msg.chat || []).forEach(entry => addMessage(`${entry.player}: ${entry.message}`));
+                break;
+              case "spawn":
+                if (msg.shape === "box") spawnBox({ ...msg, isRemote: true });
+                if (msg.shape === "circle") spawnCircle({ ...msg, isRemote: true });
+                if (msg.shape === "lever") spawnLever({ ...msg, isRemote: true });
+                break;
+              case "update":
+                applyRemoteUpdate(msg);
+                break;
+              case "remove":
+                removeObject(msg.id, true);
+                break;
+              case "chat":
+                addMessage(`${msg.player}: ${msg.message}`);
+                break;
+              default:
+                break;
+            }
+          } catch (err) {
+            console.error('WS message parse error:', err);
+          }
+        };
+      };
+    }
+
+    // Кнопки добавления
+    const addBoxBtn = document.getElementById("addBox");
+    if (addBoxBtn) addBoxBtn.onclick = () => spawnBox({ x: 200 + Math.random() * 400, y: 80 });
+    const addCircleBtn = document.getElementById("addCircle");
+    if (addCircleBtn) addCircleBtn.onclick = () => spawnCircle({ x: 200 + Math.random() * 400, y: 80 });
+    const addLeverBtn = document.getElementById("addLever");
+    if (addLeverBtn) addLeverBtn.onclick = () => spawnLever({ x: 200 + Math.random() * 400, y: 200 + Math.random() * 100 });
+
+    // Мышиное перетаскивание
+    const mouse = Matter.Mouse.create(canvas);
+    const mouseConstraint = Matter.MouseConstraint.create(engine, {
+      mouse,
+      constraint: { stiffness: 0.2, render: { visible: false } }
+    });
+    Matter.World.add(world, mouseConstraint);
+
+    Matter.Events.on(mouseConstraint, "startdrag", (e) => {
+      const body = e.body;
+      if (!body || !body.plugin) return;
+      currentDragId = body.plugin.objectId;
+    });
+    Matter.Events.on(mouseConstraint, "enddrag", () => {
+      currentDragId = null;
+    });
+
+    const sendUpdateThrottled = throttle((body, id) => {
+      sendWS({
+        type: "update",
+        id,
+        x: body.position.x,
+        y: body.position.y,
+        angle: body.angle,
+        vx: body.velocity.x,
+        vy: body.velocity.y,
+      });
+    }, throttleMs);
+
+    Matter.Events.on(engine, "afterUpdate", () => {
+      if (!currentDragId) return;
+      const entry = objects.get(currentDragId);
+      if (!entry) return;
+      sendUpdateThrottled(entry.body, currentDragId);
+    });
+
+    // Чат
+    function addMessage(text) {
+      const box = document.getElementById("messages");
+      if (!box) return;
+      const div = document.createElement("div");
+      div.textContent = text;
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
+
+    const sendBtn = document.getElementById("send");
+    if (sendBtn) {
+      sendBtn.onclick = () => {
+        const input = document.getElementById("input");
+        if (!input) return;
+        const message = input.value.trim();
+        if (!message) return;
+        addMessage(`Я: ${message}`);
+        sendWS({ type: "chat", message });
+        input.value = "";
+      };
+    }
+
+    // Простая кнопка (мишень)
+    const targetButton = Matter.Bodies.circle(820, 560, 18, { isStatic: true, render:{fillStyle:"#f97316"} });
+    Matter.World.add(world, targetButton);
+
+    Matter.Events.on(engine, "collisionStart", (event) => {
+      event.pairs.forEach(pair => {
+        if ((pair.bodyA === targetButton || pair.bodyB === targetButton)) {
+          addMessage("Сработала кнопка! Отличная цепочка.");
+        }
+      });
+    });
+  </script>
+</body>
+</html>
+

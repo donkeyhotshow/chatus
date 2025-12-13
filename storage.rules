@@ -1,0 +1,39 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Chat images - validate size and type
+    match /chat_images/{roomId}/{userId}/{fileName} {
+      // Validate file size (5MB max)
+      function isValidSize() {
+        return request.resource.size < 5 * 1024 * 1024; // 5MB
+      }
+
+      // Validate content type (images only)
+      function isValidImageType() {
+        return request.resource.contentType.matches('image/(png|jpeg|jpg|gif|webp)');
+      }
+
+      // Validate file name (alphanumeric and safe characters only)
+      function isValidFileName() {
+        return fileName.matches('[a-zA-Z0-9._-]+');
+      }
+
+      // User can only write to their own folder
+      allow write: if request.auth != null
+        && request.auth.uid == userId
+        && isValidSize()
+        && isValidImageType()
+        && isValidFileName();
+
+      allow read: if request.auth != null;
+
+      allow delete: if false; // Deletion handled by backend
+    }
+    
+    // Default: deny all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Final PvP Tower Defense</title>
+<style>
+canvas { border:1px solid black; background:#e0f7fa; display:block; margin:10px auto;}
+body { text-align:center; font-family: Arial;}
+#chat { width:600px; margin:auto; display:flex; margin-top:10px;}
+#messages { flex:1; height:100px; overflow-y:auto; border:1px solid #ccc; margin-right:5px; padding:5px;}
+#input { flex:0;}
+button { cursor:pointer;}
+#upgradePanel { width:600px; margin:auto; margin-top:10px; display:flex; justify-content:center; gap:10px;}
+</style>
+</head>
+<body>
+<h2>Final PvP Tower Defense</h2>
+<div>
+Room: <input id="room" value="room1">
+Name: <input id="name" value="player1">
+<button id="connectBtn">Connect</button>
+</div>
+
+<canvas id="game" width="600" height="400"></canvas>
+
+<div id="chat">
+<div id="messages"></div>
+<input id="input" placeholder="Type message">
+<button id="send">Send</button>
+</div>
+
+<div id="leaderboard" style="width:600px; margin:auto; margin-top:10px;">
+<h3>Leaderboard</h3>
+<ul id="scores"></ul>
+</div>
+
+<div id="upgradePanel">
+<button id="upgradeTower">Upgrade Selected Tower (-5 points)</button>
+</div>
+
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let ws;
+let playerName;
+let roomName;
+let towers = [];
+let enemies = [];
+let bullets = [];
+let myHealth = 10;
+let score = 0;
+let leaderboard = {};
+let mySide = "left";
+let selectedTower = null;
+
+// Sprites
+const towerSprite = new Image();
+towerSprite.src = "https://i.imgur.com/0XJ9fZ2.png";
+const enemySprite = new Image();
+enemySprite.src = "https://i.imgur.com/I9zT0pK.png";
+
+// Paths
+function generatePath(side){
+    if(side==="left") return [{x:300,y:100},{x:300,y:300}];
+    else return [{x:300,y:300},{x:300,y:100}];
+}
+
+// Classes
+class Tower {
+    constructor(x, y, type="basic") {
+        this.x = x; this.y = y;
+        this.fireRate = type==="basic"? 60:30;
+        this.counter = 0; this.type=type; this.level=1;
+    }
+    upgrade() { this.level++; this.fireRate = Math.max(5, this.fireRate-5); score-=5; sendScoreUpdate(); }
+    update() {
+        this.counter++;
+        if(this.counter>=this.fireRate && enemies.length>0){
+            let target = enemies.reduce((prev, curr)=>Math.hypot(curr.x-this.x,curr.y-this.y)<Math.hypot(prev.x-this.x,prev.y-this.y)?curr:prev);
+            bullets.push(new Bullet(this.x, this.y, target));
+            this.counter=0;
+        }
+    }
+    draw() {
+        ctx.strokeStyle = (this===selectedTower)?"yellow":"black";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(this.x-16,this.y-16,32,32);
+        if(towerSprite.complete){
+            ctx.drawImage(towerSprite, this.x-15, this.y-15, 30, 30);
+        } else {
+            ctx.fillStyle = "green";
+            ctx.fillRect(this.x-10,this.y-10,20,20);
+        }
+    }
+}
+
+class Enemy {
+    constructor(path, type="basic", targetSide="left") {
+        this.path=path; this.idx=0; this.x=path[0].x; this.y=path[0].y;
+        this.type=type; this.hp = type==="basic"?3:6; this.speed = type==="basic"?1:0.5;
+        this.targetSide = targetSide;
+    }
+    update() {
+        if(this.idx < this.path.length-1){
+            const target = this.path[this.idx+1];
+            let dx=target.x-this.x, dy=target.y-this.y;
+            let dist=Math.sqrt(dx*dx+dy*dy);
+            if(dist<1) this.idx++;
+            else { this.x += dx/dist*this.speed; this.y += dy/dist*this.speed; }
+        } else {
+            if(this.targetSide === mySide) { myHealth--; sendHealthUpdate(); }
+            enemies = enemies.filter(e=>e!==this);
+        }
+    }
+    draw() {
+        if(enemySprite.complete){
+            ctx.drawImage(enemySprite, this.x-10, this.y-10, 20, 20);
+        } else {
+            ctx.fillStyle = this.type==="basic"?"red":"orange";
+            ctx.beginPath();
+            ctx.arc(this.x,this.y,10,0,Math.PI*2);
+            ctx.fill();
+        }
+    }
+}
+
+class Bullet {
+    constructor(x,y,target) { this.x=x; this.y=y; this.target=target; this.damage=1; }
+    update() {
+        if(this.target){
+            let dx=this.target.x-this.x, dy=this.target.y-this.y;
+            let dist=Math.sqrt(dx*dx+dy*dy);
+            if(dist<5){ this.target.hp -= this.damage; bullets = bullets.filter(b=>b!==this); score +=1; sendScoreUpdate(); }
+            else { this.x += dx/dist*5; this.y += dy/dist*5; }
+        }
+    }
+    draw(){
+        ctx.fillStyle="black";
+        ctx.beginPath();
+        ctx.arc(this.x,this.y,5,0,Math.PI*2);
+        ctx.fill();
+    }
+}
+
+// Безопасная отправка сообщений
+const messageQueue = [];
+let reconnectTimer = null;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 6;
+const RECONNECT_BASE_DELAY = 1000;
+
+function safeSend(data) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        try {
+            ws.send(JSON.stringify(data));
+        } catch (error) {
+            console.error('Send error:', error);
+            messageQueue.push(data);
+        }
+    } else {
+        messageQueue.push(data);
+    }
+}
+
+// WebSocket & Chat
+const connectBtnEl = document.getElementById("connectBtn");
+if (connectBtnEl) {
+  connectBtnEl.onclick = ()=> {
+    const roomEl = document.getElementById("room");
+    const nameEl = document.getElementById("name");
+    roomName = roomEl ? roomEl.value : '';
+    playerName = nameEl ? nameEl.value : '';
+    mySide = playerName.endsWith("1")?"left":"right";
+
+    if (ws) ws.close();
+    if (reconnectTimer) clearTimeout(reconnectTimer);
+
+    ws = new WebSocket(`ws://localhost:8000/ws/${roomName}/${playerName}`);
+
+    ws.onopen = () => {
+        // Отправляем накопленные сообщения
+        while (messageQueue.length > 0 && ws.readyState === WebSocket.OPEN) {
+            const msg = messageQueue.shift();
+            try {
+                ws.send(JSON.stringify(msg));
+            } catch (error) {
+                messageQueue.unshift(msg);
+                break;
+            }
+        }
+    };
+
+    ws.onclose = () => {
+        if (reconnectTimer) clearTimeout(reconnectTimer);
+        if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+            const delay = RECONNECT_BASE_DELAY * (2 ** reconnectAttempts);
+            reconnectAttempts++;
+            reconnectTimer = setTimeout(() => {
+                const btn = document.getElementById("connectBtn");
+                if (btn) btn.click();
+            }, delay);
+        } else {
+            console.warn('Max reconnect attempts reached');
+        }
+    };
+
+    ws.onmessage = (e)=>{
+        if (!e?.data) return;
+        try {
+            const data = JSON.parse(e.data);
+            if(data.type==="tower") towers.push(new Tower(data.x,data.y,data.towerType));
+            else if(data.type==="enemy") enemies.push(new Enemy(data.path,data.enemyType, data.targetSide));
+            else if(data.type==="chat") addMessage(`${data.player}: ${data.message}`);
+            else if(data.type==="score_update") { leaderboard[data.player] = data.score; updateLeaderboard(); }
+            else if(data.type==="health_update") { leaderboard[data.player] = data.health; updateLeaderboard(); }
+        } catch (err) {
+            console.error('WS message parse error:', err);
+        }
+    };
+    };
+  };
+}
+
+    // Enemy spawn
+    setInterval(()=>{
+        let enemyPath = generatePath(mySide==="left"?"right":"left");
+        let enemyType = Math.random()<0.7?"basic":"fast";
+        enemies.push(new Enemy(enemyPath, enemyType, mySide==="left"?"right":"left"));
+        safeSend({type:"enemy", path:enemyPath, enemyType, targetSide:mySide==="left"?"right":"left"});
+    },5000);
+};
+
+// Tower placement & selection
+canvas.addEventListener("click",(e)=>{
+    const rect=canvas.getBoundingClientRect();
+    const x=e.clientX-rect.left;
+    const y=e.clientY-rect.top;
+    let found = false;
+    towers.forEach(t=>{ if(x>t.x-16 && x<t.x+16 && y>t.y-16 && y<t.y+16){ selectedTower=t; found=true; } });
+    if(!found){
+        let tower = new Tower(x,y);
+        towers.push(tower);
+        safeSend({type:"tower", x, y, towerType:"basic"});
+    }
+});
+
+// Upgrade button
+const upgradeTowerEl = document.getElementById("upgradeTower");
+if (upgradeTowerEl) {
+  upgradeTowerEl.onclick = () => {
+    if(selectedTower && score>=5){ selectedTower.upgrade(); }
+  };
+}
+
+// Chat
+const sendEl = document.getElementById("send");
+if (sendEl) {
+  sendEl.onclick = () => {
+    const inputEl = document.getElementById("input");
+    if (!inputEl) return;
+    const msg = inputEl.value;
+    if(msg){ safeSend({type:"chat", player:playerName, message:msg}); addMessage(`Me: ${msg}`); inputEl.value=""; }
+  };
+}
+function addMessage(text){
+  const m = document.getElementById("messages");
+  if (!m) return;
+  const div = document.createElement("div");
+  div.textContent=text;
+  m.appendChild(div);
+  m.scrollTop=m.scrollHeight;
+}
+
+// Leaderboard
+function updateLeaderboard(){ const ul = document.getElementById("scores"); ul.innerHTML = ""; for(const [player,s] of Object.entries(leaderboard)){ const li = document.createElement("li"); li.textContent = `${player}: ${s}`; ul.appendChild(li); } }
+function sendScoreUpdate(){ safeSend({type:"score_update", player:playerName, score}); }
+function sendHealthUpdate(){ safeSend({type:"health_update", player:playerName, health:myHealth}); }
+
+// Game loop
+function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    towers.forEach(t=>{t.update(); t.draw();});
+    enemies.forEach(e=>{e.update(); e.draw();});
+    bullets.forEach(b=>{b.update(); b.draw();});
+    enemies = enemies.filter(e=>e.hp>0);
+
+    // Bases
+    ctx.fillStyle="blue"; ctx.fillRect(50,180,40,40); ctx.fillRect(510,180,40,40);
+    ctx.fillStyle="black"; ctx.fillText(`My Health: ${myHealth}`,10,20); ctx.fillText(`Score: ${score}`,10,40);
+    if(myHealth<=0){ ctx.fillStyle="black"; ctx.font="30px Arial"; ctx.fillText("GAME OVER",200,200); }
+    requestAnimationFrame(draw);
+}
+draw();
+</script>
+</body>
+</html>
+
