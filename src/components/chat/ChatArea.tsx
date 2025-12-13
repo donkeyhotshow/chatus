@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, useRef, memo } from 'react';
+import { useState, useEffect, useCallback, useRef, memo, useMemo } from 'react';
 import type { Message, Room, UserProfile } from '@/lib/types';
 import { ChatHeader } from './ChatHeader';
 import MessageList from './MessageList';
@@ -298,6 +298,8 @@ export const ChatArea = memo(function ChatArea({
   }, []);
 
   // Handle window focus/blur for typing and seen status
+  // TODO: Restore when isTabActive state is properly implemented
+  /*
   useEffect(() => {
     const handleFocus = () => setIsTabActive(true);
     const handleBlur = () => setIsTabActive(false);
@@ -310,6 +312,7 @@ export const ChatArea = memo(function ChatArea({
       window.removeEventListener('blur', handleBlur);
     };
   }, []);
+  */
 
   // Mark messages as seen when chat is open and tab is active
   useEffect(() => {

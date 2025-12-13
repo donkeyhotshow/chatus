@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Room } from '@/lib/types';
 import { ChatArea } from './ChatArea';

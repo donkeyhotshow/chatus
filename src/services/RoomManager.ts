@@ -213,10 +213,13 @@ export class RoomManager {
   
   /**
    * Установить статус набора текста
+   * TODO: Restore when ChatService implements setTypingStatus
    */
+  /*
   public async setTypingStatus(username: string, isTyping: boolean): Promise<void> {
     return this.chatService.setTypingStatus(username, isTyping);
   }
+  */
   
   /**
    * Загрузить изображение
