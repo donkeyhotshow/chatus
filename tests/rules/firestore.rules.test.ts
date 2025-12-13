@@ -126,6 +126,218 @@ describe('Firestore rules - messages', () => {
   });
 });
 
+describe('Firestore rules - rate limits', () => {
+  it('allows user to read/write own rate limit', async () => {
+    const user1Db = testEnv.authenticatedContext('u1').firestore();
+    await assertSucceeds(
+      setDoc(doc(user1Db, 'rateLimits', 'u1'), {
+        lastMessageTime: Date.now(),
+        messageCount: 1,
+      }),
+    );
+    await assertSucceeds(getDoc(doc(user1Db, 'rateLimits', 'u1')));
+  });
+
+  it('blocks user from reading another user rate limit', async () => {
+    const adminDb = testEnv.withSecurityRulesDisabled().firestore();
+    await setDoc(doc(adminDb, 'rateLimits', 'u1'), {
+      lastMessageTime: Date.now(),
+      messageCount: 5,
+    });
+
+    const user2Db = testEnv.authenticatedContext('u2').firestore();
+    await assertFails(getDoc(doc(user2Db, 'rateLimits', 'u1')));
+  });
+});
+
+describe('Firestore rules - canvas validation', () => {
+  it('allows creating canvas sheet with valid name', async () => {
+    const adminDb = testEnv.withSecurityRulesDisabled().firestore();
+    await setDoc(doc(adminDb, 'rooms', 'room-canvas'), {
+      participants: ['u1'],
+      participantProfiles: [{ id: 'u1', name: 'U1', avatar: '' }],
+    });
+
+    const user1Db = testEnv.authenticatedContext('u1').firestore();
+    await assertSucceeds(
+      setDoc(doc(user1Db, 'rooms', 'room-canvas', 'canvasSheets', 's1'), {
+        name: 'Sheet 1',
+        createdAt: new Date(),
+      }),
+    );
+  });
+
+  it('blocks creating canvas sheet with empty name', async () => {
+    const adminDb = testEnv.withSecurityRulesDisabled().firestore();
+    await setDoc(doc(adminDb, 'rooms', 'room-canvas-2'), {
+      participants: ['u1'],
+      participantProfiles: [{ id: 'u1', name: 'U1', avatar: '' }],
+    });
+
+    const user1Db = testEnv.authenticatedContext('u1').firestore();
+    await assertFails(
+      setDoc(doc(user1Db, 'rooms', 'room-canvas-2', 'canvasSheets', 's2'), {
+        name: '',
+        createdAt: new Date(),
+      }),
+    );
+  });
+
+  it('blocks creating canvas sheet with name > 100 chars', async () => {
+    const adminDb = testEnv.withSecurityRulesDisabled().firestore();
+    await setDoc(doc(adminDb, 'rooms', 'room-canvas-3'), {
+      participants: ['u1'],
+      participantProfiles: [{ id: 'u1', name: 'U1', avatar: '' }],
+    });
+
+    const user1Db = testEnv.authenticatedContext('u1').firestore();
+    await assertFails(
+      setDoc(doc(user1Db, 'rooms', 'room-canvas-3', 'canvasSheets', 's3'), {
+        name: 'a'.repeat(101),
+        createdAt: new Date(),
+      }),
+    );
+  });
+
+  it('allows creating canvas path with valid data', async () => {
+    const adminDb = testEnv.withSecurityRulesDisabled().firestore();
+    await setDoc(doc(adminDb, 'rooms', 'room-canvas-path'), {
+      participants: ['u1'],
+      participantProfiles: [{ id: 'u1', name: 'U1', avatar: '' }],
+    });
+
+    const user1Db = testEnv.authenticatedContext('u1').firestore();
+    await assertSucceeds(
+      setDoc(doc(user1Db, 'rooms', 'room-canvas-path', 'canvasPaths', 'p1'), {
+        sheetId: 's1',
+        user: 'u1',
+        points: [{ x: 0, y: 0 }, { x: 10, y: 10 }],
+        color: '#000000',
+      }),
+    );
+  });
+
+  it('blocks creating canvas path with empty points', async () => {
+    const adminDb = testEnv.withSecurityRulesDisabled().firestore();
+    await setDoc(doc(adminDb, 'rooms', 'room-canvas-path-2'), {
+      participants: ['u1'],
+      participantProfiles: [{ id: 'u1', name: 'U1', avatar: '' }],
+    });
+
+    const user1Db = testEnv.authenticatedContext('u1').firestore();
+    await assertFails(
+      setDoc(doc(user1Db, 'rooms', 'room-canvas-path-2', 'canvasPaths', 'p2'), {
+        sheetId: 's1',
+        user: 'u1',
+        points: [],
+        color: '#000000',
+      }),
+    );
+  });
+
+  it('blocks creating canvas path with too many points', async () => {
+    const adminDb = testEnv.withSecurityRulesDisabled().firestore();
+    await setDoc(doc(adminDb, 'rooms', 'room-canvas-path-3'), {
+      participants: ['u1'],
+      participantProfiles: [{ id: 'u1', name: 'U1', avatar: '' }],
+    });
+
+    const user1Db = testEnv.authenticatedContext('u1').firestore();
+    const tooManyPoints = Array(10001).fill({ x: 0, y: 0 });
+    await assertFails(
+      setDoc(doc(user1Db, 'rooms', 'room-canvas-path-3', 'canvasPaths', 'p3'), {
+        sheetId: 's1',
+        user: 'u1',
+        points: tooManyPoints,
+        color: '#000000',
+      }),
+    );
+  });
+});
+
+describe('Firestore rules - games validation', () => {
+  it('allows creating game with type and active fields', async () => {
+    const adminDb = testEnv.withSecurityRulesDisabled().firestore();
+    await setDoc(doc(adminDb, 'rooms', 'room-game'), {
+      participants: ['u1'],
+      participantProfiles: [{ id: 'u1', name: 'U1', avatar: '' }],
+    });
+
+    const user1Db = testEnv.authenticatedContext('u1').firestore();
+    await assertSucceeds(
+      setDoc(doc(user1Db, 'rooms', 'room-game', 'games', 'g1'), {
+        type: 'tictactoe',
+        active: true,
+      }),
+    );
+  });
+
+  it('blocks creating game without required fields', async () => {
+    const adminDb = testEnv.withSecurityRulesDisabled().firestore();
+    await setDoc(doc(adminDb, 'rooms', 'room-game-2'), {
+      participants: ['u1'],
+      participantProfiles: [{ id: 'u1', name: 'U1', avatar: '' }],
+    });
+
+    const user1Db = testEnv.authenticatedContext('u1').firestore();
+    await assertFails(
+      setDoc(doc(user1Db, 'rooms', 'room-game-2', 'games', 'g2'), {
+        type: 'chess',
+      }),
+    );
+  });
+});
+
+describe('Firestore rules - message reactions validation', () => {
+  it('allows updating message with reactions under limit', async () => {
+    const adminDb = testEnv.withSecurityRulesDisabled().firestore();
+    await setDoc(doc(adminDb, 'rooms', 'room-reactions'), {
+      participants: ['u1', 'u2'],
+      participantProfiles: [
+        { id: 'u1', name: 'U1', avatar: '' },
+        { id: 'u2', name: 'U2', avatar: '' },
+      ],
+    });
+    await setDoc(doc(adminDb, 'rooms', 'room-reactions', 'messages', 'm1'), {
+      senderId: 'u1',
+      text: 'hello',
+      reactions: [],
+    });
+
+    const user2Db = testEnv.authenticatedContext('u2').firestore();
+    const reactions = Array(50).fill({ emoji: '👍', userId: 'u2' });
+    await assertSucceeds(
+      updateDoc(doc(user2Db, 'rooms', 'room-reactions', 'messages', 'm1'), {
+        reactions,
+      }),
+    );
+  });
+
+  it('blocks updating message with reactions over limit', async () => {
+    const adminDb = testEnv.withSecurityRulesDisabled().firestore();
+    await setDoc(doc(adminDb, 'rooms', 'room-reactions-2'), {
+      participants: ['u1', 'u2'],
+      participantProfiles: [
+        { id: 'u1', name: 'U1', avatar: '' },
+        { id: 'u2', name: 'U2', avatar: '' },
+      ],
+    });
+    await setDoc(doc(adminDb, 'rooms', 'room-reactions-2', 'messages', 'm2'), {
+      senderId: 'u1',
+      text: 'hello',
+      reactions: [],
+    });
+
+    const user2Db = testEnv.authenticatedContext('u2').firestore();
+    const tooManyReactions = Array(51).fill({ emoji: '👍', userId: 'u2' });
+    await assertFails(
+      updateDoc(doc(user2Db, 'rooms', 'room-reactions-2', 'messages', 'm2'), {
+        reactions: tooManyReactions,
+      }),
+    );
+  });
+});
+
 describe('Smoke e2e: create -> join -> send -> delete own -> leave', () => {
   it('runs happy path with rules', async () => {
     const user1Db = testEnv.authenticatedContext('u1').firestore();
