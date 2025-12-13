@@ -76,7 +76,7 @@ jobs:
           echo "Deploying Firebase backend to project $FIREBASE_PROJECT_ID"
           firebase deploy --only firestore:rules,storage:rules,functions --project "$FIREBASE_PROJECT_ID" --token "$FIREBASE_TOKEN"
 
-      - name: Vercel: deploy
+      - name: "Vercel: deploy"
         if: ${{ secrets.VERCEL_TOKEN != '' }}
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
