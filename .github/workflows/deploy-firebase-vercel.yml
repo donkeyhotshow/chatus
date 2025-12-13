@@ -24,7 +24,7 @@ jobs:
 
       - name: Run prepr checks
         id: run
-        run: bash scripts/prepr-checks.sh || true
+        run: bash scripts/prepr-checks.sh
 
       - name: Upload prepr-report
         if: always()
