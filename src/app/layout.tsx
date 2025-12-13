@@ -5,6 +5,8 @@ import './globals.css';
 import { MessageSquareDashed } from 'lucide-react';
 import { FirebaseProvider } from '@/components/firebase/FirebaseProvider';
 import { BackgroundChanger } from '@/components/layout/BackgroundChanger';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ClientLayout } from '@/components/layout/ClientLayout';
 
 const APP_NAME = "ЧАТ ДЛЯ НАС";
 const APP_DESCRIPTION = "A real-time chat application with collaborative features.";
@@ -60,27 +62,31 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
       </head>
       <body suppressHydrationWarning>
-        <FirebaseProvider>
-          <div className="flex flex-col h-screen w-full bg-black text-neutral-200 font-sans selection:bg-white selection:text-black overflow-hidden">
-            <header className="h-14 shrink-0 border-b border-white/10 flex items-center px-6 bg-neutral-950 z-50">
-              <div className="flex items-center gap-3 select-none group cursor-default">
-                <div className="p-1.5 bg-white text-black rounded-lg group-hover:scale-105 transition-transform">
-                  <MessageSquareDashed className="w-5 h-5" />
+        <ErrorBoundary>
+          <FirebaseProvider>
+            <ClientLayout>
+              <div className="flex flex-col h-screen w-full bg-black text-neutral-200 font-sans selection:bg-white selection:text-black overflow-hidden">
+                <header className="h-14 shrink-0 border-b border-white/10 flex items-center px-6 bg-neutral-950 z-50">
+                  <div className="flex items-center gap-3 select-none group cursor-default">
+                    <div className="p-1.5 bg-white text-black rounded-lg group-hover:scale-105 transition-transform">
+                      <MessageSquareDashed className="w-5 h-5" />
+                    </div>
+                    <span className="font-mono font-bold text-lg tracking-[0.2em] text-white">
+                      ЧАТ ДЛЯ НАС
+                    </span>
+                  </div>
+                </header>
+
+                <BackgroundChanger />
+
+                <div className="relative z-10 flex w-full h-[calc(100vh_-_3.5rem)]">
+                  {children}
                 </div>
-                <span className="font-mono font-bold text-lg tracking-[0.2em] text-white">
-                  ЧАТ ДЛЯ НАС
-                </span>
               </div>
-            </header>
-
-            <BackgroundChanger />
-
-            <div className="relative z-10 flex w-full h-[calc(100vh_-_3.5rem)]">
-              {children}
-            </div>
-          </div>
-          <Toaster />
-        </FirebaseProvider>
+              <Toaster />
+            </ClientLayout>
+          </FirebaseProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );
