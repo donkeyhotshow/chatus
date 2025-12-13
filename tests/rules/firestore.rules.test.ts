@@ -13,6 +13,10 @@ import { doc, setDoc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
 const hasEmulator = !!process.env.FIRESTORE_EMULATOR_HOST;
 const describeIf = hasEmulator ? describe : describe.skip;
 
+if (!hasEmulator) {
+  console.warn('Skipping Firestore rules tests: FIRESTORE_EMULATOR_HOST is not set.');
+}
+
 const projectId = 'chatforus-test';
 let testEnv: RulesTestEnvironment;
 
