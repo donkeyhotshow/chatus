@@ -11,7 +11,7 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
 
-  reactStrictMode: true, // оставляем для dev
+  reactStrictMode: true,
 };
 
 module.exports = nextConfig;
