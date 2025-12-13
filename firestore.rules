@@ -3,6 +3,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
+    // Rate limiting collection
+    match /rateLimits/{userId} {
+      allow read, write: if request.auth.uid == userId;
+    }
+    
     match /rooms/{roomId} {
       // Restrict read access: only participants or explicitly public rooms may be read.
       // Removed temporary global authenticated read to reduce data exposure.
@@ -16,10 +21,9 @@ service cloud.firestore {
                         request.resource.data.participantProfiles.size() == 1 &&
                         request.auth.uid == request.resource.data.participants[0] &&
                         request.auth.uid == request.resource.data.participantProfiles[0].id &&
-                        // Ensure room starts with exactly 1 participant
                         request.resource.data.participants.size() == 1;
       
-      // Allow update for participants only
+      allow update: if request.auth.uid in resource.data.participants;
 
       // Allow a user to add themself to participants (join) by performing an update
       // that only appends the current auth.uid to participants and participantProfiles.
@@ -79,12 +83,15 @@ service cloud.firestore {
         function isParticipant() {
           return request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.participants;
         }
+        
+        // Add data validation
+        allow create: if isParticipant() && 
+                         request.resource.data.keys().hasAll(['name', 'createdAt']) &&
+                         request.resource.data.name is string &&
+                         request.resource.data.name.size() > 0 &&
+                         request.resource.data.name.size() <= 100;
+        
         allow read: if isParticipant();
-        allow create: if isParticipant() &&
-                      request.resource.data.keys().hasAll(['createdAt', 'createdBy']) &&
-                      request.resource.data.createdBy is string &&
-                      request.resource.data.createdBy == request.auth.uid &&
-                      request.resource.data.createdAt is timestamp;
         allow delete: if false;
       }
       
@@ -92,16 +99,15 @@ service cloud.firestore {
         function isParticipant() {
           return request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.participants;
         }
-        allow read: if isParticipant();
+        
+        // Add data validation for canvas paths
         allow create: if isParticipant() &&
-                      request.resource.data.keys().hasAll(['points', 'color', 'width', 'createdBy', 'createdAt']) &&
-                      request.resource.data.points is list &&
-                      request.resource.data.points.size() <= 10000 &&
-                      request.resource.data.color is string &&
-                      request.resource.data.width is number &&
-                      request.resource.data.createdBy is string &&
-                      request.resource.data.createdBy == request.auth.uid &&
-                      request.resource.data.createdAt is timestamp;
+                         request.resource.data.keys().hasAll(['sheetId', 'user', 'points', 'color']) &&
+                         request.resource.data.points is list &&
+                         request.resource.data.points.size() > 0 &&
+                         request.resource.data.points.size() <= 10000;
+        
+        allow read: if isParticipant();
         allow delete: if isParticipant();
       }
       
@@ -109,14 +115,16 @@ service cloud.firestore {
         function isParticipant() {
           return request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.participants;
         }
+        
+        // Add data validation for games
+        allow create: if isParticipant() &&
+                         request.resource.data.keys().hasAll(['type', 'active']) &&
+                         request.resource.data.type is string &&
+                         request.resource.data.active is bool;
+        
         allow read: if isParticipant();
-        allow write: if isParticipant() &&
-                     request.resource.data.keys().hasAll(['type', 'state', 'createdBy', 'createdAt']) &&
-                     request.resource.data.type is string &&
-                     request.resource.data.type in ['tictactoe', 'chess', 'checkers', 'connect4'] &&
-                     request.resource.data.state is map &&
-                     request.resource.data.createdBy is string &&
-                     request.resource.data.createdAt is timestamp;
+        allow update: if isParticipant();
+        allow delete: if isParticipant();
       }
     }
 
