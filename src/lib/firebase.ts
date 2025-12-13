@@ -14,11 +14,12 @@ let firestore: Firestore;
 let rtdb: Database | null = null;
 let auth: Auth;
 let storage: FirebaseStorage;
+const isBrowser = typeof window !== "undefined";
 
 try {
   const existingApps = getApps();
   
-  if (existingApps.length === 0) {
+  if (!existingApps.length) {
     logger.info("Initializing Firebase app", { 
       projectId: firebaseConfig.projectId,
       authDomain: firebaseConfig.authDomain,
@@ -56,7 +57,7 @@ try {
   }
 
   // Analytics only in browser
-  if (typeof window !== "undefined") {
+  if (isBrowser) {
     try {
       analytics = getAnalytics(app);
     } catch (error) {
@@ -105,7 +106,7 @@ try {
 export { app, analytics, firestore, rtdb, auth, storage };
 
 // Enable IndexedDB persistence (best-effort)
-if (typeof window !== "undefined") {
+if (isBrowser) {
   try {
     enableIndexedDbPersistence(firestore).catch((err: any) => {
       if (err?.code === "failed-precondition") {
