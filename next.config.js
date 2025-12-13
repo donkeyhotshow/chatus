@@ -1,12 +1,12 @@
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Do not ignore ESLint errors during build
+  // Не игнорировать ошибки ESLint во время билда
   eslint: {
     ignoreDuringBuilds: false,
   },
 
-  // Do not ignore TypeScript errors during build
+  // Не игнорировать ошибки TypeScript во время билда
   typescript: {
     ignoreBuildErrors: false,
   },
