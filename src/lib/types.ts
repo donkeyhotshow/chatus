@@ -1,6 +1,11 @@
 
 import type { Timestamp } from 'firebase/firestore';
 
+export interface FirebaseError extends Error {
+  code?: string;
+  message: string;
+}
+
 export interface UserProfile {
   id: string;
   name: string;

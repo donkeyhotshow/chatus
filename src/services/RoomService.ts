@@ -1,7 +1,7 @@
 'use client';
 
 import { doc, getDoc } from 'firebase/firestore';
-import { Room } from '@/lib/types';
+import { Room, FirebaseError } from '@/lib/types';
 import { logger } from '@/lib/logger';
 import { isDemoMode } from '@/lib/demo-mode';
 
@@ -39,7 +39,7 @@ export class RoomService {
       
       return { id: roomId, ...roomDoc.data() } as Room;
     } catch (error) {
-      const err = error as any;
+      const err = error as FirebaseError;
       // Suppress offline errors in demo mode or when client is offline
       if (isDemoMode() || 
           err.message?.includes('client is offline') ||

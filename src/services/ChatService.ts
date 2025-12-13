@@ -5,7 +5,7 @@ import {
 } from "firebase/firestore";
 import { TypingManager } from '@/lib/realtime';
 import { ref, uploadBytes, getDownloadURL, FirebaseStorage } from "firebase/storage";
-import { Message, CanvasPath, Reaction, UserProfile, GameState, Room, TDTower, TDEnemy } from "@/lib/types";
+import { Message, CanvasPath, Reaction, UserProfile, GameState, Room, TDTower, TDEnemy, FirebaseError } from "@/lib/types";
 import { Auth, signInAnonymously } from "firebase/auth";
 import { errorEmitter } from "@/lib/error-emitter";
 import { FirestorePermissionError } from "@/lib/errors";
@@ -114,7 +114,7 @@ export class ChatService {
         this.notify();
       }
     }, (error) => {
-      const err = error as any;
+      const err = error as FirebaseError;
       // Suppress offline/permission errors
       if (err.message?.includes('client is offline') ||
           err.message?.includes('Failed to get document') ||
@@ -139,7 +139,7 @@ export class ChatService {
       this.gameStates = games;
       this.notify();
     }, (error) => {
-      const err = error as any;
+      const err = error as FirebaseError;
       // Suppress offline/permission errors
       if (err.message?.includes('client is offline') ||
           err.message?.includes('Failed to get document') ||
@@ -220,7 +220,7 @@ export class ChatService {
       this.notify();
 
     } catch (error) {
-      const err = error as any;
+      const err = error as FirebaseError;
       // Suppress offline/permission errors
       if (err.message?.includes('client is offline') ||
           err.message?.includes('Failed to get document') ||
@@ -316,7 +316,7 @@ export class ChatService {
       this.firstMessageSnapshot = snapshot.docs[snapshot.docs.length - 1] || this.firstMessageSnapshot;
       this.notify();
     }, (error) => {
-      const err = error as any;
+      const err = error as FirebaseError;
       // Suppress offline/permission errors
       if (err.message?.includes('client is offline') ||
           err.message?.includes('Failed to get document') ||
@@ -502,7 +502,7 @@ export class ChatService {
         // Initialize RTDB subscriptions after successful join
         this.initRealtimeSubscriptions();
       } catch (error) {
-        const err = error as any;
+        const err = error as FirebaseError;
         // In demo mode or if permission denied, silently fail and use local state
         if (isDemoMode() || 
             err.code === 'permission-denied' ||
@@ -669,7 +669,7 @@ export class ChatService {
         { timeoutMs: 30_000, attempts: 3, backoffMs: 500 }
       );
     } catch (error) {
-      const err = error as any;
+      const err = error as FirebaseError;
       // Suppress offline/permission errors
       if (err.message?.includes('client is offline') ||
           err.message?.includes('Failed to get document') ||
@@ -750,7 +750,7 @@ export class ChatService {
     try {
       await deleteDoc(msgRef);
     } catch (error) {
-      const err = error as any;
+      const err = error as FirebaseError;
       // Suppress offline/permission errors
       if (err.message?.includes('client is offline') ||
           err.message?.includes('Failed to get document') ||
@@ -812,7 +812,7 @@ export class ChatService {
         transaction.update(messageRef, { reactions: newReactions });
       });
     } catch (error) {
-      const err = error as any;
+      const err = error as FirebaseError;
       // Suppress offline/permission errors
       if (err.message?.includes('client is offline') ||
           err.message?.includes('Failed to get document') ||
@@ -897,7 +897,7 @@ export class ChatService {
     const snapshot = await uploadBytes(storageRef, file);
     return getDownloadURL(snapshot.ref);
     } catch (error) {
-      const err = error as any;
+      const err = error as FirebaseError;
       // If offline, fallback to data URL
       if (err.message?.includes('client is offline') ||
           err.code === 'unavailable' ||
@@ -963,22 +963,22 @@ export class ChatService {
   /**
    * Remove undefined values from object (Firestore doesn't support undefined)
    */
-  private removeUndefinedValues(obj: any): any {
+  private removeUndefinedValues<T extends Record<string, unknown>>(obj: T): Partial<T> {
     if (obj === null || typeof obj !== 'object') {
       return obj;
     }
     
     if (Array.isArray(obj)) {
-      return obj.map(item => this.removeUndefinedValues(item));
+      return obj.map(item => this.removeUndefinedValues(item)) as Partial<T>;
     }
     
-    const cleaned: any = {};
+    const cleaned: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj)) {
       if (value !== undefined) {
-        cleaned[key] = this.removeUndefinedValues(value);
+        cleaned[key] = this.removeUndefinedValues(value as Record<string, unknown>);
       }
     }
-    return cleaned;
+    return cleaned as Partial<T>;
   }
   
   public async updateGameState(gameId: string, newState: Partial<GameState>) {
@@ -997,7 +997,7 @@ export class ChatService {
       const cleanedState = this.removeUndefinedValues(newState);
       await setDoc(gameRef, cleanedState, { merge: true });
     } catch (error) {
-      const err = error as any;
+      const err = error as FirebaseError;
       // Suppress offline/permission errors
       if (err.message?.includes('client is offline') ||
           err.message?.includes('Failed to get document') ||
@@ -1032,7 +1032,7 @@ export class ChatService {
     try {
       await deleteDoc(doc(this.firestore, 'rooms', this.roomId, 'games', gameId));
     } catch (error) {
-      const err = error as any;
+      const err = error as FirebaseError;
       // Suppress offline/permission errors
       if (err.message?.includes('client is offline') ||
           err.message?.includes('Failed to get document') ||
