@@ -4,7 +4,7 @@
  * обработку ошибок и восстановление состояния
  */
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 
 // Мок WebSocket клиента для тестирования
 class MockWebSocket {
@@ -26,6 +26,8 @@ class MockWebSocket {
       if (!this.shouldFail) {
         this.readyState = WebSocket.OPEN;
         if (this.onopen) this.onopen(new Event('open'));
+      } else if (this.onerror) {
+        this.onerror(new Event('error'));
       }
     }, 10);
   }
@@ -47,6 +49,9 @@ class MockWebSocket {
   // Тестовые методы
   simulateDisconnect() {
     this.readyState = WebSocket.CLOSED;
+    if (this.onerror) {
+      this.onerror(new Event('error'));
+    }
     if (this.onclose) {
       this.onclose(new CloseEvent('close', { code: 1006, reason: 'Abnormal closure' }));
     }
@@ -60,6 +65,13 @@ class MockWebSocket {
   }
   
   simulateMessage(data: any) {
+    if (typeof data === 'string') {
+      JSON.parse(data); // throw on invalid JSON
+      if (this.onmessage) {
+        this.onmessage(new MessageEvent('message', { data }));
+      }
+      return;
+    }
     if (this.onmessage) {
       this.onmessage(new MessageEvent('message', { data: JSON.stringify(data) }));
     }
@@ -67,6 +79,9 @@ class MockWebSocket {
   
   setShouldFail(fail: boolean) {
     this.shouldFail = fail;
+    if (fail && this.readyState === WebSocket.CONNECTING && this.onerror) {
+      this.onerror(new Event('error'));
+    }
   }
   
   getSentMessages(): string[] {
@@ -80,11 +95,13 @@ describe('WebSocket Stability Tests', () => {
   const testPlayer = 'test-player';
   
   beforeEach(() => {
+    vi.useRealTimers();
     ws = new MockWebSocket(`ws://localhost:8000/ws/${testRoom}/${testPlayer}`);
   });
   
   afterEach(() => {
     if (ws) ws.close();
+    vi.useRealTimers();
   });
   
   describe('Connection Stability', () => {
@@ -143,17 +160,17 @@ describe('WebSocket Stability Tests', () => {
       await new Promise<void>((resolve) => {
         ws.onopen = () => {
           ws.simulateDisconnect();
+          ws.onopen = () => {
+            if (reconnectAttempted) {
+              expect(ws.readyState).toBe(WebSocket.OPEN);
+              resolve();
+            }
+          };
         };
         ws.onclose = () => {
           if (!reconnectAttempted) {
             reconnectAttempted = true;
             ws.simulateReconnect();
-          }
-        };
-        ws.onopen = () => {
-          if (reconnectAttempted) {
-            expect(ws.readyState).toBe(WebSocket.OPEN);
-            resolve();
           }
         };
       });
@@ -246,4 +263,3 @@ describe('WebSocket Stability Tests', () => {
     });
   });
 });
-

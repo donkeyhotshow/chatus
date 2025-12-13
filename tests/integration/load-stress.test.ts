@@ -42,7 +42,8 @@ class LoadTestClient {
     const now = Date.now();
     
     // Throttling check
-    if (now - this.lastSendTime < this.minSendInterval + this.throttleDelay) {
+    const requiredDelay = Math.max(this.minSendInterval, this.throttleDelay);
+    if (now - this.lastSendTime < requiredDelay) {
       this.droppedCount++;
       return false; // Сообщение отброшено из-за throttling
     }
@@ -278,4 +279,3 @@ describe('Load and Stress Tests', () => {
     });
   });
 });
-
