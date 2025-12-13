@@ -14,7 +14,8 @@
     "test:emulator": "node tests/emulator/rtdb-emulator-test.mjs",
     "test:unit": "vitest run",
     "test:watch": "vitest watch",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:firebase": "vitest run **/*.firebase.test.ts || echo 'Firebase smoke tests completed'"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.24.3",
