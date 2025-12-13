@@ -29,7 +29,7 @@ firebase login:ci
 Copy the generated token and add it to GitHub Secrets as `FIREBASE_TOKEN`.
 
 #### `FIREBASE_PROJECT_ID`
-Your Firebase project identifier (e.g., `studio-5170287541` or `chatus-prod`).
+Your Firebase project identifier (e.g., `my-app-prod` or `chatus-prod`).
 
 **How to find:**
 - Firebase Console → Project Settings → Project ID
@@ -134,8 +134,8 @@ NEXT_PUBLIC_FIREBASE_DATABASE_URL=https://chatus-prod.firebaseio.com
 
 ### 1. Clone and Install
 ```bash
-git clone https://github.com/donkeyhotshow/chatus.git
-cd chatus
+git clone https://github.com/username/your-project.git
+cd your-project
 npm ci
 ```
 
