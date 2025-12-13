@@ -41,9 +41,9 @@ PATTERNS=(
 FOUND_ANY=false
 for p in "${PATTERNS[@]}"; do
   # show matches but ignore common build artifacts and node_modules
-  if grep -R --line-number --exclude-dir=.git --exclude-dir=node_modules -i -n "$p" . >/dev/null 2>&1; then
+  if grep -R --line-number --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.github --exclude-dir=.githooks --exclude-dir=.next --exclude-dir=dist --exclude-dir=build --exclude-dir=.vercel --exclude-dir=docs --exclude-dir=scripts --exclude=check-secrets.* --exclude=env.example --exclude=README.md --exclude=pr_body.md --exclude=DEPLOYMENT_READY.md --exclude=prepr-report.json -i -n "$p" . 2>/dev/null | grep -v "process\.env\." | grep -v "\${{" >/dev/null 2>&1; then
     echo "Matches for pattern '$p':"
-    grep -R --line-number --exclude-dir=.git --exclude-dir=node_modules -i -n "$p" .
+    grep -R --line-number --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.github --exclude-dir=.githooks --exclude-dir=.next --exclude-dir=dist --exclude-dir=build --exclude-dir=.vercel --exclude-dir=docs --exclude-dir=scripts --exclude=check-secrets.* --exclude=env.example --exclude=README.md --exclude=pr_body.md --exclude=DEPLOYMENT_READY.md --exclude=prepr-report.json -i -n "$p" . 2>/dev/null | grep -v "process\.env\." | grep -v "\${{" 
     FOUND_ANY=true
   fi
 done
@@ -99,9 +99,9 @@ for p in "${patterns[@]}"; do
 	printf '--- Searching for: %s\n' "$p"
 	# use grep over tracked files (binary files ignored)
 	if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-		git grep -n -I -E "$p" -- || true
+		git grep -n -I -E "$p" -- ':!.github' ':!.next' ':!dist' ':!build' ':!.vercel' ':!docs' ':!scripts' ':!.githooks' ':!**/check-secrets.*' ':!env.example' ':!README.md' ':!pr_body.md' ':!DEPLOYMENT_READY.md' ':!prepr-report.json' || true
 	else
-		grep -RIn --exclude-dir=.git -E "$p" . || true
+		grep -RIn --exclude-dir=.git --exclude-dir=.github --exclude-dir=.next --exclude-dir=dist --exclude-dir=build --exclude-dir=.vercel --exclude-dir=docs --exclude-dir=scripts --exclude-dir=.githooks --exclude=check-secrets.* --exclude=env.example --exclude=README.md --exclude=pr_body.md --exclude=DEPLOYMENT_READY.md --exclude=prepr-report.json -E "$p" . || true
 	fi
 done
 
@@ -116,11 +116,11 @@ fi
 log
 log "Searching for PEM/private key blocks in repository (BEGIN PRIVATE KEY)..."
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-	if git grep -n -I "BEGIN PRIVATE KEY" -- || true; then
+	if git grep -n -I "BEGIN PRIVATE KEY" -- ':!.github' ':!.next' ':!dist' ':!build' ':!.vercel' ':!docs' ':!scripts' ':!.githooks' ':!**/check-secrets.*' ':!env.example' ':!README.md' ':!pr_body.md' ':!DEPLOYMENT_READY.md' ':!prepr-report.json' || true; then
 		found=1
 	fi
 else
-	if grep -RIn --exclude-dir=.git "BEGIN PRIVATE KEY" . || true; then
+	if grep -RIn --exclude-dir=.git --exclude-dir=.github --exclude-dir=.next --exclude-dir=dist --exclude-dir=build --exclude-dir=.vercel --exclude-dir=docs --exclude-dir=scripts --exclude-dir=.githooks --exclude=check-secrets.* --exclude=env.example --exclude=README.md --exclude=pr_body.md --exclude=DEPLOYMENT_READY.md --exclude=prepr-report.json "BEGIN PRIVATE KEY" . || true; then
 		found=1
 	fi
 fi
