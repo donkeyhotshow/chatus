@@ -1,0 +1,41 @@
+name: prepr-checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  prepr-checks:
+    name: Run pre-PR checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Ensure scripts executable
+        run: chmod +x scripts/*.sh || true
+
+      - name: Run prepr checks
+        run: bash scripts/prepr-checks.sh
+
+      - name: Upload prepr-report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prepr-report
+          path: prepr-report.json
+
+      - name: Fail on PREPR report FAIL
+        if: always()
+        run: |
+          if [ ! -f prepr-report.json ]; then
+            echo "prepr-report.json not found — failing."
+            exit 1
+          fi
+          node -e "const r=require('./prepr-report.json'); if(r.overall_status!=='PASS'){console.error('prepr-checks failed: '+r.overall_status); process.exit(1)}; console.log('prepr-checks OK')"
+

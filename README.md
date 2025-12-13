@@ -1,5 +1,4 @@
 # ChatForUs
-<<<<<<< HEAD
 
 "ChatForUs" — это многофункциональная платформа для общения и совместной работы в реальном времени, созданная на базе Next.js и Firebase. Она сочетает в себе классический чат с уникальными интерактивными возможностями, такими как совместное рисование и кооперативные мини-игры.
 
@@ -389,8 +388,7 @@ GitHub → Settings → Secrets and variables → Actions:
 - [Стратегия тестирования](./docs/adr/testing-strategy.md)
 - [Отчет о рефакторинге](./docs/REFACTORING_REPORT.md)
 - [Аудит игровых режимов](./docs/GAME_AUDIT_REPORT.md)
-=======
-A real-time chat application with collaborative features - Next.js, Firebase, multiplayer games
->>>>>>> f8f877057544b582b6d7d5cd949fc6fd6aa52397
 
 Deploy trigger: 2025-12-12T03:43:21
+
+chore: remove artifacts (no tracked files found)

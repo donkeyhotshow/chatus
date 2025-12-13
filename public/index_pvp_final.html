@@ -146,6 +146,9 @@ class Bullet {
 // Безопасная отправка сообщений
 const messageQueue = [];
 let reconnectTimer = null;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 6;
+const RECONNECT_BASE_DELAY = 1000;
 
 function safeSend(data) {
     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -161,9 +164,13 @@ function safeSend(data) {
 }
 
 // WebSocket & Chat
-document.getElementById("connectBtn").onclick = ()=>{
-    roomName=document.getElementById("room").value;
-    playerName=document.getElementById("name").value;
+const connectBtnEl = document.getElementById("connectBtn");
+if (connectBtnEl) {
+  connectBtnEl.onclick = ()=> {
+    const roomEl = document.getElementById("room");
+    const nameEl = document.getElementById("name");
+    roomName = roomEl ? roomEl.value : '';
+    playerName = nameEl ? nameEl.value : '';
     mySide = playerName.endsWith("1")?"left":"right";
 
     if (ws) ws.close();
@@ -186,23 +193,34 @@ document.getElementById("connectBtn").onclick = ()=>{
 
     ws.onclose = () => {
         if (reconnectTimer) clearTimeout(reconnectTimer);
-        reconnectTimer = setTimeout(() => {
-            document.getElementById("connectBtn").click();
-        }, 1000);
+        if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+            const delay = RECONNECT_BASE_DELAY * (2 ** reconnectAttempts);
+            reconnectAttempts++;
+            reconnectTimer = setTimeout(() => {
+                const btn = document.getElementById("connectBtn");
+                if (btn) btn.click();
+            }, delay);
+        } else {
+            console.warn('Max reconnect attempts reached');
+        }
     };
 
     ws.onmessage = (e)=>{
+        if (!e?.data) return;
         try {
-            const data=JSON.parse(e.data);
+            const data = JSON.parse(e.data);
             if(data.type==="tower") towers.push(new Tower(data.x,data.y,data.towerType));
             else if(data.type==="enemy") enemies.push(new Enemy(data.path,data.enemyType, data.targetSide));
             else if(data.type==="chat") addMessage(`${data.player}: ${data.message}`);
             else if(data.type==="score_update") { leaderboard[data.player] = data.score; updateLeaderboard(); }
             else if(data.type==="health_update") { leaderboard[data.player] = data.health; updateLeaderboard(); }
-        } catch (error) {
-            console.error('Error parsing message:', error);
+        } catch (err) {
+            console.error('WS message parse error:', err);
         }
     };
+    };
+  };
+}
 
     // Enemy spawn
     setInterval(()=>{
@@ -228,16 +246,31 @@ canvas.addEventListener("click",(e)=>{
 });
 
 // Upgrade button
-document.getElementById("upgradeTower").onclick = ()=>{
+const upgradeTowerEl = document.getElementById("upgradeTower");
+if (upgradeTowerEl) {
+  upgradeTowerEl.onclick = () => {
     if(selectedTower && score>=5){ selectedTower.upgrade(); }
-};
+  };
+}
 
 // Chat
-document.getElementById("send").onclick = ()=>{
-    const msg = document.getElementById("input").value;
-    if(msg){ safeSend({type:"chat", player:playerName, message:msg}); addMessage(`Me: ${msg}`); document.getElementById("input").value=""; }
-};
-function addMessage(text){ const m = document.getElementById("messages"); const div = document.createElement("div"); div.textContent=text; m.appendChild(div); m.scrollTop=m.scrollHeight; }
+const sendEl = document.getElementById("send");
+if (sendEl) {
+  sendEl.onclick = () => {
+    const inputEl = document.getElementById("input");
+    if (!inputEl) return;
+    const msg = inputEl.value;
+    if(msg){ safeSend({type:"chat", player:playerName, message:msg}); addMessage(`Me: ${msg}`); inputEl.value=""; }
+  };
+}
+function addMessage(text){
+  const m = document.getElementById("messages");
+  if (!m) return;
+  const div = document.createElement("div");
+  div.textContent=text;
+  m.appendChild(div);
+  m.scrollTop=m.scrollHeight;
+}
 
 // Leaderboard
 function updateLeaderboard(){ const ul = document.getElementById("scores"); ul.innerHTML = ""; for(const [player,s] of Object.entries(leaderboard)){ const li = document.createElement("li"); li.textContent = `${player}: ${s}`; ul.appendChild(li); } }

@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from '../ui/button';
-import { Eraser, Palette, Save } from 'lucide-react';
+import { Eraser, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const PIXEL_SIZE = 16;

@@ -139,13 +139,22 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
   }, []);
 
   const drawMaze = useCallback((ctx: CanvasRenderingContext2D, mazeString: string) => {
-      const maze = JSON.parse(mazeString);
-      
+      let maze: any;
+      try {
+          maze = JSON.parse(mazeString);
+          if (!Array.isArray(maze) || maze.length === 0 || !Array.isArray(maze[0])) {
+            throw new Error('Invalid maze format');
+          }
+      } catch (err) {
+          console.warn('[WARN] Failed to parse maze string, skipping drawMaze:', err);
+          return;
+      }
+
       ctx.strokeStyle = 'white';
       ctx.lineWidth = 2;
 
       const rows = maze.length;
-      const cols = maze[0].length;
+      const cols = (maze[0] && Array.isArray(maze[0])) ? maze[0].length : 0;
 
       for(let y = 0; y < rows; y++) {
           for(let x = 0; x < cols; x++) {
@@ -199,7 +208,14 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
 
   const checkMazeCollision = (x: number, y: number): boolean => {
     if (!isMazeActive || !gameState || gameState.type !== 'maze' || !gameState.maze) return false;
-    const maze = JSON.parse(gameState.maze as string);
+    let maze: any;
+    try {
+      maze = JSON.parse(gameState.maze as string);
+      if (!Array.isArray(maze) || maze.length === 0) return false;
+    } catch (err) {
+      console.warn('[WARN] Failed to parse gameState.maze for collision check', err);
+      return false;
+    }
     const gridX = Math.floor(x / MAZE_CELL_SIZE);
     const gridY = Math.floor(y / MAZE_CELL_SIZE);
 

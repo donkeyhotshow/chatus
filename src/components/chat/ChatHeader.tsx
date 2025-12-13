@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreVertical, PanelRightClose, PanelRightOpen, Wifi, WifiOff } from 'lucide-react';
+import { MoreVertical, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { UserProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
@@ -44,12 +44,12 @@ export function ChatHeader({
           }`} />
         )}
         <span className="text-sm font-medium tracking-widest uppercase text-white/80">
-          {otherUser ? otherUser.name : `Room ${roomId.toUpperCase()}`}
+          {otherUser ? otherUser.name : `Комната ${roomId.toUpperCase()}`}
         </span>
         {!networkStatus && (
           <div className="flex items-center gap-1 text-xs text-yellow-400">
             <WifiOff className="w-3 h-3" />
-            <span>Offline</span>
+            <span>Офлайн</span>
           </div>
         )}
       </div>

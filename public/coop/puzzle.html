@@ -210,6 +210,9 @@ let targetButton = null;
 let levelInitialized = false;
 let reconnectTimer = null;
 const messageQueue = [];
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 6;
+const RECONNECT_BASE_DELAY = 1000; // ms
 
 // Статические платформы
 const ground = Matter.Bodies.rectangle(400, 590, 810, 20, {
@@ -249,6 +252,7 @@ Matter.World.add(world, buttonIndicator);
 
 function addMessage(msg, isSystem = false) {
     const m = document.getElementById('messages');
+    if (!m) return;
     const div = document.createElement('div');
     div.textContent = msg;
     if (isSystem) div.className = 'system';
@@ -258,6 +262,7 @@ function addMessage(msg, isSystem = false) {
 
 function updateStatus(connected) {
     const status = document.getElementById('status');
+    if (!status) return;
     if (connected) {
         status.textContent = `✅ Подключено к комнате "${roomName}" как "${playerName}"`;
         status.className = 'status connected';
@@ -295,6 +300,7 @@ function connectWS() {
     ws = new WebSocket(`ws://localhost:8000/ws/${roomName}/${playerName}`);
     
     ws.onopen = () => {
+        reconnectAttempts = 0;
         updateStatus(true);
         addMessage(`Подключено к комнате "${roomName}"`, true);
         
@@ -313,13 +319,18 @@ function connectWS() {
     ws.onclose = () => {
         updateStatus(false);
         addMessage('Соединение закрыто', true);
-        
-        // Базовое переподключение
+
         if (reconnectTimer) clearTimeout(reconnectTimer);
-        reconnectTimer = setTimeout(() => {
-            addMessage('Переподключение...', true);
-            connectWS();
-        }, 1000);
+        if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+            const delay = RECONNECT_BASE_DELAY * (2 ** reconnectAttempts);
+            reconnectAttempts++;
+            reconnectTimer = setTimeout(() => {
+                addMessage(`Переподключение (попытка ${reconnectAttempts})...`, true);
+                connectWS();
+            }, delay);
+        } else {
+            addMessage('Повторные попытки подключения исчерпаны', true);
+        }
     };
     
     ws.onerror = (error) => {
@@ -328,9 +339,11 @@ function connectWS() {
     };
     
     ws.onmessage = (e) => {
+        if (!e?.data) return;
         try {
             const msg = JSON.parse(e.data);
-            
+            if (!msg) return;
+
             if (msg.type === 'init') {
                 // Восстанавливаем объекты из сервера
                 msg.objects.forEach(o => {
@@ -352,20 +365,25 @@ function connectWS() {
             } else if (msg.type === 'player_left') {
                 addMessage(`👋 ${msg.player} покинул комнату`, true);
             }
-        } catch (error) {
-            console.error('Error parsing message:', error);
+        } catch (err) {
+            console.error('WS message parse error:', err);
         }
     };
 }
 
-document.getElementById('connectBtn').onclick = () => {
-    roomName = document.getElementById('room').value.trim() || 'room1';
-    playerName = document.getElementById('name').value.trim() || 'player1';
-    if (!levelInitialized) {
-        initLevel();
-    }
-    connectWS();
-};
+const connectBtnEl = document.getElementById('connectBtn');
+if (connectBtnEl) {
+    connectBtnEl.onclick = () => {
+        const roomEl = document.getElementById('room');
+        const nameEl = document.getElementById('name');
+        roomName = roomEl ? roomEl.value.trim() || 'room1' : 'room1';
+        playerName = nameEl ? nameEl.value.trim() || 'player1' : 'player1';
+        if (!levelInitialized) {
+            initLevel();
+        }
+        connectWS();
+    };
+}
 
 // Регистрация объекта
 function registerObject(id, type, body) {
@@ -491,7 +509,9 @@ function removeObject(data, isRemote = false) {
 }
 
 // Кнопки создания объектов
-document.getElementById('addBox').onclick = () => {
+const addBoxEl = document.getElementById('addBox');
+if (addBoxEl) {
+  addBoxEl.onclick = () => {
     spawnObject({
         type: 'box',
         x: Math.random() * 700 + 50,
@@ -499,25 +519,32 @@ document.getElementById('addBox').onclick = () => {
         w: 60,
         h: 60
     });
-};
+  };
+}
 
-document.getElementById('addCircle').onclick = () => {
+const addCircleEl = document.getElementById('addCircle');
+if (addCircleEl) {
+  addCircleEl.onclick = () => {
     spawnObject({
         type: 'circle',
         x: Math.random() * 700 + 50,
         y: 50,
         r: 20
     });
-};
+  };
+}
 
-document.getElementById('addLever').onclick = () => {
+const addLeverEl = document.getElementById('addLever');
+if (addLeverEl) {
+  addLeverEl.onclick = () => {
     spawnObject({
         type: 'lever',
         x: Math.random() * 700 + 50,
         y: Math.random() * 300 + 100,
         length: 100
     });
-};
+  };
+}
 
 // Инициализация стартового уровня
 function initLevel() {
@@ -576,7 +603,9 @@ function initLevel() {
     addMessage('🎮 Уровень загружен! Постройте цепочку, чтобы шар попал на оранжевую кнопку!', true);
 }
 
-document.getElementById('resetLevel').onclick = () => {
+const resetLevelEl = document.getElementById('resetLevel');
+if (resetLevelEl) {
+  resetLevelEl.onclick = () => {
     levelInitialized = false;
     initLevel();
     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -587,7 +616,8 @@ document.getElementById('resetLevel').onclick = () => {
             }
         });
     }
-};
+  };
+}
 
 // Drag & Drop
 const mouse = Matter.Mouse.create(canvas);
@@ -646,11 +676,12 @@ Matter.Events.on(engine, 'collisionStart', (event) => {
         if ((pair.bodyA === targetButton || pair.bodyB === targetButton) && !buttonPressed) {
             buttonPressed = true;
             const successMsg = document.getElementById('successMessage');
-            successMsg.style.display = 'block';
+            if (successMsg) successMsg.style.display = 'block';
             addMessage('🎉 Цепочка сработала! Отличная работа!', true);
             
             setTimeout(() => {
-                successMsg.style.display = 'none';
+                const successMsgHide = document.getElementById('successMessage');
+                if (successMsgHide) successMsgHide.style.display = 'none';
                 buttonPressed = false;
             }, 3000);
         }
@@ -660,6 +691,7 @@ Matter.Events.on(engine, 'collisionStart', (event) => {
 // Чат
 function sendChat() {
     const input = document.getElementById('input');
+    if (!input) return;
     const msg = input.value.trim();
     if (msg) {
         safeSend({ type: 'chat', message: msg });

@@ -123,7 +123,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
       }
 
       // --- ОБНОВЛЕНИЕ БАШЕН И СНАРЯДОВ ---
-      let newProjectiles: typeof projectiles = [];
+      const newProjectiles: typeof projectiles = [];
       const updatedTowers = localTowers.map(tower => {
         const timeSinceFired = currentTime - tower.lastFired;
         const fireInterval = 1000 / tower.fireRate;

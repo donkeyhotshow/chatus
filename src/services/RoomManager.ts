@@ -11,8 +11,8 @@
  * Архитектура: Singleton на комнату для изоляции состояния
  */
 
-import { 
-  Firestore, Unsubscribe, DocumentSnapshot 
+import {
+  Firestore, Unsubscribe
 } from "firebase/firestore";
 import { Auth } from "firebase/auth";
 import { FirebaseStorage } from "firebase/storage";
@@ -180,7 +180,7 @@ export class RoomManager {
    * Отправить сообщение
    */
   public async sendMessage(
-    messageData: Omit<Message, 'id' | 'createdAt' | 'reactions' | 'readBy'>,
+    messageData: Omit<Message, 'id' | 'createdAt' | 'reactions' | 'delivered' | 'seen'>,
     clientMessageId?: string
   ): Promise<void> {
     return this.chatService.sendMessage(messageData, clientMessageId);

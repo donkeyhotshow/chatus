@@ -1,9 +1,9 @@
 
 "use client";
 
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Room, UserProfile } from '@/lib/types';
+import { Room } from '@/lib/types';
 import { ChatArea } from './ChatArea';
 import { ProfileCreationDialog } from './ProfileCreationDialog';
 
@@ -42,18 +42,17 @@ export function ChatRoom({ roomId }: { roomId: string }) {
   const [isCreating, setIsCreating] = useState(false);
   
   // Use presence hook for online/offline status
-  const { isOnline } = usePresence(roomId, user?.id || null);
+  usePresence(roomId, user?.id || null);
   
   // Use room hook for validation and room data
-  const { room: validatedRoom, exists: roomExists, validate } = useRoom(roomId);
+  const { validate } = useRoom(roomId);
 
   // Use RoomManager for unified room management
-  const { 
-    state: roomManagerState, 
-    joinRoom, 
+  const {
+    joinRoom,
     leaveRoom,
     isConnected,
-    isLoading: isRoomManagerLoading 
+    isLoading: isRoomManagerLoading
   } = useRoomManager(roomId);
 
   useEffect(() => {

@@ -72,6 +72,9 @@
     let playerName = "";
     let roomName = "";
     let connected = false;
+    let reconnectAttempts = 0;
+    const MAX_RECONNECT_ATTEMPTS = 6;
+    const RECONNECT_BASE_DELAY = 1000;
 
     const objects = new Map(); // id -> {shape, body, constraint?}
     let currentDragId = null;
@@ -88,7 +91,10 @@
       };
     }
 
-    function setStatus(text) { document.getElementById("status").textContent = text; }
+    function setStatus(text) { 
+      const s = document.getElementById("status");
+      if (s) s.textContent = text;
+    }
 
     function registerObject(id, shape, body, constraint) {
       body.plugin = body.plugin || {};
@@ -160,49 +166,75 @@
     }
 
     // Подключение
-    document.getElementById("connectBtn").onclick = () => {
-      roomName = document.getElementById("room").value;
-      playerName = document.getElementById("name").value;
-      if (!roomName || !playerName) return;
+    const connectBtn = document.getElementById("connectBtn");
+    if (connectBtn) {
+      connectBtn.onclick = () => {
+        const roomEl = document.getElementById("room");
+        const nameEl = document.getElementById("name");
+        roomName = roomEl ? roomEl.value : '';
+        playerName = nameEl ? nameEl.value : '';
+        if (!roomName || !playerName) return;
 
-      ws = new WebSocket(`${WS_HOST}/${roomName}/${playerName}`);
-      setStatus("connecting...");
+        ws = new WebSocket(`${WS_HOST}/${roomName}/${playerName}`);
+        setStatus("connecting...");
 
-      ws.onopen = () => { connected = true; setStatus("online"); };
+        ws.onopen = () => { connected = true; setStatus("online"); };
 
-      ws.onclose = () => { connected = false; setStatus("offline"); };
+        ws.onclose = () => { 
+          connected = false; 
+          setStatus("offline");
+          if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+            const delay = RECONNECT_BASE_DELAY * (2 ** reconnectAttempts);
+            reconnectAttempts++;
+            setTimeout(() => {
+              setStatus("reconnecting...");
+              connectBtn.click();
+            }, delay);
+          } else {
+            setStatus("offline - reconnect attempts exhausted");
+          }
+        };
 
-      ws.onmessage = (event) => {
-        const msg = JSON.parse(event.data);
-        switch (msg.type) {
-          case "init":
-            rebuildFromSnapshot(msg.objects);
-            (msg.chat || []).forEach(entry => addMessage(`${entry.player}: ${entry.message}`));
-            break;
-          case "spawn":
-            if (msg.shape === "box") spawnBox({ ...msg, isRemote: true });
-            if (msg.shape === "circle") spawnCircle({ ...msg, isRemote: true });
-            if (msg.shape === "lever") spawnLever({ ...msg, isRemote: true });
-            break;
-          case "update":
-            applyRemoteUpdate(msg);
-            break;
-          case "remove":
-            removeObject(msg.id, true);
-            break;
-          case "chat":
-            addMessage(`${msg.player}: ${msg.message}`);
-            break;
-          default:
-            break;
-        }
+        ws.onmessage = (event) => {
+          if (!event?.data) return;
+          try {
+            const msg = JSON.parse(event.data);
+            switch (msg.type) {
+              case "init":
+                rebuildFromSnapshot(msg.objects);
+                (msg.chat || []).forEach(entry => addMessage(`${entry.player}: ${entry.message}`));
+                break;
+              case "spawn":
+                if (msg.shape === "box") spawnBox({ ...msg, isRemote: true });
+                if (msg.shape === "circle") spawnCircle({ ...msg, isRemote: true });
+                if (msg.shape === "lever") spawnLever({ ...msg, isRemote: true });
+                break;
+              case "update":
+                applyRemoteUpdate(msg);
+                break;
+              case "remove":
+                removeObject(msg.id, true);
+                break;
+              case "chat":
+                addMessage(`${msg.player}: ${msg.message}`);
+                break;
+              default:
+                break;
+            }
+          } catch (err) {
+            console.error('WS message parse error:', err);
+          }
+        };
       };
-    };
+    }
 
     // Кнопки добавления
-    document.getElementById("addBox").onclick = () => spawnBox({ x: 200 + Math.random() * 400, y: 80 });
-    document.getElementById("addCircle").onclick = () => spawnCircle({ x: 200 + Math.random() * 400, y: 80 });
-    document.getElementById("addLever").onclick = () => spawnLever({ x: 200 + Math.random() * 400, y: 200 + Math.random() * 100 });
+    const addBoxBtn = document.getElementById("addBox");
+    if (addBoxBtn) addBoxBtn.onclick = () => spawnBox({ x: 200 + Math.random() * 400, y: 80 });
+    const addCircleBtn = document.getElementById("addCircle");
+    if (addCircleBtn) addCircleBtn.onclick = () => spawnCircle({ x: 200 + Math.random() * 400, y: 80 });
+    const addLeverBtn = document.getElementById("addLever");
+    if (addLeverBtn) addLeverBtn.onclick = () => spawnLever({ x: 200 + Math.random() * 400, y: 200 + Math.random() * 100 });
 
     // Мышиное перетаскивание
     const mouse = Matter.Mouse.create(canvas);
@@ -243,20 +275,25 @@
     // Чат
     function addMessage(text) {
       const box = document.getElementById("messages");
+      if (!box) return;
       const div = document.createElement("div");
       div.textContent = text;
       box.appendChild(div);
       box.scrollTop = box.scrollHeight;
     }
 
-    document.getElementById("send").onclick = () => {
-      const input = document.getElementById("input");
-      const message = input.value.trim();
-      if (!message) return;
-      addMessage(`Я: ${message}`);
-      sendWS({ type: "chat", message });
-      input.value = "";
-    };
+    const sendBtn = document.getElementById("send");
+    if (sendBtn) {
+      sendBtn.onclick = () => {
+        const input = document.getElementById("input");
+        if (!input) return;
+        const message = input.value.trim();
+        if (!message) return;
+        addMessage(`Я: ${message}`);
+        sendWS({ type: "chat", message });
+        input.value = "";
+      };
+    }
 
     // Простая кнопка (мишень)
     const targetButton = Matter.Bodies.circle(820, 560, 18, { isStatic: true, render:{fillStyle:"#f97316"} });

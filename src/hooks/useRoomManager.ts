@@ -8,15 +8,13 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { 
-  getRoomManager, 
-  disconnectRoomManager,
+import {
+  getRoomManager,
   type RoomManager,
-  type RoomManagerState 
+  type RoomManagerState
 } from '../services/RoomManager';
 import { useFirebase } from '@/components/firebase/FirebaseProvider';
 import type { UserProfile, Message, GameState } from '../lib/types';
-import { logger } from '@/lib/logger';
 
 export interface UseRoomManagerReturn {
   // Состояние
@@ -26,7 +24,7 @@ export interface UseRoomManagerReturn {
   joinRoom: (user: UserProfile, validateRoom?: boolean) => Promise<void>;
   leaveRoom: () => Promise<void>;
   sendMessage: (
-    messageData: Omit<Message, 'id' | 'createdAt' | 'reactions' | 'readBy'>,
+    messageData: Omit<Message, 'id' | 'createdAt' | 'reactions' | 'delivered' | 'seen'>,
     clientMessageId?: string
   ) => Promise<void>;
   loadMoreMessages: () => Promise<void>;
@@ -113,7 +111,7 @@ export function useRoomManager(roomId: string): UseRoomManagerReturn {
   }, [roomManager]);
 
   const sendMessage = useCallback(async (
-    messageData: Omit<Message, 'id' | 'createdAt' | 'reactions' | 'readBy'>,
+    messageData: Omit<Message, 'id' | 'createdAt' | 'reactions' | 'delivered' | 'seen'>,
     clientMessageId?: string
   ) => {
     if (!roomManager) return;

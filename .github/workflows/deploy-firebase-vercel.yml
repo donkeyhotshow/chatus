@@ -1,28 +1,73 @@
 name: Deploy Firebase & Vercel
-
 on:
   push:
     branches: ["main"]
   workflow_dispatch:
 
 jobs:
+  prepr:
+    name: prepr-checks
+    runs-on: ubuntu-latest
+    outputs:
+      overall_status: ${{ steps.report.outputs.overall_status }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Ensure scripts executable
+        run: chmod +x scripts/*.sh || true
+
+      - name: Run prepr checks
+        id: run
+        run: bash scripts/prepr-checks.sh || true
+
+      - name: Upload prepr-report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: prepr-report
+          path: prepr-report.json
+
+      - name: Read report
+        id: report
+        if: always()
+        run: |
+          if [ -f prepr-report.json ]; then
+            jq -r '.overall_status' prepr-report.json > overall.txt || echo "FAIL" > overall.txt
+            echo "::set-output name=overall_status::$(cat overall.txt)"
+          else
+            echo "::set-output name=overall_status::FAIL"
+          fi
+
   deploy:
+    name: Deploy Firebase & Vercel
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Use Node.js 18
+      - name: Use Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Install dependencies and CLIs
         run: |
           npm ci
           npm install -g firebase-tools vercel
 
-      - name: Firebase: deploy backend resources
+      - name: Write Firebase service account
+        if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
+        run: |
+          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > "${{ github.workspace }}/firebase-sa.json"
+          chmod 600 "${{ github.workspace }}/firebase-sa.json"
+
+      - name: Firebase: deploy backend (rules, storage, functions)
         if: ${{ secrets.FIREBASE_TOKEN != '' }}
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
@@ -39,7 +84,11 @@ jobs:
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
           echo "Triggering Vercel deploy (project: $VERCEL_PROJECT_ID)"
-          # Use Vercel CLI to trigger a production deployment
           vercel --prod --token "$VERCEL_TOKEN" --confirm
+
+      - name: Smoke tests (HTTP)
+        run: |
+          echo "Checking frontend health..."
+          curl -I -m 10 https://chatus-app.vercel.app/chat/111 || true
 
 
