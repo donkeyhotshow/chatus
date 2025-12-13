@@ -9,18 +9,18 @@ jobs:
     name: prepr-checks
     runs-on: ubuntu-latest
     outputs: 
-      overall_status: ${{ steps.report.outputs.overall_status }}
+      overall_status: ${{ steps.report. outputs.overall_status }}
     steps:
-      - name: Checkout
+      - name:  Checkout
         uses: actions/checkout@v6
 
-      - name: Setup Node.js 20
+      - name:  Setup Node.js 20
         uses: actions/setup-node@v6
         with:
-          node-version:  20
+          node-version: 20
 
       - name:  Ensure scripts executable
-        run: chmod +x scripts/*.sh || true
+        run:  chmod +x scripts/*.sh || true
 
       - name: Run prepr checks
         id: run
@@ -44,7 +44,7 @@ jobs:
             echo "::set-output name=overall_status::FAIL"
           fi
 
-  deploy: 
+  deploy:  
     name: Deploy Firebase & Vercel
     runs-on:  ubuntu-latest
     steps: 
@@ -62,13 +62,13 @@ jobs:
           npm install -g firebase-tools vercel
 
       - name: Write Firebase service account
-        if: secrets.FIREBASE_SERVICE_ACCOUNT != ''
+        if: secrets. FIREBASE_SERVICE_ACCOUNT != ''
         run: |
           echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > "${{ github.workspace }}/firebase-sa.json"
           chmod 600 "${{ github.workspace }}/firebase-sa.json"
 
       - name: "Firebase:  deploy backend (rules, storage, functions)"
-        if: secrets.FIREBASE_TOKEN != ''
+        if: secrets. FIREBASE_TOKEN != ''
         env:
           FIREBASE_TOKEN:  ${{ secrets.FIREBASE_TOKEN }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
@@ -86,7 +86,7 @@ jobs:
           echo "Triggering Vercel deploy (project: $VERCEL_PROJECT_ID)"
           vercel --prod --token "$VERCEL_TOKEN" --confirm
 
-      - name: Smoke tests (HTTP)
+      - name:  Smoke tests (HTTP)
         run: |
           echo "Checking frontend health..."
-          curl -I -m 10 https://chatus-app.vercel.app/chat/111 || true
+          curl -I -m 10 https://chatus-app.vercel. app/chat/111 || true
