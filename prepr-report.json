@@ -1,0 +1,10 @@
+{
+  "node_ok": true,
+  "node_version": "v20.19.6",
+  "npm_ok": true,
+  "python_ok": false,
+  "ports_busy": [],
+  "check_secrets_status": 2,
+  "build_status": 0,
+  "overall_status": "FAIL"
+}
