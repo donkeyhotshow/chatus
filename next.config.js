@@ -1,17 +1,17 @@
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Игнорировать ошибки ESLint во время билда
+  // Не игнорировать ошибки ESLint во время билда
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
 
-  // Игнорировать ошибки TypeScript во время билда
+  // Не игнорировать ошибки TypeScript во время билда
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
 
-  reactStrictMode: true, // оставляем для dev
+  reactStrictMode: true,
 };
 
 module.exports = nextConfig;
