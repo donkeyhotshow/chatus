@@ -17,6 +17,7 @@ import { useCollection, useDoc } from '@/hooks/useCollection';
 import { doc } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { logger } from '@/lib/logger';
 
 
 type CanvasSheet = {
@@ -72,10 +73,10 @@ export function CollaborationSpace({
       setActiveSheetId(docRef.id);
       toast({ title: `Created ${newSheetName}` });
     } catch (error) {
-      console.error("Error creating new sheet:", error);
+      logger.error('Error creating new sheet', error as Error, { roomId, user: user?.id });
       toast({ title: 'Could not create new sheet', variant: 'destructive' });
     }
-  }, [user, service, sheets, setActiveSheetId, toast]);
+  }, [user, service, sheets, setActiveSheetId, toast, roomId]);
 
   useEffect(() => {
     if (!sheetsLoading && sheets?.length === 0) {
@@ -108,7 +109,10 @@ export function CollaborationSpace({
 
     if (!document.fullscreenElement) {
       elem.requestFullscreen().catch(err => {
-        console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+        logger.error('Error attempting to enable full-screen mode', err as Error, { 
+          message: err.message, 
+          name: err.name 
+        });
       });
     } else {
       document.exitFullscreen();

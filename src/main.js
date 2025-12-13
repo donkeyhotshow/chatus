@@ -1,20 +1,21 @@
 import { ref, set, get, push, onValue } from "firebase/database";
 import { db, auth } from "./firebase.js";
 import { signInAnonymously, onAuthStateChanged } from "firebase/auth";
+import { logger } from './lib/logger.js';
 
 // Записать простой объект в путь /test/hello
 export async function writeTest() {
   await set(ref(db, "test/hello"), { text: "hello world", ts: Date.now() });
-  console.log("Запись выполнена: /test/hello");
+  logger.debug("Запись выполнена: /test/hello");
 }
 
 // Прочитать значение
 export async function readTest() {
   const snapshot = await get(ref(db, "test/hello"));
   if (snapshot.exists()) {
-    console.log("Прочитанные данные:", snapshot.val());
+    logger.debug("Прочитанные данные:", { data: snapshot.val() });
   } else {
-    console.log("Нет данных в /test/hello");
+    logger.debug("Нет данных в /test/hello");
   }
 }
 
@@ -22,7 +23,7 @@ export async function readTest() {
 export async function pushMessage(obj) {
   const newRef = push(ref(db, "messages"));
   await set(newRef, { ...obj, ts: Date.now() });
-  console.log("Сообщение добавлено по пути:", newRef.key);
+  logger.debug("Сообщение добавлено по пути:", { key: newRef.key });
 }
 
 // Подписка на изменения в /messages
@@ -41,19 +42,19 @@ async function runSmokeTest() {
     if (auth) {
       try {
         await signInAnonymously(auth);
-        console.log("Signed in anonymously for smoke test (dev).");
+        logger.debug("Signed in anonymously for smoke test (dev)");
       } catch (e) {
-        console.warn("Anonymous sign-in failed (may already be signed in):", e);
+        logger.warn("Anonymous sign-in failed (may already be signed in)", { error: e });
       }
     }
 
     await writeTest();
     await readTest();
     subscribeMessages((v) => {
-      console.log("Подписка /messages обновлена:", v);
+      logger.debug("Подписка /messages обновлена:", { value: v });
     });
   } catch (err) {
-    console.error("Ошибка при тесте RTDB:", err);
+    logger.error("Ошибка при тесте RTDB", err);
   }
 }
 

@@ -1,5 +1,6 @@
 import { ref, set, onValue, onDisconnect, serverTimestamp as rtdbServerTimestamp, DatabaseReference } from 'firebase/database';
 import { db } from '@/firebase';
+import { logger } from './logger';
 
 // Simple debounce implementation
 function debounce<T extends (...args: unknown[]) => void>(
@@ -46,7 +47,7 @@ export class TypingManager {
           set(this.typingRef, false).catch(() => {});
         }, 1500);
       } catch (error) {
-        console.error('Failed to update typing status:', error);
+        logger.error('Failed to update typing status', error as Error, { userId: this.userId });
       }
     }, 300);
   }
@@ -122,7 +123,7 @@ export class PresenceManager {
         lastChanged: rtdbServerTimestamp()
       });
     } catch (error) {
-      console.error('Failed to set online status:', error);
+      logger.error('Failed to set online status', error as Error, { userId: this.userId });
     }
   }
 
@@ -136,7 +137,7 @@ export class PresenceManager {
         lastChanged: rtdbServerTimestamp()
       });
     } catch (error) {
-      console.error('Failed to set offline status:', error);
+      logger.error('Failed to set offline status', error as Error, { userId: this.userId });
     }
   }
 

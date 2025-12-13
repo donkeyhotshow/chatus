@@ -13,6 +13,7 @@ import { useFirebase } from '../firebase/FirebaseProvider';
 import { Slider } from '../ui/slider';
 import { useCollection, useDoc } from '@/hooks/useCollection'; // Note: using from same file is fine for this project size
 import { doc } from 'firebase/firestore';
+import { logger } from '@/lib/logger';
 
 const NEON_COLORS = [
   '#FFFFFF', '#EF4444', '#F97316', '#F59E0B', 
@@ -146,7 +147,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
             throw new Error('Invalid maze format');
           }
       } catch (err) {
-          console.warn('[WARN] Failed to parse maze string, skipping drawMaze:', err);
+          logger.warn('Failed to parse maze string, skipping drawMaze', { error: err });
           return;
       }
 
@@ -213,7 +214,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
       maze = JSON.parse(gameState.maze as string);
       if (!Array.isArray(maze) || maze.length === 0) return false;
     } catch (err) {
-      console.warn('[WARN] Failed to parse gameState.maze for collision check', err);
+      logger.warn('Failed to parse gameState.maze for collision check', { error: err });
       return false;
     }
     const gridX = Math.floor(x / MAZE_CELL_SIZE);
@@ -322,7 +323,11 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
           await service.saveCanvasPath(finalPathData);
         }
     } catch (error) {
-        console.error("Failed to save path:", error);
+        logger.error('Failed to save canvas path', error as Error, { 
+          sheetId, 
+          user: user?.id,
+          pathLength: currentPath.current.length 
+        });
         toast({ title: 'Could not save drawing', variant: 'destructive' });
     }
   };
@@ -357,7 +362,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
         await service.clearCanvasSheet(sheetId);
         toast({ title: "Canvas Cleared", description: "The current sheet has been cleared for everyone." });
     } catch (error) {
-        console.error("Error clearing canvas:", error);
+        logger.error('Error clearing canvas', error as Error, { sheetId });
         toast({ title: "Failed to clear canvas", variant: "destructive" });
     }
   };

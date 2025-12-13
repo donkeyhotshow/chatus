@@ -18,20 +18,25 @@ class Logger {
 
   error(message: string, error?: Error, context?: LogContext): void {
     const formatted = this.formatMessage('error', message, error, context);
-    console.error(formatted);
+    
+    // Always log errors (but only to console in development)
+    if (this.isDevelopment) {
+      console.error(formatted);
+    }
 
-    // In production, send to error tracking service
+    // In production, prepare for external error tracking
     if (!this.isDevelopment && typeof window !== 'undefined') {
-      // Example: Send to Sentry, LogRocket, etc.
-      // if (window.Sentry) {
-      //   window.Sentry.captureException(error || new Error(message), { extra: context });
-      // }
+      // Future: Send to Sentry or other error tracking
+      // For now, still log to console but with clear production marker
+      console.error('[PROD ERROR]', formatted);
     }
   }
 
   warn(message: string, context?: LogContext): void {
     const formatted = this.formatMessage('warn', message, undefined, context);
-    console.warn(formatted);
+    if (this.isDevelopment) {
+      console.warn(formatted);
+    }
   }
 
   info(message: string, context?: LogContext): void {

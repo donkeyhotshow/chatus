@@ -2,6 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getDatabase, connectDatabaseEmulator } from "firebase/database";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
+import { logger } from "./lib/logger.js";
 
 // Firebase public config (client-safe values) from environment variables
 const firebaseConfig = {
@@ -34,10 +35,8 @@ if (isDev) {
     connectAuthEmulator(auth, "http://localhost:9099", { disableWarnings: true });
     // Firestore emulator (default port 8080)
     connectFirestoreEmulator(firestore, "localhost", 8080);
-    // eslint-disable-next-line no-console
-    console.debug("Connected Firebase services to emulators (dev-only).");
+    logger.debug("Connected Firebase services to emulators (dev-only)");
   } catch (e) {
-    // eslint-disable-next-line no-console
-    console.warn("Failed to connect to Firebase emulators:", e);
+    logger.warn("Failed to connect to Firebase emulators", { error: e });
   }
 }
