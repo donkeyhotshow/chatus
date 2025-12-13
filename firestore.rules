@@ -1,0 +1,106 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    match /rooms/{roomId} {
+      // Restrict read access: only participants or explicitly public rooms may be read.
+      // Removed temporary global authenticated read to reduce data exposure.
+      function isParticipant() {
+        return request.auth.uid in resource.data.participants;
+      }
+      // Allow read only for participants or explicitly public rooms
+      allow read: if isParticipant() || (resource.data.public == true);
+
+      allow create: if request.resource.data.participants.size() == 1 &&
+                        request.resource.data.participantProfiles.size() == 1 &&
+                        request.auth.uid == request.resource.data.participants[0] &&
+                        request.auth.uid == request.resource.data.participantProfiles[0].id &&
+                        // Ensure room starts with exactly 1 participant
+                        request.resource.data.participants.size() == 1;
+      
+      allow read, update: if request.auth.uid in resource.data.participants;
+
+      // Allow a user to add themself to participants (join) by performing an update
+      // that only appends the current auth.uid to participants and participantProfiles.
+      // This allows clients to self-join without a separate server function.
+      // Limit rooms to maximum 2 participants for 1-on-1 chat
+      allow update: if request.auth.uid != null &&
+                    // Only participants/participantProfiles may change
+                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participants', 'participantProfiles']) &&
+                    // Ensure room doesn't exceed 2 participants
+                    request.resource.data.participants.size() <= 2 &&
+                    (
+                      // Join: append self (only if room has less than 2 participants)
+                      (
+                        request.resource.data.participants.hasAll(resource.data.participants) &&
+                        request.resource.data.participants.size() == resource.data.participants.size() + 1 &&
+                        request.auth.uid in request.resource.data.participants &&
+                        request.resource.data.participantProfiles.size() >= resource.data.participantProfiles.size() &&
+                        // Room must have less than 2 participants before joining
+                        resource.data.participants.size() < 2
+                      )
+                      ||
+                      // Leave: remove only self (no other removals)
+                      (
+                        // new participants is a strict subset of old
+                        resource.data.participants.hasAll(request.resource.data.participants) &&
+                        request.resource.data.participants.size() == resource.data.participants.size() - 1 &&
+                        request.auth.uid in resource.data.participants &&
+                        !(request.auth.uid in request.resource.data.participants) &&
+                        // participantProfiles reduced by one as well
+                        request.resource.data.participantProfiles.size() == resource.data.participantProfiles.size() - 1
+                      )
+                    );
+
+      match /messages/{messageId} {
+        // Allow read if user is a participant in the room
+        allow read: if request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.participants;
+
+        // Allow create if user is authenticated and a participant in the room
+        allow create: if request.auth.uid != null &&
+                          request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.participants &&
+                          request.auth.uid == request.resource.data.senderId;
+
+        allow delete: if request.auth.uid == resource.data.senderId;
+
+        // Allow update only for reactions, delivered, seen (sender cannot change delivered/seen)
+        allow update: if request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.participants &&
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'delivered', 'seen']) &&
+                      // Sender cannot modify delivered/seen fields
+                      (request.auth.uid != resource.data.senderId ||
+                       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['delivered', 'seen']));
+      }
+
+      match /canvasSheets/{sheetId} {
+        function isParticipant() {
+          return request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.participants;
+        }
+        allow read, create: if isParticipant();
+        allow delete: if false;
+      }
+      
+      match /canvasPaths/{pathId} {
+        function isParticipant() {
+          return request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.participants;
+        }
+        allow read, create: if isParticipant();
+        allow delete: if isParticipant();
+      }
+      
+       match /games/{gameId} {
+        function isParticipant() {
+          return request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.participants;
+        }
+        allow read, write: if isParticipant();
+      }
+    }
+
+    match /users/{userId} {
+        allow create: if request.auth.uid == userId;
+        // Allow read only for public profiles or the profile owner
+        allow read: if resource.data.public == true || request.auth.uid == userId;
+        allow update: if request.auth.uid == userId;
+    }
+  }
+}

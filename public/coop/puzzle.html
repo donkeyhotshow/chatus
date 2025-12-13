@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Кооперативная Физическая Головоломка</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 20px;
+    color: #333;
+}
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+h1 {
+    text-align: center;
+    color: #667eea;
+    margin-bottom: 20px;
+}
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+.controls input {
+    padding: 8px 12px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+}
+.controls button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    background: #667eea;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+.controls button:hover {
+    background: #5568d3;
+}
+.controls button:active {
+    transform: scale(0.98);
+}
+.controls button.add-btn {
+    background: #28a745;
+}
+.controls button.add-btn:hover {
+    background: #218838;
+}
+#game {
+    border: 3px solid #667eea;
+    border-radius: 8px;
+    display: block;
+    margin: 0 auto;
+    background: #f0f0f0;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.status {
+    text-align: center;
+    margin: 15px 0;
+    padding: 10px;
+    background: #e9ecef;
+    border-radius: 6px;
+    font-weight: 500;
+}
+.status.connected {
+    background: #d4edda;
+    color: #155724;
+}
+.status.disconnected {
+    background: #f8d7da;
+    color: #721c24;
+}
+#chat {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+}
+#messages {
+    flex: 1;
+    height: 120px;
+    overflow-y: auto;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    padding: 10px;
+    background: #f8f9fa;
+    font-size: 13px;
+}
+#messages div {
+    margin-bottom: 5px;
+    padding: 4px;
+    border-radius: 4px;
+}
+#messages div.system {
+    color: #6c757d;
+    font-style: italic;
+}
+#input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+}
+#send {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 6px;
+    background: #667eea;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+}
+#send:hover {
+    background: #5568d3;
+}
+.success-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #28a745;
+    color: white;
+    padding: 30px 50px;
+    border-radius: 12px;
+    font-size: 24px;
+    font-weight: bold;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    z-index: 1000;
+    animation: popIn 0.5s;
+    display: none;
+}
+@keyframes popIn {
+    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>🎮 Кооперативная Физическая Головоломка</h1>
+    
+    <div class="controls">
+        <input id="room" type="text" placeholder="Комната" value="room1">
+        <input id="name" type="text" placeholder="Ваше имя" value="player1">
+        <button id="connectBtn">Подключиться</button>
+        <button id="addBox" class="add-btn">➕ Коробка</button>
+        <button id="addCircle" class="add-btn">⭕ Круг</button>
+        <button id="addLever" class="add-btn">⚖️ Рычаг</button>
+        <button id="resetLevel">🔄 Сброс уровня</button>
+    </div>
+    
+    <div id="status" class="status disconnected">Отключено</div>
+    
+    <canvas id="game" width="800" height="600"></canvas>
+    
+    <div id="chat">
+        <div id="messages"></div>
+        <input id="input" type="text" placeholder="Введите сообщение..." onkeypress="if(event.key==='Enter') sendChat()">
+        <button id="send" onclick="sendChat()">Отправить</button>
+    </div>
+</div>
+
+<div id="successMessage" class="success-message">
+    🎉 Цепочка сработала! Отличная работа!
+</div>
+
+<script>
+const canvas = document.getElementById('game');
+const engine = Matter.Engine.create();
+const world = engine.world;
+const render = Matter.Render.create({
+    canvas: canvas,
+    engine: engine,
+    options: {
+        width: 800,
+        height: 600,
+        wireframes: false,
+        background: '#f0f0f0',
+        showAngleIndicator: true
+    }
+});
+
+Matter.Engine.run(engine);
+Matter.Render.run(render);
+
+let ws = null;
+let playerName = '';
+let roomName = '';
+const objects = new Map();
+let currentDragId = null;
+let ballId = null;
+let targetButton = null;
+let levelInitialized = false;
+let reconnectTimer = null;
+const messageQueue = [];
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 6;
+const RECONNECT_BASE_DELAY = 1000; // ms
+
+// Статические платформы
+const ground = Matter.Bodies.rectangle(400, 590, 810, 20, {
+    isStatic: true,
+    render: { fillStyle: '#8b4513' }
+});
+Matter.World.add(world, ground);
+
+// Левая стена
+const leftWall = Matter.Bodies.rectangle(5, 300, 10, 600, {
+    isStatic: true,
+    render: { fillStyle: '#8b4513' }
+});
+Matter.World.add(world, leftWall);
+
+// Правая стена
+const rightWall = Matter.Bodies.rectangle(795, 300, 10, 600, {
+    isStatic: true,
+    render: { fillStyle: '#8b4513' }
+});
+Matter.World.add(world, rightWall);
+
+// Целевая кнопка (оранжевая)
+targetButton = Matter.Bodies.circle(720, 550, 25, {
+    isStatic: true,
+    label: 'targetButton',
+    render: { fillStyle: '#f97316', strokeStyle: '#ea580c', lineWidth: 3 }
+});
+Matter.World.add(world, targetButton);
+
+// Индикатор кнопки
+const buttonIndicator = Matter.Bodies.rectangle(720, 520, 60, 10, {
+    isStatic: true,
+    render: { fillStyle: '#f97316' }
+});
+Matter.World.add(world, buttonIndicator);
+
+function addMessage(msg, isSystem = false) {
+    const m = document.getElementById('messages');
+    if (!m) return;
+    const div = document.createElement('div');
+    div.textContent = msg;
+    if (isSystem) div.className = 'system';
+    m.appendChild(div);
+    m.scrollTop = m.scrollHeight;
+}
+
+function updateStatus(connected) {
+    const status = document.getElementById('status');
+    if (!status) return;
+    if (connected) {
+        status.textContent = `✅ Подключено к комнате "${roomName}" как "${playerName}"`;
+        status.className = 'status connected';
+    } else {
+        status.textContent = '❌ Отключено';
+        status.className = 'status disconnected';
+    }
+}
+
+// Безопасная отправка сообщений
+function safeSend(data) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        try {
+            ws.send(JSON.stringify(data));
+        } catch (error) {
+            console.error('Send error:', error);
+            messageQueue.push(data);
+        }
+    } else {
+        messageQueue.push(data);
+    }
+}
+
+// WebSocket соединение
+function connectWS() {
+    if (ws) {
+        ws.close();
+    }
+    
+    if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+    }
+    
+    ws = new WebSocket(`ws://localhost:8000/ws/${roomName}/${playerName}`);
+    
+    ws.onopen = () => {
+        reconnectAttempts = 0;
+        updateStatus(true);
+        addMessage(`Подключено к комнате "${roomName}"`, true);
+        
+        // Отправляем накопленные сообщения из очереди
+        while (messageQueue.length > 0 && ws.readyState === WebSocket.OPEN) {
+            const msg = messageQueue.shift();
+            try {
+                ws.send(JSON.stringify(msg));
+            } catch (error) {
+                messageQueue.unshift(msg);
+                break;
+            }
+        }
+    };
+    
+    ws.onclose = () => {
+        updateStatus(false);
+        addMessage('Соединение закрыто', true);
+
+        if (reconnectTimer) clearTimeout(reconnectTimer);
+        if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+            const delay = RECONNECT_BASE_DELAY * (2 ** reconnectAttempts);
+            reconnectAttempts++;
+            reconnectTimer = setTimeout(() => {
+                addMessage(`Переподключение (попытка ${reconnectAttempts})...`, true);
+                connectWS();
+            }, delay);
+        } else {
+            addMessage('Повторные попытки подключения исчерпаны', true);
+        }
+    };
+    
+    ws.onerror = (error) => {
+        addMessage('Ошибка соединения', true);
+        console.error('WebSocket error:', error);
+    };
+    
+    ws.onmessage = (e) => {
+        if (!e?.data) return;
+        try {
+            const msg = JSON.parse(e.data);
+            if (!msg) return;
+
+            if (msg.type === 'init') {
+                // Восстанавливаем объекты из сервера
+                msg.objects.forEach(o => {
+                    spawnObject(o, true);
+                });
+                msg.chat.forEach(c => {
+                    addMessage(`${c.player}: ${c.message}`);
+                });
+            } else if (msg.type === 'spawn') {
+                spawnObject(msg, true);
+            } else if (msg.type === 'update') {
+                updateObject(msg, true);
+            } else if (msg.type === 'remove') {
+                removeObject(msg, true);
+            } else if (msg.type === 'chat') {
+                addMessage(`${msg.player}: ${msg.message}`);
+            } else if (msg.type === 'player_joined') {
+                addMessage(`👋 ${msg.player} присоединился`, true);
+            } else if (msg.type === 'player_left') {
+                addMessage(`👋 ${msg.player} покинул комнату`, true);
+            }
+        } catch (err) {
+            console.error('WS message parse error:', err);
+        }
+    };
+}
+
+const connectBtnEl = document.getElementById('connectBtn');
+if (connectBtnEl) {
+    connectBtnEl.onclick = () => {
+        const roomEl = document.getElementById('room');
+        const nameEl = document.getElementById('name');
+        roomName = roomEl ? roomEl.value.trim() || 'room1' : 'room1';
+        playerName = nameEl ? nameEl.value.trim() || 'player1' : 'player1';
+        if (!levelInitialized) {
+            initLevel();
+        }
+        connectWS();
+    };
+}
+
+// Регистрация объекта
+function registerObject(id, type, body) {
+    objects.set(id, { type, body });
+    body.plugin = { id };
+}
+
+// Создание объектов
+function spawnObject(data, isRemote = false) {
+    const {
+        id = crypto.randomUUID(),
+        type,
+        x = 400,
+        y = 300,
+        w = 60,
+        h = 60,
+        r = 20,
+        length = 100
+    } = data;
+    
+    let body;
+    
+    if (type === 'box') {
+        body = Matter.Bodies.rectangle(x, y, w, h, {
+            restitution: 0.3,
+            friction: 0.2,
+            render: { fillStyle: '#4a90e2', strokeStyle: '#2c5aa0', lineWidth: 2 }
+        });
+    } else if (type === 'circle') {
+        body = Matter.Bodies.circle(x, y, r, {
+            restitution: 0.3,
+            friction: 0.2,
+            render: { fillStyle: '#e74c3c', strokeStyle: '#c0392b', lineWidth: 2 }
+        });
+    } else if (type === 'ball') {
+        body = Matter.Bodies.circle(x, y, r, {
+            restitution: 0.6,
+            friction: 0.1,
+            density: 0.001,
+            render: { fillStyle: '#f39c12', strokeStyle: '#d68910', lineWidth: 2 }
+        });
+        ballId = id;
+    } else if (type === 'lever') {
+        body = Matter.Bodies.rectangle(x, y, length, 20, {
+            restitution: 0.2,
+            density: 0.002,
+            render: { fillStyle: '#9b59b6', strokeStyle: '#7d3c98', lineWidth: 2 }
+        });
+        const pivot = Matter.Constraint.create({
+            pointA: { x, y },
+            bodyB: body,
+            pointB: { x: 0, y: 0 },
+            stiffness: 1,
+            render: { strokeStyle: '#7d3c98', lineWidth: 2 }
+        });
+        Matter.World.add(world, pivot);
+    } else if (type === 'platform') {
+        body = Matter.Bodies.rectangle(x, y, w, h, {
+            isStatic: true,
+            render: { fillStyle: '#95a5a6', strokeStyle: '#7f8c8d', lineWidth: 2 }
+        });
+    }
+    
+    if (body) {
+        Matter.World.add(world, body);
+        registerObject(id, type, body);
+        
+        if (!isRemote) {
+            safeSend({
+                type: 'spawn',
+                id,
+                type,
+                x,
+                y,
+                w,
+                h,
+                r,
+                length
+            });
+        }
+    }
+}
+
+// Интерполяция для плавного движения
+const interpolationFactor = 0.3; // Скорость интерполяции (0-1)
+
+function updateObject(data, isRemote = false) {
+    const obj = objects.get(data.id);
+    if (obj && isRemote) {
+        const targetX = data.x;
+        const targetY = data.y;
+        const currentX = obj.body.position.x;
+        const currentY = obj.body.position.y;
+        
+        // Плавная интерполяция вместо мгновенного скачка
+        const newX = currentX * (1 - interpolationFactor) + targetX * interpolationFactor;
+        const newY = currentY * (1 - interpolationFactor) + targetY * interpolationFactor;
+        
+        Matter.Body.setPosition(obj.body, { x: newX, y: newY });
+        
+        if (data.angle !== undefined) {
+            const currentAngle = obj.body.angle;
+            const targetAngle = data.angle;
+            // Нормализация угла для плавного поворота
+            let angleDiff = targetAngle - currentAngle;
+            if (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+            if (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+            const newAngle = currentAngle + angleDiff * interpolationFactor;
+            Matter.Body.setAngle(obj.body, newAngle);
+        }
+    }
+}
+
+function removeObject(data, isRemote = false) {
+    const obj = objects.get(data.id);
+    if (obj) {
+        Matter.World.remove(world, obj.body);
+        objects.delete(data.id);
+        if (data.id === ballId) {
+            ballId = null;
+        }
+    }
+}
+
+// Кнопки создания объектов
+const addBoxEl = document.getElementById('addBox');
+if (addBoxEl) {
+  addBoxEl.onclick = () => {
+    spawnObject({
+        type: 'box',
+        x: Math.random() * 700 + 50,
+        y: 50,
+        w: 60,
+        h: 60
+    });
+  };
+}
+
+const addCircleEl = document.getElementById('addCircle');
+if (addCircleEl) {
+  addCircleEl.onclick = () => {
+    spawnObject({
+        type: 'circle',
+        x: Math.random() * 700 + 50,
+        y: 50,
+        r: 20
+    });
+  };
+}
+
+const addLeverEl = document.getElementById('addLever');
+if (addLeverEl) {
+  addLeverEl.onclick = () => {
+    spawnObject({
+        type: 'lever',
+        x: Math.random() * 700 + 50,
+        y: Math.random() * 300 + 100,
+        length: 100
+    });
+  };
+}
+
+// Инициализация стартового уровня
+function initLevel() {
+    if (levelInitialized) return;
+    
+    // Очищаем существующие объекты (кроме статических)
+    objects.forEach((obj, id) => {
+        if (obj.type !== 'platform') {
+            Matter.World.remove(world, obj.body);
+            objects.delete(id);
+        }
+    });
+    
+    // Стартовый шар
+    spawnObject({
+        type: 'ball',
+        x: 100,
+        y: 100,
+        r: 25
+    }, false);
+    
+    // Платформы для построения цепочки
+    spawnObject({
+        type: 'platform',
+        x: 250,
+        y: 400,
+        w: 120,
+        h: 15
+    }, false);
+    
+    spawnObject({
+        type: 'platform',
+        x: 450,
+        y: 350,
+        w: 120,
+        h: 15
+    }, false);
+    
+    spawnObject({
+        type: 'platform',
+        x: 600,
+        y: 450,
+        w: 100,
+        h: 15
+    }, false);
+    
+    // Рычаг для финального участка
+    spawnObject({
+        type: 'lever',
+        x: 680,
+        y: 500,
+        length: 80
+    }, false);
+    
+    levelInitialized = true;
+    addMessage('🎮 Уровень загружен! Постройте цепочку, чтобы шар попал на оранжевую кнопку!', true);
+}
+
+const resetLevelEl = document.getElementById('resetLevel');
+if (resetLevelEl) {
+  resetLevelEl.onclick = () => {
+    levelInitialized = false;
+    initLevel();
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        // Уведомляем других игроков о сбросе
+        objects.forEach((obj, id) => {
+            if (obj.type !== 'platform' && obj.type !== 'ball') {
+                safeSend({ type: 'remove', id });
+            }
+        });
+    }
+  };
+}
+
+// Drag & Drop
+const mouse = Matter.Mouse.create(canvas);
+const mouseConstraint = Matter.MouseConstraint.create(engine, {
+    mouse: mouse,
+    constraint: {
+        stiffness: 0.2,
+        render: { visible: false }
+    }
+});
+Matter.World.add(world, mouseConstraint);
+
+Matter.Events.on(mouseConstraint, 'startdrag', (e) => {
+    currentDragId = e.body.plugin?.id;
+});
+
+Matter.Events.on(mouseConstraint, 'enddrag', () => {
+    currentDragId = null;
+});
+
+// Throttle для обновлений
+function throttle(fn, ms) {
+    let last = 0;
+    return (...args) => {
+        const now = Date.now();
+        if (now - last > ms) {
+            last = now;
+            fn(...args);
+        }
+    };
+}
+
+const sendUpdateThrottled = throttle((obj, id) => {
+    safeSend({
+        type: 'update',
+        id,
+        x: obj.position.x,
+        y: obj.position.y,
+        angle: obj.angle
+    });
+}, 50);
+
+Matter.Events.on(engine, 'afterUpdate', () => {
+    if (currentDragId) {
+        const obj = objects.get(currentDragId);
+        if (obj) {
+            sendUpdateThrottled(obj.body, currentDragId);
+        }
+    }
+});
+
+// Проверка попадания на кнопку
+let buttonPressed = false;
+Matter.Events.on(engine, 'collisionStart', (event) => {
+    event.pairs.forEach(pair => {
+        if ((pair.bodyA === targetButton || pair.bodyB === targetButton) && !buttonPressed) {
+            buttonPressed = true;
+            const successMsg = document.getElementById('successMessage');
+            if (successMsg) successMsg.style.display = 'block';
+            addMessage('🎉 Цепочка сработала! Отличная работа!', true);
+            
+            setTimeout(() => {
+                const successMsgHide = document.getElementById('successMessage');
+                if (successMsgHide) successMsgHide.style.display = 'none';
+                buttonPressed = false;
+            }, 3000);
+        }
+    });
+});
+
+// Чат
+function sendChat() {
+    const input = document.getElementById('input');
+    if (!input) return;
+    const msg = input.value.trim();
+    if (msg) {
+        safeSend({ type: 'chat', message: msg });
+        input.value = '';
+    }
+}
+
+// Инициализация уровня при загрузке
+window.addEventListener('load', () => {
+    initLevel();
+});
+</script>
+</body>
+</html>
+
