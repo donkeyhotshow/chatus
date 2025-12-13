@@ -111,7 +111,7 @@ service cloud.firestore {
         allow delete: if isParticipant();
       }
       
-       match /games/{gameId} {
+      match /games/{gameId} {
         function isParticipant() {
           return request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.participants;
         }
