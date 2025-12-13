@@ -36,9 +36,20 @@ try {
 
   // Initialize services
   firestore = getFirestore(app);
-  rtdb = getDatabase(app, firebaseConfig.databaseURL);
   auth = getAuth(app);
   storage = getStorage(app);
+  
+  // Initialize Realtime Database (optional, requires databaseURL)
+  try {
+    rtdb = getDatabase(app, firebaseConfig.databaseURL);
+  } catch (dbError) {
+    logger.warn("Failed to initialize Realtime Database", { 
+      error: dbError,
+      hasDatabaseURL: !!firebaseConfig.databaseURL 
+    });
+    // Create a dummy database reference that will fail gracefully if used
+    rtdb = null as any;
+  }
 
   // Analytics only in browser
   if (typeof window !== "undefined") {
@@ -64,9 +75,19 @@ try {
     logger.warn("Using fallback: existing Firebase app");
     app = existingApps[0];
     firestore = getFirestore(app);
-    rtdb = getDatabase(app, firebaseConfig.databaseURL);
     auth = getAuth(app);
     storage = getStorage(app);
+    
+    // Try to initialize Realtime Database (optional)
+    try {
+      rtdb = getDatabase(app, firebaseConfig.databaseURL);
+    } catch (dbError) {
+      logger.warn("Failed to initialize Realtime Database in fallback", { 
+        error: dbError,
+        hasDatabaseURL: !!firebaseConfig.databaseURL 
+      });
+      rtdb = null as any;
+    }
   } else {
     throw error;
   }
