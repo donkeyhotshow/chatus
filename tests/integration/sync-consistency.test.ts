@@ -26,7 +26,7 @@ class SyncTestClient {
       throw new Error(`Duplicate object ID: ${obj.id}`);
     }
     this.objects.set(obj.id, { ...obj });
-    this.sentMessages.push({ type: 'spawn', ...obj });
+    this.sentMessages.push({ action: 'spawn', ...obj });
   }
   
   updateObject(obj: Partial<GameObject> & { id: string }) {
@@ -35,7 +35,7 @@ class SyncTestClient {
     }
     const existing = this.objects.get(obj.id)!;
     this.objects.set(obj.id, { ...existing, ...obj });
-    this.sentMessages.push({ type: 'update', ...obj });
+    this.sentMessages.push({ action: 'update', ...obj });
   }
   
   removeObject(id: string) {
@@ -43,26 +43,27 @@ class SyncTestClient {
       throw new Error(`Object not found for removal: ${id}`);
     }
     this.objects.delete(id);
-    this.sentMessages.push({ type: 'remove', id });
+    this.sentMessages.push({ action: 'remove', id });
   }
   
   receiveMessage(msg: any) {
     this.receivedMessages.push(msg);
+    const action = (msg as any).action ?? msg.type;
     
-    if (msg.type === 'spawn') {
+    if (action === 'spawn') {
       if (this.objects.has(msg.id)) {
         // Дубликат - это проблема
         throw new Error(`Received duplicate spawn for ID: ${msg.id}`);
       }
       this.objects.set(msg.id, msg);
-    } else if (msg.type === 'update') {
+    } else if (action === 'update') {
       if (!this.objects.has(msg.id)) {
         // Обновление несуществующего объекта
         throw new Error(`Received update for non-existent object: ${msg.id}`);
       }
       const existing = this.objects.get(msg.id)!;
       this.objects.set(msg.id, { ...existing, ...msg });
-    } else if (msg.type === 'remove') {
+    } else if (action === 'remove') {
       if (!this.objects.has(msg.id)) {
         // Удаление несуществующего объекта
         throw new Error(`Received remove for non-existent object: ${msg.id}`);
@@ -117,7 +118,7 @@ describe('Sync Consistency Tests', () => {
       client1.spawnObject(obj);
       
       // Симулируем broadcast на сервере
-      const spawnMsg = { type: 'spawn', ...obj };
+      const spawnMsg = { action: 'spawn', ...obj };
       client2.receiveMessage(spawnMsg);
       client3.receiveMessage(spawnMsg);
       
@@ -147,10 +148,10 @@ describe('Sync Consistency Tests', () => {
       client2.spawnObject(obj2);
       
       // Симулируем broadcast
-      client1.receiveMessage({ type: 'spawn', ...obj2 });
-      client2.receiveMessage({ type: 'spawn', ...obj1 });
-      client3.receiveMessage({ type: 'spawn', ...obj1 });
-      client3.receiveMessage({ type: 'spawn', ...obj2 });
+      client1.receiveMessage({ action: 'spawn', ...obj2 });
+      client2.receiveMessage({ action: 'spawn', ...obj1 });
+      client3.receiveMessage({ action: 'spawn', ...obj1 });
+      client3.receiveMessage({ action: 'spawn', ...obj2 });
       
       // Все клиенты должны иметь оба объекта
       expect(client1.getObjectCount()).toBe(2);
@@ -165,14 +166,14 @@ describe('Sync Consistency Tests', () => {
       
       // Создаём объект на всех клиентах
       client1.spawnObject(obj);
-      client2.receiveMessage({ type: 'spawn', ...obj });
-      client3.receiveMessage({ type: 'spawn', ...obj });
+      client2.receiveMessage({ action: 'spawn', ...obj });
+      client3.receiveMessage({ action: 'spawn', ...obj });
       
       // Client1 обновляет объект
       client1.updateObject({ id: 'obj1', x: 150, y: 150 });
       
       // Симулируем broadcast
-      const updateMsg = { type: 'update', id: 'obj1', x: 150, y: 150 };
+      const updateMsg = { action: 'update', id: 'obj1', x: 150, y: 150 };
       client2.receiveMessage(updateMsg);
       client3.receiveMessage(updateMsg);
       
@@ -186,12 +187,12 @@ describe('Sync Consistency Tests', () => {
       const obj: GameObject = { id: 'obj1', type: 'box', x: 100, y: 100 };
       
       client1.spawnObject(obj);
-      client2.receiveMessage({ type: 'spawn', ...obj });
+      client2.receiveMessage({ action: 'spawn', ...obj });
       
       // Отправляем 10 быстрых обновлений
       for (let i = 0; i < 10; i++) {
         client1.updateObject({ id: 'obj1', x: 100 + i * 10, y: 100 });
-        client2.receiveMessage({ type: 'update', id: 'obj1', x: 100 + i * 10, y: 100 });
+        client2.receiveMessage({ action: 'update', id: 'obj1', x: 100 + i * 10, y: 100 });
       }
       
       // Финальное состояние должно совпадать
@@ -206,14 +207,14 @@ describe('Sync Consistency Tests', () => {
       
       // Создаём объект на всех клиентах
       client1.spawnObject(obj);
-      client2.receiveMessage({ type: 'spawn', ...obj });
-      client3.receiveMessage({ type: 'spawn', ...obj });
+      client2.receiveMessage({ action: 'spawn', ...obj });
+      client3.receiveMessage({ action: 'spawn', ...obj });
       
       // Client1 удаляет объект
       client1.removeObject('obj1');
       
       // Симулируем broadcast
-      const removeMsg = { type: 'remove', id: 'obj1' };
+      const removeMsg = { action: 'remove', id: 'obj1' };
       client2.receiveMessage(removeMsg);
       client3.receiveMessage(removeMsg);
       
@@ -239,11 +240,8 @@ describe('Sync Consistency Tests', () => {
       client1.spawnObject(obj);
       
       // Client2 получает update ДО spawn (race condition)
-      client2.receiveMessage({ type: 'update', id: 'obj1', x: 150, y: 150 });
-      
-      // Это должно вызвать ошибку, так как объект не существует
       expect(() => {
-        client2.receiveMessage({ type: 'update', id: 'obj1', x: 150, y: 150 });
+        client2.receiveMessage({ action: 'update', id: 'obj1', x: 150, y: 150 });
       }).toThrow('Received update for non-existent object');
     });
     
@@ -251,15 +249,15 @@ describe('Sync Consistency Tests', () => {
       const obj: GameObject = { id: 'obj1', type: 'box', x: 100, y: 100 };
       
       client1.spawnObject(obj);
-      client2.receiveMessage({ type: 'spawn', ...obj });
+      client2.receiveMessage({ action: 'spawn', ...obj });
       
       // Два клиента обновляют одновременно
       client1.updateObject({ id: 'obj1', x: 150, y: 100 });
       client2.updateObject({ id: 'obj1', x: 100, y: 150 });
       
       // Симулируем broadcast обоих обновлений
-      client1.receiveMessage({ type: 'update', id: 'obj1', x: 100, y: 150 });
-      client2.receiveMessage({ type: 'update', id: 'obj1', x: 150, y: 100 });
+      client1.receiveMessage({ action: 'update', id: 'obj1', x: 100, y: 150 });
+      client2.receiveMessage({ action: 'update', id: 'obj1', x: 150, y: 100 });
       
       // Финальное состояние должно быть согласованным
       // (последнее обновление побеждает)
@@ -288,7 +286,7 @@ describe('Sync Consistency Tests', () => {
       // Симулируем broadcast всех spawn сообщений
       clients.forEach((sender, senderIdx) => {
         const spawnMsg = {
-          type: 'spawn',
+          action: 'spawn',
           id: `obj${senderIdx}`,
           type: 'box',
           x: senderIdx * 100,
@@ -308,4 +306,3 @@ describe('Sync Consistency Tests', () => {
     });
   });
 });
-

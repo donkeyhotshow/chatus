@@ -10,26 +10,31 @@ import fs from 'fs';
 import path from 'path';
 import { doc, setDoc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
 
+const hasEmulator = !!process.env.FIRESTORE_EMULATOR_HOST;
+const describeIf = hasEmulator ? describe : describe.skip;
+
 const projectId = 'chatforus-test';
 let testEnv: RulesTestEnvironment;
 
-beforeAll(async () => {
-  const rules = fs.readFileSync(path.resolve(process.cwd(), 'firestore.rules'), 'utf8');
-  testEnv = await initializeTestEnvironment({
-    projectId,
-    firestore: { rules },
+if (hasEmulator) {
+  beforeAll(async () => {
+    const rules = fs.readFileSync(path.resolve(process.cwd(), 'firestore.rules'), 'utf8');
+    testEnv = await initializeTestEnvironment({
+      projectId,
+      firestore: { rules },
+    });
   });
-});
+  
+  afterAll(async () => {
+    await testEnv.cleanup();
+  });
+  
+  beforeEach(async () => {
+    await clearFirestoreData({ projectId });
+  });
+}
 
-afterAll(async () => {
-  await testEnv.cleanup();
-});
-
-beforeEach(async () => {
-  await clearFirestoreData({ projectId });
-});
-
-describe('Firestore rules - participants', () => {
+describeIf('Firestore rules - participants', () => {
   it('allows a user to join by adding only themselves', async () => {
     const adminDb = testEnv.withSecurityRulesDisabled().firestore();
     await setDoc(doc(adminDb, 'rooms', 'room-join'), {
@@ -91,7 +96,7 @@ describe('Firestore rules - participants', () => {
   });
 });
 
-describe('Firestore rules - messages', () => {
+describeIf('Firestore rules - messages', () => {
   it('allows sender to delete own message', async () => {
     const adminDb = testEnv.withSecurityRulesDisabled().firestore();
     await setDoc(doc(adminDb, 'rooms', 'room-msg'), {
@@ -126,7 +131,7 @@ describe('Firestore rules - messages', () => {
   });
 });
 
-describe('Firestore rules - rate limits', () => {
+describeIf('Firestore rules - rate limits', () => {
   it('allows user to read/write own rate limit', async () => {
     const user1Db = testEnv.authenticatedContext('u1').firestore();
     await assertSucceeds(
@@ -150,7 +155,7 @@ describe('Firestore rules - rate limits', () => {
   });
 });
 
-describe('Firestore rules - canvas validation', () => {
+describeIf('Firestore rules - canvas validation', () => {
   it('allows creating canvas sheet with valid name', async () => {
     const adminDb = testEnv.withSecurityRulesDisabled().firestore();
     await setDoc(doc(adminDb, 'rooms', 'room-canvas'), {
@@ -255,7 +260,7 @@ describe('Firestore rules - canvas validation', () => {
   });
 });
 
-describe('Firestore rules - games validation', () => {
+describeIf('Firestore rules - games validation', () => {
   it('allows creating game with type and active fields', async () => {
     const adminDb = testEnv.withSecurityRulesDisabled().firestore();
     await setDoc(doc(adminDb, 'rooms', 'room-game'), {
@@ -288,7 +293,7 @@ describe('Firestore rules - games validation', () => {
   });
 });
 
-describe('Firestore rules - message reactions validation', () => {
+describeIf('Firestore rules - message reactions validation', () => {
   it('allows updating message with reactions under limit', async () => {
     const adminDb = testEnv.withSecurityRulesDisabled().firestore();
     await setDoc(doc(adminDb, 'rooms', 'room-reactions'), {
@@ -338,7 +343,7 @@ describe('Firestore rules - message reactions validation', () => {
   });
 });
 
-describe('Smoke e2e: create -> join -> send -> delete own -> leave', () => {
+describeIf('Smoke e2e: create -> join -> send -> delete own -> leave', () => {
   it('runs happy path with rules', async () => {
     const user1Db = testEnv.authenticatedContext('u1').firestore();
     const user2Db = testEnv.authenticatedContext('u2').firestore();
@@ -387,4 +392,3 @@ describe('Smoke e2e: create -> join -> send -> delete own -> leave', () => {
     expect(roomSnap.data()?.participants).toEqual(['u1']);
   });
 });
-

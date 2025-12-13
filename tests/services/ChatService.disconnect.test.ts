@@ -26,6 +26,62 @@ vi.mock('@/lib/error-emitter', () => ({
   }
 }));
 
+vi.mock('firebase/firestore', () => {
+  return {
+    collection: vi.fn(() => ({})),
+    doc: vi.fn(() => ({ path: '' })),
+    query: vi.fn(),
+    orderBy: vi.fn(),
+    where: vi.fn(),
+    limit: vi.fn(),
+    startAfter: vi.fn(),
+    onSnapshot: vi.fn((_ref: any, onNext?: any) => {
+      if (onNext) {
+        onNext({
+          exists: () => false,
+          data: () => ({}),
+          empty: true,
+          docs: [],
+        });
+      }
+      return vi.fn();
+    }),
+    getDocs: vi.fn(async () => ({ docs: [], empty: true })),
+    addDoc: vi.fn(async () => ({})),
+    serverTimestamp: vi.fn(() => ({ toMillis: () => Date.now() })),
+    runTransaction: vi.fn(),
+    updateDoc: vi.fn(),
+    arrayRemove: vi.fn(),
+    arrayUnion: vi.fn(),
+    getDoc: vi.fn(async () => ({ exists: () => false })),
+    setDoc: vi.fn(),
+    writeBatch: vi.fn(() => ({
+      delete: vi.fn(),
+      commit: vi.fn(),
+    })),
+    deleteDoc: vi.fn(),
+    Timestamp: { now: () => ({ toMillis: () => Date.now() }) },
+    Firestore: class {},
+    DocumentSnapshot: class {},
+  };
+});
+
+vi.mock('@/lib/demo-mode', () => ({
+  isDemoMode: vi.fn(() => true),
+}));
+
+vi.mock('@/lib/firebase-config', () => ({
+  isFirebaseConfigValid: vi.fn(() => true),
+}));
+
+vi.mock('@/lib/realtime', () => ({
+  TypingManager: vi.fn(() => ({
+    subscribeToTyping: vi.fn(),
+    sendTyping: vi.fn(),
+    disconnect: vi.fn(),
+  })),
+}));
+
 const mockMessageQueue = {
   setSendCallback: vi.fn()
 };
@@ -61,14 +117,13 @@ describe('ChatService - Disconnect', () => {
   });
 
   it('should clear all subscriptions on disconnect', async () => {
-    const unsubscribes = (chatService as any).unsubscribes as Array<() => void>;
     const mockUnsub = vi.fn();
-    unsubscribes.push(mockUnsub);
+    (chatService as any).unsubscribes.push(mockUnsub);
 
     await chatService.disconnect();
 
     expect(mockUnsub).toHaveBeenCalled();
-    expect(unsubscribes.length).toBe(0);
+    expect((chatService as any).unsubscribes.length).toBe(0);
   });
 
   it('should clear timers on disconnect', async () => {
@@ -103,4 +158,3 @@ describe('ChatService - Disconnect', () => {
     expect((chatService as any).receivedMessageIds.size).toBe(0);
   });
 });
-

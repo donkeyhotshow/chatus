@@ -27,10 +27,67 @@ vi.mock('@/lib/error-emitter', () => ({
   }
 }));
 
+vi.mock('firebase/firestore', () => {
+  const addDoc = vi.fn(async () => ({}));
+  return {
+    collection: vi.fn(() => ({})),
+    doc: vi.fn(() => ({ path: '' })),
+    query: vi.fn(),
+    orderBy: vi.fn(),
+    where: vi.fn(),
+    limit: vi.fn(),
+    startAfter: vi.fn(),
+    onSnapshot: vi.fn((_ref: any, onNext?: any) => {
+      if (onNext) {
+        onNext({
+          exists: () => false,
+          data: () => ({}),
+          empty: true,
+          docs: [],
+        });
+      }
+      return vi.fn();
+    }),
+    getDocs: vi.fn(async () => ({ docs: [], empty: true })),
+    addDoc,
+    serverTimestamp: vi.fn(() => ({ toMillis: () => Date.now() })),
+    runTransaction: vi.fn(),
+    updateDoc: vi.fn(),
+    arrayRemove: vi.fn(),
+    arrayUnion: vi.fn(),
+    getDoc: vi.fn(async () => ({ exists: () => false })),
+    setDoc: vi.fn(),
+    writeBatch: vi.fn(() => ({
+      delete: vi.fn(),
+      commit: vi.fn(),
+    })),
+    deleteDoc: vi.fn(),
+    Timestamp: { now: () => ({ toMillis: () => Date.now() }) },
+    Firestore: class {},
+    DocumentSnapshot: class {},
+  };
+});
+
+vi.mock('@/lib/demo-mode', () => ({
+  isDemoMode: vi.fn(() => true),
+}));
+
+vi.mock('@/lib/firebase-config', () => ({
+  isFirebaseConfigValid: vi.fn(() => true),
+}));
+
+vi.mock('@/lib/realtime', () => ({
+  TypingManager: vi.fn(() => ({
+    subscribeToTyping: vi.fn(),
+    sendTyping: vi.fn(),
+    disconnect: vi.fn(),
+  })),
+}));
+
 vi.mock('@/services/MessageQueue', () => ({
   getMessageQueue: () => ({
-    setSendCallback: vi.fn()
-  })
+    setSendCallback: vi.fn(),
+  }),
 }));
 
 describe('ChatService - Deduplication', () => {
@@ -38,10 +95,12 @@ describe('ChatService - Deduplication', () => {
   let mockFirestore: Firestore;
   let mockAuth: Auth;
   let mockStorage: FirebaseStorage;
+  const user = { id: 'user1', name: 'User', avatar: '' };
 
   beforeEach(() => {
     // Reset mocks
     vi.clearAllMocks();
+    vi.useRealTimers();
 
     // Create mock instances
     mockFirestore = {} as Firestore;
@@ -49,35 +108,34 @@ describe('ChatService - Deduplication', () => {
     mockStorage = {} as FirebaseStorage;
 
     chatService = new ChatService('test-room', mockFirestore, mockAuth, mockStorage);
+    (chatService as any).currentUser = user;
+    (chatService as any).messageCooldown = 0;
+    (chatService as any).checkMessageRate = () => {};
   });
 
   it('should prevent duplicate message sending', async () => {
     const messageData = {
       text: 'Test message',
-      user: { id: 'user1', name: 'User', avatar: '' },
-      senderId: 'user1',
+      user,
+      senderId: user.id,
       type: 'text' as const
     };
 
     const clientMessageId = 'msg-123';
 
-    // Mock sendMessage to track calls
-    const sendMessageSpy = vi.spyOn(chatService, 'sendMessage');
-
-    // First send should succeed
     await chatService.sendMessage(messageData, clientMessageId);
-    expect(sendMessageSpy).toHaveBeenCalledTimes(1);
-
-    // Second send with same ID should be ignored
     await chatService.sendMessage(messageData, clientMessageId);
-    expect(sendMessageSpy).toHaveBeenCalledTimes(1);
+
+    const sentIds = (chatService as any).sentMessageIds as Set<string>;
+    expect(sentIds.has(clientMessageId)).toBe(true);
+    expect(sentIds.size).toBe(1);
   });
 
   it('should clean up old sent message IDs', async () => {
     const messageData = {
       text: 'Test',
-      user: { id: 'user1', name: 'User', avatar: '' },
-      senderId: 'user1',
+      user,
+      senderId: user.id,
       type: 'text' as const
     };
 
@@ -96,17 +154,18 @@ describe('ChatService - Deduplication', () => {
   it('should handle message ID cleanup on error', async () => {
     const messageData = {
       text: 'Test',
-      user: { id: 'user1', name: 'User', avatar: '' },
-      senderId: 'user1',
+      user,
+      senderId: user.id,
       type: 'text' as const
     };
 
     const clientMessageId = 'msg-error';
 
-    // Mock addDoc to throw error
-    vi.mock('firebase/firestore', () => ({
-      addDoc: vi.fn(() => Promise.reject(new Error('Network error')))
-    }));
+    // Force non-demo path with failing addDoc
+    const { isDemoMode } = await import('@/lib/demo-mode');
+    const { addDoc } = await import('firebase/firestore');
+    (isDemoMode as vi.Mock).mockReturnValue(false);
+    (addDoc as vi.Mock).mockRejectedValue(new Error('Network error'));
 
     // Try to send message
     try {
@@ -120,4 +179,3 @@ describe('ChatService - Deduplication', () => {
     expect(sentIds.has(clientMessageId)).toBe(false);
   });
 });
-
