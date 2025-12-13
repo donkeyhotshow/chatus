@@ -1,3 +1,4 @@
+'use client';
 
 import {
   collection, query, orderBy, onSnapshot, addDoc,
@@ -71,21 +72,28 @@ export class ChatService {
   private sentMessageIds = new Set<string>();
   private receivedMessageIds = new Set<string>();
 
-  private messageQueue = getMessageQueue();
+  private _messageQueue: ReturnType<typeof getMessageQueue> | null = null;
 
   // RTDB managers
   private typingManager: TypingManager | null = null;
+
+  // Lazy getter for messageQueue to avoid initialization order issues
+  private get messageQueue() {
+    if (!this._messageQueue) {
+      this._messageQueue = getMessageQueue();
+      // Setup message queue callback
+      this._messageQueue.setSendCallback((messageData, clientMessageId) => {
+        return this.sendMessage(messageData, clientMessageId);
+      });
+    }
+    return this._messageQueue;
+  }
 
   constructor(roomId: string, firestore: Firestore, auth: Auth, storage: FirebaseStorage) {
     this.roomId = roomId;
     this.firestore = firestore;
     this.auth = auth;
     this.storage = storage;
-    
-    // Setup message queue callback
-    this.messageQueue.setSendCallback((messageData, clientMessageId) => {
-      return this.sendMessage(messageData, clientMessageId);
-    });
     
     this.initListeners();
   }
