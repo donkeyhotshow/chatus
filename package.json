@@ -4,11 +4,17 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build || true",
+    "build": "next build",
+    "build:unsafe": "next build || true",
     "start": "next start",
     "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
     "preview": "next build && next start",
-    "test:emulator": "node tests/emulator/rtdb-emulator-test.mjs"
+    "test:emulator": "node tests/emulator/rtdb-emulator-test.mjs",
+    "test:unit": "vitest run",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.24.3",
