@@ -25,7 +25,7 @@ jobs:
 
       - name: Upload prepr-report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: prepr-report
           path: prepr-report.json
