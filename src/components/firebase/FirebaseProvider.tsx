@@ -7,6 +7,7 @@ import { Auth } from 'firebase/auth';
 import { Firestore } from 'firebase/firestore';
 import { FirebaseStorage } from 'firebase/storage';
 import { getFirebase } from '@/lib/firebase';
+import { logger } from '@/lib/logger';
 
 interface FirebaseContextType {
   app: FirebaseApp;
@@ -29,7 +30,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
   
   useEffect(() => {
     setIsMounted(true);
-    console.log('[DEBUG] FirebaseProvider: Attempting to get Firebase instances...');
+    logger.debug('FirebaseProvider: Attempting to get Firebase instances');
     // Optional experimental fetch sanitization (default off)
     if (sanitizeFetchEnabled) {
     try {
@@ -51,18 +52,18 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
             return originalFetch(input, init);
           };
           globalAny.__fetch_sanitized__ = true;
-            console.debug('[DEBUG] Global fetch monkey-patched to sanitize URLs (experimental flag enabled).');
+            logger.debug('Global fetch monkey-patched to sanitize URLs (experimental flag enabled)');
         }
       }
     } catch (e) {
-      console.debug('[DEBUG] Failed to patch fetch', e);
+      logger.debug('Failed to patch fetch', { error: e });
       }
     }
     // The getFirebase function handles the singleton pattern for us.
     const instances = getFirebase();
     if (instances) {
         setFirebaseInstances(instances);
-        console.log('[DEBUG] FirebaseProvider: Firebase instances successfully set.');
+        logger.debug('FirebaseProvider: Firebase instances successfully set');
         if (sanitizeFetchEnabled) {
         // If runtime app.options contain unexpected characters (CR/LF) or mismatch with sanitized config,
         // try to unregister service workers to force clients to load a fresh copy (cache-bust).
@@ -74,13 +75,16 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
           const hasCRLFInRuntime = /[\\r\\n]/.test(String(runtimeProjectId || '')) || /[\\r\\n]/.test(String(runtimeAuthDomain || ''));
           const mismatch = runtimeProjectId !== sanitizedProjectId || runtimeAuthDomain !== sanitizedAuthDomain;
           if ((hasCRLFInRuntime || mismatch) && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-            console.warn('[WARN] Detected runtime env mismatch or CRLF in app.options. Unregistering service workers to force refresh.');
+            logger.warn('Detected runtime env mismatch or CRLF in app.options', { 
+              runtimeProjectId, 
+              sanitizedProjectId 
+            });
             navigator.serviceWorker.getRegistrations().then(regs => {
               regs.forEach(r => r.unregister());
               // Give browser a moment then reload
               setTimeout(() => window.location.reload(), 500);
             }).catch(e => {
-              console.error('[ERROR] Failed to unregister service workers', e);
+              logger.error('Failed to unregister service workers', e as Error);
             });
           }
         } catch (e) {
@@ -88,13 +92,13 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
         }
         }
     } else {
-        console.error('[ERROR] FirebaseProvider: Failed to get Firebase instances.');
+        logger.error('Failed to get Firebase instances');
     }
   }, [sanitizeFetchEnabled]);
 
   // Prevent hydration mismatch by rendering the same on server and client initially
   if (!isMounted || !firebaseInstances) {
-    console.log('[DEBUG] FirebaseProvider: Not mounted or instances not ready, showing fallback UI.');
+    logger.debug('FirebaseProvider: Not mounted or instances not ready, showing fallback UI');
     return (
       <div className="flex h-screen w-full items-center justify-center bg-black text-white">
         <div className="animate-pulse flex flex-col items-center gap-4">
@@ -105,7 +109,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  console.log('[DEBUG] FirebaseProvider: Rendering children with FirebaseContext.');
+  logger.debug('FirebaseProvider: Rendering children with FirebaseContext');
   return (
     <FirebaseContext.Provider value={firebaseInstances}>
       {children}

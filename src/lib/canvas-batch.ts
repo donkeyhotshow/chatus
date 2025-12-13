@@ -1,6 +1,7 @@
 'use client';
 
 import { CanvasPath } from './types';
+import { logger } from './logger';
 
 /**
  * Canvas batching utility
@@ -61,7 +62,10 @@ class CanvasBatcher {
       // Send all strokes in parallel
       await Promise.all(strokes.map(stroke => this.onBatch([stroke])));
     } catch (error) {
-      console.error('Error flushing canvas batch', error);
+      logger.error('Canvas batch flush failed', error as Error, { 
+        strokeCount: strokes.length,
+        pendingCount: this.pendingStrokes.length 
+      });
       // Re-add failed strokes for retry
       this.pendingStrokes.push(...strokes.map(pathData => ({
         pathData,

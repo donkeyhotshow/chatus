@@ -5,6 +5,7 @@ import { getDatabase, connectDatabaseEmulator } from "firebase/database";
 import { getAuth, connectAuthEmulator } from "firebase/auth";
 import { getStorage, connectStorageEmulator } from "firebase/storage";
 import { firebaseConfig } from "./firebase-config";
+import { logger } from "./logger";
 
 // Initialize app idempotently
 const app = !getApps().length ? initializeApp(firebaseConfig as any) : getApps()[0];
@@ -22,15 +23,15 @@ export const storage = getStorage(app);
 try {
   enableIndexedDbPersistence(firestore).catch((err: any) => {
     if (err?.code === "failed-precondition") {
-      console.warn("Firestore persistence failed: multiple tabs open. Disabled.", err);
+      logger.warn("Firestore persistence failed: multiple tabs open. Disabled.", { error: err });
     } else if (err?.code === "unimplemented") {
-      console.warn("Firestore persistence not available in this environment. Disabled.", err);
+      logger.warn("Firestore persistence not available in this environment. Disabled.", { error: err });
     } else {
-      console.warn("Firestore persistence failed to enable:", err);
+      logger.warn("Firestore persistence failed to enable", { error: err });
     }
   });
 } catch (e) {
-  console.warn("Unexpected error enabling Firestore persistence:", e);
+  logger.warn("Unexpected error enabling Firestore persistence", { error: e });
 }
 
 // Connect emulators in development when requested
@@ -42,7 +43,7 @@ if (useEmulators) {
     connectAuthEmulator(auth, `http://${process.env.AUTH_EMULATOR_HOST || "localhost"}:${Number(process.env.AUTH_EMULATOR_PORT || 9099)}`, { disableWarnings: true });
     connectStorageEmulator(storage, process.env.STORAGE_EMULATOR_HOST || "localhost", Number(process.env.STORAGE_EMULATOR_PORT || 9199));
   } catch (e) {
-    console.warn("Failed to connect Firebase emulators:", e);
+    logger.warn("Failed to connect Firebase emulators", { error: e });
   }
 }
 

@@ -3,6 +3,7 @@
 // For Vercel, add these variables in Settings → Environment Variables
 
 import { isDemoMode } from './demo-mode';
+import { logger } from './logger';
 
 function sanitizeEnv(value: unknown) {
   if (value == null) return '';
@@ -34,14 +35,13 @@ const rawAuthDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || '';
 const projectIdHasCRLF = /[\\r\\n]/.test(rawProjectId);
 const authDomainHasCRLF = /[\\r\\n]/.test(rawAuthDomain);
 
-console.debug('[DEBUG] firebaseConfig (masked):', {
-  apiKey: maskSensitive(firebaseConfig.apiKey),
-  projectId: firebaseConfig.projectId,
+logger.debug('Firebase config loaded', {
+  projectId: maskSensitive(firebaseConfig.projectId),
+  hasApiKey: !!firebaseConfig.apiKey,
+  authDomain: maskSensitive(firebaseConfig.authDomain),
   projectIdRawLength: rawProjectId.length,
   projectIdRawContainsCRLF: projectIdHasCRLF,
-  authDomain: firebaseConfig.authDomain,
-  authDomainRawContainsCRLF: authDomainHasCRLF,
-  appId: maskSensitive(firebaseConfig.appId),
+  authDomainRawContainsCRLF: authDomainHasCRLF
 });
 
 /**
@@ -76,7 +76,7 @@ export function isFirebaseConfigValid(): boolean {
   
   // Config is valid if none of the placeholders are present
   const isValid = !hasPlaceholderApiKey && !hasPlaceholderProjectId && !hasPlaceholderAuthDomain;
-  console.log('[DEBUG] Firebase Config Status:', {
+  logger.debug('Firebase config validation', {
     apiKey: apiKey ? 'SET' : 'NOT SET',
     projectId: projectId ? 'SET' : 'NOT SET',
     authDomain: authDomain ? 'SET' : 'NOT SET',
