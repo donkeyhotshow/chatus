@@ -30,7 +30,7 @@ export interface UseRoomManagerReturn {
   loadMoreMessages: () => Promise<void>;
   deleteMessage: (messageId: string) => Promise<void>;
   toggleReaction: (messageId: string, emoji: string, user: UserProfile) => Promise<void>;
-  setTypingStatus: (username: string, isTyping: boolean) => Promise<void>;
+  // setTypingStatus: (username: string, isTyping: boolean) => Promise<void>; // TODO: Restore when implemented
   uploadImage: (file: File) => Promise<string>;
   updateGameState: (gameId: string, newState: Partial<GameState>) => Promise<void>;
   deleteGame: (gameId: string) => Promise<void>;
@@ -137,10 +137,13 @@ export function useRoomManager(roomId: string): UseRoomManagerReturn {
     await roomManager.toggleReaction(messageId, emoji, user);
   }, [roomManager]);
 
+  // TODO: Restore when RoomManager implements setTypingStatus
+  /*
   const setTypingStatus = useCallback(async (username: string, isTyping: boolean) => {
     if (!roomManager) return;
     await roomManager.setTypingStatus(username, isTyping);
   }, [roomManager]);
+  */
 
   const uploadImage = useCallback(async (file: File) => {
     if (!roomManager) throw new Error('RoomManager not initialized');
@@ -182,7 +185,7 @@ export function useRoomManager(roomId: string): UseRoomManagerReturn {
     loadMoreMessages,
     deleteMessage,
     toggleReaction,
-    setTypingStatus,
+    // setTypingStatus, // TODO: Restore when implemented
     uploadImage,
     updateGameState,
     deleteGame,

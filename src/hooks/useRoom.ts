@@ -54,7 +54,6 @@ export function useRoom(roomId: string): UseRoomResult {
         id: roomId,
         participants: [],
         participantProfiles: [],
-        typing: [],
         createdAt: new Date(),
         lastUpdated: new Date(),
         settings: {}
@@ -126,7 +125,6 @@ export function useRoom(roomId: string): UseRoomResult {
           id: roomId,
           participants: [],
           participantProfiles: [],
-          typing: [],
           createdAt: new Date(),
           lastUpdated: new Date(),
           settings: {}

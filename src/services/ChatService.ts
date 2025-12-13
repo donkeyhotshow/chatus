@@ -1,7 +1,7 @@
 
 import {
   collection, query, orderBy, onSnapshot, addDoc,
-  serverTimestamp, where, Unsubscribe, deleteDoc, doc, runTransaction, limit, updateDoc, setDoc, getDoc, Firestore, DocumentData, writeBatch, getDocs, DocumentReference, DocumentSnapshot, startAfter, Timestamp
+  serverTimestamp, where, Unsubscribe, deleteDoc, doc, runTransaction, limit, updateDoc, setDoc, getDoc, Firestore, DocumentData, writeBatch, getDocs, DocumentReference, DocumentSnapshot, startAfter, Timestamp, arrayRemove
 } from "firebase/firestore";
 import { TypingManager } from '@/lib/realtime';
 import { ref, uploadBytes, getDownloadURL, FirebaseStorage } from "firebase/storage";
@@ -266,19 +266,22 @@ export class ChatService {
       if (snapshot.empty) return;
 
       const newMessages = snapshot.docs
-        .map(doc => {
-          const data = doc.data();
+        .map(docSnapshot => {
+          const data = docSnapshot.data();
           return {
-            id: doc.id,
-            ...data,
-            // Ensure senderId exists (backward compatibility)
-            senderId: data.senderId || data.user?.id || '',
-            // Ensure boolean fields exist (backward compatibility)
-            delivered: data.delivered ?? false,
-            seen: data.seen ?? false,
-          } as Message;
+            message: {
+              id: docSnapshot.id,
+              ...data,
+              // Ensure senderId exists (backward compatibility)
+              senderId: data.senderId || data.user?.id || '',
+              // Ensure boolean fields exist (backward compatibility)
+              delivered: data.delivered ?? false,
+              seen: data.seen ?? false,
+            } as Message,
+            docRef: docSnapshot.ref
+          };
         })
-        .filter(msg => {
+        .filter(({ message: msg }) => {
           // Deduplicate by message ID and clientMessageId
           const dedupeKey = msg.id || msg.clientMessageId;
           if (!dedupeKey) return true; // Keep if no ID
@@ -289,10 +292,10 @@ export class ChatService {
           this.receivedMessageIds.add(dedupeKey);
           return true;
         })
-        .map(msg => {
+        .map(({ message: msg, docRef }) => {
           // Mark messages from other users as delivered
           if (msg.senderId !== this.currentUser?.id && !msg.delivered) {
-            updateDoc(doc.ref, { delivered: true }).catch(() => {});
+            updateDoc(docRef, { delivered: true }).catch(() => {});
             msg.delivered = true;
           }
           return msg;
@@ -963,22 +966,22 @@ export class ChatService {
   /**
    * Remove undefined values from object (Firestore doesn't support undefined)
    */
-  private removeUndefinedValues<T extends Record<string, unknown>>(obj: T): Partial<T> {
+  private removeUndefinedValues(obj: unknown): unknown {
     if (obj === null || typeof obj !== 'object') {
       return obj;
     }
     
     if (Array.isArray(obj)) {
-      return obj.map(item => this.removeUndefinedValues(item)) as Partial<T>;
+      return obj.map(item => this.removeUndefinedValues(item));
     }
     
     const cleaned: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj)) {
       if (value !== undefined) {
-        cleaned[key] = this.removeUndefinedValues(value as Record<string, unknown>);
+        cleaned[key] = this.removeUndefinedValues(value);
       }
     }
-    return cleaned as Partial<T>;
+    return cleaned;
   }
   
   public async updateGameState(gameId: string, newState: Partial<GameState>) {
@@ -994,7 +997,7 @@ export class ChatService {
     const gameRef = doc(this.firestore, 'rooms', this.roomId, 'games', gameId);
     try {
       // Remove undefined values before sending to Firestore
-      const cleanedState = this.removeUndefinedValues(newState);
+      const cleanedState = this.removeUndefinedValues(newState) as Partial<GameState>;
       await setDoc(gameRef, cleanedState, { merge: true });
     } catch (error) {
       const err = error as FirebaseError;

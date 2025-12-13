@@ -1,6 +1,6 @@
 'use client';
 
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, Firestore } from 'firebase/firestore';
 import { Room, FirebaseError } from '@/lib/types';
 import { logger } from '@/lib/logger';
 import { isDemoMode } from '@/lib/demo-mode';
@@ -22,7 +22,6 @@ export class RoomService {
         id: roomId,
         participants: [],
         participantProfiles: [],
-        typing: [],
         createdAt: new Date(),
         lastUpdated: new Date(),
         settings: {}
@@ -51,7 +50,6 @@ export class RoomService {
             id: roomId,
             participants: [],
             participantProfiles: [],
-            typing: [],
             createdAt: new Date(),
             lastUpdated: new Date(),
             settings: {}

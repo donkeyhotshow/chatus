@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreVertical, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { MoreVertical, PanelRightClose, PanelRightOpen, WifiOff } from 'lucide-react';
 import { UserProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
