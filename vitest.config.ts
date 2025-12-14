@@ -7,7 +7,7 @@ export default defineConfig({
     setupFiles: "./tests/setup/vitest.setup.ts",
     globals: true,
     // By default skip integration and heavy stress tests unless RUN_INTEGRATION env var is set
-    exclude: process.env.RUN_INTEGRATION === 'true' ? [] : ['tests/integration/**', 'tests/**/load-stress.*', 'tests/rules/**'],
+    exclude: process.env.RUN_INTEGRATION === 'true' ? ['node_modules'] : ['node_modules', 'tests/integration/**', 'tests/**/load-stress.*', 'tests/rules/**'],
   },
   resolve: {
     alias: {

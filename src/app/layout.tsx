@@ -65,7 +65,7 @@ export default function RootLayout({
         <ErrorBoundary>
           <FirebaseProvider>
             <ClientLayout>
-              <div className="flex flex-col h-screen w-full bg-black text-neutral-200 font-sans selection:bg-white selection:text-black overflow-hidden">
+              <div className="flex flex-col h-dvh w-full bg-black text-neutral-200 font-sans selection:bg-white selection:text-black overflow-hidden">
                 <header className="h-14 shrink-0 border-b border-white/10 flex items-center px-6 bg-neutral-950 z-50">
                   <div className="flex items-center gap-3 select-none group cursor-default">
                     <div className="p-1.5 bg-white text-black rounded-lg group-hover:scale-105 transition-transform">
