@@ -55,10 +55,10 @@ import { FCMManager } from '../src/lib/firebase-messaging';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
 // Mocking Firebase Messaging
-jest.mock('firebase/messaging', () => ({
-  getMessaging: jest.fn(() => ({})),
-  getToken: jest.fn(() => Promise.resolve('mock-fcm-token')),
-  onMessage: jest.fn(),
+vi.mock('firebase/messaging', () => ({
+  getMessaging: vi.fn(() => ({})),
+  getToken: vi.fn(() => Promise.resolve('mock-fcm-token')),
+  onMessage: vi.fn(),
 }));
 
 // --- Firebase Emulator Setup ---
@@ -75,7 +75,7 @@ async function clearFirestore() {
   // For client-side tests, we'll just delete specific documents created by tests.
 }
 
-describe('FCMManager', () => {
+describe('FCMManager Integration', () => {
   const userId = 'testUserFCM123';
   let fcmManager: FCMManager;
 
@@ -85,7 +85,7 @@ describe('FCMManager', () => {
     // Mock Notification API
     Object.defineProperty(window, 'Notification', {
       value: {
-        requestPermission: jest.fn(() => Promise.resolve('granted')),
+        requestPermission: vi.fn(() => Promise.resolve('granted')),
         permission: 'granted',
       },
       writable: true,
@@ -95,7 +95,7 @@ describe('FCMManager', () => {
   });
 
   afterEach(async () => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     await clearFirestore();
   });
 
@@ -121,7 +121,7 @@ describe('FCMManager', () => {
   });
 
   test('should not save token if permission denied', async () => {
-    (window.Notification.requestPermission as jest.Mock).mockResolvedValueOnce('denied');
+    (window.Notification.requestPermission as any).mockResolvedValueOnce('denied');
     await fcmManager.initialize(userId);
     expect(getToken).not.toHaveBeenCalled();
     const userDocRef = doc(firestore, 'users', userId);
@@ -141,14 +141,11 @@ describe('FCMManager', () => {
       notification: { title: 'Test Title', body: 'Test Body' },
       data: { roomId: 'testRoom' }
     };
-    
+
     // Manually trigger the onMessage callback
-    const onMessageCallback = (onMessage as jest.Mock).mock.calls[0][1];
+    const onMessageCallback = (onMessage as any).mock.calls[0][1];
     onMessageCallback(mockPayload);
 
-    // In a real browser environment, `new Notification` would be called.
-    // Here, we can only check if `onMessage` was registered and would have been triggered.
-    // Further mocking of `new Notification` would be needed for a full assertion.
     expect(console.log).toHaveBeenCalledWith('FCMManager: Foreground message received', {
       payload: mockPayload
     });
