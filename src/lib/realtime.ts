@@ -1,6 +1,9 @@
-import { ref, set, onValue, onDisconnect, serverTimestamp as rtdbServerTimestamp, DatabaseReference } from 'firebase/database';
-import { rtdb } from '@/lib/firebase';
+import { ref, set, onValue, onDisconnect, serverTimestamp as rtdbServerTimestamp, DatabaseReference, push, get } from 'firebase/database';
+import { getClientFirebase } from '@/lib/firebase';
 import { logger } from './logger';
+
+// Provide rtdb convenience variable for modules expecting it
+const { rtdb } = getClientFirebase();
 
 // Simple debounce implementation
 function debounce<T extends (...args: unknown[]) => void>(
@@ -36,7 +39,7 @@ export class TypingManager {
   constructor(roomId: string, userId: string) {
     this.roomId = roomId;
     this.userId = userId;
-    
+    const { rtdb } = getClientFirebase();
     if (!rtdb) {
       throw new Error('Realtime Database not initialized. Please configure NEXT_PUBLIC_FIREBASE_DATABASE_URL');
     }
@@ -109,63 +112,95 @@ export class TypingManager {
  */
 export class PresenceManager {
   private userId: string;
+  private rtdb: any;
+  private connId: string | null = null;
+  private connRef: DatabaseReference | null = null;
   private statusRef: DatabaseReference;
   private unsubscribe: (() => void) | null = null;
+  private connectedRef: DatabaseReference;
+  private onValueUnsubscribe: (() => void) | null = null;
 
   constructor(userId: string) {
     this.userId = userId;
-    
+    const { rtdb } = getClientFirebase();
     if (!rtdb) {
       throw new Error('Realtime Database not initialized. Please configure NEXT_PUBLIC_FIREBASE_DATABASE_URL');
     }
+    this.rtdb = rtdb;
+    this.statusRef = ref(this.rtdb, `status/${userId}`);
+    this.connectedRef = ref(this.rtdb, '.info/connected');
+  }
+
+  async goOnline(userId: string): Promise<void> {
+    // Генеруємо унікальний ID для цього з'єднання
+    const connectionsRef = ref(this.rtdb, `connections/${userId}`);
+    const newConnRef = push(connectionsRef);
+    this.connId = newConnRef.key!;
+    this.connRef = newConnRef;
+
+    // Встановлюємо connection як активне
+    await set(this.connRef, {
+      online: true,
+      connectedAt: rtdbServerTimestamp()
+    });
+
+    // При disconnect видаляємо тільки це з'єднання
+    onDisconnect(this.connRef).remove();
+
+    // Оновлюємо агрегований статус
+    await this.updateAggregatedStatus(userId);
+
+    // Підписуємось на .info/connected для моніторингу
+    this.onValueUnsubscribe = onValue(this.connectedRef, (snapshot) => {
+      if (snapshot.val() === false) {
+        // З'єднання втрачено - RTDB автоматично виконає onDisconnect
+        return;
+      }
+      // Відновлюємо onDisconnect після reconnect
+      if (this.connRef) {
+        onDisconnect(this.connRef).remove();
+      }
+    });
+    // Log current connection id for telemetry/debugging
+    try {
+      logger.info('PresenceManager.goOnline: connection started', { userId, connId: this.connId });
+    } catch (err) {
+      logger.debug('PresenceManager.goOnline: failed to log connection start', { error: String(err) });
+    }
+  }
+
+  private async updateAggregatedStatus(userId: string): Promise<void> {
+    const connectionsRef = ref(this.rtdb, `connections/${userId}`);
+    const snapshot = await get(connectionsRef);
+    const count = snapshot.exists() ? Object.keys(snapshot.val()).length : 0;
     
-    this.statusRef = ref(rtdb, `status/${userId}`);
-  }
-
-  /**
-   * Set user online
-   */
-  async setOnline() {
+    await set(this.statusRef, {
+      state: count > 0 ? 'online' : 'offline',
+      lastChanged: rtdbServerTimestamp(),
+      activeConnections: count
+    });
     try {
-      await set(this.statusRef, {
-        state: 'online',
-        lastChanged: rtdbServerTimestamp()
-      });
-
-      // Set offline on disconnect
-      onDisconnect(this.statusRef).set({
-        state: 'offline',
-        lastChanged: rtdbServerTimestamp()
-      });
-    } catch (error) {
-      logger.error('Failed to set online status', error as Error, { userId: this.userId });
+      logger.debug('PresenceManager.updateAggregatedStatus', { userId, activeConnections: count });
+    } catch (err) {
+      // Non-critical logging error
     }
   }
 
-  /**
-   * Set user offline
-   */
-  async setOffline() {
-    try {
-      await set(this.statusRef, {
-        state: 'offline',
-        lastChanged: rtdbServerTimestamp()
-      });
-    } catch (error) {
-      logger.error('Failed to set offline status', error as Error, { userId: this.userId });
+  async goOffline(): Promise<void> {
+    if (this.connRef) {
+      await set(this.connRef, null); // Set to null to trigger onDisconnect if not already disconnected
+      this.connRef = null;
+      this.connId = null;
     }
+    if (this.onValueUnsubscribe) {
+      this.onValueUnsubscribe();
+      this.onValueUnsubscribe = null;
+    }
+    await this.updateAggregatedStatus(this.userId); // Update aggregated status after going offline
   }
 
-  /**
-   * Subscribe to presence changes for all users
-   */
   subscribeToPresence(callback: (presence: { [userId: string]: PresenceState }) => void) {
-    if (!rtdb) {
-      logger.warn('Realtime Database not available, presence tracking disabled');
-      return;
-    }
-    
-    const allStatusRef = ref(rtdb, 'status');
+    const allStatusRef = ref(this.rtdb, 'status');
 
     this.unsubscribe = onValue(allStatusRef, (snapshot) => {
       const data = snapshot.val() || {};
@@ -174,12 +209,26 @@ export class PresenceManager {
   }
 
   /**
-   * Cleanup
+   * Unsubscribe presence listener without going offline.
+   * Useful to stop receiving aggregated presence updates while keeping the connection alive.
    */
+  public unsubscribePresence() {
+    if (this.unsubscribe) {
+      try {
+        this.unsubscribe();
+      } catch (err) {
+        // swallow errors
+      } finally {
+        this.unsubscribe = null;
+      }
+    }
+  }
+
   disconnect() {
     if (this.unsubscribe) {
       this.unsubscribe();
       this.unsubscribe = null;
     }
+    this.goOffline(); // Ensure to set offline and cleanup connection
   }
 }

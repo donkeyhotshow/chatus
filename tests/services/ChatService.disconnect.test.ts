@@ -28,6 +28,7 @@ vi.mock('@/lib/error-emitter', () => ({
 
 vi.mock('firebase/firestore', () => {
   return {
+    getFirestore: vi.fn(() => ({})),
     collection: vi.fn(() => ({})),
     doc: vi.fn(() => ({ path: '' })),
     query: vi.fn(),

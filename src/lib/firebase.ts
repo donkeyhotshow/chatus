@@ -1,153 +1,56 @@
-import { initializeApp, getApps, FirebaseApp } from "firebase/app";
-import { getAnalytics, Analytics } from "firebase/analytics";
-import { getFirestore, enableIndexedDbPersistence, connectFirestoreEmulator, Firestore } from "firebase/firestore";
-import { getDatabase, connectDatabaseEmulator, Database } from "firebase/database";
-import { getAuth, connectAuthEmulator, Auth } from "firebase/auth";
-import { getStorage, connectStorageEmulator, FirebaseStorage } from "firebase/storage";
-import { firebaseConfig } from "./firebase-config";
-import { logger } from "./logger";
+import { initializeApp, getApps } from "firebase/app";
+import { getAnalytics, isSupported as analyticsIsSupported } from "firebase/analytics";
+import { getAuth } from "firebase/auth";
+import { getDatabase } from "firebase/database";
+import { getFirestore } from "firebase/firestore";
+import { getMessaging } from "firebase/messaging";
 
-// Initialize app idempotently with better safeguards
-let app: FirebaseApp;
-let analytics: Analytics | null = null;
-let firestore: Firestore;
-let rtdb: Database | null = null;
-let auth: Auth;
-let storage: FirebaseStorage;
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
+  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL!,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID!,
+};
+
+// Idempotent app init
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
+
 const isBrowser = typeof window !== "undefined";
 
-try {
-  const existingApps = getApps();
-  
-  if (!existingApps.length) {
-    logger.info("Initializing Firebase app", { 
-      projectId: firebaseConfig.projectId,
-      authDomain: firebaseConfig.authDomain,
-      hasDatabaseURL: !!firebaseConfig.databaseURL
-    });
-    app = initializeApp(firebaseConfig);
-  } else {
-    logger.info("Using existing Firebase app", { 
-      appName: existingApps[0].name,
-      projectId: existingApps[0].options.projectId,
-      existingAppsCount: existingApps.length
-    });
-    app = existingApps[0];
-  }
-
-  // Initialize services
-  firestore = getFirestore(app);
-  auth = getAuth(app);
-  storage = getStorage(app);
-  
-  // Initialize Realtime Database (optional, requires databaseURL)
-  if (firebaseConfig.databaseURL) {
-    try {
-      rtdb = getDatabase(app, firebaseConfig.databaseURL);
-    } catch (dbError) {
-      logger.warn("Failed to initialize Realtime Database", { 
-        error: dbError,
-        databaseURL: firebaseConfig.databaseURL 
-      });
-      rtdb = null;
-    }
-  } else {
-    logger.info("Realtime Database not initialized: databaseURL not configured");
-    rtdb = null;
-  }
-
-  // Analytics only in browser
-  if (isBrowser) {
-    try {
-      analytics = getAnalytics(app);
-    } catch (error) {
-      logger.warn("Failed to initialize Analytics", { error });
-    }
-  }
-
-} catch (error) {
-  logger.error("Failed to initialize Firebase", error as Error, { 
-    config: {
-      projectId: firebaseConfig.projectId,
-      authDomain: firebaseConfig.authDomain,
-      hasDatabaseURL: !!firebaseConfig.databaseURL
-    }
-  });
-  
-  // Fallback: try to use existing app if initialization fails
-  const existingApps = getApps();
-  if (existingApps.length > 0) {
-    logger.warn("Using fallback: existing Firebase app");
-    app = existingApps[0];
-    firestore = getFirestore(app);
-    auth = getAuth(app);
-    storage = getStorage(app);
-    
-    // Try to initialize Realtime Database (optional)
-    if (firebaseConfig.databaseURL) {
-      try {
-        rtdb = getDatabase(app, firebaseConfig.databaseURL);
-      } catch (dbError) {
-        logger.warn("Failed to initialize Realtime Database in fallback", { 
-          error: dbError,
-          databaseURL: firebaseConfig.databaseURL 
-        });
-        rtdb = null;
+// Analytics: init only when supported in browser
+let analytics: ReturnType<typeof getAnalytics> | null = null;
+if (isBrowser) {
+  analyticsIsSupported()
+    .then((supported) => {
+      if (supported) {
+        try {
+          analytics = getAnalytics(app);
+        } catch {
+          analytics = null;
+        }
       }
-    } else {
-      rtdb = null;
-    }
-  } else {
-    throw error;
-  }
+    })
+    .catch(() => {
+      analytics = null;
+    });
 }
 
-// Export services
-export { app, analytics, firestore, rtdb, auth, storage };
+const auth = getAuth(app);
+const db = getDatabase(app);
+const firestore = getFirestore(app);
 
-// Enable IndexedDB persistence (best-effort)
+let messaging: ReturnType<typeof getMessaging> | null = null;
 if (isBrowser) {
   try {
-    enableIndexedDbPersistence(firestore).catch((err: any) => {
-      if (err?.code === "failed-precondition") {
-        logger.warn("Firestore persistence failed: multiple tabs open. Disabled.", { error: err });
-      } else if (err?.code === "unimplemented") {
-        logger.warn("Firestore persistence not available in this environment. Disabled.", { error: err });
-      } else {
-        logger.warn("Firestore persistence failed to enable", { error: err });
-      }
-    });
-  } catch (e) {
-    logger.warn("Unexpected error enabling Firestore persistence", { error: e });
+    messaging = getMessaging(app);
+  } catch {
+    messaging = null;
   }
 }
 
-// Connect emulators in development when requested
-const useEmulators = process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATORS === "true";
-if (useEmulators) {
-  try {
-    connectFirestoreEmulator(firestore, process.env.FIRESTORE_EMULATOR_HOST || "localhost", Number(process.env.FIRESTORE_EMULATOR_PORT || 8080));
-    if (rtdb) {
-      connectDatabaseEmulator(rtdb, process.env.RTDB_EMULATOR_HOST || "localhost", Number(process.env.RTDB_EMULATOR_PORT || 9000));
-    }
-    connectAuthEmulator(auth, `http://${process.env.AUTH_EMULATOR_HOST || "localhost"}:${Number(process.env.AUTH_EMULATOR_PORT || 9099)}`, { disableWarnings: true });
-    connectStorageEmulator(storage, process.env.STORAGE_EMULATOR_HOST || "localhost", Number(process.env.STORAGE_EMULATOR_PORT || 9199));
-    logger.info("Firebase emulators connected");
-  } catch (e) {
-    logger.warn("Failed to connect Firebase emulators", { error: e });
-  }
-}
-
+export { app, analytics, auth, db, firestore, messaging };
 export default app;
-
-// Backwards-compat helper for modules that import getFirebase()
-export function getFirebase() {
-  return {
-    app,
-    db: firestore,
-    auth,
-    storage,
-    rtdb,
-    analytics,
-  };
-}
