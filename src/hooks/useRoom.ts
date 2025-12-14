@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { doc, getDoc, updateDoc, arrayUnion, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirebase } from '@/components/firebase/FirebaseProvider';
 import { Room } from '@/lib/types';
@@ -31,11 +31,13 @@ export function useRoom(roomId: string): UseRoomResult {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [exists, setExists] = useState(false);
+  const mountedRef = useRef(true);
 
   // Load room data
   const loadRoom = useCallback(async () => {
+    if (!mountedRef.current) return;
     if (!firebaseContext?.db) {
-      setIsLoading(false);
+      if (mountedRef.current) setIsLoading(false);
       return;
     }
 
@@ -65,8 +67,10 @@ export function useRoom(roomId: string): UseRoomResult {
     }
 
     try {
-      setIsLoading(true);
-      setError(null);
+      if (mountedRef.current) {
+        setIsLoading(true);
+        setError(null);
+      }
 
       logger.debug('Loading room', { roomId, decodedRoomId });
       const roomRef = doc(firebaseContext.db, 'rooms', decodedRoomId);
@@ -74,8 +78,10 @@ export function useRoom(roomId: string): UseRoomResult {
 
       if (roomDoc.exists()) {
         const roomData = { id: decodedRoomId, ...roomDoc.data() } as Room;
-        setRoom(roomData);
-        setExists(true);
+        if (mountedRef.current) {
+          setRoom(roomData);
+          setExists(true);
+        }
       } else {
         // Room missing — attempt to create it automatically with current user as participant
         let created = false;
@@ -94,7 +100,7 @@ export function useRoom(roomId: string): UseRoomResult {
             });
             // re-read
             const newDoc = await getDoc(doc(firebaseContext.db, 'rooms', decodedRoomId));
-            if (newDoc.exists()) {
+            if (newDoc.exists() && mountedRef.current) {
               const roomData = { id: decodedRoomId, ...newDoc.data() } as Room;
               setRoom(roomData);
               setExists(true);
@@ -107,8 +113,10 @@ export function useRoom(roomId: string): UseRoomResult {
         }
 
         if (!created) {
-          setRoom(null);
-          setExists(false);
+          if (mountedRef.current) {
+            setRoom(null);
+            setExists(false);
+          }
         }
       }
     } catch (err) {
@@ -162,11 +170,13 @@ export function useRoom(roomId: string): UseRoomResult {
         }
       }
       logger.error('Failed to load room', error, { roomId, decodedRoomId });
-      setError(error);
-      setRoom(null);
-      setExists(false);
+      if (mountedRef.current) {
+        setError(error);
+        setRoom(null);
+        setExists(false);
+      }
     } finally {
-      setIsLoading(false);
+      if (mountedRef.current) setIsLoading(false);
     }
   }, [firebaseContext, roomId]);
 
@@ -219,7 +229,11 @@ export function useRoom(roomId: string): UseRoomResult {
 
   // Load room on mount and when roomId changes
   useEffect(() => {
+    mountedRef.current = true;
     loadRoom();
+    return () => {
+      mountedRef.current = false;
+    };
   }, [loadRoom]);
 
   return {

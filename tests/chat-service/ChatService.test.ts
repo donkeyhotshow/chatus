@@ -34,6 +34,7 @@ vi.mock('firebase/firestore', () => {
   (globalThis as any).__mockFirestoreFns = mocks;
   
   return {
+    getFirestore: vi.fn(() => ({})),
     collection: (...args: any[]) => ({ __type: 'collection', args }),
     doc: (...args: any[]) => ({ path: args.join('/') }),
     query: (...args: any[]) => ({ __type: 'query', args }),
@@ -77,13 +78,14 @@ vi.mock('firebase/firestore', () => {
 vi.mock('firebase/auth', () => ({
   signInAnonymously: vi.fn(async () => ({ user: { uid: 'auth-uid' } })),
   Auth: class {},
+  getAuth: vi.fn(() => ({})),
 }));
 
 vi.mock('firebase/storage', () => {
   const uploadBytes = vi.fn(async () => ({ ref: { fullPath: 'path' } }));
   const getDownloadURL = vi.fn(async () => 'https://example.com/test.png');
   const ref = vi.fn((_storage: any, path: string) => ({ path }));
-  return { uploadBytes, getDownloadURL, ref, FirebaseStorage: class {} };
+  return { getStorage: vi.fn(() => ({})), uploadBytes, getDownloadURL, ref, FirebaseStorage: class {} };
 });
 
 // --- Helpers ---

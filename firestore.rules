@@ -64,7 +64,20 @@ service cloud.firestore {
         // Allow create if user is authenticated and a participant in the room
         allow create: if request.auth.uid != null &&
                           request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.participants &&
-                          request.auth.uid == request.resource.data.senderId;
+                          request.auth.uid == request.resource.data.senderId &&
+                          // Prevent client-side timestamp forging - require server timestamp equality
+                          request.resource.data.createdAt == request.time &&
+                          // Ensure basic required keys exist (text or image or type)
+                          (request.resource.data.keys().hasAny(['text']) || request.resource.data.keys().hasAny(['imageUrl']) || request.resource.data.keys().hasAny(['type'])) &&
+                          // Validate text length
+                          (!(request.resource.data.keys().hasAny(['text'])) || (request.resource.data.text is string && request.resource.data.text.size() <= 2000)) &&
+                          // Limit reactions size if provided
+                          (!(request.resource.data.keys().hasAny(['reactions'])) || request.resource.data.reactions.size() <= 50) &&
+                          // Optional rate-limit guard: allow if no rateLimits doc exists OR lastMessage older than 1s
+                          (
+                            !exists(/databases/$(database)/documents/rateLimits/$(request.auth.uid)) ||
+                            (request.time - get(/databases/$(database)/documents/rateLimits/$(request.auth.uid)).data.lastMessage > duration.value(1, 's'))
+                          );
 
         allow delete: if request.auth.uid == resource.data.senderId;
 
@@ -77,6 +90,23 @@ service cloud.firestore {
                       // Sender cannot modify delivered/seen fields
                       (request.auth.uid != resource.data.senderId ||
                        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['delivered', 'seen']));
+        
+        // Additional validation helpers for creates/updates
+        function isValidMessageCreate() {
+          return request.resource.data.keys().hasOnly(['text','imageUrl','type','senderId','clientMessageId','createdAt','reactions','delivered','seen','user']) &&
+                 // text if present must be string and length <= 2000
+                 (
+                   !request.resource.data.keys().hasAny(['text']) ||
+                   (request.resource.data.text is string && request.resource.data.text.size() <= 2000)
+                 ) &&
+                 // senderId must match authenticated user
+                 (request.resource.data.senderId == request.auth.uid) &&
+                 // createdAt must be server timestamp (enforced above) and user object if provided must contain id
+                 (
+                   !request.resource.data.keys().hasAny(['user']) ||
+                   (request.resource.data.user.id is string)
+                 );
+        }
       }
 
       match /canvasSheets/{sheetId} {
@@ -132,6 +162,30 @@ service cloud.firestore {
         // Allow read only for public profiles or the profile owner
         allow read: if resource.data.public == true || request.auth.uid == userId;
         allow update: if request.auth.uid == userId;
+    }
+    
+    // Presence documents (if presence stored in Firestore)
+    match /status/{userId} {
+      // Only the user may write their status document
+      allow write: if request.auth.uid == userId &&
+                   request.resource.data.keys().hasAll(['state','lastChanged','activeConnections']) &&
+                   request.resource.data.state is string &&
+                   (request.resource.data.state == 'online' || request.resource.data.state == 'offline') &&
+                   request.resource.data.activeConnections is number &&
+                   request.resource.data.activeConnections >= 0 &&
+                   request.resource.data.activeConnections <= 1000;
+      // Allow read for authenticated users (presence is public)
+      allow read: if request.auth.uid != null;
+    }
+
+    match /connections/{userId}/{connId} {
+      // Only owner may create/delete their connection entries
+      allow create: if request.auth.uid == userId &&
+                     request.resource.data.keys().hasAll(['online','connectedAt']) &&
+                     request.resource.data.online is bool;
+      allow delete: if request.auth.uid == userId;
+      // Allow read for authenticated users (optional)
+      allow read: if request.auth.uid != null;
     }
   }
 }

@@ -37,9 +37,11 @@ vi.mock('firebase/firestore', async () => {
 
 vi.mock('firebase/auth', () => ({
   signInAnonymously: vi.fn(),
+  getAuth: vi.fn(() => ({})),
 }));
 
 vi.mock('firebase/storage', () => ({
+  getStorage: vi.fn(() => ({})),
   ref: vi.fn(),
   uploadBytes: vi.fn(),
   getDownloadURL: vi.fn(),

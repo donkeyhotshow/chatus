@@ -3,100 +3,134 @@
 
 import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
-import { Auth } from 'firebase/auth';
+import { Auth, User } from 'firebase/auth';
 import { Firestore } from 'firebase/firestore';
 import { FirebaseStorage } from 'firebase/storage';
-import { getFirebase } from '@/lib/firebase';
+import { Database } from 'firebase/database';
+import { Messaging } from 'firebase/messaging';
+import { Analytics } from 'firebase/analytics';
+import { getClientFirebase } from '@/lib/firebase';
 import { logger } from '@/lib/logger';
+import { FCMManager } from '@/lib/firebase-messaging';
+import { createPresenceManager } from '@/lib/presence';
+import { useRef } from 'react';
 
 interface FirebaseContextType {
   app: FirebaseApp;
+  firestore: Firestore;
   db: Firestore;
+  user?: User | null;
   auth: Auth;
   storage: FirebaseStorage;
+  rtdb: Database | null;
+  analytics: Analytics | null;
+  messaging: Messaging | null;
+  presenceManager?: any | null;
+  fcmManager?: FCMManager | null;
 }
 
 const FirebaseContext = createContext<FirebaseContextType | null>(null);
 
-export const useFirebase = () => {
-  // We return the context directly. It can be null if Firebase is not initialized yet.
-  return useContext(FirebaseContext);
+export const useFirebase = (): FirebaseContextType => {
+  const ctx = useContext(FirebaseContext);
+  if (!ctx) throw new Error('useFirebase must be used within FirebaseProvider');
+  return ctx;
 };
 
 export function FirebaseProvider({ children }: { children: ReactNode }) {
   const [firebaseInstances, setFirebaseInstances] = useState<FirebaseContextType | null>(null);
   const [isMounted, setIsMounted] = useState(false);
-  const sanitizeFetchEnabled = process.env.NEXT_PUBLIC_EXPERIMENTAL_FETCH_SANITIZE === 'true';
   
+  // Use a state for the user to trigger FCM initialization
+  const [user, setUser] = useState<User | null>(null);
+
   useEffect(() => {
     setIsMounted(true);
     logger.debug('FirebaseProvider: Attempting to get Firebase instances');
-    // Optional experimental fetch sanitization (default off)
-    if (sanitizeFetchEnabled) {
+    
     try {
-      if (typeof window !== 'undefined' && 'fetch' in window) {
-        const globalAny: any = window;
-        if (!globalAny.__fetch_sanitized__) {
-          const originalFetch = globalAny.fetch.bind(globalAny);
-          globalAny.fetch = async (input: RequestInfo, init?: RequestInit) => {
-            try {
-              if (typeof input === 'string') {
-                input = input.replace(/%0D%0A/g, '').replace(/\\r\\n/g, '');
-              } else if (input instanceof Request) {
-                const url = input.url.replace(/%0D%0A/g, '').replace(/\\r\\n/g, '');
-                input = new Request(url, input);
-              }
-            } catch (e) {
-              // ignore
-            }
-            return originalFetch(input, init);
-          };
-          globalAny.__fetch_sanitized__ = true;
-            logger.debug('Global fetch monkey-patched to sanitize URLs (experimental flag enabled)');
-        }
-      }
-    } catch (e) {
-      logger.debug('Failed to patch fetch', { error: e });
-      }
-    }
-    // The getFirebase function handles the singleton pattern for us.
-    const instances = getFirebase();
-    if (instances) {
-        setFirebaseInstances(instances);
-        logger.debug('FirebaseProvider: Firebase instances successfully set');
-        if (sanitizeFetchEnabled) {
-        // If runtime app.options contain unexpected characters (CR/LF) or mismatch with sanitized config,
-        // try to unregister service workers to force clients to load a fresh copy (cache-bust).
-        try {
-          const runtimeProjectId = (instances.app as any).options?.projectId;
-          const runtimeAuthDomain = (instances.app as any).options?.authDomain;
-          const sanitizedProjectId = String(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '').trim().replace(/[\r\n]+/g, '');
-          const sanitizedAuthDomain = String(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || '').trim().replace(/[\r\n]+/g, '');
-          const hasCRLFInRuntime = /[\\r\\n]/.test(String(runtimeProjectId || '')) || /[\\r\\n]/.test(String(runtimeAuthDomain || ''));
-          const mismatch = runtimeProjectId !== sanitizedProjectId || runtimeAuthDomain !== sanitizedAuthDomain;
-          if ((hasCRLFInRuntime || mismatch) && typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-            logger.warn('Detected runtime env mismatch or CRLF in app.options', { 
-              runtimeProjectId, 
-              sanitizedProjectId 
-            });
-            navigator.serviceWorker.getRegistrations().then(regs => {
-              regs.forEach(r => r.unregister());
-              // Give browser a moment then reload
-              setTimeout(() => window.location.reload(), 500);
-            }).catch(e => {
-              logger.error('Failed to unregister service workers', e as Error);
-            });
-          }
-        } catch (e) {
-          // ignore
-        }
-        }
-    } else {
-        logger.error('Failed to get Firebase instances');
-    }
-  }, [sanitizeFetchEnabled]);
+      const { app, firestore, auth, storage, rtdb, analytics, messaging } = getClientFirebase();
+      setFirebaseInstances({
+        app,
+        firestore,
+        db: firestore,
+        user: null,
+        auth,
+        storage,
+        rtdb,
+        analytics,
+        messaging
+      });
+      logger.debug('FirebaseProvider: Firebase instances successfully set');
+      
+      // Listen for auth state changes to get the user
+      const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+        setUser(currentUser);
+      });
 
-  // Prevent hydration mismatch by rendering the same on server and client initially
+      return () => unsubscribe();
+
+    } catch (e) {
+      logger.error('FirebaseProvider: Failed to get Firebase instances', e as Error);
+    }
+  }, []);
+
+  // Initialize FCM when user is available and not anonymous
+  useEffect(() => {
+    if (user && !user.isAnonymous && firebaseInstances) {
+      const fcmManager = new FCMManager();
+      fcmManager.initialize(user.uid);
+      // store manager for consumers
+      firebaseInstances.fcmManager = fcmManager;
+      setFirebaseInstances({ ...firebaseInstances });
+    }
+  }, [user, firebaseInstances]);
+
+  // Initialize PresenceManager when user logs in (non-anonymous)
+  const presenceManagerRef = useRef<any | null>(null);
+  const fcmManagerRef = useRef<FCMManager | null>(null);
+  useEffect(() => {
+    if (!firebaseInstances) return;
+
+    if (user && !user.isAnonymous) {
+      try {
+        const pm = createPresenceManager(user.uid);
+        presenceManagerRef.current = pm;
+        logger.debug('FirebaseProvider: PresenceManager initialized', { uid: user.uid });
+      } catch (err) {
+        logger.error('FirebaseProvider: Failed to initialize PresenceManager', err as Error);
+      }
+    } else {
+      // user logged out or anonymous - ensure cleanup of previous manager
+      if (presenceManagerRef.current) {
+        try {
+          // prefer disconnect if available, otherwise goOffline
+          if (typeof presenceManagerRef.current.disconnect === 'function') {
+            presenceManagerRef.current.disconnect();
+          } else if (typeof presenceManagerRef.current.goOffline === 'function') {
+            presenceManagerRef.current.goOffline();
+          }
+        } catch (err) {
+          logger.error('FirebaseProvider: Error while cleaning up PresenceManager', err as Error);
+        } finally {
+          presenceManagerRef.current = null;
+        }
+      }
+    }
+
+    // no explicit cleanup here since createPresenceManager registers unload cleanup
+  }, [user, firebaseInstances]);
+
+  // Expose presence and fcm managers in FirebaseContext
+  useEffect(() => {
+    if (!firebaseInstances) return;
+    const inst = { ...firebaseInstances };
+    inst.presenceManager = presenceManagerRef.current;
+    if (fcmManagerRef.current) inst.fcmManager = fcmManagerRef.current;
+    inst.user = user;
+    setFirebaseInstances(inst);
+  }, [presenceManagerRef.current, fcmManagerRef.current, firebaseInstances]);
+
   if (!isMounted || !firebaseInstances) {
     logger.debug('FirebaseProvider: Not mounted or instances not ready, showing fallback UI');
     return (

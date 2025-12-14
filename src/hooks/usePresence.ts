@@ -36,9 +36,9 @@ export function usePresence(roomId: string, userId: string | null): UsePresenceR
     if (!presenceManagerRef.current) return;
 
     if (isOnline) {
-      await presenceManagerRef.current.setOnline();
+      await presenceManagerRef.current.goOnline(userId);
     } else {
-      await presenceManagerRef.current.setOffline();
+      await presenceManagerRef.current.goOffline();
     }
   };
 
@@ -58,7 +58,7 @@ export function usePresence(roomId: string, userId: string | null): UsePresenceR
     presenceManagerRef.current = new PresenceManager(userId);
 
     // Set online on mount
-    presenceManagerRef.current.setOnline();
+    presenceManagerRef.current.goOnline(userId);
 
     // Subscribe to presence changes
     presenceManagerRef.current.subscribeToPresence((presenceData) => {
@@ -76,13 +76,13 @@ export function usePresence(roomId: string, userId: string | null): UsePresenceR
     // Handle network status changes
     const handleOnline = () => {
       if (isMountedRef.current && presenceManagerRef.current) {
-        presenceManagerRef.current.setOnline();
+        presenceManagerRef.current.goOnline(userId);
       }
     };
 
     const handleOffline = () => {
       if (isMountedRef.current && presenceManagerRef.current) {
-        presenceManagerRef.current.setOffline();
+        presenceManagerRef.current.goOffline();
       }
     };
 
