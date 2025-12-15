@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 import { initializeApp } from 'firebase/app';
-import { getDatabase, connectDatabaseEmulator, ref, get, set } from 'firebase/database';
+import { getDatabase, connectDatabaseEmulator, ref, get, set, push, onDisconnect, serverTimestamp } from 'firebase/database';
 import { PresenceManager } from '../src/lib/realtime';
 
 // Mock Firebase Database
@@ -19,7 +19,10 @@ vi.mock('firebase/database', async (importOriginal) => {
         activeConnections: 1
       })
     })),
-    set: vi.fn(async () => ({}))
+    set: vi.fn(async () => ({})),
+    push: vi.fn(() => ({ key: 'mock-conn-id' })),
+    onDisconnect: vi.fn(() => ({ remove: vi.fn() })),
+    serverTimestamp: vi.fn(() => ({ '.sv': 'timestamp' }))
   };
 });
 

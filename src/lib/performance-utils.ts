@@ -97,8 +97,8 @@ export function useThrottle<T>(value: T, limit: number): T {
   return throttledValue
 }
 
-// Мемоизация с глубоким сравнением
-export function deepMemo<T>(factory: () => T, deps: React.DependencyList): T {
+// Мемоизация с глубоким сравнением (Hook должен быть в компоненте)
+export function useDeepMemo<T>(factory: () => T, deps: React.DependencyList): T {
   return useMemo(factory, deps)
 }
 

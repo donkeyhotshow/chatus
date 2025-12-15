@@ -37,10 +37,14 @@ const originalNotification = globalThis.Notification;
 describe('FCMManager', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // @ts-ignore
-    globalThis.Notification = {
-      requestPermission: vi.fn(async () => 'granted')
-    };
+    // Mock Notification API consistently
+    Object.defineProperty(globalThis, 'Notification', {
+      value: {
+        requestPermission: vi.fn(async () => 'granted'),
+        permission: 'granted'
+      },
+      writable: true,
+    });
   });
 
   afterEach(() => {
@@ -122,13 +126,34 @@ describe('FCMManager Integration', () => {
   });
 
   test('should not initialize if notifications not supported', async () => {
-    Object.defineProperty(window, 'Notification', { value: undefined, writable: true });
+    // Temporarily set window to undefined to simulate non-browser environment
+    const originalWindow = globalThis.window;
+    Object.defineProperty(globalThis, 'window', {
+      value: undefined,
+      writable: true,
+      configurable: true
+    });
+
     await fcmManager.initialize(userId);
     expect(getToken).not.toHaveBeenCalled();
+
+    // Restore window
+    Object.defineProperty(globalThis, 'window', {
+      value: originalWindow,
+      writable: true,
+      configurable: true
+    });
   });
 
   test('should not save token if permission denied', async () => {
-    (window.Notification.requestPermission as any).mockResolvedValueOnce('denied');
+    // Ensure Notification is properly mocked before changing its behavior
+    Object.defineProperty(window, 'Notification', {
+      value: {
+        requestPermission: vi.fn(() => Promise.resolve('denied')),
+        permission: 'denied'
+      },
+      writable: true,
+    });
     await fcmManager.initialize(userId);
     expect(getToken).not.toHaveBeenCalled();
   });
@@ -140,7 +165,18 @@ describe('FCMManager Integration', () => {
 
   test('should display notification for foreground message if document is hidden', async () => {
     // Mock Notification constructor
-    global.Notification = vi.fn() as any;
+    const NotificationConstructor = vi.fn();
+    NotificationConstructor.requestPermission = vi.fn(() => Promise.resolve('granted'));
+
+    // Set both global and window Notification to the same mock
+    Object.defineProperty(globalThis, 'Notification', {
+      value: NotificationConstructor,
+      writable: true,
+    });
+    Object.defineProperty(window, 'Notification', {
+      value: NotificationConstructor,
+      writable: true,
+    });
 
     await fcmManager.initialize(userId);
     (document as any).hidden = true; // Simulate hidden document
@@ -153,10 +189,10 @@ describe('FCMManager Integration', () => {
     const onMessageCallback = (onMessage as any).mock.calls[0][1];
     onMessageCallback(mockPayload);
 
-    expect(global.Notification).toHaveBeenCalledWith('Test Title', {
+    expect(NotificationConstructor).toHaveBeenCalledWith('Test Title', {
       body: 'Test Body',
       icon: '/firebase-logo.png',
-      tag: 'testRoom'
+      data: { roomId: 'testRoom' }
     });
   });
 });

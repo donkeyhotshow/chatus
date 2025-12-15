@@ -157,22 +157,17 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
       'rock-paper-scissors': { moves: {}, result: null, hostId },
       'click-war': { scores: {}, active: false, startTime: null, hostId },
       'dice-roll': { diceRoll: {}, hostId },
-      'tower-defense': (() => {
-        const { grid, pathsFlat } = generateTDGrid(15, 11);
-        return {
-          tdGrid: grid,
-          tdPathsFlat: pathsFlat,
-          tdTowers: [],
-          tdEnemies: [],
-          tdWave: 0,
-          tdBaseHealth: 20,
-          tdResources: 100,
-          tdStatus: 'waiting' as const,
-          tdScores: {},
-          tdSelectedTower: null,
-          hostId,
-        };
-      })(),
+      'tower-defense': {
+        tdTowers: [],
+        tdEnemies: [],
+        tdWave: 0,
+        tdBaseHealth: 20,
+        tdResources: 100,
+        tdStatus: 'waiting' as const,
+        tdScores: {},
+        tdSelectedTower: null,
+        hostId,
+      },
     };
 
     let initialState: Partial<GameState> = { type: gameId, ...initialStates[gameId] };
