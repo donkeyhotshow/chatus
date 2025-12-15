@@ -61,7 +61,7 @@ export function CollaborativeCanvas({ roomId }: CollaborativeCanvasProps) {
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
 
-      void setDoc(doc(firestore, `rooms/${roomId}/cursors/${user.uid}`), {
+      void setDoc(doc(firestore!, `rooms/${roomId}/cursors/${user.uid}`), {
         x,
         y,
         color: (user as any).cursorColor || '#000000',
