@@ -54,7 +54,7 @@ export class FCMManager {
             { merge: true }
           );
         } catch (e) {
-          logger.debug('FCMManager: failed to upsert users/{userId}.fcmTokens', e);
+          logger.debug('FCMManager: failed to upsert users/{userId}.fcmTokens', e as Error);
         }
 
         try {
