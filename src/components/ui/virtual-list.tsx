@@ -42,7 +42,9 @@ export const VirtualList = memo(<T,>({
 
     const FooterComponent = useMemo(() => {
         if (loading && loadingComponent) {
-            return () => <div>{loadingComponent}</div>
+            const LoadingFooter = () => <div>{loadingComponent}</div>
+            LoadingFooter.displayName = 'LoadingFooter'
+            return LoadingFooter
         }
         return undefined
     }, [loading, loadingComponent])
