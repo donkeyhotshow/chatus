@@ -40,7 +40,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       url: typeof window !== 'undefined' ? window.location.href : 'unknown'
     };
 
-    logger.error('ErrorBoundary caught an error:', errorDetails);
+    logger.error('ErrorBoundary caught an error:', error, errorDetails);
     this.props.onError?.(error, errorInfo);
 
     this.setState({

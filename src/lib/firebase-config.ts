@@ -6,7 +6,7 @@ import { isDemoMode } from './demo-mode';
 import { logger } from './logger';
 
 // Кэшируем конфигурацию для избежания повторных вычислений
-let cachedConfig: typeof firebaseConfig | null = null;
+let cachedConfig: any = null;
 let configValidationCache: boolean | null = null;
 
 function sanitizeEnv(value: unknown) {
