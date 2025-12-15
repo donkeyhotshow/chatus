@@ -45,8 +45,9 @@ export function TicTacToeStats({ userId }: TicTacToeStatsProps) {
   const { firestore } = useFirebase();
   const [stats, setStats] = useState<TicTacToeStats | null>(null);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
-  
+
   useEffect(() => {
+    if (!firestore) return;
     const statsRef = doc(firestore, `users/${userId}/stats/ticTacToe`);
     const unsubscribe = onSnapshot(statsRef, (snapshot) => {
       if (snapshot.exists()) {
@@ -57,47 +58,47 @@ export function TicTacToeStats({ userId }: TicTacToeStatsProps) {
         setStats({ totalGames: 0, wins: 0, losses: 0, draws: 0, rating: 1000, winStreak: 0, lastGameId: '', lastGameAt: null });
       }
     });
-    
+
     return () => unsubscribe();
   }, [userId, firestore, achievements]);
-  
+
   const checkAchievements = (currentStats: TicTacToeStats, currentAchievements: Achievement[], setAchievements: React.Dispatch<React.SetStateAction<Achievement[]>>) => {
     const newAchievements: Achievement[] = [];
     const hasAchievement = (id: string) => currentAchievements.some(a => a.id === id);
-    
+
     if (currentStats.wins >= 1 && !hasAchievement('first_win')) {
       newAchievements.push({ id: 'first_win', name: 'First Victory', icon: '🏆' });
     }
-    
+
     if (currentStats.wins >= 10 && !hasAchievement('veteran')) {
       newAchievements.push({ id: 'veteran', name: 'Veteran', icon: '🎖️' });
     }
-    
+
     if (currentStats.rating >= 1500 && !hasAchievement('expert')) {
       newAchievements.push({ id: 'expert', name: 'Expert Player', icon: '⭐' });
     }
-    
+
     if (currentStats.winStreak >= 5 && !hasAchievement('unstoppable')) {
       newAchievements.push({ id: 'unstoppable', name: 'Unstoppable', icon: '🔥' });
     }
-    
+
     if (newAchievements.length > 0) {
       setAchievements(prev => [...prev, ...newAchievements]);
       // TODO: Save achievements to Firestore (this would typically be a separate Cloud Function or update from client)
       // saveAchievements(userId, newAchievements);
     }
   };
-  
+
   if (!stats) return <div>Loading stats...</div>;
-  
-  const winRate = stats.totalGames > 0 
+
+  const winRate = stats.totalGames > 0
     ? ((stats.wins / stats.totalGames) * 100).toFixed(1)
     : '0.0';
-  
+
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
       <h2 className="text-2xl font-bold mb-4">Your Tic-Tac-Toe Stats</h2>
-      
+
       <div className="grid grid-cols-2 gap-4 mb-6">
         <StatCard icon="🎮" label="Games Played" value={stats.totalGames} />
         <StatCard icon="🏆" label="Wins" value={stats.wins} />
@@ -106,7 +107,7 @@ export function TicTacToeStats({ userId }: TicTacToeStatsProps) {
         <StatCard icon="📊" label="Win Rate" value={`${winRate}%`} />
         <StatCard icon="⭐" label="Rating" value={stats.rating} />
       </div>
-      
+
       <div className="mb-4">
         <h3 className="text-lg font-semibold mb-2">Current Streak</h3>
         <div className="flex items-center">
@@ -116,7 +117,7 @@ export function TicTacToeStats({ userId }: TicTacToeStatsProps) {
           <span className="ml-2 text-xl font-bold">{stats.winStreak} wins</span>
         </div>
       </div>
-      
+
       <div>
         <h3 className="text-lg font-semibold mb-2">Achievements</h3>
         <div className="flex flex-wrap gap-2">
