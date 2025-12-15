@@ -60,9 +60,9 @@ export const ChatArea = memo(function ChatArea({
     return doc(db, 'rooms', normalizedRoomId);
   }, [db, normalizedRoomId]);
   const { data: room } = useDoc<Room>(roomRef);
-  
-  const { 
-    messages: persistedMessages, 
+
+  const {
+    messages: persistedMessages,
     isInitialLoad,
     typingUsers: serviceTypingUsers,
     service,
@@ -128,7 +128,7 @@ export const ChatArea = memo(function ChatArea({
     combined.sort((a, b) => a.createdAt.toMillis() - b.createdAt.toMillis());
     // Debug logging in development
     if (process.env.NODE_ENV === 'development' && combined.length > 0) {
-      logger.debug('[ChatArea] All messages', { 
+      logger.debug('[ChatArea] All messages', {
         persistedCount: persistedMessages.length,
         optimisticCount: optimisticMessages.length,
         totalCount: combined.length,
@@ -152,14 +152,14 @@ export const ChatArea = memo(function ChatArea({
       logger.warn('[ChatArea] Cannot send message: service is not available', { roomId, userId: user.id });
       return;
     }
-    
-    logger.info('[ChatArea] Sending message', { 
-      roomId, 
-      userId: user.id, 
+
+    logger.info('[ChatArea] Sending message', {
+      roomId,
+      userId: user.id,
       textLength: text.trim().length,
-      hasService: !!service 
+      hasService: !!service
     });
-    
+
     try {
       await service.sendMessage({
         text: text.trim(),
@@ -178,7 +178,7 @@ export const ChatArea = memo(function ChatArea({
 
   const handleSendDoodle = useCallback(async (imageUrl: string) => {
     if (!service) return;
-    
+
     try {
       await service.sendMessage({
         text: 'Doodle',
@@ -196,7 +196,7 @@ export const ChatArea = memo(function ChatArea({
 
   const handleSendSticker = useCallback(async (imageUrl: string) => {
     if (!service) return;
-    
+
     try {
       await service.sendMessage({
         text: 'Sticker',
@@ -210,7 +210,7 @@ export const ChatArea = memo(function ChatArea({
       toast({ title: 'Failed to send sticker', variant: 'destructive' });
     }
   }, [service, user, roomId, toast]);
-  
+
   const handleImageUpload = useCallback(async (file: File) => {
     if (!service) return;
 
@@ -243,7 +243,7 @@ export const ChatArea = memo(function ChatArea({
       });
     } catch (error) {
       logger.error('Failed to upload image', error as Error, { roomId, userId: user.id });
-      await service.deleteMessage(tempId).catch(() => {});
+      await service.deleteMessage(tempId).catch(() => { });
       toast({
         title: "Upload Failed",
         description: "There was an error uploading your image.",
@@ -257,7 +257,7 @@ export const ChatArea = memo(function ChatArea({
 
   const handleDeleteMessage = useCallback(async (messageId: string) => {
     if (!service) return;
-    
+
     try {
       await service.deleteMessage(messageId);
     } catch (error) {
@@ -268,7 +268,7 @@ export const ChatArea = memo(function ChatArea({
 
   const handleToggleReaction = useCallback(async (messageId: string, emoji: string) => {
     if (!service) return;
-    
+
     try {
       await service.toggleReaction(messageId, emoji, user);
     } catch (error) {
@@ -297,9 +297,9 @@ export const ChatArea = memo(function ChatArea({
     };
   }, []);
 
+  const [isTabActive, setIsTabActive] = useState(true);
+
   // Handle window focus/blur for typing and seen status
-  // TODO: Restore when isTabActive state is properly implemented
-  /*
   useEffect(() => {
     const handleFocus = () => setIsTabActive(true);
     const handleBlur = () => setIsTabActive(false);
@@ -307,19 +307,21 @@ export const ChatArea = memo(function ChatArea({
     window.addEventListener('focus', handleFocus);
     window.addEventListener('blur', handleBlur);
 
+    // Initial check
+    setIsTabActive(!document.hidden);
+
     return () => {
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('blur', handleBlur);
     };
   }, []);
-  */
 
   // Mark messages as seen when chat is open and tab is active
   useEffect(() => {
-    if (service) {
+    if (service && isTabActive) {
       service.markMessagesAsSeen();
     }
-  }, [service]);
+  }, [service, isTabActive, allMessages.length]);
 
   const handleInputChange = useCallback(() => {
     setIsTyping(true);
@@ -335,14 +337,14 @@ export const ChatArea = memo(function ChatArea({
   return (
     <>
       <section className="flex-1 flex flex-col border-r border-white/10 bg-black/50 backdrop-blur-sm relative">
-        <ChatHeader 
+        <ChatHeader
           roomId={roomId}
           otherUser={otherUser}
           isCollaborationSpaceVisible={isCollabSpaceVisible}
           onToggleCollaborationSpace={onToggleCollaborationSpace}
           isOnline={isOnline}
         />
-        <MessageList 
+        <MessageList
           messages={allMessages}
           isLoading={isInitialLoad && allMessages.length === 0}
           currentUserId={user.id}
@@ -353,35 +355,35 @@ export const ChatArea = memo(function ChatArea({
           onLoadMore={service?.loadMoreMessages}
           hasMoreMessages={hasMoreMessages}
         />
-        
+
         <div className="relative">
           {typingUsers.length > 0 && (
             <div className="absolute -top-6 left-8 flex items-center gap-2 animate-pulse">
-               <div className="flex gap-1">
-                  <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce delay-0"></span>
-                  <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce delay-150"></span>
-                  <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce delay-300"></span>
-               </div>
-               <span className="text-xs text-cyan-400 font-mono">
-                 {typingUsers.join(", ")} печатает...
-               </span>
+              <div className="flex gap-1">
+                <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce delay-0"></span>
+                <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce delay-150"></span>
+                <span className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce delay-300"></span>
+              </div>
+              <span className="text-xs text-cyan-400 font-mono">
+                {typingUsers.join(", ")} печатает...
+              </span>
             </div>
           )}
           {replyTo && (
             <div className="flex items-center justify-between mb-2 mx-6 px-4 py-2 bg-neutral-900 border-l-2 border-white rounded-r-lg animate-in slide-in-from-bottom-2">
               <div className="flex flex-col text-sm overflow-hidden">
-                  <span className="text-white font-bold text-xs">Replying to {replyTo.user.name}</span>
-                  <span className="text-neutral-400 truncate text-xs mt-0.5 max-w-[300px]">
-                    {replyTo.imageUrl && !replyTo.text ? 'Image' : replyTo.text}
-                  </span>
+                <span className="text-white font-bold text-xs">Replying to {replyTo.user.name}</span>
+                <span className="text-neutral-400 truncate text-xs mt-0.5 max-w-[300px]">
+                  {replyTo.imageUrl && !replyTo.text ? 'Image' : replyTo.text}
+                </span>
               </div>
               <button onClick={() => setReplyTo(null)} className="p-1 hover:bg-white/10 rounded-full text-neutral-500 hover:text-white">
-                  <X className="w-4 h-4" />
+                <X className="w-4 h-4" />
               </button>
             </div>
           )}
           {showDoodlePad && <DoodlePad onClose={() => setShowDoodlePad(false)} onSend={handleSendDoodle} />}
-          <MessageInput 
+          <MessageInput
             roomId={roomId}
             onSendMessage={handleSend}
             onImageSend={handleImageUpload}
@@ -404,7 +406,7 @@ export const ChatArea = memo(function ChatArea({
   );
 }, (prevProps, nextProps) => {
   // Custom comparison function for memo
-  return prevProps.roomId === nextProps.roomId 
+  return prevProps.roomId === nextProps.roomId
     && prevProps.user.id === nextProps.user.id
     && prevProps.isCollabSpaceVisible === nextProps.isCollabSpaceVisible;
 });

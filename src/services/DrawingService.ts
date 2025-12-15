@@ -45,8 +45,8 @@ export class DrawingService {
         tool: this.currentTool,
         timestamp: serverTimestamp(),
       });
-    } catch (e) {
-      console.warn('DrawingService: failed to upload stroke', e);
+    } catch {
+      // Silently ignore upload failures (network issues)
     }
   }
 
@@ -109,7 +109,7 @@ export class DrawingService {
   }
 }
 
- 
+
 export class DrawingRenderer {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -122,38 +122,38 @@ export class DrawingRenderer {
   onStrokeReceived(stroke: Stroke) {
     this.renderStroke(stroke);
   }
-  
+
   private renderStroke(stroke: Stroke) {
     const ctx = this.ctx;
     ctx.strokeStyle = stroke.color;
     ctx.lineWidth = stroke.width;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    
+
     ctx.beginPath();
-    
+
     // Interpolate між точками для smooth curve
     const points = stroke.points;
-    
+
     if (points.length === 1) {
       ctx.arc(points[0].x, points[0].y, stroke.width / 2, 0, Math.PI * 2);
       ctx.fill();
       return;
     }
-    
+
     ctx.moveTo(points[0].x, points[0].y);
-    
+
     for (let i = 1; i < points.length - 1; i++) {
       const p0 = points[i];
       const p1 = points[i + 1];
-      
+
       // Catmull-Rom spline для smooth interpolation
       const midX = (p0.x + p1.x) / 2;
       const midY = (p0.y + p1.y) / 2;
-      
+
       ctx.quadraticCurveTo(p0.x, p0.y, midX, midY);
     }
-    
+
     const lastPoint = points[points.length - 1];
     ctx.lineTo(lastPoint.x, lastPoint.y);
     ctx.stroke();

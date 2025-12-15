@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { registerFCM, initMessaging } from '@/lib/messaging';
+import { messaging } from '@/lib/firebase';
+import { getToken } from 'firebase/messaging';
 
 export default function FCMTestPage() {
   const [token, setToken] = useState<string | null>(null);
@@ -10,7 +11,23 @@ export default function FCMTestPage() {
   async function onRegister() {
     setStatus('Requesting permission / registering SW...');
     try {
-      const t = await registerFCM();
+      if (typeof window === 'undefined' || !('Notification' in window)) {
+        throw new Error('Notifications not supported');
+      }
+
+      if (!messaging) {
+        throw new Error('Firebase Messaging not initialized');
+      }
+
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        throw new Error('Permission denied');
+      }
+
+      const t = await getToken(messaging, {
+        vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY
+      });
+
       setToken(t || null);
       setStatus(t ? 'Registered' : 'No token');
     } catch (e: any) {
@@ -54,5 +71,3 @@ export default function FCMTestPage() {
     </div>
   );
 }
-
-

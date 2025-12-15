@@ -9,6 +9,16 @@ export default {
   ],
   theme: {
     extend: {
+      container: { center: true, padding: '1rem' },
+      maxWidth: { content: '80rem' },
+      spacing: {
+        header: '4rem',
+        composer: '4.5rem',
+      },
+      height: {
+        header: '4rem',
+        composer: '4.5rem',
+      },
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
         headline: ['Inter', 'sans-serif'], // Use Inter for consistency in monochrome

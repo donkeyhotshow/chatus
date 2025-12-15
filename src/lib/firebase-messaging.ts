@@ -13,7 +13,7 @@ export class FCMManager {
     }
 
     const { app, firestore, messaging } = getClientFirebase();
-    
+
     if (!messaging) {
       logger.error('FCMManager: Firebase Messaging not initialized.');
       return;
@@ -54,7 +54,7 @@ export class FCMManager {
             { merge: true }
           );
         } catch (e) {
-          logger.debug('FCMManager: failed to upsert users/{userId}.fcmTokens', e);
+          logger.debug('FCMManager: failed to upsert users/{userId}.fcmTokens', e as Error);
         }
 
         try {
@@ -66,7 +66,7 @@ export class FCMManager {
             userAgent: navigator.userAgent
           });
         } catch (e) {
-          logger.warn('FCMManager: failed to write fcmTokens/{token}', e);
+          logger.warn('FCMManager: failed to write fcmTokens/{token}', e as Error);
         }
 
         logger.info('FCMManager: FCM token saved', { token: token.slice(0, 10) + '...' });
@@ -78,7 +78,7 @@ export class FCMManager {
     // Слушаем foreground messages
     onMessage(this.messaging, (payload) => {
       logger.info('FCMManager: Foreground message received', { payload });
-      
+
       // Показуем notification если пользователь не на странице чата
       if (document.hidden) {
         new Notification(payload.notification?.title || 'New message', {
@@ -88,7 +88,7 @@ export class FCMManager {
         });
       }
     });
-    
+
     // Re-check token on visibility/focus to handle refreshes or token rotation
     const refreshTokenIfNeeded = async () => {
       try {

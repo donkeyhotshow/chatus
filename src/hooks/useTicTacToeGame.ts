@@ -22,10 +22,10 @@ export function useTicTacToeGame(roomId: string, gameId: string) {
   const [game, setGame] = useState<TicTacToeState | null>(null);
   const [reconnecting, setReconnecting] = useState(false);
   const [connectionLost, setConnectionLost] = useState(false);
-  
+
   useEffect(() => {
     const gameRef = doc(firestore, `rooms/${roomId}/games/${gameId}`);
-    
+
     // Слухаємо зміни гри в реальному часі
     const unsubscribe = onSnapshot(
       gameRef,
@@ -36,29 +36,27 @@ export function useTicTacToeGame(roomId: string, gameId: string) {
           setReconnecting(false);
         }
       },
-      (error) => {
-        console.error('Connection lost:', error);
+      () => {
+        // Connection lost - attempt reconnect
         setConnectionLost(true);
-        
-        // Спроба reconnect
         attemptReconnect();
       }
     );
-    
+
     return () => unsubscribe();
   }, [roomId, gameId, user]);
-  
+
   const attemptReconnect = async () => {
     setReconnecting(true);
-    
+
     try {
       // Отримуємо поточний стан гри з сервера
       const gameRef = doc(firestore, `rooms/${roomId}/games/${gameId}`);
       const gameSnap = await getDoc(gameRef);
-      
+
       if (gameSnap.exists()) {
         setGame({ id: gameSnap.id, ...gameSnap.data() } as TicTacToeState);
-        
+
         // Оновлюємо статус підключення гравця
         if (user) {
           const playerKey = gameSnap.data().players.player1.uid === user.uid ? 'player1' : 'player2';
@@ -67,18 +65,16 @@ export function useTicTacToeGame(roomId: string, gameId: string) {
             [`players.${playerKey}.lastSeen`]: serverTimestamp()
           });
         }
-        
+
         setConnectionLost(false);
       }
-    } catch (error) {
-      console.error('Reconnect failed:', error);
-      
-      // Retry через 3 секунди
+    } catch {
+      // Reconnect failed - retry in 3 seconds
       setTimeout(attemptReconnect, 3000);
     } finally {
       setReconnecting(false);
     }
   };
-  
+
   return { game, reconnecting, connectionLost };
 }

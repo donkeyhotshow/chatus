@@ -10,9 +10,8 @@ export class GameSoundService {
       this.sounds.draw = new Audio('/sounds/draw.mp3');
       this.sounds.tick = new Audio('/sounds/tick.mp3');
       this.sounds.error = new Audio('/sounds/error.mp3');
-    } catch (e) {
-      // ignore during SSR or missing files
-      console.warn('GameSoundService: audio preload failed', e);
+    } catch {
+      // Silently ignore during SSR or missing files
     }
   }
 
@@ -22,8 +21,8 @@ export class GameSoundService {
       try {
         audio.currentTime = 0;
         void audio.play();
-      } catch (e) {
-        console.warn('Sound play failed:', e);
+      } catch {
+        // Silently ignore play failures (user interaction required)
       }
     }
 
@@ -55,4 +54,4 @@ export class GameSoundService {
 
 export const soundService = new GameSoundService();
 
- 
+

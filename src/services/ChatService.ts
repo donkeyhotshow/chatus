@@ -33,7 +33,7 @@ export class ChatService {
   private storage: FirebaseStorage;
   private roomId: string;
   private currentUser: UserProfile | null = null;
-  
+
   // State
   public messages: Message[] = [];
   public onlineUsers: UserProfile[] = [];
@@ -41,7 +41,7 @@ export class ChatService {
   public gameStates: { [gameId: string]: GameState } = {};
   public isInitialLoad: boolean = true;
   public hasMoreMessages: boolean = true;
-  
+
   // Pagination
   private firstMessageSnapshot: DocumentSnapshot | null = null;
   private lastMessageSnapshot: DocumentSnapshot | null = null;
@@ -99,7 +99,7 @@ export class ChatService {
     this.firestore = firestore;
     this.auth = auth;
     this.storage = storage;
-    
+
     this.initListeners();
   }
 
@@ -130,15 +130,15 @@ export class ChatService {
       const err = error as FirebaseError;
       // Suppress offline/permission errors
       if (err.message?.includes('client is offline') ||
-          err.message?.includes('Failed to get document') ||
-          err.code === 'unavailable' ||
-          err.code === 'permission-denied') {
+        err.message?.includes('Failed to get document') ||
+        err.code === 'unavailable' ||
+        err.code === 'permission-denied') {
         return; // Silently ignore
       }
       logger.error("Room listener error", error as Error, { roomId: this.roomId });
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ 
-        operation: 'list', 
-        path: `rooms/${this.roomId}` 
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        operation: 'list',
+        path: `rooms/${this.roomId}`
       }));
     });
 
@@ -155,9 +155,9 @@ export class ChatService {
       const err = error as FirebaseError;
       // Suppress offline/permission errors
       if (err.message?.includes('client is offline') ||
-          err.message?.includes('Failed to get document') ||
-          err.code === 'unavailable' ||
-          err.code === 'permission-denied') {
+        err.message?.includes('Failed to get document') ||
+        err.code === 'unavailable' ||
+        err.code === 'permission-denied') {
         return; // Silently ignore
       }
       logger.error("Games listener error", error as Error, { roomId: this.roomId });
@@ -185,7 +185,7 @@ export class ChatService {
   }
 
   // --- Message Loading with Pagination ---
-  
+
   private async loadInitialMessages() {
     // In demo mode, skip loading messages
     if (isDemoMode()) {
@@ -198,28 +198,28 @@ export class ChatService {
 
     try {
       const messagesRef = collection(this.firestore, 'rooms', this.roomId, 'messages');
-      
+
       // Initial batch load
       const qInitial = query(messagesRef, orderBy('createdAt', 'desc'), limit(MESSAGE_PAGE_SIZE));
       const documentSnapshots = await withRetryAndTimeout(
         () => getDocs(qInitial),
         { timeoutMs: 30_000, attempts: 3, backoffMs: 500 }
       ).catch(() => null);
-      
+
       // Defensive: tests/mocks may return undefined; handle gracefully
       const docsArray = documentSnapshots && (documentSnapshots as any).docs ? (documentSnapshots as any).docs : [];
-      
+
       const initialMessages = docsArray.map((doc: any) => {
         const data = typeof doc.data === 'function' ? doc.data() : doc;
-        return { 
-          id: doc.id, 
+        return {
+          id: doc.id,
           ...data,
           // Ensure senderId exists (backward compatibility)
           senderId: data.senderId || data.user?.id || '',
         } as Message;
       });
-      
-      
+
+
       // Set snapshots only if we have messages
       if (documentSnapshots && (documentSnapshots as any).docs && (documentSnapshots as any).docs.length > 0) {
         this.firstMessageSnapshot = (documentSnapshots as any).docs[0];
@@ -229,10 +229,10 @@ export class ChatService {
         this.lastMessageSnapshot = null;
       }
       this.hasMoreMessages = initialMessages.length === MESSAGE_PAGE_SIZE;
-      
+
       this.messages = initialMessages.reverse(); // Show oldest first
       this.isInitialLoad = false;
-      
+
       this.setupNewMessagesListener();
       this.notify();
 
@@ -240,9 +240,9 @@ export class ChatService {
       const err = error as FirebaseError;
       // Suppress offline/permission errors
       if (err.message?.includes('client is offline') ||
-          err.message?.includes('Failed to get document') ||
-          err.code === 'unavailable' ||
-          err.code === 'permission-denied') {
+        err.message?.includes('Failed to get document') ||
+        err.code === 'unavailable' ||
+        err.code === 'permission-denied') {
         this.isInitialLoad = false;
         this.messages = [];
         this.hasMoreMessages = false;
@@ -252,9 +252,9 @@ export class ChatService {
       logger.error("Error loading initial messages", error as Error, { roomId: this.roomId });
       this.isInitialLoad = false;
       this.notify();
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ 
-        operation: 'list', 
-        path: `rooms/${this.roomId}/messages` 
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        operation: 'list',
+        path: `rooms/${this.roomId}/messages`
       }));
     }
   }
@@ -310,14 +310,14 @@ export class ChatService {
       const err = error as FirebaseError;
       // Suppress offline/permission errors
       if (err.message?.includes('client is offline') ||
-          err.message?.includes('Failed to get document') ||
-          err.code === 'unavailable' ||
-          err.code === 'permission-denied') {
+        err.message?.includes('Failed to get document') ||
+        err.code === 'unavailable' ||
+        err.code === 'permission-denied') {
         return; // Silently ignore
       }
       logger.error("New messages listener error", error as Error, { roomId: this.roomId });
     });
-    
+
     this.unsubscribes.push(this.newestMessageListenerUnsub);
   }
 
@@ -343,7 +343,7 @@ export class ChatService {
     this.pendingNewMessages = [];
     this.notify();
   }
-  
+
   public async loadMoreMessages() {
     if (!this.hasMoreMessages || this.isFetchingMore) {
       return;
@@ -354,9 +354,9 @@ export class ChatService {
     try {
       const messagesRef = collection(this.firestore, 'rooms', this.roomId, 'messages');
       const q = query(
-        messagesRef, 
-        orderBy('createdAt', 'desc'), 
-        startAfter(this.lastMessageSnapshot), 
+        messagesRef,
+        orderBy('createdAt', 'desc'),
+        startAfter(this.lastMessageSnapshot),
         limit(MESSAGE_PAGE_SIZE)
       );
 
@@ -365,8 +365,8 @@ export class ChatService {
         { timeoutMs: 30_000, attempts: 3, backoffMs: 500 }
       ).catch(() => null);
       const olderDocs = documentSnapshots && (documentSnapshots as any).docs ? (documentSnapshots as any).docs : [];
-      const olderMessages = olderDocs.map((doc: any) => ({ 
-        id: doc.id, 
+      const olderMessages = olderDocs.map((doc: any) => ({
+        id: doc.id,
         ...(typeof doc.data === 'function' ? doc.data() : doc)
       } as Message));
 
@@ -385,7 +385,7 @@ export class ChatService {
   }
 
   // --- User and Room Management ---
-  
+
   public async signInAnonymouslyIfNeeded(): Promise<string> {
     // Check if Firebase config is valid before attempting to use it (skip in demo mode)
     if (!isDemoMode() && !isFirebaseConfigValid()) {
@@ -410,7 +410,7 @@ export class ChatService {
     }
     return this.auth.currentUser.uid;
   }
-  
+
   public async resolveUser(name: string, avatar: string): Promise<UserProfile> {
     const uid = await this.signInAnonymouslyIfNeeded();
     const userDocRef = doc(this.firestore, 'users', uid);
@@ -464,17 +464,17 @@ export class ChatService {
 
         // Initialize RTDB managers
         this.typingManager = new TypingManager(this.roomId, user.id);
-        
+
         const roomRef = doc(this.firestore, 'rooms', this.roomId);
-        
+
         await withRetryAndTimeout(() => runTransaction(this.firestore, async (transaction) => {
           const roomDoc = await transaction.get(roomRef);
-          
+
           // If validation is required and room doesn't exist, throw error
           if (validateRoom && !roomDoc.exists()) {
             throw new Error(`Room ${this.roomId} does not exist`);
           }
-          
+
           if (!roomDoc.exists()) {
             // Create room with full structure (only if validation is not required)
             transaction.set(roomRef, {
@@ -519,10 +519,10 @@ export class ChatService {
       } catch (error) {
         const err = error as FirebaseError;
         // In demo mode or if permission denied, silently fail and use local state
-        if (isDemoMode() || 
-            err.code === 'permission-denied' ||
-            err.message?.includes('Permission denied') ||
-            err.message?.includes('client is offline')) {
+        if (isDemoMode() ||
+          err.code === 'permission-denied' ||
+          err.message?.includes('Permission denied') ||
+          err.message?.includes('client is offline')) {
           // Update local state only
           this.onlineUsers = [user];
           this.notify();
@@ -540,8 +540,8 @@ export class ChatService {
   }
 
   public async leaveRoom() {
-    if (!this.currentUser) return; 
-    
+    if (!this.currentUser) return;
+
     // In demo mode, just clear local state
     if (isDemoMode()) {
       this.currentUser = null;
@@ -549,7 +549,7 @@ export class ChatService {
       this.notify();
       return;
     }
-    
+
     const roomRef = doc(this.firestore, 'rooms', this.roomId);
     try {
       await withRetryAndTimeout(() => runTransaction(this.firestore, async (transaction) => {
@@ -572,9 +572,9 @@ export class ChatService {
     } catch (error) {
       const firebaseError = error as { code?: string };
       // Suppress offline/permission errors
-      if (firebaseError.code === 'unavailable' || 
-          firebaseError.code === 'permission-denied' ||
-          (error as Error).message?.includes('client is offline')) {
+      if (firebaseError.code === 'unavailable' ||
+        firebaseError.code === 'permission-denied' ||
+        (error as Error).message?.includes('client is offline')) {
         // Clear local state anyway
         this.currentUser = null;
         this.onlineUsers = [];
@@ -583,16 +583,16 @@ export class ChatService {
       }
       if (firebaseError.code !== 'not-found') {
         logger.error("Error leaving room", error as Error, { roomId: this.roomId, userId: this.currentUser?.id });
-        errorEmitter.emit('permission-error', new FirestorePermissionError({ 
-          operation: 'update', 
-          path: `rooms/${this.roomId}` 
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          operation: 'update',
+          path: `rooms/${this.roomId}`
         }));
       }
     }
   }
 
   // --- Messages with Rate Limiting ---
-  
+
   public async sendMessage(messageData: Omit<Message, 'id' | 'createdAt' | 'reactions' | 'delivered' | 'seen'>, clientMessageId?: string) {
     // Prevent re-entrant concurrent sends that could cause race conditions.
     // Do not await timers here (breaks tests with fake timers). If another send
@@ -614,11 +614,11 @@ export class ChatService {
 
     const hasText = messageData.text && messageData.text.trim().length > 0;
     const hasImage = messageData.imageUrl;
-    
+
     if (!hasText && !hasImage && messageData.type !== 'sticker' && messageData.type !== 'doodle') {
       return; // Don't send empty messages
     }
-    
+
     // Normalize and validate message type and size
     const normalizedType = messageData.type || 'text';
     if (normalizedType === 'text' && messageData.text && messageData.text.length > 2000) {
@@ -627,7 +627,7 @@ export class ChatService {
 
     // Generate client message ID for deduplication
     const msgId = clientMessageId || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+
     // Check for duplicate
     if (this.sentMessageIds.has(msgId)) {
       logger.warn('Duplicate message detected, skipping', { clientMessageId: msgId });
@@ -636,7 +636,7 @@ export class ChatService {
 
     // Anti-flood and rate-limiting check
     this.checkMessageRate();
-    
+
     const now = Date.now();
     if (this.isMuted) {
       throw new Error(`You are temporarily muted. Please wait ${this.muteSecondsLeft} seconds.`);
@@ -648,13 +648,13 @@ export class ChatService {
     this.lastMessageTime = now;
     this.recentMessageTimestamps.push(now);
     this.sentMessageIds.add(msgId);
-    
+
     // Cleanup old IDs (keep last 100)
     if (this.sentMessageIds.size > 100) {
       const idsArray = Array.from(this.sentMessageIds);
       this.sentMessageIds = new Set(idsArray.slice(-100));
     }
-    
+
     // In demo mode, add message to local state only
     if (isDemoMode()) {
       const demoMessage: Message = {
@@ -671,8 +671,8 @@ export class ChatService {
       // Sort messages by timestamp
       newMessages.sort((a, b) => (a.createdAt?.toMillis() ?? 0) - (b.createdAt?.toMillis() ?? 0));
       this.messages = newMessages;
-      logger.info('[DEMO MODE] Message added to local state', { 
-        messageId: msgId, 
+      logger.info('[DEMO MODE] Message added to local state', {
+        messageId: msgId,
         messagesCount: this.messages.length,
         text: messageData.text?.substring(0, 50),
         allMessageIds: this.messages.map(m => m.id),
@@ -685,7 +685,7 @@ export class ChatService {
       });
       return;
     }
-    
+
     try {
       await withRetryAndTimeout(() => addDoc(collection(this.firestore, 'rooms', this.roomId, 'messages'), {
         ...messageData,
@@ -695,7 +695,7 @@ export class ChatService {
         reactions: [],
         delivered: false, // Initially not delivered
         seen: false, // Initially not seen
-        }),
+      }),
         { timeoutMs: 30_000, attempts: 3, backoffMs: 500 }
       );
       this.sendingMessage = false;
@@ -703,9 +703,9 @@ export class ChatService {
       const err = error as FirebaseError;
       // Suppress offline/permission errors
       if (err.message?.includes('client is offline') ||
-          err.message?.includes('Failed to get document') ||
-          err.code === 'unavailable' ||
-          err.code === 'permission-denied') {
+        err.message?.includes('Failed to get document') ||
+        err.code === 'unavailable' ||
+        err.code === 'permission-denied') {
         // Add to local state anyway in offline mode
         const offlineMessage: Message = {
           id: msgId,
@@ -732,7 +732,7 @@ export class ChatService {
       throw error;
     }
   }
-  
+
   private checkMessageRate() {
     const now = Date.now();
     // Remove timestamps older than the flood threshold time
@@ -785,18 +785,18 @@ export class ChatService {
       const err = error as FirebaseError;
       // Suppress offline/permission errors
       if (err.message?.includes('client is offline') ||
-          err.message?.includes('Failed to get document') ||
-          err.code === 'unavailable' ||
-          err.code === 'permission-denied') {
+        err.message?.includes('Failed to get document') ||
+        err.code === 'unavailable' ||
+        err.code === 'permission-denied') {
         // Remove from local state anyway
         this.messages = this.messages.filter(msg => msg.id !== messageId);
         this.notify();
         return;
       }
       logger.error("Error deleting message", error as Error, { roomId: this.roomId, messageId });
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ 
-        operation: 'delete', 
-        path: msgRef.path 
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        operation: 'delete',
+        path: msgRef.path
       }));
       throw error;
     }
@@ -821,7 +821,7 @@ export class ChatService {
     }
 
     const messageRef = doc(this.firestore, 'rooms', this.roomId, 'messages', messageId);
-    
+
     try {
       await runTransaction(this.firestore, async (transaction) => {
         const messageDoc = await transaction.get(messageRef);
@@ -829,7 +829,7 @@ export class ChatService {
 
         const messageData = messageDoc.data() as Message;
         const newReactions = messageData.reactions || [];
-        
+
         const existingReactionIndex = newReactions.findIndex(
           (r) => r.emoji === emoji && r.userId === user.id
         );
@@ -847,9 +847,9 @@ export class ChatService {
       const err = error as FirebaseError;
       // Suppress offline/permission errors
       if (err.message?.includes('client is offline') ||
-          err.message?.includes('Failed to get document') ||
-          err.code === 'unavailable' ||
-          err.code === 'permission-denied') {
+        err.message?.includes('Failed to get document') ||
+        err.code === 'unavailable' ||
+        err.code === 'permission-denied') {
         // Update local state anyway
         const message = this.messages.find(msg => msg.id === messageId);
         if (message) {
@@ -866,19 +866,30 @@ export class ChatService {
         return;
       }
       logger.error("Error toggling reaction", error as Error, { roomId: this.roomId, messageId, emoji, userId: user.id });
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ 
-        operation: 'update', 
-        path: messageRef.path 
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        operation: 'update',
+        path: messageRef.path
       }));
       throw error;
     }
   }
-  
+
   /**
    * Send typing indicator (RTDB)
    */
   public sendTyping() {
     this.typingManager?.sendTyping();
+  }
+
+  /**
+   * Explicitly set typing status (for future use or specific UI controls)
+   */
+  public setTypingStatus(isTyping: boolean) {
+    if (isTyping) {
+      this.sendTyping();
+    }
+    // Note: RTDB typing manager handles auto-expiration, so explicit 'false' might not be needed 
+    // unless we want to clear it immediately.
   }
 
   /**
@@ -924,16 +935,16 @@ export class ChatService {
     const safeFileName = Date.now().toString();
     const storagePath = `chat_images/${this.roomId}/${this.currentUser!.id}/${safeFileName}`;
     const storageRef = ref(this.storage, storagePath);
-    
+
     try {
-    const snapshot = await uploadBytes(storageRef, file);
-    return getDownloadURL(snapshot.ref);
+      const snapshot = await uploadBytes(storageRef, file);
+      return getDownloadURL(snapshot.ref);
     } catch (error) {
       const err = error as FirebaseError;
       // If offline, fallback to data URL
       if (err.message?.includes('client is offline') ||
-          err.code === 'unavailable' ||
-          err.code === 'permission-denied') {
+        err.code === 'unavailable' ||
+        err.code === 'permission-denied') {
         return new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = (e) => {
@@ -959,7 +970,7 @@ export class ChatService {
   }
 
   // --- Canvas ---
-  
+
   public async createCanvasSheet(name: string): Promise<DocumentReference> {
     return addDoc(collection(this.firestore, 'rooms', this.roomId, 'canvasSheets'), {
       name,
@@ -973,14 +984,14 @@ export class ChatService {
       createdAt: serverTimestamp(),
     });
   }
-  
+
   public async clearCanvasSheet(sheetId: string) {
     const pathsQuery = query(
-      collection(this.firestore, 'rooms', this.roomId, 'canvasPaths'), 
+      collection(this.firestore, 'rooms', this.roomId, 'canvasPaths'),
       where('sheetId', '==', sheetId)
     );
     const snapshot = await getDocs(pathsQuery);
-    
+
     if (snapshot.empty) return;
 
     const batch = writeBatch(this.firestore);
@@ -991,7 +1002,7 @@ export class ChatService {
   }
 
   // --- Games ---
-  
+
   /**
    * Remove undefined values from object (Firestore doesn't support undefined)
    */
@@ -999,11 +1010,11 @@ export class ChatService {
     if (obj === null || typeof obj !== 'object') {
       return obj;
     }
-    
+
     if (Array.isArray(obj)) {
       return obj.map(item => this.removeUndefinedValues(item));
     }
-    
+
     const cleaned: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj)) {
       if (value !== undefined) {
@@ -1012,7 +1023,7 @@ export class ChatService {
     }
     return cleaned;
   }
-  
+
   public async updateGameState(gameId: string, newState: Partial<GameState>) {
     // In demo mode, update local state only
     if (isDemoMode()) {
@@ -1030,22 +1041,22 @@ export class ChatService {
       await setDoc(gameRef, cleanedState, { merge: true });
     } catch (error) {
       const err = error as FirebaseError;
-      
+
       // Check for nested arrays error
       if (err.message?.includes('Nested arrays are not supported')) {
-        logger.error("Nested arrays detected in game state", error as Error, { 
-          roomId: this.roomId, 
+        logger.error("Nested arrays detected in game state", error as Error, {
+          roomId: this.roomId,
           gameId,
           hint: 'Use flattened structure or maps instead of nested arrays'
         });
         throw new Error('Game state contains nested arrays which are not supported by Firestore. Please restructure the data.');
       }
-      
+
       // Suppress offline/permission errors
       if (err.message?.includes('client is offline') ||
-          err.message?.includes('Failed to get document') ||
-          err.code === 'unavailable' ||
-          err.code === 'permission-denied') {
+        err.message?.includes('Failed to get document') ||
+        err.code === 'unavailable' ||
+        err.code === 'permission-denied') {
         // Update local state anyway
         if (this.gameStates) {
           this.gameStates[gameId] = { ...this.gameStates[gameId], ...newState } as GameState;
@@ -1054,9 +1065,9 @@ export class ChatService {
         return;
       }
       logger.error("Error updating game state", error as Error, { roomId: this.roomId, gameId });
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ 
-        operation: 'update', 
-        path: gameRef.path 
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        operation: 'update',
+        path: gameRef.path
       }));
       throw error;
     }
@@ -1078,9 +1089,9 @@ export class ChatService {
       const err = error as FirebaseError;
       // Suppress offline/permission errors
       if (err.message?.includes('client is offline') ||
-          err.message?.includes('Failed to get document') ||
-          err.code === 'unavailable' ||
-          err.code === 'permission-denied') {
+        err.message?.includes('Failed to get document') ||
+        err.code === 'unavailable' ||
+        err.code === 'permission-denied') {
         // Remove from local state anyway
         if (this.gameStates) {
           delete this.gameStates[gameId];
@@ -1089,9 +1100,9 @@ export class ChatService {
         return;
       }
       logger.error("Error deleting game", error as Error, { roomId: this.roomId, gameId });
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ 
-        operation: 'delete', 
-        path: `rooms/${this.roomId}/games/${gameId}` 
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
+        operation: 'delete',
+        path: `rooms/${this.roomId}/games/${gameId}`
       }));
       throw error;
     }
@@ -1143,22 +1154,22 @@ export class ChatService {
       this.typingManager.disconnect();
       this.typingManager = null;
     }
-    
+
     // Clear all subscriptions
     this.unsubscribes.forEach(unsub => unsub());
     this.unsubscribes = [];
-    
+
     // Clear timers
     if (this.muteTimer) clearTimeout(this.muteTimer);
     if (this.muteCountdownTimer) clearInterval(this.muteCountdownTimer);
-    
+
     // Reset state
     this.currentUser = null;
     this.isJoining = false;
     this.joinPromise = null;
     this.sentMessageIds.clear();
     this.receivedMessageIds.clear();
-    
+
     // Cleanup message queue callback
     // Avoid accessing the lazy getter which may re-initialize the callback twice.
     const mq = this._messageQueue ?? getMessageQueue();
@@ -1173,9 +1184,9 @@ export class ChatService {
 const chatServices = new Map<string, ChatService>();
 
 export function getChatService(
-  roomId: string, 
-  firestore: Firestore, 
-  auth: Auth, 
+  roomId: string,
+  firestore: Firestore,
+  auth: Auth,
   storage: FirebaseStorage
 ): ChatService {
   if (!chatServices.has(roomId)) {

@@ -16,12 +16,12 @@ import { createPresenceManager } from '@/lib/presence';
 import { useRef } from 'react';
 
 interface FirebaseContextType {
-  app: FirebaseApp;
-  firestore: Firestore;
-  db: Firestore;
+  app: FirebaseApp | null;
+  firestore: Firestore | null;
+  db: Firestore | null;
   user?: User | null;
-  auth: Auth;
-  storage: FirebaseStorage;
+  auth: Auth | null;
+  storage: FirebaseStorage | null;
   rtdb: Database | null;
   analytics: Analytics | null;
   messaging: Messaging | null;
@@ -40,16 +40,23 @@ export const useFirebase = (): FirebaseContextType => {
 export function FirebaseProvider({ children }: { children: ReactNode }) {
   const [firebaseInstances, setFirebaseInstances] = useState<FirebaseContextType | null>(null);
   const [isMounted, setIsMounted] = useState(false);
-  
+
   // Use a state for the user to trigger FCM initialization
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
     logger.debug('FirebaseProvider: Attempting to get Firebase instances');
-    
+
     try {
       const { app, firestore, auth, storage, rtdb, analytics, messaging } = getClientFirebase();
+
+      // Only set instances if Firebase is actually initialized
+      if (!app || !firestore || !auth) {
+        logger.warn('FirebaseProvider: Firebase not initialized (likely build time)');
+        return;
+      }
+
       setFirebaseInstances({
         app,
         firestore,
@@ -62,7 +69,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
         messaging
       });
       logger.debug('FirebaseProvider: Firebase instances successfully set');
-      
+
       // Listen for auth state changes to get the user
       const unsubscribe = auth.onAuthStateChanged((currentUser) => {
         setUser(currentUser);

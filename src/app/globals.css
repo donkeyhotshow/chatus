@@ -4,8 +4,10 @@
 
 @layer base {
   :root {
-    --background: 0 0% 8%; /* Deep Black */
-    --foreground: 0 0% 90%; /* Light Grey */
+    --background: 0 0% 8%;
+    /* Deep Black */
+    --foreground: 0 0% 90%;
+    /* Light Grey */
 
     --card: 0 0% 12%;
     --card-foreground: 0 0% 95%;
@@ -13,8 +15,10 @@
     --popover: 0 0% 5%;
     --popover-foreground: 0 0% 95%;
 
-    --primary: 0 0% 98%; /* White */
-    --primary-foreground: 0 0% 5%; /* Black */
+    --primary: 0 0% 98%;
+    /* White */
+    --primary-foreground: 0 0% 5%;
+    /* Black */
 
     --secondary: 0 0% 15%;
     --secondary-foreground: 0 0% 98%;
@@ -22,17 +26,22 @@
     --muted: 0 0% 15%;
     --muted-foreground: 0 0% 60%;
 
-    --accent: 0 0% 80%; /* Light Grey for accents */
+    --accent: 0 0% 80%;
+    /* Light Grey for accents */
     --accent-foreground: 0 0% 5%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 100% / 0.1; /* White with 10% opacity */
+    --border: 0 0% 100% / 0.1;
+    /* White with 10% opacity */
     --input: 0 0% 14%;
     --ring: 0 0% 90%;
 
     --radius: 0.5rem;
+
+    /* iOS viewport height fix */
+    --vh: 1vh;
   }
 }
 
@@ -40,12 +49,29 @@
   * {
     @apply border-border;
   }
+
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+  }
+
   body {
     @apply bg-black text-neutral-200 font-sans;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior-y: contain;
+    /* Prevent pull-to-refresh */
+    -webkit-overflow-scrolling: touch;
+    /* Safe area insets for iOS */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
-  
+
   ::selection {
     @apply bg-white text-black;
   }
@@ -56,13 +82,63 @@
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: black;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #333;
   border-radius: 3px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: #555;
+}
+
+/* Mobile-specific fixes */
+@supports (-webkit-touch-callout: none) {
+
+  /* iOS specific */
+  body {
+    min-height: -webkit-fill-available;
+  }
+}
+
+/* Android-specific optimizations */
+@media screen and (max-width: 768px) {
+
+  /* Better touch targets */
+  button,
+  a,
+  input,
+  textarea {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Prevent text size adjustment on orientation change */
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* Improve scrolling performance */
+  * {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+
+  /* Fix for Android Chrome address bar */
+  body {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+  }
+}
+
+/* Performance optimizations */
+@media (prefers-reduced-motion: no-preference) {
+  * {
+    scroll-behavior: smooth;
+  }
 }
