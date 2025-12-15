@@ -32,7 +32,7 @@ export function throttle<T extends (...args: any[]) => any>(
 ): (...args: Parameters<T>) => void {
   let inThrottle: boolean
 
-  return function executedFunction(...args: Parameters<T>) {
+  return function executedFunction(this: any, ...args: Parameters<T>) {
     if (!inThrottle) {
       func.apply(this, args)
       inThrottle = true
@@ -44,19 +44,19 @@ export function throttle<T extends (...args: any[]) => any>(
 // Хук для стабильного callback с зависимостями
 export function useStableCallback<T extends (...args: any[]) => any>(
   callback: T,
-  deps: React.DependencyLis
-{
-    const ref = useRef<T>(callback)
+  deps: React.DependencyList
+): T {
+  const ref = useRef<T>(callback)
 
   // Обновляем ref при изменении зависимостей
   useMemo(() => {
-  ref.current = callback
-}, deps)
+    ref.current = callback
+  }, deps)
 
-// Возвращаем стабильную функцию
-return useCallback((...args: Parameters<T>) => {
-  return ref.current(...args)
-}, []) as T
+  // Возвращаем стабильную функцию
+  return useCallback((...args: Parameters<T>) => {
+    return ref.current(...args)
+  }, []) as T
 }
 
 // Хук для debounced значения

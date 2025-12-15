@@ -34,6 +34,7 @@ export function PerformanceMonitor() {
             const timer = setTimeout(sendMetrics, 5000)
             return () => clearTimeout(timer)
         }
+        return undefined
     }, [metrics])
 
     // В development режиме показываем метрики в консоли

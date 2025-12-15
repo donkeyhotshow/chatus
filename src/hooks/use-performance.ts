@@ -24,57 +24,67 @@ export function usePerformance() {
     useEffect(() => {
         // Web Vitals
         if (typeof window !== 'undefined' && 'PerformanceObserver' in window) {
-            // First Contentful Paint
-            const fcpObserver = new PerformanceObserver((list) => {
-                for (const entry of list.getEntries()) {
-                    if (entry.name === 'first-contentful-paint') {
-                        metricsRef.current.fcp = entry.startTime
-                        reportMetric('FCP', entry.startTime)
+            try {
+                // First Contentful Paint
+                const fcpObserver = new PerformanceObserver((list) => {
+                    for (const entry of list.getEntries()) {
+                        if (entry.name === 'first-contentful-paint') {
+                            metricsRef.current.fcp = entry.startTime
+                            reportMetric('FCP', entry.startTime)
+                        }
                     }
-                }
-            })
-            fcpObserver.observe({ entryTypes: ['paint'] })
+                })
+                fcpObserver.observe({ entryTypes: ['paint'] })
 
-            // Largest Contentful Paint
-            const lcpObserver = new PerformanceObserver((list) => {
-                const entries = list.getEntries()
-                const lastEntry = entries[entries.length - 1]
-                if (lastEntry) {
-                    metricsRef.current.lcp = lastEntry.startTime
-                    reportMetric('LCP', lastEntry.startTime)
-                }
-            })
-            lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] })
-
-            // First Input Delay
-            const fidObserver = new PerformanceObserver((list) => {
-                for (const entry of list.getEntries()) {
-                    metricsRef.current.fid = entry.processingStart - entry.startTime
-                    reportMetric('FID', entry.processingStart - entry.startTime)
-                }
-            })
-            fidObserver.observe({ entryTypes: ['first-input'] })
-
-            // Cumulative Layout Shift
-            let clsValue = 0
-            const clsObserver = new PerformanceObserver((list) => {
-                for (const entry of list.getEntries()) {
-                    if (!entry.hadRecentInput) {
-                        clsValue += entry.value
+                // Largest Contentful Paint
+                const lcpObserver = new PerformanceObserver((list) => {
+                    const entries = list.getEntries()
+                    const lastEntry = entries[entries.length - 1]
+                    if (lastEntry) {
+                        metricsRef.current.lcp = lastEntry.startTime
+                        reportMetric('LCP', lastEntry.startTime)
                     }
-                }
-                metricsRef.current.cls = clsValue
-                reportMetric('CLS', clsValue)
-            })
-            clsObserver.observe({ entryTypes: ['layout-shift'] })
+                })
+                lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] })
 
-            return () => {
-                fcpObserver.disconnect()
-                lcpObserver.disconnect()
-                fidObserver.disconnect()
-                clsObserver.disconnect()
+                // First Input Delay
+                const fidObserver = new PerformanceObserver((list) => {
+                    for (const entry of list.getEntries()) {
+                        const fidEntry = entry as any
+                        if (fidEntry.processingStart) {
+                            metricsRef.current.fid = fidEntry.processingStart - entry.startTime
+                            reportMetric('FID', fidEntry.processingStart - entry.startTime)
+                        }
+                    }
+                })
+                fidObserver.observe({ entryTypes: ['first-input'] })
+
+                // Cumulative Layout Shift
+                let clsValue = 0
+                const clsObserver = new PerformanceObserver((list) => {
+                    for (const entry of list.getEntries()) {
+                        const clsEntry = entry as any
+                        if (!clsEntry.hadRecentInput && clsEntry.value) {
+                            clsValue += clsEntry.value
+                        }
+                    }
+                    metricsRef.current.cls = clsValue
+                    reportMetric('CLS', clsValue)
+                })
+                clsObserver.observe({ entryTypes: ['layout-shift'] })
+
+                return () => {
+                    fcpObserver.disconnect()
+                    lcpObserver.disconnect()
+                    fidObserver.disconnect()
+                    clsObserver.disconnect()
+                }
+            } catch (error) {
+                console.warn('Performance monitoring not supported:', error)
+                return undefined
             }
         }
+        return undefined
     }, [reportMetric])
 
     return metricsRef.current
@@ -102,5 +112,6 @@ export function useMemoryMonitor() {
             const interval = setInterval(checkMemory, 30000) // Каждые 30 секунд
             return () => clearInterval(interval)
         }
+        return undefined
     }, [])
 }

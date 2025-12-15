@@ -1,11 +1,11 @@
-'use c
+'use client'
 
 import { Suspense, lazy, type ComponentType, type LazyExoticComponent } from 'react'
 import { cn } from '@/lib/utils'
 
 interface LazyComponentProps {
     fallback?: React.ReactNode
-    className?: string
+    className?: string | undefined
     children: React.ReactNode
 }
 
@@ -27,12 +27,12 @@ export function LazyWrapper({ fallback, className, children }: LazyComponentProp
 // Хелпер для создания ленивых компонентов с типизацией
 export function createLazyComponent<T extends ComponentType<any>>(
     importFn: () => Promise<{ default: T }>,
-    fallback?: React.ReactNode
+    _fallback?: React.ReactNode
 ): LazyExoticComponent<T> {
     const LazyComponent = lazy(importFn)
 
-    // Добавляем displayName для лучшей отладки
-    LazyComponent.displayName = `Lazy(${importFn.toString().match(/\/([^\/]+)\.tsx?/)?.[1] || 'Component'})`
+        // Добавляем displayName для лучшей отладки
+        ; (LazyComponent as any).displayName = `Lazy(${importFn.toString().match(/\/([^\/]+)\.tsx?/)?.[1] || 'Component'})`
 
     return LazyComponent
 }
@@ -69,7 +69,7 @@ export function PrefetchLazy({
 
     return (
         <div {...triggerProps} className={className}>
-            <LazyWrapper fallback={fallback} className={className}>
+            <LazyWrapper fallback={fallback} className={className || undefined}>
                 {children}
             </LazyWrapper>
         </div>

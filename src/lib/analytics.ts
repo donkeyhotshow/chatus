@@ -24,7 +24,7 @@ class Analytics {
     }
 
     // Отслеживание событий
-    track(name: string, properties?: Record<stng, any>): void {
+    track(name: string, properties?: Record<string, any>): void {
         const event: AnalyticsEvent = {
             name,
             properties: {

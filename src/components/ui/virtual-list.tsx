@@ -40,9 +40,9 @@ export const VirtualList = memo(<T,>({
         }
     }, [loading, onEndReached])
 
-    const footer = useMemo(() => {
+    const FooterComponent = useMemo(() => {
         if (loading && loadingComponent) {
-            return () => loadingComponent
+            return () => <div>{loadingComponent}</div>
         }
         return undefined
     }, [loading, loadingComponent])
@@ -54,7 +54,7 @@ export const VirtualList = memo(<T,>({
                 itemContent={itemRenderer}
                 overscan={overscan}
                 endReached={endReached}
-                footer={footer}
+                {...(FooterComponent && { components: { Footer: FooterComponent } })}
                 {...(itemHeight && { fixedItemHeight: itemHeight })}
             />
         </div>
