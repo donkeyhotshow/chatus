@@ -74,7 +74,7 @@ export function useCurrentUser(roomId: string) {
           // Try cache first (fast if persistence enabled)
           const cacheSnap = await getDoc(ref);
           return cacheSnap as DocumentSnapshot<T>;
-        } catch (cacheErr) {
+        } catch {
           // Cache miss or unsupported - fall back to server
         }
 
@@ -100,12 +100,12 @@ export function useCurrentUser(roomId: string) {
 
         // Step 1: Try to restore from localStorage
         const storedUser = getUserFromStorage();
-        
+
         if (storedUser) {
           // Step 2: Verify user exists in Firestore and UID matches
           const service = getChatService(roomId, firebaseContext.db, firebaseContext.auth, firebaseContext.storage);
           const uid = await service.signInAnonymouslyIfNeeded();
-          
+
           if (storedUser.id === uid) {
             // UID matches, verify user doc exists
             const userDocRef = doc(firebaseContext.db, 'users', uid);
@@ -115,7 +115,7 @@ export function useCurrentUser(roomId: string) {
             } catch (err) {
               userDoc = null;
             }
-            
+
             if (userDoc && userDoc.exists()) {
               const firestoreUser = userDoc.data() as UserProfile;
               // Use Firestore data as source of truth, but keep stored as fallback
@@ -128,10 +128,10 @@ export function useCurrentUser(roomId: string) {
         }
 
         // Step 3: If no stored user or UID mismatch, sign in anonymously
-        
+
         const service = getChatService(roomId, firebaseContext.db, firebaseContext.auth, firebaseContext.storage);
         const uid = await service.signInAnonymouslyIfNeeded();
-        
+
         if (uid) {
           // Check if user doc exists
           const userDocRef = doc(firebaseContext.db, 'users', uid);
@@ -141,7 +141,7 @@ export function useCurrentUser(roomId: string) {
           } catch (err) {
             userDoc = null;
           }
-          
+
           if (userDoc && userDoc.exists()) {
             const existingUser = userDoc.data() as UserProfile;
             setUser(existingUser);
@@ -152,14 +152,14 @@ export function useCurrentUser(roomId: string) {
       } catch (err) {
         const error = err as Error;
         const firebaseError = err as any;
-        
+
         // Check if it's a Firebase offline/client error - handle gracefully in demo mode
-        const isOfflineError = 
+        const isOfflineError =
           error.message?.includes('client is offline') ||
           error.message?.includes('Failed to get document') ||
           firebaseError.code === 'unavailable' ||
           firebaseError.code === 'failed-precondition';
-        
+
         if (isDemoMode() && isOfflineError) {
           // In demo mode, offline errors are expected - use localStorage fallback
           const storedUser = getUserFromStorage();
@@ -169,24 +169,24 @@ export function useCurrentUser(roomId: string) {
           setIsLoading(false);
           return;
         }
-        
+
         // Check if it's a Firebase config error - don't log these as they're expected
-        const isConfigError = 
-          error.name === 'FirebaseConfigError' || 
-          error.message?.includes('api-key-not-valid') || 
+        const isConfigError =
+          error.name === 'FirebaseConfigError' ||
+          error.message?.includes('api-key-not-valid') ||
           error.message?.includes('API key') ||
           error.message?.includes('Firebase configuration is invalid') ||
           firebaseError.code === 'auth/api-key-not-valid' ||
           firebaseError.code?.includes('api-key') ||
           firebaseError.code === 'auth/invalid-api-key';
-        
+
         if (isConfigError) {
           // Don't log config errors - they're expected when config is not set up
           setIsLoading(false);
           setError(new Error('Firebase configuration is invalid. Please set up your Firebase credentials in .env.local file. See FIREBASE_SETUP.md for instructions.'));
           return;
         }
-        
+
         // Only log non-config errors
         logger.error('Failed to load user', error);
         setError(error);
@@ -222,10 +222,10 @@ export function useCurrentUser(roomId: string) {
 
     const service = getChatService(roomId, firebaseContext.db, firebaseContext.auth, firebaseContext.storage);
     const uid = await service.signInAnonymouslyIfNeeded();
-    
+
     // Step 1: Check if user with same UID already exists
     const userDocRef = doc(firebaseContext.db, 'users', uid);
-    
+
     try {
       let userDoc;
       try {
@@ -233,7 +233,7 @@ export function useCurrentUser(roomId: string) {
       } catch (err) {
         userDoc = null;
       }
-      
+
       if (userDoc && userDoc.exists()) {
         const existingUser = userDoc.data() as UserProfile;
         // If name matches, use existing user (update avatar if changed)
@@ -291,10 +291,10 @@ export function useCurrentUser(roomId: string) {
         throw err;
       }
     }
-    
+
     setUser(newUser);
     saveUserToStorage(newUser);
-    
+
     return newUser;
   }, [firebaseContext, roomId]);
 

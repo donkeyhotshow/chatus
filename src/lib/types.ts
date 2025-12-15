@@ -35,16 +35,16 @@ export interface Message {
 }
 
 export interface Room {
-    id: string;
-    participants: string[];
-    participantProfiles: UserProfile[];
-    createdAt?: Timestamp | Date;
-    lastUpdated?: Timestamp | Date;
-    settings?: {
-        maxParticipants?: number;
-        isPrivate?: boolean;
-        [key: string]: any;
-    };
+  id: string;
+  participants: string[];
+  participantProfiles: UserProfile[];
+  createdAt?: Timestamp | Date;
+  lastUpdated?: Timestamp | Date;
+  settings?: {
+    maxParticipants?: number;
+    isPrivate?: boolean;
+    [key: string]: unknown;
+  };
 }
 
 export type BrushType = 'normal' | 'neon' | 'dashed' | 'calligraphy';
@@ -113,32 +113,32 @@ export interface TDEnemy {
 }
 
 export interface GameState {
-    type: GameType;
-    hostId?: string; // ID of the user who started the game
-    // Tic-Tac-Toe
-    board?: (string | null)[];
-    currentPlayer?: string;
-    winner?: string | null;
-    // Rock-Paper-Scissors
-    moves?: { [userId: string]: 'rock' | 'paper' | 'scissors' };
-    result?: string | null;
-    // Click War
-    scores?: { [userId:string]: number };
-    active?: boolean;
-    startTime?: number | null; // Timestamp начала игры для синхронизации таймера
-    // Dice Roll
-    diceRoll?: { [userId: string]: number };
-    // Maze
-    maze?: string | number[][];
-    // Tower Defense
-    tdGrid?: TDGrid;
-    tdTowers?: TDTower[];
-    tdEnemies?: TDEnemy[];
-    tdWave?: number;
-    tdBaseHealth?: number;
-    tdResources?: number;
-    tdStatus?: 'waiting' | 'in-progress' | 'game-over-win' | 'game-over-loss';
-    tdPathsFlat?: { [pathId: string]: { x: number; y: number }[] }; // Flattened paths to avoid nested arrays
-    tdScores?: { [userId: string]: number }; // Очки игроков (leaderboard)
-    tdSelectedTower?: string | null; // ID выбранной башни для апгрейда
+  type: GameType;
+  hostId?: string; // ID of the user who started the game
+  // Tic-Tac-Toe
+  board?: (string | null)[];
+  currentPlayer?: string;
+  winner?: string | null;
+  // Rock-Paper-Scissors
+  moves?: { [userId: string]: 'rock' | 'paper' | 'scissors' };
+  result?: string | null;
+  // Click War
+  scores?: { [userId: string]: number };
+  active?: boolean;
+  startTime?: number | null; // Timestamp начала игры для синхронизации таймера
+  // Dice Roll
+  diceRoll?: { [userId: string]: number };
+  // Maze
+  maze?: string | number[][];
+  // Tower Defense
+  tdGrid?: TDGrid;
+  tdTowers?: TDTower[];
+  tdEnemies?: TDEnemy[];
+  tdWave?: number;
+  tdBaseHealth?: number;
+  tdResources?: number;
+  tdStatus?: 'waiting' | 'in-progress' | 'game-over-win' | 'game-over-loss';
+  tdPathsFlat?: { [pathId: string]: { x: number; y: number }[] }; // Flattened paths to avoid nested arrays
+  tdScores?: { [userId: string]: number }; // Очки игроков (leaderboard)
+  tdSelectedTower?: string | null; // ID выбранной башни для апгрейда
 }

@@ -5,25 +5,24 @@ import { useState, useEffect, useRef, useMemo, lazy, Suspense, useCallback } fro
 import type { GameState, UserProfile } from '@/lib/types';
 import { PenTool, Gamepad2, Users, ChevronLeft, ChevronRight, Maximize2, Minimize2, Plus } from 'lucide-react';
 import { UserList } from './UserList';
+import { useChatService } from '@/hooks/useChatService';
+import { useToast } from '@/hooks/use-toast';
+import { useFirebase } from '@/components/firebase/FirebaseProvider';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useDoc } from '@/hooks/useDoc';
+import { useCollection } from '@/hooks/useCollection';
+import { logger } from '@/lib/logger';
+import { cn } from '@/lib/utils';
+import { collection, query, orderBy, Timestamp, doc } from 'firebase/firestore';
 
 // Lazy load heavy components
 const SharedCanvas = lazy(() => import('../canvas/SharedCanvas').then(m => ({ default: m.SharedCanvas })));
 const GameLobby = lazy(() => import('../games/GameLobby').then(m => ({ default: m.GameLobby })));
-import { collection, query, orderBy } from 'firebase/firestore';
-import { useToast } from '@/hooks/use-toast';
-import { useChatService } from '@/hooks/useChatService';
-import { useFirebase } from '../firebase/FirebaseProvider';
-import { useCollection, useDoc } from '@/hooks/useCollection';
-import { doc } from 'firebase/firestore';
-import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { logger } from '@/lib/logger';
-
 
 type CanvasSheet = {
   id: string;
   name: string;
-  createdAt: any;
+  createdAt: Timestamp;
 };
 
 type CollaborationSpaceProps = {

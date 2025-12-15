@@ -167,5 +167,5 @@ interface Stroke {
   color: string;
   width: number;
   tool?: string;
-  timestamp?: any;
+  timestamp?: number;
 }

@@ -25,9 +25,6 @@ export function ReconnectionBanner({ reconnecting, connectionLost }: Props) {
   );
 }
 
-interface ReconnectionBannerProps {
-  reconnecting: boolean;
-  connectionLost: boolean;
-}
 
- 
+
+

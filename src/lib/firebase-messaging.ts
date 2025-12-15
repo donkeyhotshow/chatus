@@ -1,4 +1,4 @@
-import { getMessaging, getToken, onMessage, Messaging } from 'firebase/messaging';
+import { getToken, onMessage, Messaging } from 'firebase/messaging';
 import { getClientFirebase } from './firebase';
 import { doc, setDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
 import { logger } from "./logger";
@@ -12,7 +12,7 @@ export class FCMManager {
       return;
     }
 
-    const { app, firestore, messaging } = getClientFirebase();
+    const { firestore, messaging } = getClientFirebase();
 
     if (!messaging || !firestore) {
       logger.error('FCMManager: Firebase Messaging or Firestore not initialized.');

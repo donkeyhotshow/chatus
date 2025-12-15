@@ -1,8 +1,6 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 
 function getLineCoords(index: number) {
-  // Map cell index (0..8) to SVG coords (approx within 300x300)
   const col = index % 3;
   const row = Math.floor(index / 3);
   const cellSize = 100;
@@ -36,5 +34,3 @@ export function WinningLineOverlay({ cells }: { cells: number[] }) {
     </svg>
   );
 }
-
-

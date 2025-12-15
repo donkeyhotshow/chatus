@@ -1,8 +1,7 @@
 {
   "rules": {
-    ".read": "auth != null",
-    ".write": "auth != null",
-
+    ".read": false,
+    ".write": false,
     // Typing indicators - user can write only to their own typing status
     "typing": {
       "$chatId": {
@@ -12,7 +11,6 @@
         }
       }
     },
-
     // Presence status - user can write only to their own status
     "status": {
       "$userId": {
@@ -20,14 +18,12 @@
         ".validate": "newData.hasChildren(['state', 'lastChanged']) && newData.child('state').isString() && (newData.child('state').val() === 'online' || newData.child('state').val() === 'offline')"
       }
     },
-
     // Legacy messages (if any)
     "messages": {
       "$messageId": {
         ".validate": "newData.hasChildren(['text','ts','senderId']) && newData.child('text').isString() && newData.child('text').val().length <= 1000 && newData.child('ts').isNumber() && newData.child('senderId').isString() && newData.child('senderId').val() === auth.uid"
       }
     },
-
     // Test data for development
     "test": {
       ".read": "auth != null",
@@ -35,5 +31,3 @@
     }
   }
 }
-
-

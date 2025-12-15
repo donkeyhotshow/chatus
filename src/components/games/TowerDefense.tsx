@@ -1,7 +1,7 @@
 "use client";
 
-import { GameState, UserProfile, TDTower, TDEnemy, TDGrid } from "@/lib/types";
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { GameState, UserProfile, TDTower, TDEnemy } from "@/lib/types";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { Castle, Heart, Coins, GitCommitHorizontal, Skull, ArrowLeft, TrendingUp, Users, Zap } from "lucide-react";
@@ -29,24 +29,23 @@ const ENEMY_SPECS = {
 };
 
 export function TowerDefense({ onGameEnd, updateGameState, gameState, user, otherUser }: TowerDefenseProps) {
-  const { 
-    tdGrid, 
-    tdTowers, 
-    tdEnemies, 
-    tdWave, 
-    tdBaseHealth, 
-    tdResources, 
-    tdStatus, 
+  const {
+    tdGrid,
+    tdTowers,
+    tdEnemies,
+    tdWave,
+    tdBaseHealth,
+    tdResources,
+    tdStatus,
     tdPathsFlat,
     tdScores,
-    tdSelectedTower,
-    hostId 
+    tdSelectedTower
   } = gameState;
-  
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [localEnemies, setLocalEnemies] = useState<TDEnemy[]>([]);
   const [localTowers, setLocalTowers] = useState<TDTower[]>([]);
-  const [projectiles, setProjectiles] = useState<{id: string, from: {x:number, y:number}, to: {x:number, y:number}, duration: number, start: number, damage: number}[]>([]);
+  const [projectiles, setProjectiles] = useState<{ id: string, from: { x: number, y: number }, to: { x: number, y: number }, duration: number, start: number, damage: number }[]>([]);
   const [selectedTowerId, setSelectedTowerId] = useState<string | null>(tdSelectedTower || null);
   const [towerTypeToBuild, setTowerTypeToBuild] = useState<'basic' | 'fast' | 'heavy'>('basic');
   const waveTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -69,11 +68,11 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
   // Основной игровой цикл
   useEffect(() => {
     if (tdStatus !== 'in-progress' || !canvasRef.current) return;
-    
+
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
+
     let animationFrameId: number;
     let lastTime = performance.now();
 
@@ -87,7 +86,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
       let enemiesReachedBase = 0;
       let updatedEnemies = localEnemies.map(enemy => {
         if (!tdPathsFlat || Object.keys(tdPathsFlat).length === 0) return enemy;
-        
+
         const pathKey = enemy.pathId !== undefined ? `path${enemy.pathId}` : 'path0';
         const path = tdPathsFlat[pathKey];
         if (!path || enemy.pathIndex >= path.length - 1) {
@@ -114,7 +113,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
       // Обработка врагов, достигших базы
       if (enemiesReachedBase > 0) {
         const newBaseHealth = Math.max(0, (tdBaseHealth || 0) - enemiesReachedBase);
-        updateGameState({ 
+        updateGameState({
           tdBaseHealth: newBaseHealth,
           tdEnemies: updatedEnemies
         });
@@ -128,7 +127,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
       const updatedTowers = localTowers.map(tower => {
         const timeSinceFired = currentTime - tower.lastFired;
         const fireInterval = 1000 / tower.fireRate;
-        
+
         if (timeSinceFired >= fireInterval) {
           let target: TDEnemy | null = null;
           let closestDist = tower.range;
@@ -139,7 +138,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
             const dx = towerX - enemy.position.x;
             const dy = towerY - enemy.position.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            
+
             if (dist < closestDist) {
               closestDist = dist;
               target = enemy;
@@ -167,19 +166,19 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
       const activeProjectiles = projectiles.filter(p => currentTime < p.start + p.duration);
       const newActiveProjectiles: typeof projectiles = [];
       const enemyHealthMap = new Map<string, { enemy: TDEnemy; health: number }>();
-      
+
       // Инициализируем карту здоровья
       updatedEnemies.forEach(enemy => {
         enemyHealthMap.set(enemy.id, { enemy, health: enemy.health });
       });
-      
+
       activeProjectiles.forEach(proj => {
         let hit = false;
         for (const [enemyId, data] of enemyHealthMap.entries()) {
           const dx = data.enemy.position.x - proj.to.x;
           const dy = data.enemy.position.y - proj.to.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          
+
           if (dist < 15 && !hit) {
             hit = true;
             const newHealth = data.health - proj.damage;
@@ -187,18 +186,18 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
             break;
           }
         }
-        
+
         if (!hit) {
           newActiveProjectiles.push(proj);
         }
       });
-      
+
       // Обновляем врагов с новым здоровьем и собираем награды
       let totalResourcesGained = 0;
       let totalScoreGained = 0;
       updatedEnemies = [];
-      
-      for (const [enemyId, data] of enemyHealthMap.entries()) {
+
+      for (const data of enemyHealthMap.values()) {
         if (data.health <= 0) {
           // Враг убит
           totalResourcesGained += data.enemy.value;
@@ -208,7 +207,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
           updatedEnemies.push({ ...data.enemy, health: data.health });
         }
       }
-      
+
       // Обновляем ресурсы и очки
       if (totalResourcesGained > 0 || totalScoreGained > 0) {
         updateScore(totalScoreGained);
@@ -228,7 +227,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
 
       // Дорожки (визуализация)
       if (tdPathsFlat) {
-        Object.entries(tdPathsFlat).forEach(([pathKey, path], pathIdx) => {
+        Object.entries(tdPathsFlat).forEach(([, path], pathIdx) => {
           ctx.strokeStyle = pathIdx === 0 ? '#3b82f6' : pathIdx === 1 ? '#8b5cf6' : '#ec4899';
           ctx.lineWidth = 3;
           ctx.beginPath();
@@ -247,7 +246,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
         const towerX = tower.x * CELL_SIZE + CELL_SIZE / 2;
         const towerY = tower.y * CELL_SIZE + CELL_SIZE / 2;
         const spec = TOWER_SPECS[tower.type];
-        
+
         // Выделение выбранной башни
         if (selectedTowerId === tower.id) {
           ctx.strokeStyle = '#fbbf24';
@@ -264,7 +263,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 2;
         ctx.stroke();
-        
+
         // Уровень башни
         ctx.fillStyle = 'white';
         ctx.font = '10px Arial';
@@ -279,7 +278,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
         ctx.beginPath();
         ctx.arc(enemy.position.x, enemy.position.y, CELL_SIZE / 4, 0, Math.PI * 2);
         ctx.fill();
-        
+
         // Полоса здоровья
         const barWidth = 30;
         const barHeight = 4;
@@ -294,7 +293,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
         const progress = Math.min(1, (currentTime - p.start) / p.duration);
         const x = p.from.x + (p.to.x - p.from.x) * progress;
         const y = p.from.y + (p.to.y - p.from.y) * progress;
-        
+
         ctx.fillStyle = '#facc15';
         ctx.beginPath();
         ctx.arc(x, y, 5, 0, Math.PI * 2);
@@ -309,10 +308,10 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
       const enemiesChanged = updatedEnemies.length !== (tdEnemies?.length || 0) ||
         updatedEnemies.some((e, i) => {
           const oldEnemy = tdEnemies?.[i];
-          return !oldEnemy || e.id !== oldEnemy.id || e.health !== oldEnemy.health || 
-                 e.position.x !== oldEnemy.position.x || e.position.y !== oldEnemy.position.y;
+          return !oldEnemy || e.id !== oldEnemy.id || e.health !== oldEnemy.health ||
+            e.position.x !== oldEnemy.position.x || e.position.y !== oldEnemy.position.y;
         });
-      
+
       if (enemiesChanged && enemiesReachedBase === 0) {
         updateGameState({
           tdEnemies: updatedEnemies
@@ -334,7 +333,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
     if (tdStatus !== 'waiting' && tdStatus !== 'in-progress') return;
     const node = tdGrid?.find(n => n.x === x && n.y === y);
     if (!node || node.isPath) return;
-    
+
     // Проверка, нет ли уже башни на этой клетке
     if (tdTowers?.some(t => t.x === x && t.y === y)) return;
 
@@ -354,7 +353,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
       lastFired: 0,
       ownerId: user.id,
     };
-    
+
     updateGameState({
       tdTowers: [...(tdTowers || []), newTower],
       tdResources: (tdResources || 0) - towerSpec.cost
@@ -366,10 +365,10 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
     if (!selectedTowerId) return;
     const tower = tdTowers?.find(t => t.id === selectedTowerId);
     if (!tower) return;
-    
+
     const spec = TOWER_SPECS[tower.type];
     const upgradeCost = spec.upgradeCost * tower.level;
-    
+
     if ((tdResources || 0) < upgradeCost) return;
 
     const upgradedTower: TDTower = {
@@ -403,13 +402,12 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
     if (tdStatus !== 'waiting') return;
     const nextWave = (tdWave || 0) + 1;
     const enemiesToSpawn: TDEnemy[] = [];
-    
+
     if (!tdPathsFlat || Object.keys(tdPathsFlat).length === 0) return;
 
-    const enemyHealthBase = 50;
     const enemyCount = 5 + nextWave * 2;
     const waveMultiplier = 1 + nextWave * 0.2;
-    
+
     const pathKeys = Object.keys(tdPathsFlat);
 
     for (let i = 0; i < enemyCount; i++) {
@@ -417,9 +415,9 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
       const pathKey = pathKeys[pathIdx];
       const path = tdPathsFlat[pathKey];
       if (path.length === 0) continue;
-      
+
       const startPos = path[0];
-      
+
       // Тип врага зависит от волны
       let enemyType: 'basic' | 'fast' | 'tank' = 'basic';
       if (nextWave > 3 && Math.random() < 0.3) {
@@ -427,7 +425,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
       } else if (nextWave > 5 && Math.random() < 0.5) {
         enemyType = Math.random() < 0.3 ? 'fast' : 'tank';
       }
-      
+
       const spec = ENEMY_SPECS[enemyType];
       const health = Math.floor(spec.health * waveMultiplier);
 
@@ -443,11 +441,11 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
         pathId: pathIdx,
       });
     }
-    
-    updateGameState({ 
-      tdWave: nextWave, 
-      tdEnemies: enemiesToSpawn, 
-      tdStatus: 'in-progress' 
+
+    updateGameState({
+      tdWave: nextWave,
+      tdEnemies: enemiesToSpawn,
+      tdStatus: 'in-progress'
     });
   };
 
@@ -476,22 +474,22 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
     if (!waveTimerRef.current) {
       waveTimerRef.current = setInterval(() => {
         if (tdStatus !== 'in-progress' || !tdPathsFlat) return;
-        
+
         const pathKeys = Object.keys(tdPathsFlat);
         const pathIdx = Math.floor(Math.random() * pathKeys.length);
         const pathKey = pathKeys[pathIdx];
         const path = tdPathsFlat[pathKey];
         if (path.length === 0) return;
-        
+
         const startPos = path[0];
         const wave = tdWave || 1;
         const waveMultiplier = 1 + wave * 0.2;
-        
+
         let enemyType: 'basic' | 'fast' | 'tank' = 'basic';
         if (wave > 3 && Math.random() < 0.3) {
           enemyType = Math.random() < 0.5 ? 'fast' : 'tank';
         }
-        
+
         const spec = ENEMY_SPECS[enemyType];
         const health = Math.floor(spec.health * waveMultiplier);
 
@@ -526,7 +524,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
     if (!tdGrid) return null;
     const gridWidth = Math.max(...tdGrid.map(n => n.x)) + 1;
     return (
-      <div className="absolute inset-0 grid" style={{gridTemplateColumns: `repeat(${gridWidth}, minmax(0, 1fr))`}}>
+      <div className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${gridWidth}, minmax(0, 1fr))` }}>
         {tdGrid.map(node => (
           <div
             key={node.id}
@@ -539,7 +537,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
               }
             }}
             className={`
-              w-full h-full border border-transparent 
+              w-full h-full border border-transparent
               ${!node.isPath && 'cursor-pointer hover:bg-green-500/20'}
             `}
           />
@@ -578,19 +576,19 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
           {/* Статистика */}
           <div className="flex justify-between w-full text-white px-2">
             <div className="flex items-center gap-2">
-              <Heart className="text-red-500" /> 
+              <Heart className="text-red-500" />
               <span className="font-bold">{tdBaseHealth || 0}</span>
             </div>
             <div className="flex items-center gap-2">
-              <Coins className="text-yellow-500" /> 
+              <Coins className="text-yellow-500" />
               <span className="font-bold">{tdResources || 0}</span>
             </div>
             <div className="flex items-center gap-2">
-              <GitCommitHorizontal className="text-blue-400" /> 
+              <GitCommitHorizontal className="text-blue-400" />
               <span className="font-bold">{tdWave || 0}</span>
             </div>
             <div className="flex items-center gap-2">
-              <Skull className="text-purple-400" /> 
+              <Skull className="text-purple-400" />
               <span className="font-bold">{tdScores?.[user.id] || 0}</span>
             </div>
           </div>

@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
-// @ts-ignore
 import { motion } from 'framer-motion';
-// @ts-ignore
 import confetti from 'canvas-confetti';
 import { GameSoundService } from '@/services/games/GameSoundService';
+import { Timestamp } from 'firebase/firestore';
 
 interface TicTacToeState {
   board: (string | null)[][];
@@ -14,8 +13,8 @@ interface TicTacToeState {
   };
   status: 'waiting' | 'in_progress' | 'finished';
   winner: string | null;
-  lastMoveTime?: any;
-  createdAt?: any;
+  lastMoveTime?: Timestamp | number;
+  createdAt?: Timestamp | number;
 }
 
 function findWinningLine(board: (string | null)[][]): number[] | null {
@@ -59,7 +58,7 @@ export function AnimatedTicTacToeBoard({ game, onCellClick, soundService }: Anim
           spread: 70,
           origin: { y: 0.6 },
         });
-      } catch (e) {
+      } catch {
         // ignore in SSR or if confetti not available
       }
       soundService.play('win');

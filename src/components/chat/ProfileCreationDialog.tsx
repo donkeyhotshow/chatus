@@ -23,12 +23,12 @@ interface ProfileCreationDialogProps {
 }
 
 const LoadingSpinner = () => (
-    <div className="flex h-screen w-full items-center justify-center bg-black text-white">
-      <div className="animate-pulse flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-        <span className="font-mono text-white/70 tracking-widest">ЗАГРУЗКА...</span>
-      </div>
+  <div className="flex h-screen w-full items-center justify-center bg-black text-white">
+    <div className="animate-pulse flex flex-col items-center gap-4">
+      <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+      <span className="font-mono text-white/70 tracking-widest">ЗАГРУЗКА...</span>
     </div>
+  </div>
 );
 
 
@@ -50,7 +50,7 @@ export function ProfileCreationDialog({ isOpen, onProfileCreate, roomId, isCreat
       toast({ title: 'Введите имя', variant: 'destructive' });
       return;
     }
-     if (!avatarDataUrl) {
+    if (!avatarDataUrl) {
       toast({ title: 'Создайте и сохраните аватар', variant: 'destructive' });
       return;
     }
@@ -58,37 +58,37 @@ export function ProfileCreationDialog({ isOpen, onProfileCreate, roomId, isCreat
     try {
       await onProfileCreate(username, avatarDataUrl);
       // Don't set isCreating to false on success, as the component will unmount
-    } catch (error) {
+    } catch {
       // Error is handled by the caller, which will set isCreating to false
     }
   };
-  
+
   if (!isOpen) {
     return <LoadingSpinner />;
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={() => {}}>
+    <Dialog open={isOpen} onOpenChange={() => { }}>
       <DialogContent className="bg-neutral-950 border-white/10 sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="font-headline text-2xl text-white">Создайте профиль</DialogTitle>
           <DialogDescription className="text-neutral-400">Нарисуйте пиксельный аватар и выберите имя для входа в комнату <span className="font-bold text-neutral-300">{roomId.toUpperCase()}</span>.</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4 items-center">
-            <PixelAvatarEditor onSave={setAvatarDataUrl} initialAvatar={avatarDataUrl} />
-            <div className="flex flex-col gap-4">
-              <Input
-                  placeholder="Ваше имя"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleFinalSave()}
-                  className="h-12 text-lg"
-                  disabled={isCreating}
-              />
-              <Button onClick={handleFinalSave} className="h-12 text-lg" disabled={isCreating || !username.trim() || !avatarDataUrl}>
-                {isCreating ? <Loader2 className="animate-spin" /> : 'Войти в чат'}
-              </Button>
-            </div>
+          <PixelAvatarEditor onSave={setAvatarDataUrl} initialAvatar={avatarDataUrl} />
+          <div className="flex flex-col gap-4">
+            <Input
+              placeholder="Ваше имя"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleFinalSave()}
+              className="h-12 text-lg"
+              disabled={isCreating}
+            />
+            <Button onClick={handleFinalSave} className="h-12 text-lg" disabled={isCreating || !username.trim() || !avatarDataUrl}>
+              {isCreating ? <Loader2 className="animate-spin" /> : 'Войти в чат'}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

@@ -43,7 +43,7 @@ export class TypingManager {
     if (!rtdb) {
       throw new Error('Realtime Database not initialized. Please configure NEXT_PUBLIC_FIREBASE_DATABASE_URL');
     }
-    
+
     this.typingRef = ref(rtdb, `typing/${roomId}/${userId}`);
 
     // Debounced typing indicator (300ms delay)
@@ -52,7 +52,7 @@ export class TypingManager {
         await set(this.typingRef, true);
         // Auto-clear typing after 1.5 seconds
         setTimeout(() => {
-          set(this.typingRef, false).catch(() => {});
+          set(this.typingRef, false).catch(() => { });
         }, 1500);
       } catch (error) {
         logger.error('Failed to update typing status', error as Error, { userId: this.userId });
@@ -75,7 +75,7 @@ export class TypingManager {
       logger.warn('Realtime Database not available, typing indicators disabled');
       return;
     }
-    
+
     const roomTypingRef = ref(rtdb, `typing/${this.roomId}`);
 
     this.unsubscribe = onValue(roomTypingRef, (snapshot) => {
@@ -92,7 +92,7 @@ export class TypingManager {
    * Stop typing (clear indicator)
    */
   stopTyping() {
-    set(this.typingRef, false).catch(() => {});
+    set(this.typingRef, false).catch(() => { });
   }
 
   /**
@@ -112,7 +112,7 @@ export class TypingManager {
  */
 export class PresenceManager {
   private userId: string;
-  private rtdb: any;
+  private rtdb: Database;
   private connId: string | null = null;
   private connRef: DatabaseReference | null = null;
   private statusRef: DatabaseReference;
@@ -173,7 +173,7 @@ export class PresenceManager {
     const connectionsRef = ref(this.rtdb, `connections/${userId}`);
     const snapshot = await get(connectionsRef);
     const count = snapshot.exists() ? Object.keys(snapshot.val()).length : 0;
-    
+
     await set(this.statusRef, {
       state: count > 0 ? 'online' : 'offline',
       lastChanged: rtdbServerTimestamp(),
