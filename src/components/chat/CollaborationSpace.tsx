@@ -52,21 +52,21 @@ export function CollaborationSpace({
 
 
   // Subscribe to game state for maze
-  const gameDocRef = useMemo(() => doc(db, 'rooms', roomId, 'games', 'maze'), [db, roomId]);
+  const gameDocRef = useMemo(() => db ? doc(db, 'rooms', roomId, 'games', 'maze') : null, [db, roomId]);
   const { data: activeGame } = useDoc<GameState>(gameDocRef);
 
   // Subscribe to sheets
-  const sheetsQuery = useMemo(() => query(collection(db, 'rooms', roomId, 'canvasSheets'), orderBy('createdAt', 'asc')), [db, roomId]);
+  const sheetsQuery = useMemo(() => db ? query(collection(db, 'rooms', roomId, 'canvasSheets'), orderBy('createdAt', 'asc')) : null, [db, roomId]);
   const { data: sheets, loading: sheetsLoading } = useCollection<CanvasSheet>(sheetsQuery);
 
   useEffect(() => {
     if (activeGame?.type === 'maze') {
-        setActiveTab('canvas');
+      setActiveTab('canvas');
     }
   }, [activeGame]);
 
   const handleCreateNewSheet = useCallback(async () => {
-    if(!user || !service) return;
+    if (!user || !service) return;
     const newSheetName = `Sheet ${(sheets?.length || 0) + 1}`;
     try {
       const docRef = await service.createCanvasSheet(newSheetName);
@@ -93,13 +93,13 @@ export function CollaborationSpace({
 
     let newIndex = -1;
     if (direction === 'next') {
-        newIndex = (currentIndex + 1) % sheets.length;
+      newIndex = (currentIndex + 1) % sheets.length;
     } else { // prev
-        newIndex = (currentIndex - 1 + sheets.length) % sheets.length;
+      newIndex = (currentIndex - 1 + sheets.length) % sheets.length;
     }
 
     if (newIndex !== -1) {
-        setActiveSheetId(sheets[newIndex].id);
+      setActiveSheetId(sheets[newIndex].id);
     }
   };
 
@@ -109,9 +109,9 @@ export function CollaborationSpace({
 
     if (!document.fullscreenElement) {
       elem.requestFullscreen().catch(err => {
-        logger.error('Error attempting to enable full-screen mode', err as Error, { 
-          message: err.message, 
-          name: err.name 
+        logger.error('Error attempting to enable full-screen mode', err as Error, {
+          message: err.message,
+          name: err.name
         });
       });
     } else {
@@ -124,15 +124,15 @@ export function CollaborationSpace({
       setIsFullscreen(!!document.fullscreenElement);
     };
     const onKeyDown = (e: KeyboardEvent) => {
-        if (e.key === "Escape" && isFullscreen) {
-            handleFullscreenToggle();
-        }
+      if (e.key === "Escape" && isFullscreen) {
+        handleFullscreenToggle();
+      }
     }
     document.addEventListener('fullscreenchange', onFullscreenChange);
     document.addEventListener('keydown', onKeyDown);
     return () => {
-        document.removeEventListener('fullscreenchange', onFullscreenChange);
-        document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
+      document.removeEventListener('keydown', onKeyDown);
     }
   }, [isFullscreen]);
 
@@ -153,8 +153,8 @@ export function CollaborationSpace({
       ref={collabSpaceRef}
       className={cn(`
         flex flex-col bg-neutral-950 border-l border-white/10 transition-all duration-300 z-40`,
-        isFullscreen 
-          ? 'fixed inset-0 w-screen h-screen' 
+        isFullscreen
+          ? 'fixed inset-0 w-screen h-screen'
           : 'relative h-full',
         isMobile ? 'w-full' : 'w-[400px]'
       )}
@@ -179,54 +179,54 @@ export function CollaborationSpace({
       )}
 
       <div className="flex-1 flex flex-col overflow-y-auto">
-        
+
         {/* CANVAS TAB */}
         <div className={`flex-1 flex flex-col h-full ${activeTab === 'canvas' ? 'flex' : 'hidden'}`}>
-             <div className="p-4 border-b border-white/5 shrink-0 z-10 bg-neutral-950/90 backdrop-blur-sm flex justify-between items-center">
-                 <div className="flex items-center gap-2 bg-neutral-900 rounded-lg p-1 border border-white/5">
-                   <button onClick={() => navigateSheet('prev')} disabled={!sheets || sheets.length <= 1 || activeGame?.type === 'maze'} className="p-1 hover:text-white text-neutral-500 disabled:opacity-30">
-                     <ChevronLeft className="w-4 h-4" />
-                   </button>
-                   <span className="text-xs font-mono font-bold w-16 text-center text-white truncate">
-                     {activeGame?.type === 'maze' ? 'MAZE' : (activeSheet?.name || '...')}
-                   </span>
-                   <button onClick={() => navigateSheet('next')} disabled={!sheets || sheets.length <= 1 || activeGame?.type === 'maze'} className="p-1 hover:text-white text-neutral-500 disabled:opacity-30">
-                     <ChevronRight className="w-4 h-4" />
-                   </button>
-                   <div className="w-[1px] h-4 bg-white/10 mx-1"></div>
-                   <button onClick={handleCreateNewSheet} disabled={activeGame?.type === 'maze'} className="p-1 hover:text-green-400 text-neutral-500 disabled:opacity-30" title="New Sheet">
-                     <Plus className="w-4 h-4" />
-                   </button>
-                 </div>
-                 
-                 <button 
-                   onClick={handleFullscreenToggle}
-                   className="p-2.5 rounded-xl bg-neutral-800 text-white hover:bg-neutral-700 transition-colors"
-                   title={isFullscreen ? "Exit Fullscreen" : "Toggle Fullscreen"}
-                 >
-                   {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-                 </button>
-             </div>
-            
-             <div className={`flex-1 bg-[#0d0d0d] relative overflow-hidden ${!isFullscreen ? 'm-4 rounded-2xl border border-white/10' : ''}`}>
-                
-                {activeSheetId && user && (
-                  <Suspense fallback={<div className="h-full w-full flex items-center justify-center"><div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full"></div></div>}>
-                  <SharedCanvas 
-                    key={activeSheetId}
-                    roomId={roomId} 
-                    sheetId={activeSheetId} 
-                    user={user}
-                    isMazeActive={activeGame?.type === 'maze'}
-                  />
-                  </Suspense>
-                )}
-                {activeGame?.type !== 'maze' && (
-                  <div className="absolute top-4 right-4 text-[10px] text-white/20 font-mono pointer-events-none select-none">
-                    SHEET: {(sheets?.findIndex(s => s.id === activeSheetId) ?? -1) + 1}
-                  </div>
-                )}
-             </div>
+          <div className="p-4 border-b border-white/5 shrink-0 z-10 bg-neutral-950/90 backdrop-blur-sm flex justify-between items-center">
+            <div className="flex items-center gap-2 bg-neutral-900 rounded-lg p-1 border border-white/5">
+              <button onClick={() => navigateSheet('prev')} disabled={!sheets || sheets.length <= 1 || activeGame?.type === 'maze'} className="p-1 hover:text-white text-neutral-500 disabled:opacity-30">
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-xs font-mono font-bold w-16 text-center text-white truncate">
+                {activeGame?.type === 'maze' ? 'MAZE' : (activeSheet?.name || '...')}
+              </span>
+              <button onClick={() => navigateSheet('next')} disabled={!sheets || sheets.length <= 1 || activeGame?.type === 'maze'} className="p-1 hover:text-white text-neutral-500 disabled:opacity-30">
+                <ChevronRight className="w-4 h-4" />
+              </button>
+              <div className="w-[1px] h-4 bg-white/10 mx-1"></div>
+              <button onClick={handleCreateNewSheet} disabled={activeGame?.type === 'maze'} className="p-1 hover:text-green-400 text-neutral-500 disabled:opacity-30" title="New Sheet">
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+
+            <button
+              onClick={handleFullscreenToggle}
+              className="p-2.5 rounded-xl bg-neutral-800 text-white hover:bg-neutral-700 transition-colors"
+              title={isFullscreen ? "Exit Fullscreen" : "Toggle Fullscreen"}
+            >
+              {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+            </button>
+          </div>
+
+          <div className={`flex-1 bg-[#0d0d0d] relative overflow-hidden ${!isFullscreen ? 'm-4 rounded-2xl border border-white/10' : ''}`}>
+
+            {activeSheetId && user && (
+              <Suspense fallback={<div className="h-full w-full flex items-center justify-center"><div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full"></div></div>}>
+                <SharedCanvas
+                  key={activeSheetId}
+                  roomId={roomId}
+                  sheetId={activeSheetId}
+                  user={user}
+                  isMazeActive={activeGame?.type === 'maze'}
+                />
+              </Suspense>
+            )}
+            {activeGame?.type !== 'maze' && (
+              <div className="absolute top-4 right-4 text-[10px] text-white/20 font-mono pointer-events-none select-none">
+                SHEET: {(sheets?.findIndex(s => s.id === activeSheetId) ?? -1) + 1}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* GAMES TAB */}
