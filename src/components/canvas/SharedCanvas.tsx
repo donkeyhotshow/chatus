@@ -369,29 +369,29 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
 
   return (
     <div className="h-full w-full relative flex flex-col">
-      <div className="absolute top-2 left-2 z-20 flex flex-col gap-2">
-        <div className="flex flex-col gap-2 p-1 bg-neutral-900/80 backdrop-blur-sm rounded-xl border border-white/10 w-48">
+      <div className="absolute top-2 left-2 z-20 flex flex-col gap-1.5 md:gap-2">
+        <div className="flex flex-col gap-1.5 md:gap-2 p-1 bg-neutral-900/90 backdrop-blur-sm rounded-lg md:rounded-xl border border-white/10 w-auto md:w-48">
           <div className="flex gap-1">
             <button
               onClick={() => setSelectedTool('pen')}
-              className={`p-2 rounded-lg transition-all flex-1 flex justify-center ${selectedTool === 'pen' ? 'bg-white text-black' : 'bg-neutral-800 text-neutral-400 hover:bg-white/10 hover:text-white'}`}
+              className={`p-1.5 md:p-2 rounded-md md:rounded-lg transition-all flex-1 flex justify-center ${selectedTool === 'pen' ? 'bg-white text-black' : 'bg-neutral-800 text-neutral-400 hover:bg-white/10 hover:text-white'}`}
               disabled={isMazeActive}
               title="Pen"
-            > <PenTool className="w-4 h-4" /></button>
+            > <PenTool className="w-3.5 h-3.5 md:w-4 md:h-4" /></button>
             <button
               onClick={() => setSelectedTool('eraser')}
-              className={`p-2 rounded-lg transition-all flex-1 flex justify-center ${selectedTool === 'eraser' ? 'bg-white text-black' : 'bg-neutral-800 text-neutral-400 hover:bg-white/10 hover:text-white'}`}
+              className={`p-1.5 md:p-2 rounded-md md:rounded-lg transition-all flex-1 flex justify-center ${selectedTool === 'eraser' ? 'bg-white text-black' : 'bg-neutral-800 text-neutral-400 hover:bg-white/10 hover:text-white'}`}
               disabled={isMazeActive}
               title="Eraser"
-            > <Eraser className="w-4 h-4" /></button>
-            <button onClick={() => handleClearSheet(sheetId)} className="p-2 rounded-lg bg-neutral-800 text-neutral-400 hover:bg-red-500/20 hover:text-red-400 flex items-center justify-center transition-all" title="Clear Current Sheet">
-              <Trash2 className="w-4 h-4" />
+            > <Eraser className="w-3.5 h-3.5 md:w-4 md:h-4" /></button>
+            <button onClick={() => handleClearSheet(sheetId)} className="p-1.5 md:p-2 rounded-md md:rounded-lg bg-neutral-800 text-neutral-400 hover:bg-red-500/20 hover:text-red-400 flex items-center justify-center transition-all" title="Clear Current Sheet">
+              <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
             </button>
           </div>
 
           {tool === 'pen' && !isMazeActive && (
             <>
-              <div className='px-1 pt-1'>
+              <div className='px-1 pt-0.5 md:pt-1 hidden md:block'>
                 <Slider
                   defaultValue={[strokeWidth]}
                   max={30}
@@ -400,7 +400,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
                   onValueChange={(value) => setStrokeWidth(value[0])}
                 />
               </div>
-              <div className="grid grid-cols-4 gap-1 p-1">
+              <div className="grid grid-cols-4 gap-0.5 md:gap-1 p-0.5 md:p-1">
                 {BRUSHES.map((b) => (
                   <button
                     key={b.id}
@@ -417,13 +417,13 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
           )}
         </div>
         {!isMazeActive && selectedTool === 'pen' && (
-          <div className="grid grid-cols-6 gap-1 p-1 bg-neutral-900/80 backdrop-blur-sm rounded-xl border border-white/10 w-48">
+          <div className="grid grid-cols-6 gap-0.5 md:gap-1 p-0.5 md:p-1 bg-neutral-900/90 backdrop-blur-sm rounded-lg md:rounded-xl border border-white/10 w-auto md:w-48">
             {NEON_COLORS.map((c) => (
               <button
                 key={c}
                 onClick={() => setSelectedColor(c)}
-                className={`w-6 h-6 rounded-full transition-all border
-                                ${selectedColor === c ? 'ring-2 ring-white scale-110 z-10 border-black' : 'hover:scale-105 opacity-80 hover:opacity-100 border-white/10'}
+                className={`w-5 h-5 md:w-6 md:h-6 rounded-full transition-all border
+                                ${selectedColor === c ? 'ring-1 md:ring-2 ring-white scale-110 z-10 border-black' : 'hover:scale-105 opacity-80 hover:opacity-100 border-white/10'}
                             `}
                 style={{ backgroundColor: c, boxShadow: `0 0 4px ${c}20` }}
               />
