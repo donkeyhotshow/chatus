@@ -43,99 +43,99 @@ type GameLobbyProps = {
 };
 
 const generateTDGrid = (width: number, height: number): { grid: TDGrid; pathsFlat: { [pathId: string]: { x: number; y: number }[] } } => {
-    const grid: TDNode[] = [];
-    const paths: { x: number; y: number }[][] = [];
-    
-    // Генерируем несколько параллельных дорожек
-    const numPaths = 3; // 3 дорожки
-    const pathSpacing = Math.floor(height / (numPaths + 1));
-    
-    let idCounter = 0;
-    const allPathCoords = new Set<string>();
-    
-    // Создаем несколько дорожек
-    for (let pathIdx = 0; pathIdx < numPaths; pathIdx++) {
-        const pathY = pathSpacing * (pathIdx + 1);
-        const path: { x: number; y: number }[] = [];
-        
-        // Генерируем путь: слева направо, затем вниз, затем справа налево
-        for (let x = 0; x < width; x++) {
-            path.push({ x, y: pathY });
-            allPathCoords.add(`${x},${pathY}`);
-        }
-        
-        // Добавляем вертикальный участок вниз (кроме последней дорожки)
-        if (pathIdx < numPaths - 1) {
-            for (let y = pathY + 1; y < pathSpacing * (pathIdx + 2); y++) {
-                path.push({ x: width - 1, y });
-                allPathCoords.add(`${width - 1},${y}`);
-            }
-        }
-        
-        paths.push(path);
+  const grid: TDNode[] = [];
+  const paths: { x: number; y: number }[][] = [];
+
+  // Генерируем несколько параллельных дорожек
+  const numPaths = 3; // 3 дорожки
+  const pathSpacing = Math.floor(height / (numPaths + 1));
+
+  let idCounter = 0;
+  const allPathCoords = new Set<string>();
+
+  // Создаем несколько дорожек
+  for (let pathIdx = 0; pathIdx < numPaths; pathIdx++) {
+    const pathY = pathSpacing * (pathIdx + 1);
+    const path: { x: number; y: number }[] = [];
+
+    // Генерируем путь: слева направо, затем вниз, затем справа налево
+    for (let x = 0; x < width; x++) {
+      path.push({ x, y: pathY });
+      allPathCoords.add(`${x},${pathY}`);
     }
-    
-    // Создаем узлы сетки из всех дорожек
-    const pathNodes = new Map<string, TDNode>();
-    
-    paths.forEach((path, pathIdx) => {
-        for (let i = 0; i < path.length; i++) {
-            const p = path[i];
-            const key = `${p.x},${p.y}`;
-            
-            if (!pathNodes.has(key)) {
-                const isStart = i === 0 && pathIdx === 0;
-                const isEnd = i === path.length - 1 && pathIdx === paths.length - 1;
-                const nextP = i < path.length - 1 ? path[i + 1] : null;
-                const nextId = nextP ? `p${idCounter + 1}` : undefined;
-                
-                pathNodes.set(key, {
-                    id: `p${idCounter++}`,
-                    x: p.x,
-                    y: p.y,
-                    isPath: true,
-                    isStart,
-                    isEnd,
-                    nextId,
-                });
-            }
-        }
-    });
-    
-    // Добавляем все узлы дорожек в сетку
-    pathNodes.forEach(node => grid.push(node));
-    
-    // Заполняем не-дорожные узлы
-    for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-            if (!allPathCoords.has(`${x},${y}`)) {
-                grid.push({ id: `b${x}_${y}`, x, y, isPath: false });
-            }
-        }
+
+    // Добавляем вертикальный участок вниз (кроме последней дорожки)
+    if (pathIdx < numPaths - 1) {
+      for (let y = pathY + 1; y < pathSpacing * (pathIdx + 2); y++) {
+        path.push({ x: width - 1, y });
+        allPathCoords.add(`${width - 1},${y}`);
+      }
     }
-    
-    // Конвертируем пути в координаты пикселей для врагов
-    // Flatten to avoid nested arrays - use map with string keys
-    const pathsFlat: { [pathId: string]: { x: number; y: number }[] } = {};
-    paths.forEach((path, idx) => {
-        pathsFlat[`path${idx}`] = path.map(p => ({ 
-            x: p.x * 40 + 20, // CELL_SIZE / 2
-            y: p.y * 40 + 20 
-        }));
-    });
-    
-    return { grid, pathsFlat };
+
+    paths.push(path);
+  }
+
+  // Создаем узлы сетки из всех дорожек
+  const pathNodes = new Map<string, TDNode>();
+
+  paths.forEach((path, pathIdx) => {
+    for (let i = 0; i < path.length; i++) {
+      const p = path[i];
+      const key = `${p.x},${p.y}`;
+
+      if (!pathNodes.has(key)) {
+        const isStart = i === 0 && pathIdx === 0;
+        const isEnd = i === path.length - 1 && pathIdx === paths.length - 1;
+        const nextP = i < path.length - 1 ? path[i + 1] : null;
+        const nextId = nextP ? `p${idCounter + 1}` : undefined;
+
+        pathNodes.set(key, {
+          id: `p${idCounter++}`,
+          x: p.x,
+          y: p.y,
+          isPath: true,
+          isStart,
+          isEnd,
+          nextId,
+        });
+      }
+    }
+  });
+
+  // Добавляем все узлы дорожек в сетку
+  pathNodes.forEach(node => grid.push(node));
+
+  // Заполняем не-дорожные узлы
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (!allPathCoords.has(`${x},${y}`)) {
+        grid.push({ id: `b${x}_${y}`, x, y, isPath: false });
+      }
+    }
+  }
+
+  // Конвертируем пути в координаты пикселей для врагов
+  // Flatten to avoid nested arrays - use map with string keys
+  const pathsFlat: { [pathId: string]: { x: number; y: number }[] } = {};
+  paths.forEach((path, idx) => {
+    pathsFlat[`path${idx}`] = path.map(p => ({
+      x: p.x * 40 + 20, // CELL_SIZE / 2
+      y: p.y * 40 + 20
+    }));
+  });
+
+  return { grid, pathsFlat };
 };
 
 
 export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
   const [activeGameId, setActiveGameId] = useState<GameType | null>(null);
-  
+
   const { db } = useFirebase()!;
   const { service } = useChatService(roomId, user);
-  
+
   const gameDocRef = useMemo(() => {
-    if (!activeGameId) return null;
+    if (!activeGameId || !db) return null;
     return doc(db, 'rooms', roomId, 'games', activeGameId);
   }, [db, roomId, activeGameId]);
 
@@ -149,32 +149,32 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
 
   const handleStartGame = async (gameId: GameType) => {
     if (!service) return;
-    
+
     const hostId = user.id;
 
     const initialStates: { [key in GameType]?: Partial<GameState> } = {
-        'tic-tac-toe': { board: Array(9).fill(null), currentPlayer: hostId, winner: null, hostId },
-        'rock-paper-scissors': { moves: {}, result: null, hostId },
-        'click-war': { scores: {}, active: false, startTime: null, hostId },
-        'dice-roll': { diceRoll: {}, hostId },
-        'tower-defense': (() => {
-          const { grid, pathsFlat } = generateTDGrid(15, 11);
-          return {
-            tdGrid: grid,
-            tdPathsFlat: pathsFlat,
-            tdTowers: [], 
-            tdEnemies: [], 
-            tdWave: 0, 
-            tdBaseHealth: 20,
-            tdResources: 100, 
-            tdStatus: 'waiting' as const,
-            tdScores: {},
-            tdSelectedTower: null,
-            hostId,
-          };
-        })(),
+      'tic-tac-toe': { board: Array(9).fill(null), currentPlayer: hostId, winner: null, hostId },
+      'rock-paper-scissors': { moves: {}, result: null, hostId },
+      'click-war': { scores: {}, active: false, startTime: null, hostId },
+      'dice-roll': { diceRoll: {}, hostId },
+      'tower-defense': (() => {
+        const { grid, pathsFlat } = generateTDGrid(15, 11);
+        return {
+          tdGrid: grid,
+          tdPathsFlat: pathsFlat,
+          tdTowers: [],
+          tdEnemies: [],
+          tdWave: 0,
+          tdBaseHealth: 20,
+          tdResources: 100,
+          tdStatus: 'waiting' as const,
+          tdScores: {},
+          tdSelectedTower: null,
+          hostId,
+        };
+      })(),
     };
-    
+
     let initialState: Partial<GameState> = { type: gameId, ...initialStates[gameId] };
 
     if (gameId === 'maze') {
@@ -192,55 +192,55 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
 
   const handleEndGame = async () => {
     if (activeGameId && service) {
-        if (activeGameId === 'maze') {
-            service.sendSystemMessage(`The maze has been cleared.`);
-        }
-        const gameIdToEnd = activeGameId;
-        setActiveGameId(null); 
-        await service.deleteGame(gameIdToEnd);
+      if (activeGameId === 'maze') {
+        service.sendSystemMessage(`The maze has been cleared.`);
+      }
+      const gameIdToEnd = activeGameId;
+      setActiveGameId(null);
+      await service.deleteGame(gameIdToEnd);
     }
   };
 
   if (activeGameId) {
-    if(activeGameId === 'maze' && gameState?.type === 'maze') {
-        return (
-            <div className="h-full w-full flex flex-col items-center justify-center text-center p-4">
-               <h3 className="text-lg font-bold text-white">Maze Active</h3>
-               <p className="text-sm text-neutral-400 mb-4">Go to the &apos;Canvas&apos; tab to solve it together.</p>
-               <Button onClick={handleEndGame} variant="destructive">
-                 End Maze
-               </Button>
-             </div>
-          )
+    if (activeGameId === 'maze' && gameState?.type === 'maze') {
+      return (
+        <div className="h-full w-full flex flex-col items-center justify-center text-center p-4">
+          <h3 className="text-lg font-bold text-white">Maze Active</h3>
+          <p className="text-sm text-neutral-400 mb-4">Go to the &apos;Canvas&apos; tab to solve it together.</p>
+          <Button onClick={handleEndGame} variant="destructive">
+            End Maze
+          </Button>
+        </div>
+      )
     }
 
     const commonProps = {
-        onGameEnd: handleEndGame,
-        updateGameState: handleUpdateGameState,
-        user,
-        otherUser,
-        roomId
+      onGameEnd: handleEndGame,
+      updateGameState: handleUpdateGameState,
+      user,
+      otherUser,
+      roomId
     };
 
     if (gameState && gameState.type === activeGameId) {
-       const GameLoadingFallback = () => (
-         <div className="h-full w-full flex items-center justify-center bg-black">
-           <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full"></div>
-         </div>
-       );
-       
-       const gameComponents: { [key in GameType]?: React.ReactElement } = {
-            'tic-tac-toe': <Suspense fallback={<GameLoadingFallback />}><TicTacToe {...commonProps} gameState={gameState} /></Suspense>,
-            'rock-paper-scissors': <Suspense fallback={<GameLoadingFallback />}><RockPaperScissors {...commonProps} gameState={gameState} /></Suspense>,
-            'click-war': <Suspense fallback={<GameLoadingFallback />}><ClickWar {...commonProps} gameState={gameState} /></Suspense>,
-            'dice-roll': <Suspense fallback={<GameLoadingFallback />}><DiceRoll {...commonProps} gameState={gameState} /></Suspense>,
-            'physics-sandbox': <Suspense fallback={<GameLoadingFallback />}><PhysicsWorld onGameEnd={handleEndGame} user={user} roomId={roomId} /></Suspense>,
-            'tower-defense': <Suspense fallback={<GameLoadingFallback />}><TowerDefense {...commonProps} gameState={gameState} /></Suspense>,
-        };
-        const CurrentGame = gameComponents[activeGameId];
-        if (CurrentGame) return CurrentGame;
+      const GameLoadingFallback = () => (
+        <div className="h-full w-full flex items-center justify-center bg-black">
+          <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full"></div>
+        </div>
+      );
+
+      const gameComponents: { [key in GameType]?: React.ReactElement } = {
+        'tic-tac-toe': <Suspense fallback={<GameLoadingFallback />}><TicTacToe {...commonProps} gameState={gameState} /></Suspense>,
+        'rock-paper-scissors': <Suspense fallback={<GameLoadingFallback />}><RockPaperScissors {...commonProps} gameState={gameState} /></Suspense>,
+        'click-war': <Suspense fallback={<GameLoadingFallback />}><ClickWar {...commonProps} gameState={gameState} /></Suspense>,
+        'dice-roll': <Suspense fallback={<GameLoadingFallback />}><DiceRoll {...commonProps} gameState={gameState} /></Suspense>,
+        'physics-sandbox': <Suspense fallback={<GameLoadingFallback />}><PhysicsWorld onGameEnd={handleEndGame} user={user} roomId={roomId} /></Suspense>,
+        'tower-defense': <Suspense fallback={<GameLoadingFallback />}><TowerDefense {...commonProps} gameState={gameState} /></Suspense>,
+      };
+      const CurrentGame = gameComponents[activeGameId];
+      if (CurrentGame) return CurrentGame;
     }
-    
+
     // Fallback if gameState is not ready or doesn't match
     return (
       <div className="h-full w-full flex flex-col items-center justify-center">
@@ -249,8 +249,8 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
           <span className="font-mono text-white/70 tracking-widest">LOADING GAME...</span>
         </div>
         <Button onClick={handleEndGame} variant="ghost" size="sm" className="mt-8 text-neutral-400 hover:text-white">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Lobby
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Lobby
         </Button>
       </div>
     );
