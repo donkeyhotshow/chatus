@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
+// @ts-ignore
 import { motion } from 'framer-motion';
+// @ts-ignore
 import confetti from 'canvas-confetti';
 import { GameSoundService } from '@/services/games/GameSoundService';
 
