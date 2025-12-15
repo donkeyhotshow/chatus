@@ -16,12 +16,12 @@ import { createPresenceManager } from '@/lib/presence';
 import { useRef } from 'react';
 
 interface FirebaseContextType {
-  app: FirebaseApp;
-  firestore: Firestore;
-  db: Firestore;
+  app: FirebaseApp | null;
+  firestore: Firestore | null;
+  db: Firestore | null;
   user?: User | null;
-  auth: Auth;
-  storage: FirebaseStorage;
+  auth: Auth | null;
+  storage: FirebaseStorage | null;
   rtdb: Database | null;
   analytics: Analytics | null;
   messaging: Messaging | null;
