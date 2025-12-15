@@ -1,4 +1,4 @@
-import * as functions from 'firebase-functions';
+import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import * as admin from 'firebase-admin';
 
 admin.initializeApp();
@@ -10,9 +10,13 @@ const messaging = admin.messaging();
  * - update rateLimits/{senderId}.lastMessage = serverTimestamp()
  * - send FCM push to other participants (if tokens exist)
  */
-export const onMessageCreate = functions.firestore
-  .document('rooms/{roomId}/messages/{messageId}')
-  .onCreate(async (snapshot, context) => {
+export const onMessageCreate = onDocumentCreated(
+  'rooms/{roomId}/messages/{messageId}',
+  async (event) => {
+    const snapshot = event.data;
+    if (!snapshot) return;
+
+    const context = event.params;
     const message = snapshot.data();
     if (!message) return;
 
@@ -77,7 +81,7 @@ export const onMessageCreate = functions.firestore
             const code = error && (error as any).code;
             if (code === 'messaging/invalid-registration-token' || code === 'messaging/registration-token-not-registered') {
               // Remove fcmTokens/{token} doc (we store token as doc id)
-              db.collection('fcmTokens').doc(badToken).delete().catch(() => {});
+              db.collection('fcmTokens').doc(badToken).delete().catch(() => { });
             }
           }
         });
@@ -86,5 +90,3 @@ export const onMessageCreate = functions.firestore
       console.error('onMessageCreate error', err);
     }
   });
-
-
