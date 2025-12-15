@@ -66,7 +66,7 @@ export function AnimatedTicTacToeBoard({ game, onCellClick, soundService }: Anim
     } else {
       setWinningLine(null);
     }
-  }, [game.winner]);
+  }, [game.winner, game.board, soundService]);
 
   const handleCellClickWithSound = (row: number, col: number) => {
     if (!game.board[row][col] && game.status === 'in_progress') {
@@ -141,7 +141,7 @@ export function AnimatedTicTacToeBoard({ game, onCellClick, soundService }: Anim
   );
 }
 
- 
+
 
 interface WinningLineOverlayProps {
   cells: number[];

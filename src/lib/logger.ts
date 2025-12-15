@@ -18,7 +18,7 @@ class Logger {
 
   error(message: string, error?: Error, context?: LogContext): void {
     const formatted = this.formatMessage('error', message, error, context);
-    
+
     // Always log errors (in development directly, in production with marker for future tracking)
     if (this.isDevelopment) {
       console.error(formatted);
@@ -32,8 +32,10 @@ class Logger {
     }
   }
 
-  warn(message: string, context?: LogContext): void {
-    const formatted = this.formatMessage('warn', message, undefined, context);
+  warn(message: string, errorOrContext?: Error | LogContext, context?: LogContext): void {
+    const error = errorOrContext instanceof Error ? errorOrContext : undefined;
+    const ctx = errorOrContext instanceof Error ? context : errorOrContext;
+    const formatted = this.formatMessage('warn', message, error, ctx);
     if (this.isDevelopment) {
       console.warn(formatted);
     }
@@ -46,9 +48,11 @@ class Logger {
     }
   }
 
-  debug(message: string, context?: LogContext): void {
+  debug(message: string, errorOrContext?: Error | LogContext, context?: LogContext): void {
     if (this.isDevelopment) {
-      const formatted = this.formatMessage('debug', message, undefined, context);
+      const error = errorOrContext instanceof Error ? errorOrContext : undefined;
+      const ctx = errorOrContext instanceof Error ? context : errorOrContext;
+      const formatted = this.formatMessage('debug', message, error, ctx);
       console.debug(formatted);
     }
   }

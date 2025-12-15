@@ -1,60 +1,8 @@
-import { ref, onDisconnect, set, push, onValue, remove } from "firebase/database";
-import { db } from "./firebase";
-
-export function createPresenceManager(userId: string) {
-  if (typeof window === "undefined") {
-    throw new Error("createPresenceManager can only be used in the browser");
-  }
-
-  const connectionsRef = ref(db, `connections/${userId}`);
-  const userStatusRef = ref(db, `status/${userId}`);
-  const myConnRef = push(connectionsRef);
-
-  // write my connection and ensure it's removed on disconnect
-  set(myConnRef, { connectedAt: Date.now(), userAgent: navigator.userAgent });
-  onDisconnect(myConnRef).remove();
-  onDisconnect(userStatusRef).set({ state: "offline", activeConnections: 0, lastChanged: Date.now() });
-
-  function updateStatusFromCount(count: number) {
-    set(userStatusRef, { state: count > 0 ? "online" : "offline", activeConnections: count, lastChanged: Date.now() });
-  }
-
-  // listen to connections count and update status accordingly
-  onValue(connectionsRef, (snap) => {
-    const count = snap.exists() ? (snap.numChildren ? snap.numChildren() : Object.keys(snap.val() || {}).length) : 0;
-    updateStatusFromCount(count);
-  });
-
-  // Helpers
-  async function goOffline() {
-    try {
-      await remove(myConnRef);
-    } catch (e) {
-      // best-effort
-    }
-  }
-
-  async function goOnline() {
-    try {
-      await set(myConnRef, { connectedAt: Date.now(), userAgent: navigator.userAgent });
-    } catch (e) {
-      // best-effort
-    }
-  }
-
-  // Keep events minimal; rely on onDisconnect for cleanup
-  window.addEventListener("online", goOnline);
-  window.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") goOnline();
-  });
-
-  return { goOnline, goOffline };
-}
-
 'use client';
 
 import { logger } from './logger';
 import { PresenceManager as RTDBPresenceManager } from './realtime';
+import React from 'react';
 
 /**
  * Presence management utilities
@@ -70,7 +18,7 @@ const cleanupCallbacks = new Set<CleanupCallback>();
  */
 export function registerCleanup(callback: CleanupCallback): () => void {
   cleanupCallbacks.add(callback);
-  
+
   return () => {
     cleanupCallbacks.delete(callback);
   };
@@ -87,7 +35,7 @@ async function executeCleanup() {
       logger.error('Cleanup callback failed', error as Error);
     }
   });
-  
+
   await Promise.all(promises);
 }
 
@@ -126,8 +74,7 @@ export function usePresenceCleanup(callback: CleanupCallback) {
   }, [callback]);
 }
 
-// Import React only for the hook
-import React from 'react';
+
 
 /**
  * High-level Presence API (wrapper around RTDB PresenceManager)
@@ -193,7 +140,7 @@ export function createPresenceManager(userId: string): PresenceManagerHandle {
       window.removeEventListener('focus', tryRestore);
       document.removeEventListener('visibilitychange', onVisibilityChange);
       return manager.goOffline();
-      } catch (err) {
+    } catch (err) {
       logger.error('createPresenceManager: cleanup goOffline failed', err as Error, { userId });
       return Promise.resolve();
     }

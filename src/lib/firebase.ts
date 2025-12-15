@@ -4,6 +4,7 @@ import { getAuth } from "firebase/auth";
 import { getDatabase } from "firebase/database";
 import { getFirestore } from "firebase/firestore";
 import { getMessaging } from "firebase/messaging";
+import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
@@ -42,6 +43,7 @@ if (isBrowser) {
 const auth = getAuth(app);
 const db = getDatabase(app);
 const firestore = getFirestore(app);
+const storage = getStorage(app);
 
 let messaging: ReturnType<typeof getMessaging> | null = null;
 if (isBrowser) {
@@ -52,5 +54,17 @@ if (isBrowser) {
   }
 }
 
-export { app, analytics, auth, db, firestore, messaging };
+export function getClientFirebase() {
+  return {
+    app,
+    analytics,
+    auth,
+    rtdb: db,
+    firestore,
+    messaging,
+    storage,
+  };
+}
+
+export { app, analytics, auth, db, firestore, messaging, storage };
 export default app;

@@ -1,14 +1,18 @@
-/* eslint-disable no-undef */
+const fs = require('fs');
+const path = require('path');
+require('dotenv').config({ path: '.env.local' });
+
+const swContent = `/* eslint-disable no-undef */
 importScripts('https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js');
 
 firebase.initializeApp({
-  apiKey: "AIzaSyBCbE_vyqlFa2v6mk-w3pfQ1qIgYXp0HX4",
-  authDomain: "chatus-703ce.firebaseapp.com",
-  projectId: "chatus-703ce",
-  storageBucket: "chatus-703ce.appspot.com",
-  messagingSenderId: "924028329830",
-  appId: "1:924028329830:web:abfa4a0661401259cbf2a7",
+  apiKey: "${process.env.NEXT_PUBLIC_FIREBASE_API_KEY}",
+  authDomain: "${process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}",
+  projectId: "${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}",
+  storageBucket: "${process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}",
+  messagingSenderId: "${process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}",
+  appId: "${process.env.NEXT_PUBLIC_FIREBASE_APP_ID}",
 });
 
 const messaging = firebase.messaging();
@@ -43,7 +47,7 @@ messaging.onBackgroundMessage((payload) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const roomId = event.notification?.data?.roomId;
-  const url = roomId ? `/chat/${roomId}` : '/';
+  const url = roomId ? \`/chat/\${roomId}\` : '/';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
@@ -59,3 +63,12 @@ self.addEventListener('notificationclick', (event) => {
       })
   );
 });
+`;
+
+const publicDir = path.join(__dirname, '../public');
+if (!fs.existsSync(publicDir)) {
+    fs.mkdirSync(publicDir);
+}
+
+fs.writeFileSync(path.join(publicDir, 'firebase-messaging-sw.js'), swContent);
+console.log('Generated public/firebase-messaging-sw.js');

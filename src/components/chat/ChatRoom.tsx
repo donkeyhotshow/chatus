@@ -22,28 +22,28 @@ import { isDemoMode } from '@/lib/demo-mode';
 import { getChatService } from '@/services/ChatService';
 
 const LoadingSpinner = ({ text }: { text: string }) => (
-    <div className="flex h-full w-full items-center justify-center bg-black">
-      <div className="animate-pulse flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-        <span className="font-mono text-white/70 tracking-widest">{text}</span>
-      </div>
+  <div className="flex h-full w-full items-center justify-center bg-black">
+    <div className="animate-pulse flex flex-col items-center gap-4">
+      <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+      <span className="font-mono text-white/70 tracking-widest">{text}</span>
     </div>
+  </div>
 );
 
 export function ChatRoom({ roomId }: { roomId: string }) {
   const [isCollabSpaceVisible, setIsCollabSpaceVisible] = useState(false);
-  
+
   const { toast } = useToast();
   const firebaseContext = useFirebase();
   const isMobile = useIsMobile();
-  
+
   // Use stable user identification hook
   const { user, isLoading, createProfile, error: userError } = useCurrentUser(roomId);
   const [isCreating, setIsCreating] = useState(false);
-  
+
   // Use presence hook for online/offline status
   usePresence(roomId, user?.id || null);
-  
+
   // Use room hook for validation and room data
   const { validate } = useRoom(roomId);
 
@@ -68,9 +68,9 @@ export function ChatRoom({ roomId }: { roomId: string }) {
     if (!firebaseContext) return null;
     return doc(firebaseContext.db, 'rooms', roomId);
   }, [firebaseContext, roomId]);
-  
+
   const { data: room, loading: roomLoading } = useDoc<Room>(roomDocRef);
-  
+
   // Validate room existence on mount
   useEffect(() => {
     if (user && !roomLoading) {
@@ -83,7 +83,7 @@ export function ChatRoom({ roomId }: { roomId: string }) {
     if (!user) {
       return;
     }
-    
+
     // In demo mode, join room directly via ChatService
     if (isDemoMode()) {
       // Firebase should be initialized even in demo mode (with dummy config)
@@ -108,30 +108,30 @@ export function ChatRoom({ roomId }: { roomId: string }) {
       }
       return;
     }
-    
+
     if (!firebaseContext?.db || !firebaseContext?.auth || !firebaseContext?.storage) {
       return;
     }
-    
+
     // Join room using RoomManager
     // validateRoom=false allows auto-creation for new rooms
     joinRoom(user, false).catch(err => {
       const error = err as Error;
       const firebaseError = err as any;
-      
+
       // Suppress permission errors when offline
       if (error.message?.includes('Permission denied') ||
-          error.message?.includes('client is offline') ||
-          firebaseError.code === 'permission-denied' ||
-          firebaseError.code === 'unavailable') {
+        error.message?.includes('client is offline') ||
+        firebaseError.code === 'permission-denied' ||
+        firebaseError.code === 'unavailable') {
         return; // Silently ignore
       }
-      
+
       logger.error("Error joining room", error, { roomId, userId: user.id });
-      toast({ 
-        variant: 'destructive', 
-        title: 'Error joining room', 
-        description: error.message 
+      toast({
+        variant: 'destructive',
+        title: 'Error joining room',
+        description: error.message
       });
     });
 
@@ -162,7 +162,7 @@ export function ChatRoom({ roomId }: { roomId: string }) {
     try {
       setIsCreating(true);
       await createProfile(username, avatar);
-    } catch(err) {
+    } catch (err) {
       logger.error('Could not create profile', err as Error, { username, roomId });
       toast({ title: 'Could not create profile', description: (err as Error).message, variant: 'destructive' });
       setIsCreating(false);
@@ -171,9 +171,9 @@ export function ChatRoom({ roomId }: { roomId: string }) {
   };
 
   if (!firebaseContext) {
-     return <LoadingSpinner text="INITIALIZING..." />;
+    return <LoadingSpinner text="INITIALIZING..." />;
   }
-  
+
   // Show Firebase config error if present (but not in demo mode)
   if (!isDemoMode() && userError && userError.message?.includes('Firebase configuration is invalid')) {
     return (
@@ -205,11 +205,11 @@ export function ChatRoom({ roomId }: { roomId: string }) {
       </div>
     );
   }
-  
+
   if (isLoading) {
-      return <LoadingSpinner text="ЗАГРУЗКА..." />;
+    return <LoadingSpinner text="ЗАГРУЗКА..." />;
   }
-  
+
   // Show error if Firebase Auth failed
   if (userError) {
     return (
@@ -224,8 +224,8 @@ export function ChatRoom({ roomId }: { roomId: string }) {
             <li>Добавлен ли домен в Authorized domains</li>
             <li>Интернет-соединение</li>
           </ul>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-neutral-200 transition"
           >
             Попробовать снова
@@ -234,44 +234,44 @@ export function ChatRoom({ roomId }: { roomId: string }) {
       </div>
     );
   }
-  
+
   if (!user) {
     return (
-        <ProfileCreationDialog 
-            isOpen={true}
-            onProfileCreate={handleProfileCreate}
-            roomId={roomId}
-            isCreating={isCreating}
-        />
+      <ProfileCreationDialog
+        isOpen={true}
+        onProfileCreate={handleProfileCreate}
+        roomId={roomId}
+        isCreating={isCreating}
+      />
     );
   }
 
   if (roomLoading && !room) {
     return <LoadingSpinner text="CONNECTING..." />;
   }
-  
+
   const otherUser = room?.participantProfiles?.find(p => p.id !== user?.id);
   const showChatArea = !isMobile || (isMobile && !isCollabSpaceVisible);
 
   return (
-    <div className="flex h-screen w-screen">
+    <div className="flex h-full w-full">
       {user && showChatArea && (
-         <ChatArea
-            user={user}
-            roomId={roomId}
-            isCollabSpaceVisible={isCollabSpaceVisible}
-            onToggleCollaborationSpace={() => setIsCollabSpaceVisible(v => !v)}
-          />
+        <ChatArea
+          user={user}
+          roomId={roomId}
+          isCollabSpaceVisible={isCollabSpaceVisible}
+          onToggleCollaborationSpace={() => setIsCollabSpaceVisible(v => !v)}
+        />
       )}
       {user && (
         <Suspense fallback={<div className="flex-1 flex items-center justify-center bg-black"><div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full"></div></div>}>
-        <CollaborationSpace
-          isVisible={isCollabSpaceVisible}
-          roomId={roomId}
-          user={user}
-          otherUser={otherUser}
-          allUsers={room?.participantProfiles || []}
-        />
+          <CollaborationSpace
+            isVisible={isCollabSpaceVisible}
+            roomId={roomId}
+            user={user}
+            otherUser={otherUser}
+            allUsers={room?.participantProfiles || []}
+          />
         </Suspense>
       )}
     </div>

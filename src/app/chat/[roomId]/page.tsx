@@ -19,8 +19,8 @@ export default async function ChatPage({ params }: ChatPageProps) {
   decodedRoomId = String(decodedRoomId).trim().replace(/[\r\n]+/g, '');
 
   return (
-    <div className="h-screen w-screen overflow-hidden flex">
-       <ChatRoom roomId={decodedRoomId} />
+    <div className="h-full w-full overflow-hidden flex">
+      <ChatRoom roomId={decodedRoomId} />
     </div>
   );
 }

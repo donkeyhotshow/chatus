@@ -7,9 +7,20 @@ import { FirebaseProvider } from '@/components/firebase/FirebaseProvider';
 import { BackgroundChanger } from '@/components/layout/BackgroundChanger';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ClientLayout } from '@/components/layout/ClientLayout';
+import Script from 'next/script';
 
 const APP_NAME = "ЧАТ ДЛЯ НАС";
 const APP_DESCRIPTION = "A real-time chat application with collaborative features.";
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  interactiveWidget: 'resizes-content',
+  themeColor: '#080808',
+  viewportFit: 'cover',
+};
 
 export const metadata: Metadata = {
   applicationName: APP_NAME,
@@ -20,7 +31,7 @@ export const metadata: Metadata = {
   description: APP_DESCRIPTION,
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: APP_NAME,
   },
   formatDetection: {
@@ -55,6 +66,9 @@ export default function RootLayout({
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#080808" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://firebasestorage.googleapis.com" />
@@ -62,10 +76,23 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
       </head>
       <body suppressHydrationWarning>
+        <Script id="vh-fix" strategy="beforeInteractive">
+          {`
+            (function() {
+              function setVH() {
+                const vh = window.innerHeight * 0.01;
+                document.documentElement.style.setProperty('--vh', vh + 'px');
+              }
+              setVH();
+              window.addEventListener('resize', setVH);
+              window.addEventListener('orientationchange', setVH);
+            })();
+          `}
+        </Script>
         <ErrorBoundary>
           <FirebaseProvider>
             <ClientLayout>
-              <div className="flex flex-col h-dvh w-full bg-black text-neutral-200 font-sans selection:bg-white selection:text-black overflow-hidden">
+              <div className="flex flex-col w-full bg-black text-neutral-200 font-sans selection:bg-white selection:text-black overflow-hidden" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
                 <header className="h-14 shrink-0 border-b border-white/10 flex items-center px-6 bg-neutral-950 z-50">
                   <div className="flex items-center gap-3 select-none group cursor-default">
                     <div className="p-1.5 bg-white text-black rounded-lg group-hover:scale-105 transition-transform">
@@ -79,7 +106,7 @@ export default function RootLayout({
 
                 <BackgroundChanger />
 
-                <div className="relative z-10 flex w-full h-[calc(100vh_-_3.5rem)]">
+                <div className="relative z-10 flex w-full flex-1 overflow-hidden">
                   {children}
                 </div>
               </div>

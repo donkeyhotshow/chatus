@@ -19,21 +19,21 @@ type MessageListProps = {
 };
 
 const LoadingSpinner = () => (
-    <div className="flex-1 flex flex-col items-center justify-center">
-      <div className="animate-pulse flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-        <span className="font-mono text-white/70 tracking-widest">LOADING CHAT...</span>
-      </div>
+  <div className="flex-1 flex flex-col items-center justify-center">
+    <div className="animate-pulse flex flex-col items-center gap-4">
+      <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+      <span className="font-mono text-white/70 tracking-widest">LOADING CHAT...</span>
     </div>
+  </div>
 );
 
-const MessageList = memo(({ 
-  messages, 
-  isLoading, 
-  currentUserId, 
-  onDeleteMessage, 
-  onReaction, 
-  onImageClick, 
+const MessageList = memo(({
+  messages,
+  isLoading,
+  currentUserId,
+  onDeleteMessage,
+  onReaction,
+  onImageClick,
   onReply,
   onLoadMore,
   hasMoreMessages = false,
@@ -59,8 +59,14 @@ const MessageList = memo(({
 
   if (messages.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full text-neutral-500">
-        <p>No messages yet. Start the conversation!</p>
+      <div className="flex-1 flex flex-col items-center justify-center h-full px-6 py-8">
+        <div className="flex flex-col items-center gap-4 text-center max-w-sm">
+          <div className="text-6xl opacity-40 mb-2">💬</div>
+          <h2 className="text-xl font-semibold text-white">Сообщений пока нет</h2>
+          <p className="text-sm text-neutral-400 leading-relaxed">
+            Напишите первое сообщение, чтобы начать общение
+          </p>
+        </div>
       </div>
     );
   }
@@ -77,19 +83,41 @@ const MessageList = memo(({
             onLoadMore();
           }
         }}
-        itemContent={(index, msg) => (
-          <div className="px-6 py-3">
-            <MessageItem
-              key={msg.id}
-              message={msg}
-              isOwn={msg.user.id === currentUserId}
-              onDelete={onDeleteMessage}
-              onReaction={onReaction}
-              onImageClick={onImageClick}
-              onReply={onReply}
-            />
-          </div>
-        )}
+        itemContent={(index, msg) => {
+          const prevMsg = messages[index - 1];
+          const isNewDay = !prevMsg || (() => {
+            const currentDate = msg.createdAt && 'seconds' in msg.createdAt
+              ? new Date(msg.createdAt.seconds * 1000)
+              : new Date();
+            const prevDate = prevMsg.createdAt && 'seconds' in prevMsg.createdAt
+              ? new Date(prevMsg.createdAt.seconds * 1000)
+              : new Date();
+            return currentDate.toDateString() !== prevDate.toDateString();
+          })();
+
+          return (
+            <div className="px-4 py-1">
+              {isNewDay && (
+                <div className="flex justify-center my-4">
+                  <span className="bg-neutral-800/50 text-neutral-400 text-[10px] font-medium px-3 py-1 rounded-full border border-white/5">
+                    {msg.createdAt && 'seconds' in msg.createdAt
+                      ? new Date(msg.createdAt.seconds * 1000).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })
+                      : 'Today'}
+                  </span>
+                </div>
+              )}
+              <MessageItem
+                key={msg.id}
+                message={msg}
+                isOwn={msg.user.id === currentUserId}
+                onDelete={onDeleteMessage}
+                onReaction={onReaction}
+                onImageClick={onImageClick}
+                onReply={onReply}
+              />
+            </div>
+          );
+        }}
         style={{ height: '100%' }}
         components={{
           Header: hasMoreMessages ? () => (
