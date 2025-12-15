@@ -53,10 +53,10 @@ export function CollaborativeCanvas({ roomId }: CollaborativeCanvasProps) {
   // Отправляем позицию своего курсора (throttled)
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !user) return;
+    if (!canvas || !user || !firestore) return;
 
     const handleMouseMove = throttle((e: MouseEvent) => {
-      if (!canvas || !user) return;
+      if (!canvas || !user || !firestore) return;
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
@@ -79,6 +79,7 @@ export function CollaborativeCanvas({ roomId }: CollaborativeCanvasProps) {
 
   // Слушаем курсоры других пользователей
   useEffect(() => {
+    if (!firestore) return;
     const cursorsRef = collection(firestore, `rooms/${roomId}/cursors`);
     const unsubscribe = onSnapshot(cursorsRef, (snapshot) => {
       const newCursors = new Map<string, CursorPosition>();
