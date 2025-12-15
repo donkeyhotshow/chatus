@@ -1,0 +1,40 @@
+{
+    "mcpServers": {
+        "vercel-cli": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-shell"
+            ],
+            "env": {
+                "SHELL_ALLOWED_COMMANDS": "vercel,git",
+                "SHELL_WORKING_DIRECTORY": "."
+            },
+            "disabled": false,
+            "autoApprove": []
+        },
+        "firebase-tools": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-shell"
+            ],
+            "env": {
+                "SHELL_ALLOWED_COMMANDS": "firebase,npm,yarn",
+                "SHELL_WORKING_DIRECTORY": "."
+            },
+            "disabled": false,
+            "autoApprove": []
+        },
+        "git-operations": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-git"
+            ],
+            "env": {},
+            "disabled": false,
+            "autoApprove": []
+        }
+    }
+}
