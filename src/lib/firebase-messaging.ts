@@ -14,8 +14,8 @@ export class FCMManager {
 
     const { app, firestore, messaging } = getClientFirebase();
 
-    if (!messaging) {
-      logger.error('FCMManager: Firebase Messaging not initialized.');
+    if (!messaging || !firestore) {
+      logger.error('FCMManager: Firebase Messaging or Firestore not initialized.');
       return;
     }
 

@@ -65,7 +65,7 @@ export function ChatRoom({ roomId }: { roomId: string }) {
 
   // Use both useDoc (for real-time updates) and useRoom (for validation)
   const roomDocRef = useMemo(() => {
-    if (!firebaseContext) return null;
+    if (!firebaseContext || !firebaseContext.db) return null;
     return doc(firebaseContext.db, 'rooms', roomId);
   }, [firebaseContext, roomId]);
 

@@ -24,6 +24,7 @@ export function useTicTacToeGame(roomId: string, gameId: string) {
   const [connectionLost, setConnectionLost] = useState(false);
 
   useEffect(() => {
+    if (!firestore) return;
     const gameRef = doc(firestore, `rooms/${roomId}/games/${gameId}`);
 
     // Слухаємо зміни гри в реальному часі
@@ -44,13 +45,14 @@ export function useTicTacToeGame(roomId: string, gameId: string) {
     );
 
     return () => unsubscribe();
-  }, [roomId, gameId, user]);
+  }, [roomId, gameId, user, firestore]);
 
   const attemptReconnect = async () => {
     setReconnecting(true);
 
     try {
       // Отримуємо поточний стан гри з сервера
+      if (!firestore) return;
       const gameRef = doc(firestore, `rooms/${roomId}/games/${gameId}`);
       const gameSnap = await getDoc(gameRef);
 
