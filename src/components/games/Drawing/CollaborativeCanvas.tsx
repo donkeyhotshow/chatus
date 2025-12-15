@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { doc, collection, onSnapshot, setDoc, serverTimestamp, query, where } from 'firebase/firestore';
+import { doc, collection, onSnapshot, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { useFirebase } from '@/components/firebase/FirebaseProvider';
 
-function throttle<T extends (...args: any[]) => void>(fn: T, wait: number) {
+function throttle<T extends (...args: unknown[]) => void>(fn: T, wait: number) {
   let last = 0;
   let timeout: ReturnType<typeof setTimeout> | null = null;
-  return (...args: any[]) => {
+  return (...args: Parameters<T>) => {
     const now = Date.now();
     const remaining = wait - (now - last);
     if (remaining <= 0) {
@@ -30,7 +30,7 @@ interface CursorPosition {
   y: number;
   color: string;
   name: string;
-  timestamp?: any; // Firestore Timestamp
+  timestamp?: Timestamp; // Firestore Timestamp
 }
 
 interface User {
@@ -64,8 +64,8 @@ export function CollaborativeCanvas({ roomId }: CollaborativeCanvasProps) {
       void setDoc(doc(firestore!, `rooms/${roomId}/cursors/${user.uid}`), {
         x,
         y,
-        color: (user as any).cursorColor || '#000000',
-        name: (user as any).displayName || 'Anonymous',
+        color: (user as { cursorColor?: string }).cursorColor || '#000000',
+        name: user.displayName || 'Anonymous',
         timestamp: serverTimestamp(),
       }, { merge: true });
     }, 50);

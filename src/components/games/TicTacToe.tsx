@@ -1,7 +1,7 @@
 "use client";
 
 import { GameState, UserProfile } from "@/lib/types";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import Confetti from 'react-confetti';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "../ui/card";
@@ -42,16 +42,13 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
 
     const { board, currentPlayer, winner, hostId } = gameState;
     const isDraw = !winner && board?.every(cell => cell !== null);
-    
-    const mySymbol = hostId === user.id ? 'X' : 'O';
-    const otherSymbol = hostId === user.id ? 'O' : 'X';
-    
+
     const playerSymbols: { [key: string]: 'X' | 'O' } = hostId ? {
         [hostId]: 'X',
         ...(otherUser && otherUser.id !== hostId && { [otherUser.id]: 'O' }),
         ...(user.id !== hostId && { [user.id]: 'O' })
     } : {};
-    
+
     const myTurn = currentPlayer === user.id;
     const displayBoard = optimisticBoard || board;
 
@@ -76,18 +73,18 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
 
     const handleClick = guard((i: number) => {
         if (winner || displayBoard?.[i] || !myTurn || !otherUser) return;
-        
+
         // Оптимистичное обновление
         const newOptimisticBoard = displayBoard!.slice();
         newOptimisticBoard[i] = playerSymbols[user.id];
         setOptimisticBoard(newOptimisticBoard);
         setLastMoveIndex(i);
-        
+
         const newBoard = board!.slice();
         newBoard[i] = playerSymbols[user.id];
-        
+
         const newWinner = calculateWinner(newBoard);
-        
+
         updateGameState({
             board: newBoard,
             currentPlayer: otherUser.id,
@@ -100,8 +97,8 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
     const handleReset = guard(() => {
         let newStarterId = hostId;
         if (otherUser) {
-           const playerIds = [user.id, otherUser.id];
-           newStarterId = playerIds.find(id => id !== gameState.currentPlayer) ?? hostId;
+            const playerIds = [user.id, otherUser.id];
+            newStarterId = playerIds.find(id => id !== gameState.currentPlayer) ?? hostId;
         }
 
         setOptimisticBoard(null);
@@ -115,11 +112,11 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
 
         hapticFeedback('medium');
     });
-    
+
     const getPlayerName = (playerId: string) => {
-      if (playerId === user.id) return user.name;
-      if (playerId === otherUser?.id) return otherUser.name;
-      return "Player";
+        if (playerId === user.id) return user.name;
+        if (playerId === otherUser?.id) return otherUser.name;
+        return "Player";
     }
 
     const getStatus = () => {
@@ -133,18 +130,18 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
     return (
         <div className="flex flex-col items-center justify-center h-full gap-4 p-4">
             {winner === user.id && windowSize.width > 0 && (
-                <Confetti 
-                    width={windowSize.width} 
-                    height={windowSize.height} 
-                    recycle={false} 
+                <Confetti
+                    width={windowSize.width}
+                    height={windowSize.height}
+                    recycle={false}
                     numberOfPieces={200}
                     gravity={0.3}
                 />
             )}
-             <Card className="bg-neutral-950/80 border-white/10 backdrop-blur-sm w-full max-w-sm">
+            <Card className="bg-neutral-950/80 border-white/10 backdrop-blur-sm w-full max-w-sm">
                 <CardHeader className="text-center">
                     <CardTitle className="font-headline text-2xl">Tic-Tac-Toe</CardTitle>
-                     <CardTitle className="text-sm font-medium text-neutral-400 pt-2">{getStatus()}</CardTitle>
+                    <CardTitle className="text-sm font-medium text-neutral-400 pt-2">{getStatus()}</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-4">
                     <div className="grid grid-cols-3 gap-2 p-2 bg-black/30 rounded-lg">
@@ -166,14 +163,14 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
                     </div>
                 </CardContent>
                 <CardFooter className="flex flex-col gap-2 p-4">
-                     {(winner || isDraw) && (
-                        <Button 
-                            onClick={handleReset} 
+                    {(winner || isDraw) && (
+                        <Button
+                            onClick={handleReset}
                             className="w-full bg-white text-black hover:bg-neutral-200 transition-all"
                         >
                             Play Again
                         </Button>
-                     )}
+                    )}
                     <Button onClick={onGameEnd} variant="ghost" size="sm" className="w-full text-neutral-400 hover:text-white">
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Back to Lobby

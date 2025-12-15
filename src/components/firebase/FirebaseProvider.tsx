@@ -25,7 +25,7 @@ interface FirebaseContextType {
   rtdb: Database | null;
   analytics: Analytics | null;
   messaging: Messaging | null;
-  presenceManager?: any | null;
+  presenceManager?: unknown | null;
   fcmManager?: FCMManager | null;
 }
 
@@ -94,7 +94,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
   }, [user, firebaseInstances]);
 
   // Initialize PresenceManager when user logs in (non-anonymous)
-  const presenceManagerRef = useRef<any | null>(null);
+  const presenceManagerRef = useRef<unknown | null>(null);
   const fcmManagerRef = useRef<FCMManager | null>(null);
   useEffect(() => {
     if (!firebaseInstances) return;
@@ -112,10 +112,11 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
       if (presenceManagerRef.current) {
         try {
           // prefer disconnect if available, otherwise goOffline
-          if (typeof presenceManagerRef.current.disconnect === 'function') {
-            presenceManagerRef.current.disconnect();
-          } else if (typeof presenceManagerRef.current.goOffline === 'function') {
-            presenceManagerRef.current.goOffline();
+          const pm = presenceManagerRef.current as { disconnect?: () => void; goOffline?: () => void };
+          if (typeof pm.disconnect === 'function') {
+            pm.disconnect();
+          } else if (typeof pm.goOffline === 'function') {
+            pm.goOffline();
           }
         } catch (err) {
           logger.error('FirebaseProvider: Error while cleaning up PresenceManager', err as Error);
@@ -136,7 +137,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
     if (fcmManagerRef.current) inst.fcmManager = fcmManagerRef.current;
     inst.user = user;
     setFirebaseInstances(inst);
-  }, [presenceManagerRef.current, fcmManagerRef.current, firebaseInstances]);
+  }, [firebaseInstances, user]);
 
   if (!isMounted || !firebaseInstances) {
     logger.debug('FirebaseProvider: Not mounted or instances not ready, showing fallback UI');

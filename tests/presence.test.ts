@@ -1,6 +1,34 @@
+import { vi } from 'vitest';
 import { initializeApp } from 'firebase/app';
 import { getDatabase, connectDatabaseEmulator, ref, get, set } from 'firebase/database';
 import { PresenceManager } from '../src/lib/realtime';
+
+// Mock Firebase Database
+vi.mock('firebase/database', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    getDatabase: vi.fn(() => ({})),
+    connectDatabaseEmulator: vi.fn(),
+    ref: vi.fn(() => ({})),
+    get: vi.fn(async () => ({
+      exists: () => true,
+      val: () => ({
+        'conn1': { online: true, connectedAt: Date.now() },
+        state: 'online',
+        activeConnections: 1
+      })
+    })),
+    set: vi.fn(async () => ({}))
+  };
+});
+
+// Mock getClientFirebase
+vi.mock('../src/lib/firebase', () => ({
+  getClientFirebase: () => ({
+    rtdb: { mockDatabase: true }
+  })
+}));
 
 // --- Firebase Emulator Setup ---
 const config = {
@@ -96,7 +124,7 @@ describe('PresenceManager (per-connection)', () => {
   test('onDisconnect should remove connection and update status', async () => {
     // Simulate a client going online
     await presenceManager.goOnline(userId);
-    
+
     // Verify initial state
     let statusSnapshot = await get(ref(rtdb, `status/${userId}`));
     expect(statusSnapshot.val().state).toBe('online');
@@ -110,7 +138,7 @@ describe('PresenceManager (per-connection)', () => {
     await set(ref(rtdb, `connections/${userId}/${connId}`), null);
 
     // Wait for the aggregated status to update (might need a small delay for RTDB listener)
-    await new Promise(resolve => setTimeout(resolve, 100)); 
+    await new Promise(resolve => setTimeout(resolve, 100));
 
     statusSnapshot = await get(ref(rtdb, `status/${userId}`));
     expect(statusSnapshot.val().state).toBe('offline');

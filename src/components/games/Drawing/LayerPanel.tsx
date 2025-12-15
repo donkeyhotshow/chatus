@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { DrawingLayerService } from '@/services/DrawingLayerService';
 
 interface Layer {
-    id: string;
-    name: string;
-    visible: boolean;
-    opacity: number;
-    strokes: any[];
-    zIndex: number;
+  id: string;
+  name: string;
+  visible: boolean;
+  opacity: number;
+  strokes: unknown[];
+  zIndex: number;
 }
 
 interface LayerPanelProps {
@@ -16,7 +16,7 @@ interface LayerPanelProps {
 
 export function LayerPanel({ service }: LayerPanelProps) {
   const [layers, setLayers] = useState<Layer[]>(service.layers);
-  
+
   // Force re-render when service state changes (e.g., from undo/redo)
   // This is a simplified approach; a more robust solution might use an EventEmitter in DrawingLayerService
   // or react context for state management.
@@ -30,16 +30,16 @@ export function LayerPanel({ service }: LayerPanelProps) {
     ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
 
     const sortedLayers = [...service.layers].sort((a, b) => a.zIndex - b.zIndex);
-    
+
     sortedLayers.forEach(layer => {
       if (!layer.visible) return;
-      
+
       ctx.globalAlpha = layer.opacity;
-      
+
       layer.strokes.forEach(stroke => {
         service['renderStroke'](stroke, ctx);
       });
-      
+
       ctx.globalAlpha = 1;
     });
     setLayers([...service.layers]); // Update local state to trigger re-render
@@ -57,14 +57,13 @@ export function LayerPanel({ service }: LayerPanelProps) {
           + New Layer
         </button>
       </div>
-      
+
       <div className="space-y-2">
         {layers.map((layer, idx) => (
           <div
             key={layer.id}
-            className={`p-2 rounded cursor-pointer ${
-              service.activeLayerId === layer.id ? 'bg-blue-100' : 'bg-gray-50'
-            }`}
+            className={`p-2 rounded cursor-pointer ${service.activeLayerId === layer.id ? 'bg-blue-100' : 'bg-gray-50'
+              }`}
             onClick={() => service.setActiveLayer(layer.id)}
           >
             <div className="flex items-center justify-between">
@@ -77,23 +76,23 @@ export function LayerPanel({ service }: LayerPanelProps) {
                 />
                 <span>{layer.name}</span>
               </div>
-              
+
               <div className="flex gap-1">
-                <button 
+                <button
                   onClick={(e) => { e.stopPropagation(); service.moveLayerUp(layer.id); }}
                   disabled={idx === 0}
                   className="p-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
                 >
                   ↑
                 </button>
-                <button 
+                <button
                   onClick={(e) => { e.stopPropagation(); service.moveLayerDown(layer.id); }}
                   disabled={idx === layers.length - 1}
                   className="p-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
                 >
                   ↓
                 </button>
-                <button 
+                <button
                   onClick={(e) => { e.stopPropagation(); service.deleteLayer(layer.id); }}
                   className="p-1 rounded bg-red-400 text-white hover:bg-red-500"
                 >
@@ -101,7 +100,7 @@ export function LayerPanel({ service }: LayerPanelProps) {
                 </button>
               </div>
             </div>
-            
+
             <input
               type="range"
               min="0"
@@ -113,7 +112,7 @@ export function LayerPanel({ service }: LayerPanelProps) {
           </div>
         ))}
       </div>
-      
+
       <div className="mt-4 flex gap-2">
         <button
           onClick={() => service.undo()}

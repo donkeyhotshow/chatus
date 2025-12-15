@@ -10,7 +10,7 @@ import { useCallback, useRef } from 'react';
 /**
  * Throttle функция - ограничивает частоту вызовов
  */
-export function throttle<T extends (...args: any[]) => any>(
+export function throttle<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
@@ -41,7 +41,7 @@ export function throttle<T extends (...args: any[]) => any>(
 /**
  * Debounce функция - задерживает выполнение до паузы
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
@@ -109,7 +109,7 @@ export function useActionGuard() {
   const isProcessingRef = useRef(false);
 
   const guard = useCallback(
-    <T extends (...args: any[]) => any>(action: T): T => {
+    <T extends (...args: unknown[]) => unknown>(action: T): T => {
       return ((...args: Parameters<T>) => {
         if (isProcessingRef.current) {
           return;
@@ -186,4 +186,3 @@ export function pulseAnimation(element: HTMLElement | null) {
     element.classList.remove('animate-pulse');
   }, 500);
 }
-

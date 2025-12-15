@@ -13,7 +13,7 @@ export default async function ChatPage({ params }: ChatPageProps) {
   let decodedRoomId = roomId;
   try {
     decodedRoomId = decodeURIComponent(roomId);
-  } catch (e) {
+  } catch {
     // ignore decode errors
   }
   decodedRoomId = String(decodedRoomId).trim().replace(/[\r\n]+/g, '');

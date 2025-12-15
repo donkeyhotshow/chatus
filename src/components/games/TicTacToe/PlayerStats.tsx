@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot, Timestamp } from 'firebase/firestore';
 import { useFirebase } from '@/components/firebase/FirebaseProvider';
 
 interface TicTacToeStats {
@@ -10,7 +10,7 @@ interface TicTacToeStats {
   rating: number;
   winStreak: number;
   lastGameId: string;
-  lastGameAt: any; // Firestore Timestamp
+  lastGameAt: Timestamp | null; // Firestore Timestamp
 }
 
 interface Achievement {

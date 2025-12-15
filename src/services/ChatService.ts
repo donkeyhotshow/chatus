@@ -2,11 +2,11 @@
 
 import {
   collection, query, orderBy, onSnapshot, addDoc,
-  serverTimestamp, where, Unsubscribe, deleteDoc, doc, runTransaction, limit, updateDoc, setDoc, getDoc, Firestore, DocumentData, writeBatch, getDocs, DocumentReference, DocumentSnapshot, startAfter, Timestamp, arrayRemove
+  serverTimestamp, where, Unsubscribe, deleteDoc, doc, runTransaction, limit, setDoc, getDoc, Firestore, writeBatch, getDocs, DocumentReference, DocumentSnapshot, startAfter, Timestamp, arrayRemove
 } from "firebase/firestore";
 import { TypingManager } from '@/lib/realtime';
 import { ref, uploadBytes, getDownloadURL, FirebaseStorage } from "firebase/storage";
-import { Message, CanvasPath, Reaction, UserProfile, GameState, Room, TDTower, TDEnemy, FirebaseError } from "@/lib/types";
+import { Message, CanvasPath, Reaction, UserProfile, GameState, Room, FirebaseError } from "@/lib/types";
 import { Auth, signInAnonymously } from "firebase/auth";
 import { errorEmitter } from "@/lib/error-emitter";
 import { FirestorePermissionError } from "@/lib/errors";
@@ -207,9 +207,9 @@ export class ChatService {
       ).catch(() => null);
 
       // Defensive: tests/mocks may return undefined; handle gracefully
-      const docsArray = documentSnapshots && (documentSnapshots as any).docs ? (documentSnapshots as any).docs : [];
+      const docsArray = documentSnapshots && 'docs' in documentSnapshots ? documentSnapshots.docs : [];
 
-      const initialMessages = docsArray.map((doc: any) => {
+      const initialMessages = docsArray.map((doc: DocumentSnapshot<DocumentData>) => {
         const data = typeof doc.data === 'function' ? doc.data() : doc;
         return {
           id: doc.id,
@@ -283,7 +283,7 @@ export class ChatService {
       if (snapshot.empty) return;
 
       // Accumulate messages into pendingNewMessages and schedule a single processing tick
-      snapshot.docs.forEach((docSnapshot: any) => {
+      snapshot.docs.forEach((docSnapshot: DocumentSnapshot<DocumentData>) => {
         const data = typeof docSnapshot.data === 'function' ? docSnapshot.data() : docSnapshot;
         const msg: Message = {
           id: docSnapshot.id,
@@ -364,8 +364,8 @@ export class ChatService {
         () => getDocs(q),
         { timeoutMs: 30_000, attempts: 3, backoffMs: 500 }
       ).catch(() => null);
-      const olderDocs = documentSnapshots && (documentSnapshots as any).docs ? (documentSnapshots as any).docs : [];
-      const olderMessages = olderDocs.map((doc: any) => ({
+      const olderDocs = documentSnapshots && 'docs' in documentSnapshots ? documentSnapshots.docs : [];
+      const olderMessages = olderDocs.map((doc: DocumentSnapshot<DocumentData>) => ({
         id: doc.id,
         ...(typeof doc.data === 'function' ? doc.data() : doc)
       } as Message));
@@ -888,7 +888,7 @@ export class ChatService {
     if (isTyping) {
       this.sendTyping();
     }
-    // Note: RTDB typing manager handles auto-expiration, so explicit 'false' might not be needed 
+    // Note: RTDB typing manager handles auto-expiration, so explicit 'false' might not be needed
     // unless we want to clear it immediately.
   }
 
@@ -1199,7 +1199,7 @@ export function getChatService(
 /**
  * Отключить и удалить ChatService для комнаты
  * Используется для очистки ресурсов при выходе из комнаты
- * 
+ *
  * @param roomId - ID комнаты
  */
 export async function disconnectChatService(roomId: string): Promise<void> {

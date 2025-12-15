@@ -54,9 +54,7 @@ export const ChartContainer = React.forwardRef<
         )}
         {...props}
       >
-        <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-          Chart component temporarily disabled
-        </div>
+        {children}
       </div>
     </ChartContext.Provider>
   )
@@ -64,6 +62,7 @@ export const ChartContainer = React.forwardRef<
 ChartContainer.displayName = "Chart"
 
 export const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
+  // Chart styles would be generated here based on id and config
   return null
 }
 

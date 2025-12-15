@@ -50,9 +50,7 @@ export function ChatRoom({ roomId }: { roomId: string }) {
   // Use RoomManager for unified room management
   const {
     joinRoom,
-    leaveRoom,
-    isConnected,
-    isLoading: isRoomManagerLoading
+    leaveRoom
   } = useRoomManager(roomId);
 
   useEffect(() => {
@@ -117,7 +115,7 @@ export function ChatRoom({ roomId }: { roomId: string }) {
     // validateRoom=false allows auto-creation for new rooms
     joinRoom(user, false).catch(err => {
       const error = err as Error;
-      const firebaseError = err as any;
+      const firebaseError = err as { code?: string };
 
       // Suppress permission errors when offline
       if (error.message?.includes('Permission denied') ||

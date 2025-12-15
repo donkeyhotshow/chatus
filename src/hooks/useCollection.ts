@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -46,7 +45,7 @@ export function useCollection<T>(
           setError(null);
         },
         (err) => {
-          const error = err as any;
+          const error = err as FirestoreError;
           // In demo mode, suppress offline errors
           if (isDemoMode() && (error.message?.includes('client is offline') || error.message?.includes('Failed to get document') || error.code === 'unavailable')) {
             setLoading(false);
@@ -71,7 +70,7 @@ export function useCollection<T>(
           setError(null);
         })
         .catch((err) => {
-          const error = err as any;
+          const error = err as FirestoreError;
           // In demo mode, suppress offline errors
           if (isDemoMode() && (error.message?.includes('client is offline') || error.message?.includes('Failed to get document') || error.code === 'unavailable')) {
             setLoading(false);
@@ -108,7 +107,7 @@ export function useDoc<T>(
       setData(null);
       return;
     }
-    
+
     setLoading(true);
 
     if (options.listen) {
@@ -124,7 +123,7 @@ export function useDoc<T>(
           setError(null);
         },
         (err) => {
-          const error = err as any;
+          const error = err as FirestoreError;
           // In demo mode, suppress offline errors
           if (isDemoMode() && (error.message?.includes('client is offline') || error.message?.includes('Failed to get document') || error.code === 'unavailable')) {
             setLoading(false);
@@ -149,7 +148,7 @@ export function useDoc<T>(
           setError(null);
         })
         .catch((err) => {
-          const error = err as any;
+          const error = err as FirestoreError;
           // In demo mode, suppress offline errors
           if (isDemoMode() && (error.message?.includes('client is offline') || error.message?.includes('Failed to get document') || error.code === 'unavailable')) {
             setLoading(false);

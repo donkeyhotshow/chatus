@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { Send, Mic, Paperclip, Brush, Smile } from 'lucide-react';
+import { Send, Paperclip, Brush, Smile } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StickerPicker } from './StickerPicker';
 import { useDebouncedCallback } from 'use-debounce';
@@ -160,8 +160,8 @@ export function MessageInput({ onSendMessage, onImageSend, onDoodleClick, onInpu
             onClick={handleSend}
             disabled={!text.trim()}
             className={`w-10 h-10 flex items-center justify-center rounded-full transition-all ${text.trim()
-                ? 'bg-white text-black hover:scale-105 active:scale-95'
-                : 'bg-white/10 text-neutral-500 cursor-not-allowed'
+              ? 'bg-white text-black hover:scale-105 active:scale-95'
+              : 'bg-white/10 text-neutral-500 cursor-not-allowed'
               }`}
             aria-label="Отправить"
           >

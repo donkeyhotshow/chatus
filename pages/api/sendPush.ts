@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import type { NextApiRequest, NextApiResponse } from 'next';
 import admin from 'firebase-admin';
 
@@ -17,7 +18,7 @@ if (!admin.apps.length) {
   }
 }
 
-const db = admin.firestore();
+
 const messaging = admin.messaging();
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -56,9 +57,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
     const result = await messaging.send(message);
     return res.status(200).json({ result });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('API sendPush error', err);
-    return res.status(500).json({ error: String(err) });
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    return res.status(500).json({ error: errorMessage });
   }
 }
 

@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { GameSoundService } from '@/services/games/GameSoundService';
+import { Timestamp } from 'firebase/firestore';
 
 interface TicTacToeState {
   status: 'waiting' | 'in_progress' | 'finished';
-  lastMoveTime?: any; // Firestore Timestamp
-  createdAt?: any; // Firestore Timestamp
+  lastMoveTime?: Timestamp | number; // Firestore Timestamp
+  createdAt?: Timestamp | number; // Firestore Timestamp
   currentTurn: 'player1' | 'player2';
   players: {
     player1: { uid: string; symbol: 'X' | 'O' };
@@ -29,13 +30,13 @@ export function TurnTimer({ game, currentUserId, soundService, moveTimeLimit = 3
 
     const interval = setInterval(() => {
       const lastMoveMillis =
-        (game.lastMoveTime && typeof game.lastMoveTime.toMillis === 'function'
+        (game.lastMoveTime && game.lastMoveTime instanceof Timestamp
           ? game.lastMoveTime.toMillis()
           : typeof game.lastMoveTime === 'number'
-          ? game.lastMoveTime
-          : game.createdAt && typeof game.createdAt.toMillis === 'function'
-          ? game.createdAt.toMillis()
-          : Date.now());
+            ? game.lastMoveTime
+            : game.createdAt && game.createdAt instanceof Timestamp
+              ? game.createdAt.toMillis()
+              : Date.now());
 
       const elapsed = Math.floor((Date.now() - lastMoveMillis) / 1000);
       const remaining = Math.max(0, moveTimeLimit - elapsed);
@@ -47,7 +48,7 @@ export function TurnTimer({ game, currentUserId, soundService, moveTimeLimit = 3
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [game?.lastMoveTime, game?.status, moveTimeLimit, isMyTurn, soundService]);
+  }, [game, moveTimeLimit, isMyTurn, soundService]);
 
   const progress = (timeLeft / moveTimeLimit) * 100;
   const colorClass = timeLeft > 10 ? 'bg-green-500' : timeLeft > 5 ? 'bg-yellow-500' : 'bg-red-500';

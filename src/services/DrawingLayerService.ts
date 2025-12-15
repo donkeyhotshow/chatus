@@ -7,7 +7,7 @@ export interface Stroke {
   color: string;
   width: number;
   tool?: string;
-  timestamp?: any;
+  timestamp?: number;
 }
 
 export interface Layer {
@@ -173,15 +173,15 @@ export class DrawingLayerService {
   }
 }
 
- 
 
- 
+
+
 
 // UI Component (will be in a separate file)
 /*
 export function LayerPanel({ service }: Props) {
   const [layers, setLayers] = useState(service.layers);
-  
+
   return (
     <div className="layer-panel">
       <div className="flex justify-between items-center mb-2">
@@ -190,7 +190,7 @@ export function LayerPanel({ service }: Props) {
           + New Layer
         </button>
       </div>
-      
+
       <div className="space-y-2">
         {layers.map((layer, idx) => (
           <div
@@ -209,14 +209,14 @@ export function LayerPanel({ service }: Props) {
                 />
                 <span>{layer.name}</span>
               </div>
-              
+
               <div className="flex gap-1">
                 <button onClick={() => service.moveLayerUp(layer.id)}>↑</button>
                 <button onClick={() => service.moveLayerDown(layer.id)}>↓</button>
                 <button onClick={() => service.deleteLayer(layer.id)}>🗑️</button>
               </div>
             </div>
-            
+
             <input
               type="range"
               min="0"
@@ -228,7 +228,7 @@ export function LayerPanel({ service }: Props) {
           </div>
         ))}
       </div>
-      
+
       <div className="mt-4 flex gap-2">
         <button
           onClick={() => service.undo()}

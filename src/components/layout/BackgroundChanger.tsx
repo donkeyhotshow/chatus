@@ -27,9 +27,7 @@ export function BackgroundChanger() {
     return () => clearInterval(timer);
   }, []);
 
-  const currentImage = backgroundImages[currentIndex];
-  const nextIndex = (currentIndex + 1) % backgroundImages.length;
-  const nextImage = backgroundImages[nextIndex];
+  // Background images are managed by the map below
 
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
@@ -45,7 +43,7 @@ export function BackgroundChanger() {
       ))}
       <div className="absolute inset-0 bg-black/70" />
       <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[80%] h-[50%] bg-white/10 blur-[100px] rounded-full transition-opacity duration-1000"
-           style={{ opacity: isFading ? 0 : 1 }}
+        style={{ opacity: isFading ? 0 : 1 }}
       />
     </div>
   );

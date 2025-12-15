@@ -30,8 +30,8 @@ export default function FCMTestPage() {
 
       setToken(t || null);
       setStatus(t ? 'Registered' : 'No token');
-    } catch (e: any) {
-      setStatus('Registration failed: ' + String(e));
+    } catch (e: unknown) {
+      setStatus('Registration failed: ' + (e instanceof Error ? e.message : String(e)));
     }
   }
 
@@ -48,8 +48,8 @@ export default function FCMTestPage() {
       });
       const json = await resp.json();
       setStatus('Send result: ' + (json.result || JSON.stringify(json)));
-    } catch (e: any) {
-      setStatus('Send failed: ' + String(e));
+    } catch (e: unknown) {
+      setStatus('Send failed: ' + (e instanceof Error ? e.message : String(e)));
     }
   }
 

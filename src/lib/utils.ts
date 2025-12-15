@@ -2,12 +2,12 @@ import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+    return twMerge(clsx(inputs))
 }
 
-export function debounce<T extends (...args: any[]) => any>(func: T, wait: number) {
+export function debounce<T extends (...args: unknown[]) => unknown>(func: T, wait: number) {
     let timeout: NodeJS.Timeout;
-    return function executedFunction(...args: any[]) {
+    return function executedFunction(...args: Parameters<T>) {
         const later = () => {
             clearTimeout(timeout);
             func(...args);
@@ -43,15 +43,15 @@ export async function withRetryAndTimeout<T>(
     for (let attempt = 1; attempt <= attempts; attempt++) {
         const timer = new Promise<never>((_, reject) => {
             const id = setTimeout(() => reject(new Error(`Timeout after ${timeoutMs}ms`)), timeoutMs);
-            (timer as any).cancel = () => clearTimeout(id);
+            (timer as { cancel?: () => void }).cancel = () => clearTimeout(id);
         });
 
         try {
             const result = await Promise.race([fn(), timer]);
-            (timer as any).cancel?.();
+            (timer as { cancel?: () => void }).cancel?.();
             return result as T;
         } catch (error) {
-            (timer as any).cancel?.();
+            (timer as { cancel?: () => void }).cancel?.();
             lastError = error;
             if (attempt < attempts) {
                 onRetry?.(error, attempt);

@@ -6,7 +6,7 @@ type TutorialStep = {
   id: string;
   title: string;
   description: string;
-  highlight?: any;
+  highlight?: string | number[] | null;
   action?: { type: string; validCells?: [number, number][] } | null;
   boardState?: (string | null)[][];
 };
@@ -135,4 +135,4 @@ export function TicTacToeTutorial({ onComplete }: { onComplete: () => void }) {
     </div>
   );
 }
- 
+

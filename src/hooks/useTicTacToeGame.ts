@@ -7,14 +7,14 @@ interface TicTacToeState {
   board: (string | null)[][];
   currentTurn: 'player1' | 'player2';
   players: {
-    player1: { uid: string; symbol: 'X' | 'O'; connected: boolean; lastSeen: any };
-    player2: { uid: string; symbol: 'X' | 'O'; connected: boolean; lastSeen: any };
+    player1: { uid: string; symbol: 'X' | 'O'; connected: boolean; lastSeen: number };
+    player2: { uid: string; symbol: 'X' | 'O'; connected: boolean; lastSeen: number };
   };
   status: 'waiting' | 'in_progress' | 'finished';
   winner: string | null;
   moveCount: number;
-  lastMoveTime?: any;
-  createdAt?: any;
+  lastMoveTime?: number;
+  createdAt?: number;
 }
 
 export function useTicTacToeGame(roomId: string, gameId: string) {
@@ -45,7 +45,7 @@ export function useTicTacToeGame(roomId: string, gameId: string) {
     );
 
     return () => unsubscribe();
-  }, [roomId, gameId, user, firestore]);
+  }, [roomId, gameId, user, firestore, attemptReconnect]);
 
   const attemptReconnect = async () => {
     setReconnecting(true);

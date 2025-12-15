@@ -161,7 +161,7 @@ class DomObserver {
    * @returns {Promise<Element|null>}
    */
   findButton(options) {
-    const { timeout = 5000, interval = 100, observerRoot = document.body, observerConfig = { childList: true, subtree: true }, ...searchOptions } = options;
+    const { timeout = 5000, observerRoot = document.body, observerConfig = { childList: true, subtree: true }, ...searchOptions } = options;
 
     return new Promise((resolve) => {
       let foundElement = null;

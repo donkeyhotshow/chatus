@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react';
+import { useState, useCallback, useMemo, lazy, Suspense } from 'react';
 import { Gamepad, ArrowLeft, Swords, Dices, Hand, Puzzle, Box, Castle } from 'lucide-react';
 import { UserProfile, GameType, GameState, TDGrid, TDNode } from '@/lib/types';
 
@@ -139,7 +139,7 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
     return doc(db, 'rooms', roomId, 'games', activeGameId);
   }, [db, roomId, activeGameId]);
 
-  const { data: gameState, loading: isGameLoading } = useDoc<GameState>(gameDocRef);
+  const { data: gameState } = useDoc<GameState>(gameDocRef);
 
   const handleUpdateGameState = useCallback((newState: Partial<GameState>) => {
     if (activeGameId && service) {

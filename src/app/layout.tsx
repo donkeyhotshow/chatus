@@ -8,6 +8,7 @@ import { BackgroundChanger } from '@/components/layout/BackgroundChanger';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ClientLayout } from '@/components/layout/ClientLayout';
 import Script from 'next/script';
+import { PerformanceMonitor } from '@/components/performance/PerformanceMonitor';
 
 const APP_NAME = "ЧАТ ДЛЯ НАС";
 const APP_DESCRIPTION = "A real-time chat application with collaborative features.";
@@ -90,12 +91,13 @@ export default function RootLayout({
           `}
         </Script>
         <ErrorBoundary>
+          <PerformanceMonitor />
           <FirebaseProvider>
             <ClientLayout>
               <div className="flex flex-col w-full bg-black text-neutral-200 font-sans selection:bg-white selection:text-black overflow-hidden" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
                 <header className="h-14 shrink-0 border-b border-white/10 flex items-center px-6 bg-neutral-950 z-50">
                   <div className="flex items-center gap-3 select-none group cursor-default">
-                    <div className="p-1.5 bg-white text-black rounded-lg group-hover:scale-105 transition-transform">
+                    <div className="p-1.5 bg-white text-black rounded-lg group-hover:scale-105 transition-transform duration-200">
                       <MessageSquareDashed className="w-5 h-5" />
                     </div>
                     <span className="font-mono font-bold text-lg tracking-[0.2em] text-white">
