@@ -4,7 +4,7 @@ import { GameState, UserProfile, TDTower, TDEnemy } from "@/lib/types";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "../ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
-import { Castle, Heart, Coins, GitCommitHorizontal, Skull, ArrowLeft, TrendingUp, Users, Zap } from "lucide-react";
+import { Castle, Heart, Coins, GitCommitHorizontal, Skull, ArrowLeft, TrendingUp, Users, Zap, Target } from "lucide-react";
 
 type TowerDefenseProps = {
   onGameEnd: () => void;
@@ -15,57 +15,70 @@ type TowerDefenseProps = {
 };
 
 const CELL_SIZE = 40;
+const GRID_W = 15;
+const GRID_H = 11;
 
+// Улучшенные спецификации башен (из твоего кода)
 const TOWER_SPECS = {
-  basic: { cost: 25, range: 3 * CELL_SIZE, damage: 10, fireRate: 1, color: "#22d3ee", upgradeCost: 15 },
-  fast: { cost: 40, range: 2.5 * CELL_SIZE, damage: 8, fireRate: 2, color: "#a855f7", upgradeCost: 25 },
-  heavy: { cost: 60, range: 4 * CELL_SIZE, damage: 25, fireRate: 0.5, color: "#f59e0b", upgradeCost: 40 },
+  basic: { cost: 25, range: 120, damage: 10, fireRate: 1, color: "#22d3ee", upgradeCost: 15 },
+  fast: { cost: 40, range: 100, damage: 8, fireRate: 2, color: "#a855f7", upgradeCost: 25 },
+  heavy: { cost: 60, range: 160, damage: 25, fireRate: 0.5, color: "#f59e0b", upgradeCost: 40 },
 };
 
+// Улучшенные спецификации врагов (из твоего кода)
 const ENEMY_SPECS = {
-  basic: { health: 50, speed: CELL_SIZE / 2, value: 5, color: "#ef4444" },
-  fast: { health: 30, speed: CELL_SIZE * 0.8, value: 8, color: "#f97316" },
-  tank: { health: 150, speed: CELL_SIZE * 0.3, value: 15, color: "#991b1b" },
+  basic: { health: 50, speed: 20, value: 5, color: "#ef4444" },
+  fast: { health: 30, speed: 32, value: 8, color: "#f97316" },
+  tank: { health: 150, speed: 12, value: 15, color: "#991b1b" },
 };
+
+// Дорожки (из твоего кода)
+const PATHS_Y = [3, 5, 7]; // три дорожки
+
+function isPath(x: number, y: number): boolean {
+  return PATHS_Y.includes(y);
+}
 
 export function TowerDefense({ onGameEnd, updateGameState, gameState, user, otherUser }: TowerDefenseProps) {
   const {
-    tdGrid,
-    tdTowers,
-    tdEnemies,
-    tdWave,
-    tdBaseHealth,
-    tdResources,
-    tdStatus,
-    tdPathsFlat,
-    tdScores,
+    tdTowers = [],
+    tdEnemies = [],
+    tdWave = 0,
+    tdBaseHealth = 20,
+    tdResources = 100,
+    tdStatus = 'waiting',
+    tdScores = {},
     tdSelectedTower
   } = gameState;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [localEnemies, setLocalEnemies] = useState<TDEnemy[]>([]);
-  const [localTowers, setLocalTowers] = useState<TDTower[]>([]);
-  const [projectiles, setProjectiles] = useState<{ id: string, from: { x: number, y: number }, to: { x: number, y: number }, duration: number, start: number, damage: number }[]>([]);
+  const animationRef = useRef<number>();
+  const lastTimeRef = useRef<number>(performance.now());
+  const waveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Локальное состояние для плавной анимации
+  const [localEnemies, setLocalEnemies] = useState<TDEnemy[]>(tdEnemies);
+  const [localTowers, setLocalTowers] = useState<TDTower[]>(tdTowers);
   const [selectedTowerId, setSelectedTowerId] = useState<string | null>(tdSelectedTower || null);
   const [towerTypeToBuild, setTowerTypeToBuild] = useState<'basic' | 'fast' | 'heavy'>('basic');
-  const waveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [spawning, setSpawning] = useState(false);
 
   // Синхронизация удаленного состояния с локальным
   useEffect(() => {
-    setLocalEnemies(tdEnemies || []);
-    setLocalTowers(tdTowers || []);
+    setLocalEnemies(tdEnemies);
+    setLocalTowers(tdTowers);
     setSelectedTowerId(tdSelectedTower || null);
   }, [tdEnemies, tdTowers, tdSelectedTower]);
 
   // Обновление очков при убийстве врагов
   const updateScore = useCallback((points: number) => {
-    const currentScore = (tdScores?.[user.id] || 0) + points;
+    const currentScore = (tdScores[user.id] || 0) + points;
     updateGameState({
       tdScores: { ...tdScores, [user.id]: currentScore }
     });
   }, [tdScores, user.id, updateGameState]);
 
-  // Основной игровой цикл
+  // Основной игровой цикл (улучшенная версия)
   useEffect(() => {
     if (tdStatus !== 'in-progress' || !canvasRef.current) return;
 
@@ -73,277 +86,175 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let animationFrameId: number;
-    let lastTime = performance.now();
-
     const gameLoop = (currentTime: number) => {
-      const deltaTime = (currentTime - lastTime) / 1000;
-      lastTime = currentTime;
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const deltaTime = (currentTime - lastTimeRef.current) / 1000;
+      lastTimeRef.current = currentTime;
 
       // --- ОБНОВЛЕНИЕ ВРАГОВ ---
-      let enemiesReachedBase = 0;
-      let updatedEnemies = localEnemies.map(enemy => {
-        if (!tdPathsFlat || Object.keys(tdPathsFlat).length === 0) return enemy;
+      const updatedEnemies = localEnemies.map(enemy => {
+        const newX = enemy.position.x + enemy.speed * deltaTime;
 
-        const pathKey = enemy.pathId !== undefined ? `path${enemy.pathId}` : 'path0';
-        const path = tdPathsFlat[pathKey];
-        if (!path || enemy.pathIndex >= path.length - 1) {
-          // Враг достиг базы
-          enemiesReachedBase++;
+        // Проверка достижения базы
+        if (newX >= canvas.width) {
+          // Враг достиг базы - обновляем здоровье базы
+          const newBaseHealth = Math.max(0, tdBaseHealth - 1);
+          updateGameState({
+            tdBaseHealth: newBaseHealth,
+            tdEnemies: localEnemies.filter(e => e.id !== enemy.id)
+          });
+
+          if (newBaseHealth <= 0) {
+            updateGameState({ tdStatus: 'game-over-loss' });
+          }
           return null;
         }
 
-        const targetPos = path[enemy.pathIndex + 1];
-        const dx = targetPos.x - enemy.position.x;
-        const dy = targetPos.y - enemy.position.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const moveDist = enemy.speed * deltaTime * 60; // Нормализация скорости
-
-        if (dist < moveDist) {
-          return { ...enemy, pathIndex: enemy.pathIndex + 1, position: targetPos };
-        } else {
-          const newX = enemy.position.x + (dx / dist) * moveDist;
-          const newY = enemy.position.y + (dy / dist) * moveDist;
-          return { ...enemy, position: { x: newX, y: newY } };
-        }
+        return { ...enemy, position: { ...enemy.position, x: newX } };
       }).filter((e): e is TDEnemy => e !== null);
 
-      // Обработка врагов, достигших базы
-      if (enemiesReachedBase > 0) {
-        const newBaseHealth = Math.max(0, (tdBaseHealth || 0) - enemiesReachedBase);
-        updateGameState({
-          tdBaseHealth: newBaseHealth,
-          tdEnemies: updatedEnemies
-        });
-        if (newBaseHealth <= 0) {
-          updateGameState({ tdStatus: 'game-over-loss' });
-        }
-      }
+      // --- ОБНОВЛЕНИЕ БАШЕН И СТРЕЛЬБА ---
+      let totalResourcesGained = 0;
+      let totalScoreGained = 0;
 
-      // --- ОБНОВЛЕНИЕ БАШЕН И СНАРЯДОВ ---
-      const newProjectiles: typeof projectiles = [];
       const updatedTowers = localTowers.map(tower => {
-        const timeSinceFired = currentTime - tower.lastFired;
-        const fireInterval = 1000 / tower.fireRate;
+        const newTower = { ...tower };
+        newTower.lastFired = Math.max(0, newTower.lastFired - deltaTime);
 
-        if (timeSinceFired >= fireInterval) {
+        if (newTower.lastFired <= 0) {
+          // Поиск цели
           let target: TDEnemy | null = null;
-          let closestDist = tower.range;
+          let minDist = Infinity;
 
           for (const enemy of updatedEnemies) {
-            const towerX = tower.x * CELL_SIZE + CELL_SIZE / 2;
-            const towerY = tower.y * CELL_SIZE + CELL_SIZE / 2;
-            const dx = towerX - enemy.position.x;
-            const dy = towerY - enemy.position.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
+            const dx = enemy.position.x - tower.x;
+            const dy = enemy.position.y - tower.y;
+            const dist = Math.hypot(dx, dy);
 
-            if (dist < closestDist) {
-              closestDist = dist;
+            if (dist < tower.range && dist < minDist) {
+              minDist = dist;
               target = enemy;
             }
           }
 
           if (target) {
-            const towerX = tower.x * CELL_SIZE + CELL_SIZE / 2;
-            const towerY = tower.y * CELL_SIZE + CELL_SIZE / 2;
-            newProjectiles.push({
-              id: `proj_${currentTime}_${tower.id}`,
-              from: { x: towerX, y: towerY },
-              to: { x: target.position.x, y: target.position.y },
-              duration: 200,
-              start: currentTime,
-              damage: tower.damage,
-            });
-            return { ...tower, lastFired: currentTime };
-          }
-        }
-        return tower;
-      });
+            // Стрельба
+            target.health -= tower.damage;
+            newTower.lastFired = 1 / tower.fireRate;
 
-      // --- ОБРАБОТКА СНАРЯДОВ ---
-      const activeProjectiles = projectiles.filter(p => currentTime < p.start + p.duration);
-      const newActiveProjectiles: typeof projectiles = [];
-      const enemyHealthMap = new Map<string, { enemy: TDEnemy; health: number }>();
-
-      // Инициализируем карту здоровья
-      updatedEnemies.forEach(enemy => {
-        enemyHealthMap.set(enemy.id, { enemy, health: enemy.health });
-      });
-
-      activeProjectiles.forEach(proj => {
-        let hit = false;
-        for (const [enemyId, data] of enemyHealthMap.entries()) {
-          const dx = data.enemy.position.x - proj.to.x;
-          const dy = data.enemy.position.y - proj.to.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-
-          if (dist < 15 && !hit) {
-            hit = true;
-            const newHealth = data.health - proj.damage;
-            enemyHealthMap.set(enemyId, { ...data, health: newHealth });
-            break;
+            // Проверка убийства врага
+            if (target.health <= 0) {
+              totalResourcesGained += target.value;
+              totalScoreGained += target.value;
+              const enemyIndex = updatedEnemies.indexOf(target);
+              if (enemyIndex > -1) {
+                updatedEnemies.splice(enemyIndex, 1);
+              }
+            }
           }
         }
 
-        if (!hit) {
-          newActiveProjectiles.push(proj);
-        }
+        return newTower;
       });
 
-      // Обновляем врагов с новым здоровьем и собираем награды
-      let totalResourcesGained = 0;
-      let totalScoreGained = 0;
-      updatedEnemies = [];
-
-      for (const data of enemyHealthMap.values()) {
-        if (data.health <= 0) {
-          // Враг убит
-          totalResourcesGained += data.enemy.value;
-          totalScoreGained += data.enemy.value;
-        } else {
-          // Враг выжил
-          updatedEnemies.push({ ...data.enemy, health: data.health });
-        }
-      }
-
-      // Обновляем ресурсы и очки
-      if (totalResourcesGained > 0 || totalScoreGained > 0) {
+      // Обновляем ресурсы и очки если есть изменения
+      if (totalResourcesGained > 0) {
         updateScore(totalScoreGained);
         updateGameState({
-          tdResources: (tdResources || 0) + totalResourcesGained
+          tdResources: tdResources + totalResourcesGained,
+          tdEnemies: updatedEnemies
         });
       }
 
       // --- ОТРИСОВКА ---
-      // Сетка и дорожки
-      tdGrid?.forEach(node => {
-        ctx.fillStyle = node.isPath ? '#404040' : '#166534';
-        ctx.fillRect(node.x * CELL_SIZE, node.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-        ctx.strokeStyle = '#262626';
-        ctx.strokeRect(node.x * CELL_SIZE, node.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-      });
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Дорожки (визуализация)
-      if (tdPathsFlat) {
-        Object.entries(tdPathsFlat).forEach(([, path], pathIdx) => {
-          ctx.strokeStyle = pathIdx === 0 ? '#3b82f6' : pathIdx === 1 ? '#8b5cf6' : '#ec4899';
-          ctx.lineWidth = 3;
-          ctx.beginPath();
-          if (path.length > 0) {
-            ctx.moveTo(path[0].x, path[0].y);
-            for (let i = 1; i < path.length; i++) {
-              ctx.lineTo(path[i].x, path[i].y);
-            }
-          }
-          ctx.stroke();
-        });
+      // Сетка
+      for (let x = 0; x < GRID_W; x++) {
+        for (let y = 0; y < GRID_H; y++) {
+          ctx.fillStyle = isPath(x, y) ? '#555' : '#1a3';
+          ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1);
+        }
       }
 
       // Башни
       updatedTowers.forEach(tower => {
-        const towerX = tower.x * CELL_SIZE + CELL_SIZE / 2;
-        const towerY = tower.y * CELL_SIZE + CELL_SIZE / 2;
         const spec = TOWER_SPECS[tower.type];
 
-        // Выделение выбранной башни
+        // Дальность выбранной башни
         if (selectedTowerId === tower.id) {
           ctx.strokeStyle = '#fbbf24';
-          ctx.lineWidth = 3;
+          ctx.lineWidth = 2;
+          ctx.setLineDash([5, 5]);
           ctx.beginPath();
-          ctx.arc(towerX, towerY, tower.range, 0, Math.PI * 2);
+          ctx.arc(tower.x, tower.y, tower.range, 0, Math.PI * 2);
           ctx.stroke();
+          ctx.setLineDash([]);
         }
 
+        // Башня
         ctx.fillStyle = spec.color;
         ctx.beginPath();
-        ctx.arc(towerX, towerY, CELL_SIZE / 3, 0, Math.PI * 2);
+        ctx.arc(tower.x, tower.y, 12, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = 'white';
-        ctx.lineWidth = 2;
-        ctx.stroke();
 
-        // Уровень башни
+        // Уровень
         ctx.fillStyle = 'white';
-        ctx.font = '10px Arial';
+        ctx.font = '10px monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(`L${tower.level}`, towerX, towerY + 3);
+        ctx.fillText(`L${tower.level}`, tower.x, tower.y + 3);
       });
 
       // Враги
       updatedEnemies.forEach(enemy => {
         const spec = ENEMY_SPECS[enemy.type];
+
+        // Враг
         ctx.fillStyle = spec.color;
         ctx.beginPath();
-        ctx.arc(enemy.position.x, enemy.position.y, CELL_SIZE / 4, 0, Math.PI * 2);
+        ctx.arc(enemy.position.x, enemy.position.y, 8, 0, Math.PI * 2);
         ctx.fill();
 
         // Полоса здоровья
-        const barWidth = 30;
-        const barHeight = 4;
+        const barWidth = 20;
+        const barHeight = 3;
+        const healthPercent = enemy.health / enemy.maxHealth;
+
         ctx.fillStyle = '#dc2626';
-        ctx.fillRect(enemy.position.x - barWidth / 2, enemy.position.y - 20, barWidth, barHeight);
+        ctx.fillRect(enemy.position.x - barWidth / 2, enemy.position.y - 15, barWidth, barHeight);
         ctx.fillStyle = '#16a34a';
-        ctx.fillRect(enemy.position.x - barWidth / 2, enemy.position.y - 20, (enemy.health / enemy.maxHealth) * barWidth, barHeight);
-      });
-
-      // Снаряды
-      [...newActiveProjectiles, ...newProjectiles].forEach(p => {
-        const progress = Math.min(1, (currentTime - p.start) / p.duration);
-        const x = p.from.x + (p.to.x - p.from.x) * progress;
-        const y = p.from.y + (p.to.y - p.from.y) * progress;
-
-        ctx.fillStyle = '#facc15';
-        ctx.beginPath();
-        ctx.arc(x, y, 5, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillRect(enemy.position.x - barWidth / 2, enemy.position.y - 15, barWidth * healthPercent, barHeight);
       });
 
       setLocalEnemies(updatedEnemies);
       setLocalTowers(updatedTowers);
-      setProjectiles([...newActiveProjectiles, ...newProjectiles]);
 
-      // Синхронизация состояния (только если есть изменения)
-      const enemiesChanged = updatedEnemies.length !== (tdEnemies?.length || 0) ||
-        updatedEnemies.some((e, i) => {
-          const oldEnemy = tdEnemies?.[i];
-          return !oldEnemy || e.id !== oldEnemy.id || e.health !== oldEnemy.health ||
-            e.position.x !== oldEnemy.position.x || e.position.y !== oldEnemy.position.y;
-        });
-
-      if (enemiesChanged && enemiesReachedBase === 0) {
-        updateGameState({
-          tdEnemies: updatedEnemies
-        });
-      }
-
-      animationFrameId = requestAnimationFrame(gameLoop);
+      animationRef.current = requestAnimationFrame(gameLoop);
     };
 
-    animationFrameId = requestAnimationFrame(gameLoop);
+    animationRef.current = requestAnimationFrame(gameLoop);
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
     };
-  }, [tdStatus, localEnemies, localTowers, projectiles, tdGrid, tdPathsFlat, selectedTowerId, tdEnemies, tdTowers, tdBaseHealth, tdResources, updateGameState, updateScore]);
+  }, [tdStatus, localEnemies, localTowers, selectedTowerId, tdBaseHealth, tdResources, updateGameState, updateScore]);
 
-  // Построение башни
-  const handleBuildTower = (x: number, y: number) => {
+  // Построение башни (улучшенная версия)
+  const handleBuildTower = useCallback((x: number, y: number) => {
     if (tdStatus !== 'waiting' && tdStatus !== 'in-progress') return;
-    const node = tdGrid?.find(n => n.x === x && n.y === y);
-    if (!node || node.isPath) return;
+    if (isPath(x, y)) return;
 
     // Проверка, нет ли уже башни на этой клетке
-    if (tdTowers?.some(t => t.x === x && t.y === y)) return;
+    if (tdTowers.some(t => Math.floor(t.x / CELL_SIZE) === x && Math.floor(t.y / CELL_SIZE) === y)) return;
 
     const towerSpec = TOWER_SPECS[towerTypeToBuild];
-    if ((tdResources || 0) < towerSpec.cost) return;
+    if (tdResources < towerSpec.cost) return;
 
     const newTower: TDTower = {
       id: `tower_${x}_${y}_${Date.now()}`,
-      x,
-      y,
+      x: x * CELL_SIZE + CELL_SIZE / 2,
+      y: y * CELL_SIZE + CELL_SIZE / 2,
       type: towerTypeToBuild,
       level: 1,
       cost: towerSpec.cost,
@@ -355,10 +266,10 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
     };
 
     updateGameState({
-      tdTowers: [...(tdTowers || []), newTower],
-      tdResources: (tdResources || 0) - towerSpec.cost
+      tdTowers: [...tdTowers, newTower],
+      tdResources: tdResources - towerSpec.cost
     });
-  };
+  }, [tdStatus, tdTowers, tdResources, towerTypeToBuild, user.id, updateGameState]);
 
   // Апгрейд башни
   const handleUpgradeTower = useCallback(() => {
@@ -385,183 +296,108 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
     });
   }, [selectedTowerId, tdTowers, tdResources, updateGameState]);
 
-  // Выбор башни
-  const handleSelectTower = (x: number, y: number) => {
-    const tower = tdTowers?.find(t => t.x === x && t.y === y);
+  // Обработчик кликов по Canvas
+  const handleCanvasClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = Math.floor((e.clientX - rect.left) / CELL_SIZE);
+    const y = Math.floor((e.clientY - rect.top) / CELL_SIZE);
+
+    // Проверяем, есть ли башня на этой клетке
+    const tower = tdTowers.find(t =>
+      Math.floor(t.x / CELL_SIZE) === x && Math.floor(t.y / CELL_SIZE) === y
+    );
+
     if (tower) {
+      // Выбираем башню
       setSelectedTowerId(tower.id);
       updateGameState({ tdSelectedTower: tower.id });
     } else {
+      // Строим новую башню
+      handleBuildTower(x, y);
       setSelectedTowerId(null);
       updateGameState({ tdSelectedTower: null });
     }
-  };
+  }, [tdTowers, handleBuildTower, updateGameState]);
 
-  // Запуск волны
-  const handleStartWave = () => {
-    if (tdStatus !== 'waiting') return;
-    const nextWave = (tdWave || 0) + 1;
-    const enemiesToSpawn: TDEnemy[] = [];
+  // Запуск волны (улучшенная версия)
+  const handleStartWave = useCallback(() => {
+    if (tdStatus !== 'waiting' || spawning) return;
 
-    if (!tdPathsFlat || Object.keys(tdPathsFlat).length === 0) return;
+    const nextWave = tdWave + 1;
+    setSpawning(true);
 
     const enemyCount = 5 + nextWave * 2;
     const waveMultiplier = 1 + nextWave * 0.2;
 
-    const pathKeys = Object.keys(tdPathsFlat);
+    updateGameState({
+      tdWave: nextWave,
+      tdStatus: 'in-progress'
+    });
 
-    for (let i = 0; i < enemyCount; i++) {
-      const pathIdx = Math.floor(Math.random() * pathKeys.length);
-      const pathKey = pathKeys[pathIdx];
-      const path = tdPathsFlat[pathKey];
-      if (path.length === 0) continue;
+    // Спавн врагов с интервалом
+    let spawned = 0;
+    const spawnInterval = setInterval(() => {
+      const lane = PATHS_Y[Math.floor(Math.random() * PATHS_Y.length)];
 
-      const startPos = path[0];
-
-      // Тип врага зависит от волны
+      // Определяем тип врага
       let enemyType: 'basic' | 'fast' | 'tank' = 'basic';
       if (nextWave > 3 && Math.random() < 0.3) {
         enemyType = Math.random() < 0.5 ? 'fast' : 'tank';
-      } else if (nextWave > 5 && Math.random() < 0.5) {
-        enemyType = Math.random() < 0.3 ? 'fast' : 'tank';
+      } else if (nextWave > 6 && Math.random() < 0.25) {
+        enemyType = 'tank';
       }
 
       const spec = ENEMY_SPECS[enemyType];
       const health = Math.floor(spec.health * waveMultiplier);
 
-      enemiesToSpawn.push({
-        id: `enemy_${nextWave}_${i}_${Date.now()}`,
+      const newEnemy: TDEnemy = {
+        id: `enemy_${nextWave}_${spawned}_${Date.now()}`,
         type: enemyType,
         health,
         maxHealth: health,
         speed: spec.speed,
         pathIndex: 0,
-        position: { x: startPos.x - (i * CELL_SIZE * 0.5), y: startPos.y },
+        position: { x: 0, y: lane * CELL_SIZE + CELL_SIZE / 2 },
         value: spec.value,
-        pathId: pathIdx,
+      };
+
+      updateGameState({
+        tdEnemies: [...localEnemies, newEnemy]
       });
-    }
 
-    updateGameState({
-      tdWave: nextWave,
-      tdEnemies: enemiesToSpawn,
-      tdStatus: 'in-progress'
-    });
-  };
-
-  // Автоматический спавн врагов во время волны
-  useEffect(() => {
-    if (tdStatus !== 'in-progress' || !tdPathsFlat || Object.keys(tdPathsFlat).length === 0) {
-      if (waveTimerRef.current) {
-        clearInterval(waveTimerRef.current);
-        waveTimerRef.current = null;
+      spawned++;
+      if (spawned >= enemyCount) {
+        clearInterval(spawnInterval);
+        setSpawning(false);
       }
-      return;
-    }
+    }, 2000); // Спавн каждые 2 секунды
 
-    // Проверяем, остались ли враги
-    if ((tdEnemies?.length || 0) === 0 && (tdWave || 0) > 0) {
+  }, [tdStatus, tdWave, spawning, localEnemies, updateGameState]);
+
+  // Проверка завершения волны
+  useEffect(() => {
+    if (tdStatus === 'in-progress' && localEnemies.length === 0 && !spawning && tdWave > 0) {
       // Волна завершена
       updateGameState({ tdStatus: 'waiting' });
-      if (waveTimerRef.current) {
-        clearInterval(waveTimerRef.current);
-        waveTimerRef.current = null;
-      }
-      return;
     }
+  }, [tdStatus, localEnemies.length, spawning, tdWave, updateGameState]);
 
-    // Автоматический спавн каждые 3 секунды во время волны
-    if (!waveTimerRef.current) {
-      waveTimerRef.current = setInterval(() => {
-        if (tdStatus !== 'in-progress' || !tdPathsFlat) return;
-
-        const pathKeys = Object.keys(tdPathsFlat);
-        const pathIdx = Math.floor(Math.random() * pathKeys.length);
-        const pathKey = pathKeys[pathIdx];
-        const path = tdPathsFlat[pathKey];
-        if (path.length === 0) return;
-
-        const startPos = path[0];
-        const wave = tdWave || 1;
-        const waveMultiplier = 1 + wave * 0.2;
-
-        let enemyType: 'basic' | 'fast' | 'tank' = 'basic';
-        if (wave > 3 && Math.random() < 0.3) {
-          enemyType = Math.random() < 0.5 ? 'fast' : 'tank';
-        }
-
-        const spec = ENEMY_SPECS[enemyType];
-        const health = Math.floor(spec.health * waveMultiplier);
-
-        const newEnemy: TDEnemy = {
-          id: `enemy_auto_${Date.now()}_${Math.random()}`,
-          type: enemyType,
-          health,
-          maxHealth: health,
-          speed: spec.speed,
-          pathIndex: 0,
-          position: startPos,
-          value: spec.value,
-          pathId: pathIdx,
-        };
-
-        updateGameState({
-          tdEnemies: [...(tdEnemies || []), newEnemy]
-        });
-      }, 3000);
-    }
-
-    return () => {
-      if (waveTimerRef.current) {
-        clearInterval(waveTimerRef.current);
-        waveTimerRef.current = null;
-      }
-    };
-  }, [tdStatus, tdPathsFlat, tdEnemies, tdWave, updateGameState]);
-
-  // Интерактивная сетка
-  const renderGridForInteraction = () => {
-    if (!tdGrid) return null;
-    const gridWidth = Math.max(...tdGrid.map(n => n.x)) + 1;
-    return (
-      <div className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${gridWidth}, minmax(0, 1fr))` }}>
-        {tdGrid.map(node => (
-          <div
-            key={node.id}
-            onClick={() => {
-              const tower = tdTowers?.find(t => t.x === node.x && t.y === node.y);
-              if (tower) {
-                handleSelectTower(node.x, node.y);
-              } else {
-                handleBuildTower(node.x, node.y);
-              }
-            }}
-            className={`
-              w-full h-full border border-transparent
-              ${!node.isPath && 'cursor-pointer hover:bg-green-500/20'}
-            `}
-          />
-        ))}
-      </div>
-    );
-  };
-
-  const selectedTower = selectedTowerId ? tdTowers?.find(t => t.id === selectedTowerId) : null;
+  const selectedTower = selectedTowerId ? tdTowers.find(t => t.id === selectedTowerId) : null;
   const selectedSpec = selectedTower ? TOWER_SPECS[selectedTower.type] : null;
 
   // Leaderboard
-  const leaderboardEntries = tdScores ? Object.entries(tdScores)
+  const leaderboardEntries = Object.entries(tdScores)
     .sort(([, a], [, b]) => b - a)
-    .slice(0, 5) : [];
+    .slice(0, 5);
 
   let statusText = "";
-  if (tdStatus === 'waiting') statusText = `Ожидание волны ${(tdWave || 0) + 1}...`;
-  if (tdStatus === 'in-progress') statusText = `Волна ${(tdWave || 0)} в процессе...`;
+  if (tdStatus === 'waiting') statusText = `Ожидание волны ${tdWave + 1}...`;
+  if (tdStatus === 'in-progress') statusText = `Волна ${tdWave} в процессе...`;
   if (tdStatus === 'game-over-win') statusText = "Победа! База защищена!";
   if (tdStatus === 'game-over-loss') statusText = "Игра окончена! База пала.";
-
-  const gridWidthPx = tdGrid ? (Math.max(...tdGrid.map(n => n.x)) + 1) * CELL_SIZE : 0;
-  const gridHeightPx = tdGrid ? (Math.max(...tdGrid.map(n => n.y)) + 1) * CELL_SIZE : 0;
 
   return (
     <div className="flex flex-col items-center justify-center h-full text-center p-4 gap-4">
@@ -577,19 +413,19 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
           <div className="flex justify-between w-full text-white px-2">
             <div className="flex items-center gap-2">
               <Heart className="text-red-500" />
-              <span className="font-bold">{tdBaseHealth || 0}</span>
+              <span className="font-bold">{tdBaseHealth}</span>
             </div>
             <div className="flex items-center gap-2">
               <Coins className="text-yellow-500" />
-              <span className="font-bold">{tdResources || 0}</span>
+              <span className="font-bold">{tdResources}</span>
             </div>
             <div className="flex items-center gap-2">
               <GitCommitHorizontal className="text-blue-400" />
-              <span className="font-bold">{tdWave || 0}</span>
+              <span className="font-bold">{tdWave}</span>
             </div>
             <div className="flex items-center gap-2">
               <Skull className="text-purple-400" />
-              <span className="font-bold">{tdScores?.[user.id] || 0}</span>
+              <span className="font-bold">{tdScores[user.id] || 0}</span>
             </div>
           </div>
 
@@ -602,19 +438,28 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
                 size="sm"
                 onClick={() => setTowerTypeToBuild(type)}
                 className="text-xs"
+                disabled={tdResources < TOWER_SPECS[type].cost}
               >
-                {type === 'basic' && '⚡ Базовая'}
-                {type === 'fast' && '🚀 Быстрая'}
-                {type === 'heavy' && '💪 Тяжелая'}
+                {type === 'basic' && <Target className="w-3 h-3 mr-1" />}
+                {type === 'fast' && <Zap className="w-3 h-3 mr-1" />}
+                {type === 'heavy' && <Castle className="w-3 h-3 mr-1" />}
+                {type === 'basic' && 'Базовая'}
+                {type === 'fast' && 'Быстрая'}
+                {type === 'heavy' && 'Тяжелая'}
                 <span className="ml-1 text-yellow-400">({TOWER_SPECS[type].cost})</span>
               </Button>
             ))}
           </div>
 
           {/* Игровое поле */}
-          <div className="relative bg-black/50 border-2 border-white/20" style={{ width: gridWidthPx, height: gridHeightPx }}>
-            <canvas ref={canvasRef} width={gridWidthPx} height={gridHeightPx} />
-            {renderGridForInteraction()}
+          <div className="relative bg-black/50 border-2 border-white/20">
+            <canvas
+              ref={canvasRef}
+              width={GRID_W * CELL_SIZE}
+              height={GRID_H * CELL_SIZE}
+              onClick={handleCanvasClick}
+              className="cursor-pointer"
+            />
           </div>
 
           {/* Панель апгрейда башни */}
@@ -674,9 +519,13 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
         </CardContent>
         <CardFooter className="flex flex-col gap-2 p-4">
           {tdStatus === 'waiting' && (
-            <Button onClick={handleStartWave} className="w-full bg-white text-black hover:bg-neutral-200">
+            <Button
+              onClick={handleStartWave}
+              className="w-full bg-white text-black hover:bg-neutral-200"
+              disabled={spawning}
+            >
               <Zap className="mr-2 h-4 w-4" />
-              Начать волну {(tdWave || 0) + 1}
+              {spawning ? 'Спавн врагов...' : `Начать волну ${tdWave + 1}`}
             </Button>
           )}
           {(tdStatus === 'game-over-win' || tdStatus === 'game-over-loss') && (

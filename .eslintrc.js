@@ -2,7 +2,7 @@ module.exports = {
   extends: [
     'next/core-web-vitals',
     'next/typescript',
-    '@typescript-eslint-cucommended',
+    '@typescript-eslint/recommended',
     '@typescript-eslint/recommended-requiring-type-checking'
   ],
   parser: '@typescript-eslint/parser',
