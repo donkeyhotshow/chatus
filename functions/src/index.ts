@@ -20,7 +20,7 @@ export const onMessageCreate = onDocumentCreated(
     const message = snapshot.data();
     if (!message) return;
 
-    const roomId = context.params.roomId;
+    const roomId = context.roomId;
     const senderId = message.senderId;
 
     try {
@@ -71,10 +71,10 @@ export const onMessageCreate = onDocumentCreated(
       const BATCH_SIZE = 500;
       for (let i = 0; i < allTokens.length; i += BATCH_SIZE) {
         const batch = allTokens.slice(i, i + BATCH_SIZE);
-        const response = await messaging.sendMulticast({ tokens: batch, ...notification });
+        const response = await messaging.sendEachForMulticast({ tokens: batch, ...notification });
 
         // Cleanup invalid tokens
-        response.responses.forEach((res, idx) => {
+        response.responses.forEach((res: any, idx: number) => {
           if (!res.success) {
             const error = res.error;
             const badToken = batch[idx];
