@@ -5,7 +5,7 @@ import './globals.css';
 import { MessageSquareDashed } from 'lucide-react';
 import { FirebaseProvider } from '@/components/firebase/FirebaseProvider';
 import { BackgroundChanger } from '@/components/layout/BackgroundChanger';
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ErrorBoundaryWrapper } from '@/components/ErrorBoundaryWrapper';
 import { ClientLayout } from '@/components/layout/ClientLayout';
 import Script from 'next/script';
 // import { PerformanceMonitor } from '@/components/performance/PerformanceMonitor';
@@ -91,7 +91,7 @@ export default function RootLayout({
             })();
           `}
         </Script> */}
-        <ErrorBoundary>
+        <ErrorBoundaryWrapper>
           {/* <PerformanceMonitor /> */}
           <FirebaseProvider>
             <ClientLayout>
@@ -116,7 +116,7 @@ export default function RootLayout({
               <Toaster />
             </ClientLayout>
           </FirebaseProvider>
-        </ErrorBoundary>
+        </ErrorBoundaryWrapper>
       </body>
     </html >
   );
