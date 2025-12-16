@@ -6,8 +6,8 @@
     "connections": {
       "$userId": {
         "$connectionId": {
-          ".write": "auth.uid === $userId",
-          ".read": "auth.uid === $userId"
+          ".write": "auth != null && auth.uid === $userId",
+          ".read": "auth != null && auth.uid === $userId"
         }
       }
     },
@@ -15,7 +15,7 @@
     "typing": {
       "$chatId": {
         "$userId": {
-          ".write": "auth.uid === $userId",
+          ".write": "auth != null && auth.uid === $userId",
           ".read": "auth != null",
           ".validate": "newData.isBoolean()"
         }
@@ -24,7 +24,7 @@
     // Presence status - user can write only to their own status
     "status": {
       "$userId": {
-        ".write": "auth.uid === $userId",
+        ".write": "auth != null && auth.uid === $userId",
         ".read": "auth != null",
         ".validate": "newData.hasChildren(['state', 'lastChanged']) && newData.child('state').isString() && (newData.child('state').val() === 'online' || newData.child('state').val() === 'offline')"
       }

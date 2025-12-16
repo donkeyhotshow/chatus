@@ -1,4 +1,4 @@
-import { ref, set, onValue, onDisconnect, serverTimestamp as rtdbServerTimestamp, DatabaseReference, push, get } from 'firebase/database';
+import { ref, set, onValue, onDisconnect, serverTimestamp as rtdbServerTimestamp, DatabaseReference, push, get, Database } from 'firebase/database';
 import { getClientFirebase } from '@/lib/firebase';
 import { logger } from './logger';
 

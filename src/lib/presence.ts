@@ -116,7 +116,7 @@ export function createPresenceManager(userId: string): PresenceManagerHandle {
   const tryRestore = () => {
     // If there's no active connId, try to re-establish presence
     // manager.connId is internal; check safely
-    const connId = (manager as PresenceManager & { connId: string | null }).connId;
+    const connId = (manager as RTDBPresenceManager & { connId: string | null }).connId;
     if (!connId) {
       manager.goOnline(userId).catch((err) => {
         logger.debug('createPresenceManager: restore attempt failed', { error: String(err), userId });

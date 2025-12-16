@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { doc, onSnapshot, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useFirebase } from '@/components/firebase/FirebaseProvider';
 
@@ -23,31 +23,7 @@ export function useTicTacToeGame(roomId: string, gameId: string) {
   const [reconnecting, setReconnecting] = useState(false);
   const [connectionLost, setConnectionLost] = useState(false);
 
-  useEffect(() => {
-    if (!firestore) return;
-    const gameRef = doc(firestore, `rooms/${roomId}/games/${gameId}`);
-
-    // Слухаємо зміни гри в реальному часі
-    const unsubscribe = onSnapshot(
-      gameRef,
-      (snapshot) => {
-        if (snapshot.exists()) {
-          setGame({ id: snapshot.id, ...snapshot.data() } as TicTacToeState);
-          setConnectionLost(false);
-          setReconnecting(false);
-        }
-      },
-      () => {
-        // Connection lost - attempt reconnect
-        setConnectionLost(true);
-        attemptReconnect();
-      }
-    );
-
-    return () => unsubscribe();
-  }, [roomId, gameId, user, firestore, attemptReconnect]);
-
-  const attemptReconnect = async () => {
+  const attemptReconnect = useCallback(async () => {
     setReconnecting(true);
 
     try {
@@ -76,7 +52,31 @@ export function useTicTacToeGame(roomId: string, gameId: string) {
     } finally {
       setReconnecting(false);
     }
-  };
+  }, [firestore, roomId, gameId, user]);
+
+  useEffect(() => {
+    if (!firestore) return;
+    const gameRef = doc(firestore, `rooms/${roomId}/games/${gameId}`);
+
+    // Слухаємо зміни гри в реальному часі
+    const unsubscribe = onSnapshot(
+      gameRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          setGame({ id: snapshot.id, ...snapshot.data() } as TicTacToeState);
+          setConnectionLost(false);
+          setReconnecting(false);
+        }
+      },
+      () => {
+        // Connection lost - attempt reconnect
+        setConnectionLost(true);
+        attemptReconnect();
+      }
+    );
+
+    return () => unsubscribe();
+  }, [roomId, gameId, user, firestore, attemptReconnect]);
 
   return { game, reconnecting, connectionLost };
 }

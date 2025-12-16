@@ -2,7 +2,7 @@
 
 import {
   collection, query, orderBy, onSnapshot, addDoc,
-  serverTimestamp, where, Unsubscribe, deleteDoc, doc, runTransaction, limit, setDoc, getDoc, Firestore, writeBatch, getDocs, DocumentReference, DocumentSnapshot, startAfter, Timestamp, arrayRemove
+  serverTimestamp, where, Unsubscribe, deleteDoc, doc, runTransaction, limit, setDoc, getDoc, Firestore, writeBatch, getDocs, DocumentReference, DocumentSnapshot, startAfter, Timestamp, arrayRemove, DocumentData
 } from "firebase/firestore";
 import { TypingManager } from '@/lib/realtime';
 import { ref, uploadBytes, getDownloadURL, FirebaseStorage } from "firebase/storage";
