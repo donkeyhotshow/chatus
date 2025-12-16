@@ -465,3 +465,770 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* 📱 МОБИЛЬНАЯ ОПТИМИЗАЦИЯ */
+
+/* Touch-элементы для мобильных устройств */
+@layer utilities {
+  .touch-target {
+    @apply min-w-[44px] min-h-[44px];
+    /* Apple HIG рекомендует минимум 44x44px для touch-элементов */
+    touch-action: manipulation;
+    /* Отключаем двойной тап для зума */
+  }
+
+  .touch-target-large {
+    @apply min-w-[48px] min-h-[48px];
+    /* Увеличенные touch-элементы для важных действий */
+    touch-action: manipulation;
+  }
+}
+
+/* Мобильная адаптация для экранов < 768px */
+@media (max-width: 768px) {
+
+  /* Контейнеры чата */
+  .chat-container {
+    @apply !flex-col;
+  }
+
+  .chat-panel,
+  .content-panel {
+    @apply !w-full !max-w-full;
+  }
+
+  /* Поле ввода сообщений */
+  .message-input-container {
+    @apply !fixed !bottom-0 !left-0 !right-0;
+    @apply !bg-black/95 !backdrop-blur-xl;
+    @apply !p-3 !z-50;
+    @apply !shadow-2xl !shadow-black/50;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  .chat-messages {
+    @apply !pb-20;
+    /* Отступ снизу для фиксированного input */
+  }
+
+  /* Touch-элементы увеличиваем на мобильных */
+  .touch-target {
+    @apply min-w-[48px] min-h-[48px];
+  }
+
+  /* Цветовая палитра в сетку */
+  .color-palette {
+    @apply !grid;
+    grid-template-columns: repeat(4, 1fr) !important;
+    @apply !gap-2;
+  }
+
+  /* Кнопки действий над сообщениями */
+  .message-actions button {
+    @apply !min-w-[44px] !min-h-[44px];
+    @apply !p-2;
+  }
+
+  /* Боковая панель на весь экран */
+  .collaboration-space-mobile {
+    @apply !fixed !inset-0 !z-50;
+    @apply !bg-black;
+  }
+
+  /* Скрываем элементы, не подходящие для мобильных */
+  .desktop-only {
+    @apply !hidden;
+  }
+
+  /* Показываем только на мобильных */
+  .mobile-only {
+    @apply !block;
+  }
+}
+
+/* Экраны 360px (минимальные смартфоны) */
+@media (max-width: 360px) {
+
+  /* Еще более компактный layout */
+  .message-input-container {
+    @apply !p-2;
+  }
+
+  /* Уменьшаем отступы */
+  .chat-messages {
+    @apply !px-2;
+  }
+
+  /* Кнопки в одну линию */
+  .message-input-actions {
+    @apply !flex-wrap !gap-1;
+  }
+
+  /* Скрываем менее важные кнопки */
+  .secondary-action {
+    @apply !hidden;
+  }
+}
+
+/* Экраны 414px+ (большие смартфоны) */
+@media (min-width: 414px) and (max-width: 768px) {
+
+  /* Показываем дополнительные элементы */
+  .secondary-action {
+    @apply !inline-flex;
+  }
+
+  /* Увеличиваем отступы */
+  .message-input-container {
+    @apply !p-4;
+  }
+}
+
+/* Landscape ориентация на мобильных */
+@media (max-width: 768px) and (orientation: landscape) {
+
+  /* Уменьшаем высоту header */
+  .mobile-header {
+    @apply !h-12;
+  }
+
+  /* Компактная навигация */
+  .mobile-navigation {
+    @apply !h-14;
+  }
+
+  /* Убираем лишние отступы */
+  .chat-messages {
+    @apply !pb-16;
+  }
+}
+
+/* Поддержка safe-area для iPhone */
+@supports (padding: max(0px)) {
+  .safe-area-bottom {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  .safe-area-top {
+    padding-top: max(12px, env(safe-area-inset-top));
+  }
+
+  .safe-area-left {
+    padding-left: max(12px, env(safe-area-inset-left));
+  }
+
+  .safe-area-right {
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+}
+
+/* Keyboard-aware стили */
+@media (max-width: 768px) {
+  .keyboard-visible .chat-messages {
+    @apply !pb-4;
+  }
+
+  .keyboard-visible .message-input-container {
+    @apply !relative;
+    @apply !bottom-auto;
+  }
+}
+
+/* Улучшенная прокрутка на мобильных */
+@layer utilities {
+  .smooth-scroll {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Анимации для мобильных */
+@media (prefers-reduced-motion: no-preference) {
+  .mobile-slide-in {
+    animation: slideInFromRight 0.3s ease-out;
+  }
+
+  .mobile-slide-out {
+    animation: slideOutToRight 0.3s ease-in;
+  }
+
+  @keyframes slideInFromRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideOutToRight {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+
+    to {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+  }
+}
+
+/* Haptic feedback стили */
+.haptic-feedback {
+  transition: transform 0.1s ease;
+}
+
+.haptic-feedback:active {
+  transform: scale(0.95);
+}
+
+/* Улучшенные focus стили для accessibility */
+@media (max-width: 768px) {
+  .touch-target:focus-visible {
+    @apply outline-2 outline-cyan-400 outline-offset-2;
+  }
+
+  button:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible {
+    @apply outline-2 outline-cyan-400 outline-offset-2;
+  }
+}
+
+/* ===== ПОКРАЩЕНА МОБІЛЬНА АДАПТАЦІЯ ===== */
+
+/* Touch targets - мінімум 44px для Apple HIG */
+@layer utilities {
+  .touch-target {
+    @apply !min-w-[44px] !min-h-[44px];
+    touch-action: manipulation;
+    /* Відк-tap zoom */
+  }
+
+  .touch-target-large {
+    @apply !min-w-[48px] !min-h-[48px];
+    touch-action: manipulation;
+  }
+}
+
+/* Мобільний layout - stack замість side-by-side */
+@media (max-width: 767px) {
+  .mobile-stack-layout {
+    @apply !flex-col;
+  }
+
+  .mobile-full-width {
+    @apply !w-full !max-w-full;
+  }
+
+  .mobile-hidden {
+    @apply !hidden;
+  }
+
+  .mobile-visible {
+    @apply !block;
+  }
+
+  /* Збільшені зони дотику */
+  .mobile-button {
+    @apply !min-h-[44px] !px-4 !py-3;
+    @apply !text-base;
+    /* Мінімум 16px для iOS Safari */
+  }
+
+  /* Покращена типографія */
+  .mobile-text {
+    font-size: 16px !important;
+    /* Запобігає zoom на iOS */
+    line-height: 1.5;
+  }
+
+  .mobile-input {
+    font-size: 16px !important;
+    /* Запобігає zoom на iOS */
+    @apply !min-h-[44px];
+  }
+}
+
+/* Планшетна адаптація */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .tablet-layout {
+    @apply !flex-row;
+  }
+
+  .tablet-sidebar {
+    @apply !w-80 !flex-shrink-0;
+  }
+
+  .tablet-main {
+    @apply !flex-1;
+  }
+}
+
+/* Покращена навігація */
+.mobile-nav-enhanced {
+  background: linear-gradient(180deg,
+      rgba(0, 0, 0, 0.95) 0%,
+      rgba(0, 0, 0, 0.98) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Анімації переходів */
+.mobile-slide-enter {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+.mobile-slide-enter-active {
+  transform: translateX(0);
+  opacity: 1;
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+.mobile-slide-exit {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.mobile-slide-exit-active {
+  transform: translateX(-100%);
+  opacity: 0;
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+/* Покращені кольори для мобільних */
+@media (max-width: 767px) {
+  :root {
+    --mobile-text-primary: #ffffff;
+    --mobile-text-secondary: #d1d5db;
+    --mobile-bg-primary: #000000;
+    --mobile-bg-secondary: #1f1f1f;
+    --mobile-accent: #06b6d4;
+    --mobile-accent-hover: #0891b2;
+  }
+
+  .mobile-high-contrast {
+    color: var(--mobile-text-primary) !important;
+    background-color: var(--mobile-bg-primary) !important;
+  }
+
+  .mobile-accent-color {
+    color: var(--mobile-accent) !important;
+  }
+
+  .mobile-accent-bg {
+    background-color: var(--mobile-accent) !important;
+  }
+}
+
+/* Безпечні зони для iPhone */
+@supports (padding: max(0px)) {
+  .safe-area-inset-top {
+    padding-top: max(12px, env(safe-area-inset-top));
+  }
+
+  .safe-area-inset-bottom {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  .safe-area-inset-left {
+    padding-left: max(16px, env(safe-area-inset-left));
+  }
+
+  .safe-area-inset-right {
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+}
+
+/* Покращення для клавіатури */
+@media (max-width: 767px) {
+  .keyboard-visible .chat-messages {
+    @apply !pb-4;
+  }
+
+  .keyboard-visible .message-input-container {
+    @apply !relative !bottom-auto;
+  }
+
+  /* Фіксована висота для viewport */
+  .mobile-viewport-fix {
+    height: 100vh;
+    height: 100dvh;
+    /* Dynamic viewport height */
+  }
+}
+
+/* Покращені hover ефекти тільки для desktop */
+@media (hover: hover) and (pointer: fine) {
+  .desktop-hover:hover {
+    @apply bg-white/10 scale-105;
+  }
+}
+
+/* Відключення hover на touch пристроях */
+@media (hover: none) and (pointer: coarse) {
+  .desktop-hover:hover {
+    @apply bg-transparent scale-100;
+  }
+}
+
+/* Покращені фокус індикатори */
+.focus-visible-enhanced:focus-visible {
+  @apply outline-none ring-2 ring-cyan-500 ring-offset-2 ring-offset-black;
+}
+
+/* Покращена доступність */
+@media (prefers-reduced-motion: reduce) {
+
+  .mobile-slide-enter-active,
+  .mobile-slide-exit-active {
+    transition: none;
+  }
+
+  .animate-pulse,
+  .animate-spin,
+  .animate-bounce {
+    animation: none;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  :root {
+    --text-primary: #ffffff;
+    --text-secondary: #ffffff;
+    --bg-primary: #000000;
+    --bg-secondary: #000000;
+    --accent: #00ffff;
+  }
+}
+
+/* Покращення для великих шрифтів */
+@media (prefers-reduced-motion: no-preference) {
+  .smooth-scroll {
+    scroll-behavior: smooth;
+  }
+}
+
+/* ===== КРИТИЧЕСКИЕ ИСПРАВЛЕНИЯ МОБИЛЬНОЙ АДАПТАЦИИ ===== */
+
+/* Touch targets - Apple HIG стандарт 44px+ */
+@layer utilities {
+  .touch-target {
+    @apply !min-w-[44px] !min-h-[44px];
+    touch-action: manipulation;
+    /* Отключает double-tap zoom */
+  }
+
+  .touch-target-large {
+    @apply !min-w-[48px] !min-h-[48px];
+    touch-action: manipulation;
+  }
+
+  .touch-target-xl {
+    @apply !min-w-[56px] !min-h-[56px];
+    touch-action: manipulation;
+  }
+}
+
+/* Мобильный stack layout - КРИТИЧНО */
+@mediadth: 767px) {
+  .mobile-stack-layout {
+    @apply !flex-col;
+  }
+
+  .mobile-full-width {
+    @apply !w-full !max-w-full !flex-1;
+  }
+
+  .mobile-hidden {
+    @apply !hidden;
+  }
+
+  .mobile-visible {
+    @apply !block;
+  }
+
+  /* Увеличенные кнопки для мобильных */
+  .mobile-button {
+    @apply !min-h-[48px] !px-4 !py-3;
+    @apply !text-base;
+    /* Минимум 16px для iOS Safari */
+  }
+
+  /* Улучшенные input поля */
+  .mobile-input {
+    font-size: 16px !important;
+    /* Предотвращает zoom на iOS */
+    @apply !min-h-[48px] !py-3 !px-4;
+    line-height: 1.5;
+  }
+
+  /* Увеличенный текст для читаемости */
+  .mobile-text {
+    font-size: 16px !important;
+    line-height: 1.5;
+  }
+
+  /* Компактные отступы */
+  .mobile-compact {
+    @apply !p-3 !gap-3;
+  }
+
+  /* Полноэкранные модалы */
+  .mobile-modal {
+    @apply !fixed !inset-0 !w-full !h-full !max-w-none !max-h-none !m-0 !rounded-none;
+  }
+}
+
+/* Планшетная адаптация */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .tablet-layout {
+    @apply !flex-row;
+  }
+
+  .tablet-sidebar {
+    @apply !w-80 !flex-shrink-0;
+  }
+
+  .tablet-main {
+    @apply !flex-1;
+  }
+}
+
+/* Улучшенная навигация */
+.mobile-nav-enhanced {
+  background: linear-gradient(180deg,
+      rgba(0, 0, 0, 0.95) 0%,
+      rgba(0, 0, 0, 0.98) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Анимации переходов */
+@keyframes mobile-slide-in-left {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes mobile-slide-in-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.mobile-slide-enter {
+  animation: mobile-slide-in-right 0.3s ease-out;
+}
+
+.mobile-slide-exit {
+  animation: mobile-slide-in-left 0.3s ease-out reverse;
+}
+
+/* Улучшенные focus состояния */
+.focus-visible-enhanced:focus-visible {
+  @apply outline-none ring-2 ring-cyan-500 ring-offset-2 ring-offset-black;
+}
+
+/* Безопасные зоны для iPhone - КРИТИЧНО */
+@supports (padding: max(0px)) {
+  .safe-area-inset-top {
+    padding-top: max(12px, env(safe-area-inset-top));
+  }
+
+  .safe-area-inset-bottom {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  .safe-area-inset-left {
+    padding-left: max(16px, env(safe-area-inset-left));
+  }
+
+  .safe-area-inset-right {
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+}
+
+/* Viewport Height Fix - КРИТИЧНО */
+.mobile-viewport-fix {
+  height: 100vh;
+  height: 100dvh;
+  /* Dynamic viewport height */
+}
+
+/* Клавиатурная адаптация */
+@media (max-width: 767px) {
+  .keyboard-visible .chat-messages {
+    @apply !pb-4;
+  }
+
+  .keyboard-visible .message-input-container {
+    @apply !relative !bottom-auto;
+  }
+
+  /* Фиксированная высота для viewport */
+  .keyboard-adaptive {
+    height: calc(100vh - env(keyboard-inset-height, 0px));
+    height: calc(100dvh - env(keyboard-inset-height, 0px));
+  }
+}
+
+/* Улучшенные hover эффекты только для desktop */
+@media (hover: hover) and (pointer: fine) {
+  .desktop-hover:hover {
+    @apply bg-white/10 scale-105;
+  }
+}
+
+/* Отключение hover на touch устройствах */
+@media (hover: none) and (pointer: coarse) {
+  .desktop-hover:hover {
+    @apply bg-transparent scale-100;
+  }
+
+  /* Убираем все hover эффекты на мобильных */
+  *:hover {
+    background-color: inherit !important;
+    transform: none !important;
+  }
+}
+
+/* Улучшенная доступность */
+@media (prefers-reduced-motion: reduce) {
+
+  .mobile-slide-enter,
+  .mobile-slide-exit {
+    animation: none;
+  }
+
+  .animate-pulse,
+  .animate-spin,
+  .animate-bounce {
+    animation: none;
+  }
+
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  :root {
+    --text-primary: #ffffff;
+    --text-secondary: #ffffff;
+    --bg-primary: #000000;
+    --bg-secondary: #000000;
+    --accent: #00ffff;
+  }
+
+  .bg-neutral-800 {
+    @apply !bg-black;
+  }
+
+  .text-neutral-400 {
+    @apply !text-white;
+  }
+}
+
+/* Улучшенная контрастность */
+@media (max-width: 767px) {
+
+  /* Увеличиваем контрастность на мобильных */
+  .text-neutral-400 {
+    @apply !text-neutral-300;
+  }
+
+  .text-neutral-500 {
+    @apply !text-neutral-400;
+  }
+
+  /* Более яркие акценты */
+  .text-cyan-400 {
+    @apply !text-cyan-300;
+  }
+
+  .bg-cyan-500 {
+    @apply !bg-cyan-400;
+  }
+}
+
+/* Оптимизация производительности на мобильных */
+@media (max-width: 767px) {
+
+  /* Упрощенные тени */
+  .shadow-lg {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  }
+
+  .shadow-xl {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Упрощенные градиенты */
+  .bg-gradient-to-br {
+    background: linear-gradient(135deg, var(--tw-gradient-from), var(--tw-gradient-to));
+  }
+
+  /* Оптимизированные blur эффекты */
+  .backdrop-blur-sm {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .backdrop-blur {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+}
+
+/* Улучшения для больших шрифтов (accessibility) */
+@media (prefers-reduced-motion: no-preference) {
+  .smooth-scroll {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Поддержка крупного текста */
+@media (prefers-reduced-data: reduce) {
+
+  /* Отключаем тяжелые эффекты при медленном соединении */
+  .backdrop-blur,
+  .backdrop-blur-sm {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .bg-gradient-to-br,
+  .bg-gradient-to-r {
+    background: var(--tw-gradient-from);
+  }
+}

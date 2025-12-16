@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreVertical, PanelRightClose, PanelRightOpen, WifiOff, ArrowLeft } from 'lucide-react';
+import { MoreVertical, PanelRightClose, PanelRightOpen, WifiOff, ArrowLeft, Search } from 'lucide-react';
 import { UserProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
@@ -13,6 +13,7 @@ type ChatHeaderProps = {
   onToggleCollaborationSpace: () => void;
   isOnline?: boolean; // User's online status
   onBack?: () => void; // Mobile back navigation
+  onSearchOpen?: () => void; // Search functionality
 };
 
 export function ChatHeader({
@@ -21,7 +22,8 @@ export function ChatHeader({
   isCollaborationSpaceVisible,
   onToggleCollaborationSpace,
   isOnline = true,
-  onBack
+  onBack,
+  onSearchOpen
 }: ChatHeaderProps) {
   const [networkStatus, setNetworkStatus] = useState(navigator.onLine);
   const [showMenu, setShowMenu] = useState(false);
@@ -59,10 +61,10 @@ export function ChatHeader({
             variant="ghost"
             size="icon"
             onClick={onBack}
-            className="h-8 w-8 text-neutral-400 hover:text-white hover:bg-white/10 transition-all duration-200 hover:scale-105 flex-shrink-0"
+            className="h-10 w-10 text-neutral-400 hover:text-white hover:bg-white/10 transition-all duration-200 hover:scale-105 flex-shrink-0 touch-target"
             title="Назад"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-5 h-5" />
           </Button>
         )}
         {otherUser && (
@@ -94,11 +96,24 @@ export function ChatHeader({
       </div>
 
       <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+        {/* Search Button */}
+        {onSearchOpen && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onSearchOpen}
+            className="h-8 w-8 sm:h-9 sm:w-9 text-neutral-400 hover:text-white hover:bg-white/10 transition-all duration-200 hover:scale-105 touch-target"
+            title="Поиск сообщений"
+          >
+            <Search className="w-4 h-4 sm:w-5 sm:h-5" />
+          </Button>
+        )}
+
         <Button
           variant="ghost"
           size="icon"
           onClick={onToggleCollaborationSpace}
-          className="h-8 w-8 sm:h-9 sm:w-9 text-neutral-400 hover:text-white hover:bg-white/10 transition-all duration-200 hover:scale-105"
+          className="h-8 w-8 sm:h-9 sm:w-9 text-neutral-400 hover:text-white hover:bg-white/10 transition-all duration-200 hover:scale-105 touch-target"
           title={isCollaborationSpaceVisible ? 'Скрыть панель' : 'Показать панель'}
         >
           {isCollaborationSpaceVisible ?
@@ -111,7 +126,7 @@ export function ChatHeader({
             variant="ghost"
             size="icon"
             onClick={() => setShowMenu(!showMenu)}
-            className="h-8 w-8 sm:h-9 sm:w-9 text-neutral-400 hover:text-white hover:bg-white/10 transition-all duration-200 hover:scale-105"
+            className="h-8 w-8 sm:h-9 sm:w-9 text-neutral-400 hover:text-white hover:bg-white/10 transition-all duration-200 hover:scale-105 touch-target"
             title="Меню"
           >
             <MoreVertical className="w-4 h-4 sm:w-5 sm:h-5" />

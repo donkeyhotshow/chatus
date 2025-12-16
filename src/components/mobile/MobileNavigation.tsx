@@ -49,10 +49,10 @@ export function MobileNavigation({
                                     onTabChange(tab.id);
                                 }}
                                 className={cn(
-                                    "flex flex-col items-center justify-center gap-1 transition-all duration-300 min-w-[44px] touch-manipulation relative",
+                                    "flex flex-col items-center justify-center gap-1 transition-all duration-300 min-w-[48px] min-h-[48px] touch-manipulation relative touch-target",
                                     isCenter
-                                        ? "px-4 py-4 -mt-4 rounded-full bg-gradient-to-br from-cyan-400 to-purple-500 text-black shadow-2xl min-h-[64px] min-w-[64px] transform active:scale-90"
-                                        : "px-3 py-3 rounded-2xl min-h-[44px] transform active:scale-95",
+                                        ? "px-4 py-4 -mt-4 rounded-full bg-gradient-to-br from-cyan-400 to-purple-500 text-black shadow-2xl min-h-[68px] min-w-[68px] transform active:scale-90"
+                                        : "px-4 py-4 rounded-2xl min-h-[48px] min-w-[48px] transform active:scale-95",
                                     activeTab === tab.id && !isCenter
                                         ? "bg-gradient-to-t from-cyan-500/30 to-blue-500/30 text-cyan-300 scale-105 neon-glow-cyan"
                                         : activeTab === tab.id && isCenter
@@ -85,7 +85,7 @@ export function MobileNavigation({
                             onToggleCollabSpace();
                         }}
                         className={cn(
-                            "flex flex-col items-center justify-center gap-1 px-3 py-3 rounded-2xl transition-all duration-300 min-w-[44px] min-h-[44px] transform active:scale-95 touch-manipulation relative",
+                            "flex flex-col items-center justify-center gap-1 px-4 py-4 rounded-2xl transition-all duration-300 min-w-[48px] min-h-[48px] transform active:scale-95 touch-manipulation relative touch-target",
                             isCollabSpaceVisible
                                 ? "bg-gradient-to-t from-orange-500/30 to-red-500/30 text-orange-300 scale-105 neon-glow-pink"
                                 : "text-neutral-400 hover:text-white hover:bg-white/10 hover:scale-105"

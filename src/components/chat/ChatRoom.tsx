@@ -335,15 +335,15 @@ export function ChatRoom({ roomId }: { roomId: string }) {
   const otherUser = room?.participantProfiles?.find(p => p.id !== user?.id);
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden">
+    <div className="flex flex-col h-full w-full overflow-hidden mobile-viewport-fix">
       {/* Main Content Area */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className={`flex flex-1 overflow-hidden ${isMobile ? 'mobile-stack-layout' : ''}`}>
         {/* Chat Area - Always visible on desktop, conditionally on mobile */}
         {user && (
           <div className={`
             transition-all duration-300 ease-in-out min-w-0
             ${isMobile
-              ? (mobileActiveTab === 'chat' ? 'flex-1' : 'hidden')
+              ? (mobileActiveTab === 'chat' ? 'flex-1 mobile-full-width' : 'mobile-hidden')
               : (isCollabSpaceVisible ? 'flex-1' : 'w-full')
             }
           `}>
@@ -364,7 +364,7 @@ export function ChatRoom({ roomId }: { roomId: string }) {
               // Mobile: Simple toggle without resize
               <div className={`
                 transition-all duration-300 ease-in-out
-                ${isCollabSpaceVisible && mobileActiveTab !== 'chat' ? 'flex-1' : 'hidden'}
+                ${isCollabSpaceVisible && mobileActiveTab !== 'chat' ? 'flex-1 mobile-full-width' : 'mobile-hidden'}
               `}>
                 <Suspense fallback={
                   <div className="flex h-full items-center justify-center bg-neutral-900">

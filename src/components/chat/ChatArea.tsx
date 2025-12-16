@@ -23,6 +23,9 @@ import { logger } from '@/lib/logger';
 import { useDebounce } from 'use-debounce';
 import { VerticalResizer } from '../ui/VerticalResizer';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { MessageSearch } from './MessageSearch';
+import { TypingIndicator } from './TypingIndicator';
+import { EnhancedMessageInput } from './EnhancedMessageInput';
 
 type ChatAreaProps = {
   user: UserProfile;
@@ -54,6 +57,8 @@ export const ChatArea = memo(function ChatArea({
     return 120;
   });
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const isMobile = useIsMobile();
 
@@ -234,6 +239,41 @@ export const ChatArea = memo(function ChatArea({
       });
     }
   }, [service, user, replyTo, roomId, toast]);
+
+  // Search handlers
+  const handleSearchOpen = useCallback(() => {
+    setIsSearchOpen(true);
+  }, []);
+
+  const handleSearchClose = useCallback(() => {
+    setIsSearchOpen(false);
+    setSearchQuery('');
+  }, []);
+
+  const handleMessageSelect = useCallback((messageId: string) => {
+    // Scroll to selected message
+    const messageElement = document.getElementById(`message-${messageId}`);
+    if (messageElement) {
+      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Highlight the message briefly
+      messageElement.classList.add('bg-cyan-500/20');
+      setTimeout(() => {
+        messageElement.classList.remove('bg-cyan-500/20');
+      }, 2000);
+    }
+  }, []);
+
+  // Typing indicator handlers
+  const handleTypingStart = useCallback(() => {
+    if (service) {
+      service.sendTyping();
+    }
+  }, [service]);
+
+  const handleTypingStop = useCallback(() => {
+    // ChatService doesn't have a stop typing method, so we'll handle this differently
+    // The typing indicator will timeout automatically
+  }, []);
 
   const handleSendDoodle = useCallback(async (imageUrl: string) => {
     if (!service) return;
@@ -441,7 +481,14 @@ export const ChatArea = memo(function ChatArea({
         isReconnecting={connectionState?.isReconnecting}
         onRetry={() => window.location.reload()}
       />
-      <section className="flex-1 flex flex-col md:border-r border-white/10 bg-black/50 backdrop-blur-sm relative h-full min-h-0">
+      {/* Mobile-first responsive container */}
+      <section className={`
+        flex-1 flex flex-col relative h-full min-h-0
+        ${isMobile
+          ? 'w-full bg-black' // Mobile: full width, solid background
+          : 'md:border-r border-white/10 bg-black/50 backdrop-blur-sm' // Desktop: with border and transparency
+        }
+      `}>
         <ChatHeader
           roomId={roomId}
           otherUser={otherUser}
@@ -449,10 +496,14 @@ export const ChatArea = memo(function ChatArea({
           onToggleCollaborationSpace={onToggleCollaborationSpace}
           isOnline={isOnline}
           onBack={onMobileBack}
+          onSearchOpen={handleSearchOpen}
         />
 
-        {/* Messages area with proper flex grow */}
-        <div className="flex-1 min-h-0 overflow-hidden relative">
+        {/* Messages area with mobile-optimized spacing */}
+        <div className={`
+          flex-1 min-h-0 overflow-hidden relative
+          ${isMobile ? 'pb-20' : ''} // Добавляем отступ снизу на мобильных для фиксированного input
+        `}>
           <MessageList
             ref={messageListRef}
             messages={allMessages}
@@ -483,13 +534,28 @@ export const ChatArea = memo(function ChatArea({
           />
         )}
 
-        {/* Input area - resizable height on desktop */}
+        {/* Input area - mobile-optimized with keyboard handling */}
         <div
-          className={`flex-shrink-0 relative bg-black/30 backdrop-blur-sm border-t border-white/10 ${isMobile && keyboardVisible ? 'pb-safe-area-inset-bottom' : ''
-            }`}
+          className={`
+            flex-shrink-0 relative border-t border-white/10
+            ${isMobile
+              ? `
+                fixed bottom-0 left-0 right-0 z-50
+                bg-black/95 backdrop-blur-xl
+                ${keyboardVisible ? 'pb-0' : 'pb-safe-area-inset-bottom'}
+                shadow-2xl shadow-black/50
+              `
+              : 'bg-black/30 backdrop-blur-sm'
+            }
+          `}
           style={{
             height: isMobile ? 'auto' : `${inputAreaHeight}px`,
-            minHeight: isMobile ? 'auto' : '80px'
+            minHeight: isMobile ? 'auto' : '80px',
+            // На мобильных добавляем отступ снизу для сообщений
+            ...(isMobile && {
+              transform: keyboardVisible ? 'translateY(0)' : 'translateY(0)',
+              transition: 'transform 0.3s ease-in-out'
+            })
           }}
         >
           {typingUsers.length > 0 && (
@@ -518,13 +584,25 @@ export const ChatArea = memo(function ChatArea({
             </div>
           )}
           {showDoodlePad && <DoodlePad onClose={() => setShowDoodlePad(false)} onSend={handleSendDoodle} />}
-          <MessageInput
-            roomId={roomId}
-            onSendMessage={handleSend}
-            onImageSend={handleImageUpload}
-            onDoodleClick={() => setShowDoodlePad(p => !p)}
-            onInputChange={handleInputChange}
-            onStickerSend={handleSendSticker}
+
+          {/* Typing Indicator */}
+          <TypingIndicator
+            typingUsers={room?.participantProfiles?.filter(p =>
+              p.id !== user.id && typingUsers.includes(p.id)
+            ) || []}
+          />
+
+          <EnhancedMessageInput
+            onSend={handleSend}
+            onTyping={(isTyping) => {
+              if (isTyping) {
+                handleTypingStart();
+              } else {
+                handleTypingStop();
+              }
+            }}
+            onFileUpload={handleImageUpload}
+            placeholder="Напишите сообщение..."
           />
         </div>
       </section>
@@ -537,6 +615,15 @@ export const ChatArea = memo(function ChatArea({
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Message Search */}
+      <MessageSearch
+        messages={allMessages}
+        users={room?.participantProfiles || []}
+        isOpen={isSearchOpen}
+        onClose={handleSearchClose}
+        onMessageSelect={handleMessageSelect}
+      />
     </>
   );
 }, (prevProps, nextProps) => {
