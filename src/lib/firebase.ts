@@ -99,7 +99,6 @@ if (hasValidConfig) {
 } else {
   console.warn('Firebase config invalid or missing');
 }
-}
 
 export function getClientFirebase() {
   return {

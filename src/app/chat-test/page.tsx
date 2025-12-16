@@ -1,4 +1,4 @@
-'usclient';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useFirebase } from '@/components/firebase/FirebaseProvider';

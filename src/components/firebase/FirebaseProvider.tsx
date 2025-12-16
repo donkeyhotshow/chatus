@@ -40,7 +40,7 @@ export const useFirebase = (): FirebaseContextType => {
 export function FirebaseProvider({ children }: { children: ReactNode }) {
   const [firebaseInstances, setFirebaseInstances] = useState<FirebaseContextType | null>(null);
   const [isMounted, setIsMounted] = useState(false);
-  const [initError, setInitError]State<string | null > (null);
+  const [initError, setInitError] = useState<string | null>(null);
 
   // Use a state for the user to trigger FCM initialization
   const [user, setUser] = useState<User | null>(null);
