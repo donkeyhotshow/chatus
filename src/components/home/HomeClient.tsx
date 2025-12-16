@@ -50,8 +50,8 @@ export function HomeClient() {
     // Сохраняем ник в localStorage для использования в чате
     localStorage.setItem('chatUsername', username.trim());
 
-    // Временно используем тестовую страницу для проверки роутинга
-    const chatUrl = `/chat/test`;
+    // Переходим в реальную комнату чата
+    const chatUrl = `/chat/${roomCode.trim().toUpperCase()}`;
     console.log('Navigating to:', chatUrl);
 
     try {
