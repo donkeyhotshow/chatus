@@ -169,7 +169,14 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
 
   // Simplified loading logic - just wait for mount and instances
   if (!isMounted || !firebaseInstances) {
-    return null; // Return null to prevent hydration mismatch
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-black text-white">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          <span className="font-mono text-sm text-white/70 tracking-widest">ЗАГРУЗКА...</span>
+        </div>
+      </div>
+    );
   }
 
   logger.debug('FirebaseProvider: Rendering children with FirebaseContext');
