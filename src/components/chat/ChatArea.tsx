@@ -205,7 +205,7 @@ export const ChatArea = memo(function ChatArea({
 
     try {
       await service.sendMessage({
-        text: 'Doodle',
+        text: '', // Empty text for doodles - we only want to show the image
         imageUrl: imageUrl,
         user: user,
         senderId: user.id,

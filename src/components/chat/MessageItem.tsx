@@ -72,6 +72,11 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
       );
     }
 
+    // For doodles, only show the image, not the text "Doodle"
+    if (message.type === 'doodle' && message.imageUrl) {
+      return contentNode;
+    }
+
     if (message.text) {
       return (
         <>

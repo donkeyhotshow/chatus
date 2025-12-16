@@ -291,7 +291,7 @@ export function CollaborationSpace({
         </div>
 
         {/* USERS TAB */}
-        <div className={`flex-1 overflow-y-auto custom-scrollbar ${activeTab === 'users' ? 'block' : 'hidden'} ${isMobile ? 'pb-4' : ''}`}>
+        <div className={`flex-1 ${activeTab === 'users' ? 'flex flex-col' : 'hidden'} ${isMobile ? 'pb-4' : ''}`}>
           <UserList users={allUsers} />
         </div>
       </div>
