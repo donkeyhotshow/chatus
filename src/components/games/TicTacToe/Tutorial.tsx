@@ -65,18 +65,20 @@ export function TicTacToeTutorial({ onComplete }: { onComplete: () => void }) {
   }, [currentStep]);
 
   const hasValidCell = (row: number, col: number) => {
-    if (!step.action || !step.action.validCells) return false;
+    if (!step?.action || !step.action.validCells) return false;
     return step.action.validCells.some(([r, c]) => r === row && c === col);
   };
 
   const handleCellClick = (row: number, col: number) => {
-    if (!step.action) return;
+    if (!step?.action) return;
 
     const isValidMove = hasValidCell(row, col);
 
     if (isValidMove) {
       const newBoard = board.map((r) => [...r]);
-      newBoard[row][col] = 'X';
+      if (newBoard[row]) {
+        newBoard[row][col] = 'X';
+      }
       setBoard(newBoard);
       confetti({ particleCount: 50, spread: 50 });
       soundService.play('move');
@@ -97,8 +99,8 @@ export function TicTacToeTutorial({ onComplete }: { onComplete: () => void }) {
   return (
     <div className="tutorial-overlay fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="tutorial-content bg-white p-6 rounded-lg max-w-md w-full">
-        <h2 className="text-xl font-bold mb-2">{step.title}</h2>
-        <p className="mb-4">{step.description}</p>
+        <h2 className="text-xl font-bold mb-2">{step?.title}</h2>
+        <p className="mb-4">{step?.description}</p>
 
         <div className="grid grid-cols-3 gap-2 mb-4">
           {board.map((row, r) =>
@@ -135,4 +137,3 @@ export function TicTacToeTutorial({ onComplete }: { onComplete: () => void }) {
     </div>
   );
 }
-

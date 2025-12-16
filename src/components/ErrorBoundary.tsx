@@ -1,136 +1,115 @@
 'use client';
 
-import React from 'react';
-import { logger } from '@/lib/logger';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 
-interface ErrorBoundaryProps {
-  children: React.ReactNode;
-  fallback?: React.ComponentType<{ error?: Error; resetError: () => void; eventId?: string }>;
-  onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
+interface Props {
+  children: ReactNode;
+  fallback?: ReactNode;
 }
 
-interface ErrorBoundaryState {
+interface State {
   hasError: boolean;
   error?: Error;
-  errorInfo?: React.ErrorInfo;
-  eventId?: string;
+  errorInfo?: ErrorInfo;
 }
 
-export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  private retryCount = 0;
-  private maxRetries = 3;
-
-  constructor(props: ErrorBoundaryProps) {
+export class ErrorBoundary extends Component<Props, State> {
+  constructor(props: Props) {
     super(props);
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
+  static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    const errorDetails = {
-      message: error.message,
-      stack: error.stack,
-      componentStack: errorInfo.componentStack,
-      retryCount: this.retryCount,
-      timestamp: new Date().toISOString(),
-      userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : 'unknown',
-      url: typeof window !== 'undefined' ? window.location.href : 'unknown'
-    };
-
-    logger.error('ErrorBoundary caught an error:', error, errorDetails);
-    this.props.onError?.(error, errorInfo);
-
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     this.setState({
-      errorInfo,
-      eventId: this.generateEventId()
+      error,
+      errorInfo
     });
-  }
 
-  private generateEventId(): string {
-    return `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  resetError = () => {
-    this.retryCount++;
-
-    if (this.retryCount > this.maxRetries) {
-      logger.warn(`Max retries (${this.maxRetries}) exceeded for ErrorBoundary`);
-      return;
+    // Log error to console in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('ErrorBoundary caught an error:', error, errorInfo);
     }
 
-    logger.info(`Resetting ErrorBoundary (attempt ${this.retryCount})`);
-    this.setState({
-      hasError: false,
-      error: undefined,
-      errorInfo: undefined,
-      eventId: undefined
-    });
+    // In production, you might want to log to an error reporting service
+    // Example: Sentry.captureException(error, { contexts: { react: errorInfo } });
+  }
+
+  private handleReset = (): void => {
+    this.setState({ hasError: false });
   };
 
-  render() {
-    if (this.state.hasError) {
-      const FallbackComponent = this.props.fallback;
+  private handleReload = (): void => {
+    window.location.reload();
+  };
 
-      if (FallbackComponent) {
-        return (
-          <FallbackComponent
-            error={this.state.error}
-            resetError={this.resetError}
-            eventId={this.state.eventId}
-          />
-        );
+  render(): ReactNode {
+    if (this.state.hasError) {
+      // Custom fallback UI
+      if (this.props.fallback) {
+        return this.props.fallback;
       }
 
+      // Default error UI
       return (
-        <div className="min-h-screen flex items-center justify-center bg-black text-white">
-          <div className="text-center p-8 max-w-md">
-            <div className="mb-6">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
-                <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+          <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6 text-center">
+            <div className="mb-4">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                <svg
+                  className="h-6 w-6 text-red-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                  />
                 </svg>
               </div>
-              <h1 className="text-2xl font-bold mb-2">Что-то пошло не так</h1>
-              <p className="text-gray-400 mb-4">
-                Произошла ошибка при загрузке приложения
-              </p>
-              {this.state.eventId && (
-                <p className="text-xs text-gray-500 mb-4">
-                  ID ошибки: {this.state.eventId}
-                </p>
-              )}
             </div>
 
-            <div className="space-y-3">
-              <button
-                onClick={this.resetError}
-                disabled={this.retryCount >= this.maxRetries}
-                className="w-full px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {this.retryCount >= this.maxRetries ? 'Превышен лимит попыток' : 'Попробовать снова'}
-              </button>
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">
+              Что-то пошло не так
+            </h2>
 
-              <button
-                onClick={() => window.location.reload()}
-                className="w-full px-4 py-2 border border-gray-600 text-gray-300 rounded hover:bg-gray-800 transition-colors"
-              >
-                Перезагрузить страницу
-              </button>
-            </div>
+            <p className="text-gray-600 mb-6">
+              Произошла неожиданная ошибка. Попробуйте обновить страницу или повторить действие позже.
+            </p>
 
             {process.env.NODE_ENV === 'development' && this.state.error && (
-              <details className="mt-6 text-left">
-                <summary className="cursor-pointer text-sm text-gray-400 hover:text-white">
+              <details className="mb-4 text-left">
+                <summary className="cursor-pointer text-sm text-gray-500 mb-2">
                   Детали ошибки (только в разработке)
                 </summary>
-                <pre className="mt-2 p-3 bg-gray-900 rounded text-xs overflow-auto max-h-40">
-                  {this.state.error.stack}
+                <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto max-h-32">
+                  {this.state.error.toString()}
+                  {this.state.errorInfo?.componentStack}
                 </pre>
               </details>
             )}
+
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={this.handleReset}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Попробовать снова
+              </button>
+
+              <button
+                onClick={this.handleReload}
+                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+              >
+                Обновить страницу
+              </button>
+            </div>
           </div>
         </div>
       );
@@ -139,3 +118,17 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     return this.props.children;
   }
 }
+
+// Hook version for functional components
+export function useErrorHandler() {
+  return (error: Error, errorInfo?: ErrorInfo) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error caught by useErrorHandler:', error, errorInfo);
+    }
+
+    // In production, log to error reporting service
+    // Example: Sentry.captureException(error, { contexts: { react: errorInfo } });
+  };
+}
+
+export default ErrorBoundary;

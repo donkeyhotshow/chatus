@@ -1,34 +1,16 @@
 import { vi } from 'vitest';
+import { setupFirebaseMocks, setupTestEnv } from './firebase-mock';
+
+// Setup test environment
+setupTestEnv();
+
+// Setup Firebase mocks
+setupFirebaseMocks();
 
 // Polyfill для WebSocket, чтобы избежать ReferenceError в Node/Vitest
 if (!(globalThis as any).WebSocket) {
   (globalThis as any).WebSocket = { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 };
 }
-
-// Mock Firebase Realtime Database to avoid requiring real config during tests
-vi.mock('@/firebase', () => ({
-  db: {},
-  app: {},
-}));
-
-vi.mock('firebase/database', () => {
-  const ref = vi.fn(() => ({}));
-  const set = vi.fn(async () => {});
-  const onValue = vi.fn((_ref, callback?: (snapshot: any) => void) => {
-    if (callback) {
-      callback({ val: () => ({}) });
-    }
-    return vi.fn();
-  });
-  return {
-    ref,
-    set,
-    onValue,
-    onDisconnect: vi.fn(() => ({ remove: vi.fn() })),
-    serverTimestamp: vi.fn(() => new Date()),
-    DatabaseReference: class {},
-  };
-});
 
 // Условный импорт @testing-library/jest-dom (если установлен)
 try {
@@ -59,12 +41,12 @@ if (typeof window !== 'undefined') {
 
   // Mock IntersectionObserver
   (global as any).IntersectionObserver = class IntersectionObserver {
-    constructor() {}
-    disconnect() {}
-    observe() {}
+    constructor() { }
+    disconnect() { }
+    observe() { }
     takeRecords() {
       return [];
     }
-    unobserve() {}
+    unobserve() { }
   };
 }

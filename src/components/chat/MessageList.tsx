@@ -1,7 +1,7 @@
 
 "use client";
 
-import { memo, useEffect, useRef } from 'react';
+import { memo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 import MessageItem from './MessageItem';
 import type { Message } from '@/lib/types';
@@ -16,6 +16,7 @@ type MessageListProps = {
   onReply: (message: Message) => void;
   onLoadMore?: () => void;
   hasMoreMessages?: boolean;
+  onScroll?: (isAtBottom: boolean) => void;
 };
 
 const LoadingSpinner = () => (
@@ -27,7 +28,7 @@ const LoadingSpinner = () => (
   </div>
 );
 
-const MessageList = memo(({
+const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
   messages,
   isLoading,
   currentUserId,
@@ -37,8 +38,11 @@ const MessageList = memo(({
   onReply,
   onLoadMore,
   hasMoreMessages = false,
-}: MessageListProps) => {
+  onScroll,
+}, ref) => {
   const virtuosoRef = useRef<VirtuosoHandle>(null);
+
+  useImperativeHandle(ref, () => virtuosoRef.current!, []);
 
   useEffect(() => {
     if (!isLoading && messages.length > 0 && virtuosoRef.current) {
@@ -86,6 +90,9 @@ const MessageList = memo(({
             onLoadMore();
           }
         }}
+        atBottomStateChange={(atBottom) => {
+          onScroll?.(atBottom);
+        }}
         itemContent={(index, msg) => {
           const prevMsg = messages[index - 1];
           const isNewDay = !prevMsg || (() => {
@@ -132,7 +139,7 @@ const MessageList = memo(({
       />
     </div>
   );
-});
+}));
 
 MessageList.displayName = 'MessageList';
 

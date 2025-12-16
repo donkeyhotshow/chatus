@@ -1,9 +1,43 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Временные упрощенные правила для тестирования
-    match /{document=**} {
+    // Users can only access their own user document
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Chat rooms - users can read/write if authenticated
+    match /rooms/{roomId} {
       allow read, write: if request.auth != null;
+    }
+
+    // Messages - users can read/write their own messages if authenticated
+    match /rooms/{roomId}/messages/{messageId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null &&
+        request.auth.uid == request.resource.data.senderId;
+      allow update, delete: if request.auth != null &&
+        request.auth.uid == resource.data.senderId;
+    }
+
+    // Canvas drawings - similar to messages
+    match /rooms/{roomId}/drawings/{drawingId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null &&
+        request.auth.uid == request.resource.data.userId;
+      allow update, delete: if request.auth != null &&
+        request.auth.uid == resource.data.userId;
+    }
+
+    // Game states - participants can read/write
+    match /rooms/{roomId}/games/{gameId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // Deny all other paths
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

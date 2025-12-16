@@ -8,6 +8,7 @@ import { ChatArea } from './ChatArea';
 import { ProfileCreationDialog } from './ProfileCreationDialog';
 import { MessageCircle, Gamepad2 } from 'lucide-react';
 import { MobileNavigation } from '../mobile/MobileNavigation';
+import { MobileErrorHandler } from '../mobile/MobileErrorHandler';
 import { ResizablePanel } from '../ui/ResizablePanel';
 
 // Lazy load heavy components
@@ -117,6 +118,15 @@ export function ChatRoom({ roomId }: { roomId: string }) {
       setIsCollabSpaceVisible(false);
     } else {
       setIsCollabSpaceVisible(true);
+    }
+  };
+
+  // Handle mobile back navigation
+  const handleMobileBack = () => {
+    if (isMobile && mobileActiveTab !== 'chat') {
+      // If not on chat tab, go back to chat
+      setMobileActiveTab('chat');
+      setIsCollabSpaceVisible(false);
     }
   };
 
@@ -342,6 +352,7 @@ export function ChatRoom({ roomId }: { roomId: string }) {
               roomId={roomId}
               isCollabSpaceVisible={isCollabSpaceVisible}
               onToggleCollaborationSpace={handleToggleCollabSpace}
+              onMobileBack={handleMobileBack}
             />
           </div>
         )}

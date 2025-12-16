@@ -34,7 +34,7 @@ export class DrawingLayerService {
   constructor(canvas?: HTMLCanvasElement) {
     this.canvas = canvas ?? null;
     this.createLayer('Background');
-    if (this.layers.length > 0) this.activeLayerId = this.layers[0].id;
+    if (this.layers.length > 0) this.activeLayerId = this.layers[0]?.id || '';
   }
 
   createLayer(name: string): Layer {
@@ -81,7 +81,11 @@ export class DrawingLayerService {
   moveLayerUp(layerId: string) {
     const idx = this.layers.findIndex((l) => l.id === layerId);
     if (idx > 0) {
-      [this.layers[idx - 1], this.layers[idx]] = [this.layers[idx], this.layers[idx - 1]];
+      const layer1 = this.layers[idx - 1];
+      const layer2 = this.layers[idx];
+      if (layer1 && layer2) {
+        [this.layers[idx - 1], this.layers[idx]] = [layer2, layer1];
+      }
       this.layers.forEach((l, i) => (l.zIndex = i));
       this.saveHistory();
       this.renderAllLayers();
@@ -91,7 +95,11 @@ export class DrawingLayerService {
   moveLayerDown(layerId: string) {
     const idx = this.layers.findIndex((l) => l.id === layerId);
     if (idx >= 0 && idx < this.layers.length - 1) {
-      [this.layers[idx + 1], this.layers[idx]] = [this.layers[idx], this.layers[idx + 1]];
+      const layer1 = this.layers[idx + 1];
+      const layer2 = this.layers[idx];
+      if (layer1 && layer2) {
+        [this.layers[idx + 1], this.layers[idx]] = [layer2, layer1];
+      }
       this.layers.forEach((l, i) => (l.zIndex = i));
       this.saveHistory();
       this.renderAllLayers();
@@ -142,11 +150,17 @@ export class DrawingLayerService {
     if (!stroke.points?.length) return;
     ctx.beginPath();
     if (stroke.points.length === 1) {
-      ctx.arc(stroke.points[0].x, stroke.points[0].y, stroke.width / 2, 0, Math.PI * 2);
+      const firstPoint = stroke.points[0];
+      if (firstPoint) {
+        ctx.arc(firstPoint.x, firstPoint.y, stroke.width / 2, 0, Math.PI * 2);
+      }
       ctx.fill();
       return;
     }
-    ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+    const firstPoint = stroke.points[0];
+    if (firstPoint) {
+      ctx.moveTo(firstPoint.x, firstPoint.y);
+    }
     for (let i = 1; i < stroke.points.length; i++) {
       const p0 = stroke.points[i - 1];
       const p1 = stroke.points[i];

@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Send, Paperclip, Brush, Smile } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StickerPicker } from './StickerPicker';
+import { MessageLengthIndicator } from './MessageLengthIndicator';
 import { useDebouncedCallback } from 'use-debounce';
 
 type MessageInputProps = {
@@ -16,9 +17,13 @@ type MessageInputProps = {
   roomId: string;
 };
 
+const MAX_MESSAGE_LENGTH = 1000;
+
 export function MessageInput({ onSendMessage, onImageSend, onDoodleClick, onInputChange, onStickerSend, roomId }: MessageInputProps) {
   const [text, setText] = useState('');
   const [showStickerPicker, setShowStickerPicker] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const draftKey = `chat-draft-${roomId}`;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -43,14 +48,32 @@ export function MessageInput({ onSendMessage, onImageSend, onDoodleClick, onInpu
     }
   }, [text]);
 
-  const handleSend = () => {
-    if (text.trim()) {
-      onSendMessage(text.trim());
-      setText('');
-      // Reset height
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
+  const handleSend = async () => {
+    const trimmedText = text.trim();
+    if (trimmedText && !isSending && trimmedText.length <= MAX_MESSAGE_LENGTH) {
+      setIsSending(true);
+      try {
+        await onSendMessage(trimmedText);
+        setText('');
+        // Reset height
+        if (textareaRef.current) {
+          textareaRef.current.style.height = 'auto';
+        }
+      } catch (error) {
+        toast({
+          title: "Ошибка отправки",
+          description: "Не удалось отправить сообщение. Проверьте подключение к интернету.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsSending(false);
       }
+    } else if (trimmedText.length > MAX_MESSAGE_LENGTH) {
+      toast({
+        title: "Сообщение слишком длинное",
+        description: `Максимальная длина сообщения: ${MAX_MESSAGE_LENGTH} символов.`,
+        variant: "destructive",
+      });
     }
   };
 
@@ -61,7 +84,7 @@ export function MessageInput({ onSendMessage, onImageSend, onDoodleClick, onInpu
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) { // 5MB limit
@@ -72,7 +95,18 @@ export function MessageInput({ onSendMessage, onImageSend, onDoodleClick, onInpu
         });
         return;
       }
-      onImageSend(file);
+      setIsUploading(true);
+      try {
+        await onImageSend(file);
+      } catch (error) {
+        toast({
+          title: "Ошибка загрузки",
+          description: "Не удалось загрузить изображение. Проверьте подключение к интернету.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsUploading(false);
+      }
     }
     // Reset file input
     if (fileInputRef.current) {
@@ -91,6 +125,12 @@ export function MessageInput({ onSendMessage, onImageSend, onDoodleClick, onInpu
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setText(e.target.value);
     debouncedTyping();
+
+    // Auto-resize textarea
+    const textarea = e.target;
+    textarea.style.height = 'auto';
+    const newHeight = Math.min(textarea.scrollHeight, 120); // Max 120px height
+    textarea.style.height = `${newHeight}px`;
   }
 
   const handleStickerSelect = (stickerUrl: string) => {
@@ -126,9 +166,14 @@ export function MessageInput({ onSendMessage, onImageSend, onDoodleClick, onInpu
             onChange={handleTextChange}
             onKeyDown={handleKeyDown}
             rows={1}
-            className="w-full bg-transparent border-none focus:ring-0 text-white placeholder-neutral-400 px-4 py-3 max-h-[120px] resize-none overflow-y-auto leading-relaxed scrollbar-hide text-sm sm:text-base"
+            maxLength={MAX_MESSAGE_LENGTH + 100} // Allow typing a bit over to show warning
+            className="w-full bg-transparent border-none focus:ring-0 text-white placeholder-neutral-400 px-4 py-3 max-h-[120px] resize-none overflow-y-auto leading-relaxed scrollbar-hide text-sm sm:text-base pr-20"
             aria-label="Сообщение"
             style={{ minHeight: '44px' }}
+          />
+          <MessageLengthIndicator
+            currentLength={text.length}
+            maxLength={MAX_MESSAGE_LENGTH}
           />
         </div>
 
@@ -152,23 +197,39 @@ export function MessageInput({ onSendMessage, onImageSend, onDoodleClick, onInpu
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-full text-neutral-400 hover:text-blue-400 hover:bg-blue-400/10 transition-all duration-200 hover:scale-110"
-            aria-label="Прикрепить файл"
-            title="Прикрепить изображение"
+            disabled={isUploading}
+            className={`w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-full transition-all duration-200 ${isUploading
+              ? 'text-blue-400 bg-blue-400/20 animate-pulse cursor-not-allowed'
+              : 'text-neutral-400 hover:text-blue-400 hover:bg-blue-400/10 hover:scale-110'
+              }`}
+            aria-label={isUploading ? "Загрузка изображения..." : "Прикрепить файл"}
+            title={isUploading ? "Загрузка изображения..." : "Прикрепить изображение"}
           >
-            <Paperclip className="w-4 h-4 sm:w-5 sm:h-5" />
+            {isUploading ? (
+              <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Paperclip className="w-4 h-4 sm:w-5 sm:h-5" />
+            )}
           </button>
           <button
             onClick={handleSend}
-            disabled={!text.trim()}
-            className={`w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-full transition-all duration-200 ${text.trim()
+            disabled={!text.trim() || isSending || text.length > MAX_MESSAGE_LENGTH}
+            className={`w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-full transition-all duration-200 ${text.trim() && !isSending && text.length <= MAX_MESSAGE_LENGTH
               ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:scale-110 active:scale-95 shadow-lg shadow-cyan-500/25'
-              : 'bg-white/10 text-neutral-500 cursor-not-allowed'
+              : isSending
+                ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white cursor-not-allowed'
+                : text.length > MAX_MESSAGE_LENGTH
+                  ? 'bg-red-500/50 text-white cursor-not-allowed'
+                  : 'bg-white/10 text-neutral-500 cursor-not-allowed'
               }`}
-            aria-label="Отправить"
-            title="Отправить сообщение"
+            aria-label={isSending ? "Отправка..." : text.length > MAX_MESSAGE_LENGTH ? "Сообщение слишком длинное" : "Отправить"}
+            title={isSending ? "Отправка сообщения..." : text.length > MAX_MESSAGE_LENGTH ? "Сообщение слишком длинное" : "Отправить сообщение"}
           >
-            <Send className="w-4 h-4 sm:w-5 sm:h-5 ml-0.5" />
+            {isSending ? (
+              <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Send className="w-4 h-4 sm:w-5 sm:h-5 ml-0.5" />
+            )}
           </button>
         </div>
       </div>

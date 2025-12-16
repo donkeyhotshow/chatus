@@ -14,6 +14,7 @@ import { Slider } from '../ui/slider';
 import { useCollection, useDoc } from '@/hooks/useCollection'; // Note: using from same file is fine for this project size
 import { doc } from 'firebase/firestore';
 import { logger } from '@/lib/logger';
+import { FloatingToolbar } from './FloatingToolbar';
 
 const NEON_COLORS = [
   '#FFFFFF', '#EF4444', '#F97316', '#F59E0B',
@@ -50,6 +51,15 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
   const [selectedColor, setSelectedColor] = useState('#3B82F6');
   const [strokeWidth, setStrokeWidth] = useState(4);
   const [brushType, setBrushType] = useState<BrushType>('normal');
+
+  // Touch and zoom state
+  const [scale, setScale] = useState(1);
+  const [translateX, setTranslateX] = useState(0);
+  const [translateY, setTranslateY] = useState(0);
+  const lastTouchDistance = useRef<number>(0);
+  const lastTouchCenter = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const isPinching = useRef(false);
+  const [showZoomHint, setShowZoomHint] = useState(false);
 
   const { toast } = useToast();
   const { db } = useFirebase()!;
@@ -187,16 +197,49 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     if (isMazeActive && gameState?.maze) {
       drawMaze(ctx, gameState.maze as string);
     } else {
-      ctx.fillStyle = '#0d0d0d';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      const bg = document.createElement('canvas');
-      bg.width = 16;
-      bg.height = 16;
-      const bgCtx = bg.getContext('2d')!;
-      bgCtx.strokeStyle = 'rgba(255,255,255,0.05)';
-      bgCtx.strokeRect(0.5, 0.5, 15, 15);
-      ctx.fillStyle = ctx.createPattern(bg, 'repeat')!;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Photoshop-style checkerboard background
+      const checkerSize = 16;
+      const darkColor = '#0a0a0a';
+      const lightColor = '#1a1a1a';
+
+      for (let x = 0; x < canvas.width; x += checkerSize) {
+        for (let y = 0; y < canvas.height; y += checkerSize) {
+          const isEven = (Math.floor(x / checkerSize) + Math.floor(y / checkerSize)) % 2 === 0;
+          ctx.fillStyle = isEven ? darkColor : lightColor;
+          ctx.fillRect(x, y, checkerSize, checkerSize);
+        }
+      }
+
+      // Subtle neon grid overlay
+      const gridSize = 40;
+      ctx.strokeStyle = 'rgba(0, 255, 255, 0.05)';
+      ctx.lineWidth = 0.5;
+
+      // Vertical lines
+      for (let x = 0; x <= canvas.width; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+
+      // Horizontal lines
+      for (let y = 0; y <= canvas.height; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+
+      // Neon intersection dots
+      ctx.fillStyle = 'rgba(0, 255, 255, 0.15)';
+      for (let x = 0; x <= canvas.width; x += gridSize) {
+        for (let y = 0; y <= canvas.height; y += gridSize) {
+          ctx.beginPath();
+          ctx.arc(x, y, 1, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
     }
 
     (paths || []).forEach(p => drawPath(ctx, p));
@@ -233,8 +276,40 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     }
     const rect = canvas.getBoundingClientRect();
     return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      x: (e.clientX - rect.left - translateX) / scale,
+      y: (e.clientY - rect.top - translateY) / scale,
+    };
+  };
+
+  const getTouchPos = (touch: Touch) => {
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      return { x: 0, y: 0 };
+    }
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (touch.clientX - rect.left - translateX) / scale,
+      y: (touch.clientY - rect.top - translateY) / scale,
+    };
+  };
+
+  const getTouchDistance = (touches: TouchList) => {
+    if (touches.length < 2) return 0;
+    const touch1 = touches[0];
+    const touch2 = touches[1];
+    return Math.sqrt(
+      Math.pow(touch2.clientX - touch1.clientX, 2) +
+      Math.pow(touch2.clientY - touch1.clientY, 2)
+    );
+  };
+
+  const getTouchCenter = (touches: TouchList) => {
+    if (touches.length < 2) return { x: 0, y: 0 };
+    const touch1 = touches[0];
+    const touch2 = touches[1];
+    return {
+      x: (touch1.clientX + touch2.clientX) / 2,
+      y: (touch1.clientY + touch2.clientY) / 2,
     };
   };
 
@@ -332,6 +407,138 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     }
   };
 
+  // Touch event handlers
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+
+    if (e.touches.length === 2) {
+      // Two fingers - start pinch zoom
+      isPinching.current = true;
+      lastTouchDistance.current = getTouchDistance(e.touches);
+      lastTouchCenter.current = getTouchCenter(e.touches);
+      setShowZoomHint(true);
+      setTimeout(() => setShowZoomHint(false), 1500);
+      return;
+    }
+
+    if (e.touches.length === 1 && !isPinching.current) {
+      // Single finger - start drawing
+      if (!user || !canvasRef.current) return;
+      isDrawing.current = true;
+      const pos = getTouchPos(e.touches[0]);
+      currentPath.current = [pos.x, pos.y];
+      redrawCanvas();
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+
+    if (e.touches.length === 2 && isPinching.current) {
+      // Two fingers - handle pinch zoom
+      const distance = getTouchDistance(e.touches);
+      const center = getTouchCenter(e.touches);
+
+      if (lastTouchDistance.current > 0) {
+        const scaleChange = distance / lastTouchDistance.current;
+        const newScale = Math.max(0.5, Math.min(3, scale * scaleChange));
+
+        // Calculate translation to keep zoom centered
+        const canvas = canvasRef.current;
+        if (canvas) {
+          const rect = canvas.getBoundingClientRect();
+          const centerX = center.x - rect.left;
+          const centerY = center.y - rect.top;
+
+          setScale(newScale);
+          setTranslateX(translateX + (centerX - lastTouchCenter.current.x + rect.left) * (1 - scaleChange));
+          setTranslateY(translateY + (centerY - lastTouchCenter.current.y + rect.top) * (1 - scaleChange));
+        }
+      }
+
+      lastTouchDistance.current = distance;
+      lastTouchCenter.current = center;
+      return;
+    }
+
+    if (e.touches.length === 1 && isDrawing.current && !isPinching.current) {
+      // Single finger - continue drawing
+      if (!user || !canvasRef.current) return;
+
+      const now = Date.now();
+      if (now - lastMouseMoveTime.current < MOUSE_MOVE_THROTTLE) {
+        return;
+      }
+      lastMouseMoveTime.current = now;
+
+      const pos = getTouchPos(e.touches[0]);
+      const ctx = getCanvasContext();
+      if (!ctx) return;
+
+      if (isMazeActive && checkMazeCollision(pos.x, pos.y)) {
+        toast({ title: 'Oops!', description: 'You hit a wall. Your path was reset.', variant: 'destructive' });
+        isDrawing.current = false;
+        currentPath.current = [];
+        redrawCanvas();
+        return;
+      }
+
+      currentPath.current.push(pos.x, pos.y);
+
+      redrawCanvas();
+      const tempPath: CanvasPath = {
+        id: 'temp',
+        sheetId: sheetId,
+        points: currentPath.current,
+        color: color,
+        strokeWidth: stroke,
+        tool: tool,
+        brush: currentBrush,
+        createdAt: new Date(),
+        user: user
+      };
+      drawPath(ctx, tempPath);
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+
+    if (e.touches.length === 0) {
+      // All fingers lifted
+      isPinching.current = false;
+      lastTouchDistance.current = 0;
+
+      if (isDrawing.current) {
+        handleMouseUp(); // Reuse mouse up logic
+      }
+    } else if (e.touches.length === 1 && isPinching.current) {
+      // One finger remaining after pinch - stop pinching
+      isPinching.current = false;
+      lastTouchDistance.current = 0;
+    }
+  };
+
+  // Mouse wheel zoom for desktop
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+
+    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
+    const newScale = Math.max(0.5, Math.min(3, scale * zoomFactor));
+
+    // Calculate translation to keep zoom centered on mouse position
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      setScale(newScale);
+      setTranslateX(translateX + mouseX * (1 - zoomFactor));
+      setTranslateY(translateY + mouseY * (1 - zoomFactor));
+    }
+  };
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (canvas) {
@@ -369,7 +576,8 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
 
   return (
     <div className="h-full w-full relative flex flex-col">
-      <div className="absolute top-2 left-2 z-20 flex flex-col gap-1.5 md:gap-2">
+      {/* Desktop toolbar - hidden on mobile */}
+      <div className="absolute top-2 left-2 z-20 flex-col gap-1.5 md:gap-2 hidden md:flex">
         <div className="flex flex-col gap-1.5 md:gap-2 p-1 bg-neutral-900/90 backdrop-blur-sm rounded-lg md:rounded-xl border border-white/10 w-auto md:w-48">
           <div className="flex gap-1">
             <button
@@ -431,15 +639,47 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
           </div>
         )}
       </div>
+
+      {/* Mobile floating toolbar */}
+      <div className="md:hidden">
+        <FloatingToolbar
+          selectedTool={selectedTool}
+          selectedColor={selectedColor}
+          strokeWidth={strokeWidth}
+          brushType={brushType}
+          isMazeActive={isMazeActive}
+          onToolChange={setSelectedTool}
+          onColorChange={setSelectedColor}
+          onStrokeWidthChange={setStrokeWidth}
+          onBrushTypeChange={setBrushType}
+          onClearSheet={() => handleClearSheet(sheetId)}
+        />
+      </div>
       <canvas
         ref={canvasRef}
         className="w-full h-full"
-        style={{ cursor: tool === 'pen' ? 'crosshair' : 'cell' }}
+        style={{
+          cursor: tool === 'pen' ? 'crosshair' : 'cell',
+          transform: `translate(${translateX}px, ${translateY}px) scale(${scale})`,
+          transformOrigin: '0 0',
+          touchAction: 'none' // Prevent default touch behaviors
+        }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        onWheel={handleWheel}
       />
+
+      {/* Mobile zoom hint */}
+      {showZoomHint && (
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/80 text-white px-4 py-2 rounded-lg text-sm font-medium pointer-events-none z-10 animate-in fade-in-0 zoom-in-95">
+          Масштабирование активно
+        </div>
+      )}
     </div>
   );
 }

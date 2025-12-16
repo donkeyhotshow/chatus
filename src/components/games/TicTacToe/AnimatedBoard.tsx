@@ -31,8 +31,18 @@ function findWinningLine(board: (string | null)[][]): number[] | null {
 
   for (const line of lines) {
     const [a, b, c] = line;
-    if (board[a[0]][a[1]] && board[a[0]][a[1]] === board[b[0]][b[1]] && board[a[0]][a[1]] === board[c[0]][c[1]]) {
-      return line.map(([r, col]) => r * 3 + col);
+    if (a?.[0] !== undefined && a?.[1] !== undefined &&
+      b?.[0] !== undefined && b?.[1] !== undefined &&
+      c?.[0] !== undefined && c?.[1] !== undefined &&
+      board[a[0]]?.[a[1]] &&
+      board[a[0]][a[1]] === board[b[0]][b[1]] &&
+      board[a[0]][a[1]] === board[c[0]][c[1]]) {
+      return line.map(([r, col]) => {
+        if (r !== undefined && col !== undefined) {
+          return r * 3 + col;
+        }
+        return 0;
+      });
     }
   }
   return null;
@@ -70,7 +80,7 @@ export function AnimatedTicTacToeBoard({ game, onCellClick, soundService }: Anim
   }, [game.winner, game.board, soundService]);
 
   const handleCellClickWithSound = (row: number, col: number) => {
-    if (!game.board[row][col] && game.status === 'in_progress') {
+    if (!game.board?.[row]?.[col] && game.status === 'in_progress') {
       soundService.play('move');
     }
     onCellClick(row, col);
@@ -160,8 +170,8 @@ function WinningLineOverlay({ cells }: WinningLineOverlayProps) {
     };
   };
 
-  const startCoords = getLineCoords(cells[0]);
-  const endCoords = getLineCoords(cells[2]);
+  const startCoords = getLineCoords(cells[0] ?? 0);
+  const endCoords = getLineCoords(cells[2] ?? 0);
 
   return (
     <svg className="absolute inset-0 pointer-events-none" viewBox="0 0 320 320"> {/* Adjusted viewBox */}

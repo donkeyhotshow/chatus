@@ -180,10 +180,10 @@ export default function DoodlePad({ onClose, onSend }: DoodlePadProps) {
         </div>
       </div>
 
-      <div className="relative w-full aspect-video bg-[#0A0A0A] rounded-lg border border-white/5 overflow-hidden touch-none">
+      <div className="relative w-full aspect-video bg-neutral-800 rounded-lg border border-white/20 overflow-hidden touch-none">
         <canvas
           ref={canvasRef}
-          className="w-full h-full cursor-crosshair"
+          className="w-full h-full cursor-crosshair bg-neutral-800"
           onMouseDown={startDraw}
           onMouseMove={draw}
           onMouseUp={stopDraw}
@@ -192,6 +192,17 @@ export default function DoodlePad({ onClose, onSend }: DoodlePadProps) {
           onTouchMove={draw}
           onTouchEnd={stopDraw}
         />
+        {/* Canvas background grid for better visibility */}
+        <div className="absolute inset-0 pointer-events-none opacity-10">
+          <svg width="100%" height="100%" className="w-full h-full">
+            <defs>
+              <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="white" strokeWidth="1" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+          </svg>
+        </div>
       </div>
 
       <div className="flex items-center justify-between mt-4 gap-4">

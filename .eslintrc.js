@@ -2,10 +2,39 @@ module.exports = {
   extends: [
     'next/core-web-vitals'
   ],
+  parser: '@typescript-eslint/parser',
+  plugins: ['@typescript-eslint'],
   rules: {
-    // Basic rules for hotfix
+    // TypeScript rules
+    '@typescript-eslint/no-unused-vars': 'error',
+    '@typescript-eslint/no-explicit-any': 'warn',
+    '@typescript-eslint/explicit-function-return-type': 'off',
+    '@typescript-eslint/explicit-module-boundary-types': 'off',
+    '@typescript-eslint/no-non-null-assertion': 'warn',
+
+    // General rules
     'no-console': 'warn',
-    'prefer-const': 'warn',
-    'no-var': 'error'
-  }
+    'prefer-const': 'error',
+    'no-var': 'error',
+    'no-unused-vars': 'off', // Use TypeScript version instead
+
+    // React rules
+    'react-hooks/exhaustive-deps': 'warn',
+    'react/no-unescaped-entities': 'off',
+
+    // Import rules
+    'import/order': ['warn', {
+      'groups': ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
+      'newlines-between': 'never'
+    }]
+  },
+  overrides: [
+    {
+      files: ['**/*.test.ts', '**/*.test.tsx', '**/*.spec.ts', '**/*.spec.tsx'],
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'off',
+        'no-console': 'off'
+      }
+    }
+  ]
 };

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
-import { onSnapshot, Query, DocumentData, FirestoreError, DocumentReference, getDoc, getDocs } from 'firebase/firestore';
+import { onSnapshot, Query, FirestoreError, DocumentReference, getDoc, getDocs } from 'firebase/firestore';
 import { logger } from '@/lib/logger';
 import { isDemoMode } from '@/lib/demo-mode';
 

@@ -215,7 +215,7 @@ export class ChatService {
           id: doc.id,
           ...data,
           // Ensure senderId exists (backward compatibility)
-          senderId: data.senderId || data.user?.id || '',
+          senderId: (data as any)?.senderId || (data as any)?.user?.id || '',
         } as Message;
       });
 
@@ -288,10 +288,10 @@ export class ChatService {
         const msg: Message = {
           id: docSnapshot.id,
           ...data,
-          senderId: data.senderId || data.user?.id || '',
-          reactions: data.reactions || [],
-          delivered: data.delivered ?? false,
-          seen: data.seen ?? false,
+          senderId: (data as any)?.senderId || (data as any)?.user?.id || '',
+          reactions: (data as any)?.reactions || [],
+          delivered: (data as any)?.delivered ?? false,
+          seen: (data as any)?.seen ?? false,
         } as Message;
 
         // Deduplicate by id/clientMessageId

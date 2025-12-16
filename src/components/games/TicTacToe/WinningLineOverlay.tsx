@@ -14,8 +14,8 @@ function getLineCoords(index: number) {
 export function WinningLineOverlay({ cells }: { cells: number[] }) {
   if (!cells || cells.length < 3) return null;
 
-  const start = getLineCoords(cells[0]);
-  const end = getLineCoords(cells[2]);
+  const start = getLineCoords(cells[0] ?? 0);
+  const end = getLineCoords(cells[2] ?? 0);
 
   return (
     <svg className="absolute inset-0 pointer-events-none" viewBox="0 0 300 300">

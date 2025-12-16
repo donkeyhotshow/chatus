@@ -276,7 +276,7 @@ export function CollaborationSpace({
           <div className="flex-1 min-h-0 p-4">
             <div className="text-xs text-neutral-500 text-center">
               {!isMobile && 'Перетащите границы для изменения размера • '}
-              Используйте колесо мыши для масштабирования холста
+              {isMobile ? 'Используйте два пальца для масштабирования холста' : 'Используйте колесо мыши для масштабирования холста'}
             </div>
           </div>
         </div>
@@ -292,7 +292,7 @@ export function CollaborationSpace({
 
         {/* USERS TAB */}
         <div className={`flex-1 ${activeTab === 'users' ? 'flex flex-col' : 'hidden'} ${isMobile ? 'pb-4' : ''}`}>
-          <UserList users={allUsers} />
+          <UserList users={allUsers} currentUserId={user.id} />
         </div>
       </div>
     </aside>

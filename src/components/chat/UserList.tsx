@@ -4,9 +4,10 @@ import { UserProfile } from '@/lib/types';
 
 type UserListProps = {
   users: UserProfile[];
+  currentUserId?: string;
 };
 
-export function UserList({ users }: UserListProps) {
+export function UserList({ users, currentUserId }: UserListProps) {
   // Count users
   const userCount = users.length;
 
@@ -23,7 +24,10 @@ export function UserList({ users }: UserListProps) {
           {users.length > 0 ? (
             users.map(user => {
               return (
-                <div key={user.id} className="flex items-center gap-3 p-3 rounded-lg bg-neutral-900/50 hover:bg-neutral-900/70 transition-colors">
+                <div key={user.id} className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${user.id === currentUserId
+                  ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border border-cyan-500/30'
+                  : 'bg-neutral-900/50 hover:bg-neutral-900/70'
+                  }`}>
                   <div className="relative flex-shrink-0">
                     <div
                       className="w-10 h-10 rounded-full bg-neutral-800 border border-white/10"
@@ -36,7 +40,10 @@ export function UserList({ users }: UserListProps) {
                     <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-neutral-900 bg-green-500 animate-pulse" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <span className="font-medium text-neutral-200 block truncate">{user.name}</span>
+                    <span className={`font-medium block truncate ${user.id === currentUserId ? 'text-cyan-300' : 'text-neutral-200'
+                      }`}>
+                      {user.name} {user.id === currentUserId && '(Вы)'}
+                    </span>
                     <span className="text-xs text-neutral-500">В сети</span>
                   </div>
                 </div>

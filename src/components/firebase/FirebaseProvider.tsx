@@ -40,7 +40,7 @@ export const useFirebase = (): FirebaseContextType => {
 export function FirebaseProvider({ children }: { children: ReactNode }) {
   const [firebaseInstances, setFirebaseInstances] = useState<FirebaseContextType | null>(null);
   const [isMounted, setIsMounted] = useState(false);
-  const [initError, setInitError] = useState<string | null>(null);
+  const [_initError, _setInitError] = useState<string | null>(null);
 
   // Use a state for the user to trigger FCM initialization
   const [user, setUser] = useState<User | null>(null);
@@ -49,7 +49,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
     setIsMounted(true);
     logger.debug('FirebaseProvider: Attempting to get Firebase instances');
 
-    const initFirebase = async () => {
+    const initFirebase = async (): Promise<void> => {
       try {
         // Add a small delay to prevent blocking
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -95,7 +95,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
           });
 
           // Return cleanup function
-          return unsubscribe;
+          return () => unsubscribe();
         }
 
       } catch (e) {

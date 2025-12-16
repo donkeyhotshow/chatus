@@ -35,7 +35,7 @@ const ENEMY_SPECS = {
 // Дорожки (из твоего кода)
 const PATHS_Y = [3, 5, 7]; // три дорожки
 
-function isPath(x: number, y: number): boolean {
+function isPath(_x: number, y: number): boolean {
   return PATHS_Y.includes(y);
 }
 
@@ -54,7 +54,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
   const lastTimeRef = useRef<number>(performance.now());
-  const waveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // const _waveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Локальное состояние для плавной анимации
   const [localEnemies, setLocalEnemies] = useState<TDEnemy[]>(tdEnemies);
@@ -340,7 +340,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
     // Спавн врагов с интервалом
     let spawned = 0;
     const spawnInterval = setInterval(() => {
-      const lane = PATHS_Y[Math.floor(Math.random() * PATHS_Y.length)];
+      const lane = PATHS_Y[Math.floor(Math.random() * PATHS_Y.length)] ?? 0;
 
       // Определяем тип врага
       let enemyType: 'basic' | 'fast' | 'tank' = 'basic';
@@ -402,7 +402,16 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
   return (
     <div className="flex flex-col items-center justify-center h-full text-center p-4 gap-4">
       <Card className="bg-neutral-950/80 border-white/10 backdrop-blur-sm w-full max-w-4xl">
-        <CardHeader>
+        <CardHeader className="relative">
+          <Button
+            onClick={onGameEnd}
+            variant="ghost"
+            size="sm"
+            className="absolute top-4 left-4 text-neutral-400 hover:text-white z-10"
+            title="Назад в лобби"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
           <CardTitle className="font-headline text-2xl flex items-center justify-center gap-2">
             <Castle /> Tower Defense
           </CardTitle>

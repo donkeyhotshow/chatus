@@ -4,8 +4,9 @@
 import { memo, useState, useEffect } from 'react';
 import type { Message } from '@/lib/types';
 import { EmojiRain } from './EmojiRain';
+import { VisuallyHidden } from '../ui/VisuallyHidden';
 import { format } from 'date-fns';
-import { Smile, Trash2, CornerUpLeft } from 'lucide-react';
+import { Smile, Trash2, CornerUpLeft, Clock, Check, CheckCheck } from 'lucide-react';
 
 type MessageItemProps = {
   message: Message;
@@ -59,7 +60,7 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
       );
     }
 
-    let contentNode = null;
+    let contentNode: React.ReactNode = null;
     if (message.imageUrl) {
       contentNode = (
         // eslint-disable-next-line @next/next/no-img-element
@@ -101,7 +102,7 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
 
   return (
     <div
-      className={`group flex gap-3 max-w-[90%] sm:max-w-[85%] mb-4 ${isOwn ? 'ml-auto flex-row-reverse' : 'items-start'}`}
+      className={`group flex gap-3 max-w-[90%] sm:max-w-[85%] mb-4 ${isOwn ? 'ml-auto flex-row-reverse' : 'items-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
       onDoubleClick={handleDoubleClick}
     >
       {!isSticker && (
@@ -179,11 +180,25 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
           </div>
         ) : null}
 
-        {/* Time stamp */}
-        <div className={`mt-1 px-1 ${isOwn ? 'text-right' : 'text-left'}`}>
-          <span className="text-[10px] text-neutral-500 opacity-70 group-hover:opacity-100 transition-opacity font-mono">
+        {/* Time stamp with status indicators - always visible on mobile, hover on desktop */}
+        <div className={`mt-1 px-1 flex items-center gap-1 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+          <span className="text-[10px] text-neutral-500 opacity-100 sm:opacity-70 sm:group-hover:opacity-100 transition-opacity font-mono">
             {formattedTime}
           </span>
+          {/* Message status indicators (only for own messages) */}
+          {isOwn && (
+            <div className="flex items-center">
+              {message.id.startsWith('temp_') ? (
+                <Clock className="w-3 h-3 text-neutral-400" title="Отправляется..." />
+              ) : message.seen ? (
+                <CheckCheck className="w-3 h-3 text-blue-400" title="Прочитано" />
+              ) : message.delivered ? (
+                <Check className="w-3 h-3 text-neutral-400" title="Доставлено" />
+              ) : (
+                <Check className="w-3 h-3 text-neutral-600" title="Отправлено" />
+              )}
+            </div>
+          )}
         </div>
       </div>
       {showEmojiRain && <EmojiRain emoji={rainEmoji} />}

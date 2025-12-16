@@ -50,13 +50,38 @@ export function ProfileCreationDialog({ isOpen, onProfileCreate, roomId, isCreat
       toast({ title: 'Введите имя', variant: 'destructive' });
       return;
     }
-    if (!avatarDataUrl) {
-      toast({ title: 'Создайте и сохраните аватар', variant: 'destructive' });
-      return;
+
+    // If no avatar is saved, try to get current avatar from editor
+    let finalAvatarDataUrl = avatarDataUrl;
+    if (!finalAvatarDataUrl) {
+      // Try to trigger avatar save automatically
+      const avatarEditor = document.querySelector('[data-avatar-editor]') as any;
+      if (avatarEditor && avatarEditor.saveAvatar) {
+        finalAvatarDataUrl = avatarEditor.saveAvatar();
+      }
+
+      // If still no avatar, create a default one
+      if (!finalAvatarDataUrl) {
+        // Create a simple default avatar (8x8 pixel canvas)
+        const canvas = document.createElement('canvas');
+        canvas.width = 8;
+        canvas.height = 8;
+        const ctx = canvas.getContext('2d')!;
+        ctx.fillStyle = '#3b82f6'; // Blue background
+        ctx.fillRect(0, 0, 8, 8);
+        ctx.fillStyle = '#ffffff'; // White face
+        ctx.fillRect(2, 2, 4, 4);
+        ctx.fillStyle = '#000000'; // Black eyes
+        ctx.fillRect(2, 3, 1, 1);
+        ctx.fillRect(5, 3, 1, 1);
+        ctx.fillStyle = '#ff0000'; // Red mouth
+        ctx.fillRect(3, 5, 2, 1);
+        finalAvatarDataUrl = canvas.toDataURL();
+      }
     }
 
     try {
-      await onProfileCreate(username, avatarDataUrl);
+      await onProfileCreate(username, finalAvatarDataUrl);
       // Don't set isCreating to false on success, as the component will unmount
     } catch {
       // Error is handled by the caller, which will set isCreating to false
@@ -85,9 +110,14 @@ export function ProfileCreationDialog({ isOpen, onProfileCreate, roomId, isCreat
               className="h-12 text-lg"
               disabled={isCreating}
             />
-            <Button onClick={handleFinalSave} className="h-12 text-lg" disabled={isCreating || !username.trim() || !avatarDataUrl}>
+            <Button onClick={handleFinalSave} className="h-12 text-lg" disabled={isCreating || !username.trim()}>
               {isCreating ? <Loader2 className="animate-spin" /> : 'Войти в чат'}
             </Button>
+            {!avatarDataUrl && (
+              <p className="text-xs text-neutral-500 text-center">
+                Аватар будет создан автоматически, если не сохранен
+              </p>
+            )}
           </div>
         </div>
       </DialogContent>

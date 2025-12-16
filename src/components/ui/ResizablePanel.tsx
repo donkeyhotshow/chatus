@@ -76,6 +76,7 @@ export function ResizablePanel({
                 document.removeEventListener('mouseup', handleMouseUp);
             };
         }
+        return undefined;
     }, [isResizing, handleMouseMove, handleMouseUp]);
 
     // Touch events for mobile
@@ -84,7 +85,7 @@ export function ResizablePanel({
 
         e.preventDefault();
         setIsResizing(true);
-        startXRef.current = e.touches[0].clientX;
+        startXRef.current = e.touches[0]?.clientX ?? 0;
         startWidthRef.current = width;
     }, [width, disabled]);
 
@@ -92,8 +93,8 @@ export function ResizablePanel({
         if (!isResizing) return;
 
         const deltaX = resizeHandle === 'left'
-            ? startXRef.current - e.touches[0].clientX
-            : e.touches[0].clientX - startXRef.current;
+            ? startXRef.current - (e.touches[0]?.clientX ?? 0)
+            : (e.touches[0]?.clientX ?? 0) - startXRef.current;
 
         const newWidth = Math.min(
             Math.max(startWidthRef.current + deltaX, minWidth),
@@ -119,6 +120,7 @@ export function ResizablePanel({
                 document.removeEventListener('touchend', handleTouchEnd);
             };
         }
+        return undefined;
     }, [isResizing, handleTouchMove, handleTouchEnd]);
 
     return (

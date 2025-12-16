@@ -69,6 +69,7 @@ export function VerticalResizer({
                 document.removeEventListener('mouseup', handleMouseUp);
             };
         }
+        return undefined;
     }, [isResizing, handleMouseMove, handleMouseUp]);
 
     // Touch events for mobile
@@ -77,7 +78,7 @@ export function VerticalResizer({
 
         e.preventDefault();
         setIsResizing(true);
-        startYRef.current = e.touches[0].clientY;
+        startYRef.current = e.touches[0]?.clientY ?? 0;
 
         const parent = (e.target as HTMLElement).parentElement;
         if (parent) {
@@ -88,7 +89,7 @@ export function VerticalResizer({
     const handleTouchMove = useCallback((e: TouchEvent) => {
         if (!isResizing) return;
 
-        const deltaY = startYRef.current - e.touches[0].clientY;
+        const deltaY = startYRef.current - (e.touches[0]?.clientY ?? 0);
         const newHeight = Math.min(
             Math.max(startHeightRef.current + deltaY, minHeight),
             maxHeight
@@ -112,6 +113,7 @@ export function VerticalResizer({
                 document.removeEventListener('touchend', handleTouchEnd);
             };
         }
+        return undefined;
     }, [isResizing, handleTouchMove, handleTouchEnd]);
 
     return (

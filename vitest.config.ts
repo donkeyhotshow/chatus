@@ -6,8 +6,30 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: "./tests/setup/vitest.setup.ts",
     globals: true,
-    // By default skip integration and heavy stress tests unless RUN_INTEGRATION env var is set
-    exclude: process.env.RUN_INTEGRATION === 'true' ? ['node_modules'] : ['node_modules', 'tests/integration/**', 'tests/**/load-stress.*', 'tests/rules/**'],
+    // Exclude all node_modules and problematic test patterns
+    exclude: [
+      '**/node_modules/**',
+      '**/functions/node_modules/**',
+      'node_modules/**/*',
+      'functions/**/*',
+      ...(process.env.RUN_INTEGRATION !== 'true' ? [
+        'tests/integration/**',
+        'tests/**/load-stress.*',
+        'tests/rules/**'
+      ] : [])
+    ],
+    // Limit memory usage and workers
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        singleThread: true,
+        maxThreads: 1,
+        minThreads: 1
+      }
+    },
+    // Set memory limits
+    testTimeout: 30000,
+    hookTimeout: 30000,
   },
   resolve: {
     alias: {

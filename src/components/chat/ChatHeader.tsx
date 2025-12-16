@@ -1,9 +1,10 @@
 "use client";
 
-import { MoreVertical, PanelRightClose, PanelRightOpen, WifiOff } from 'lucide-react';
+import { MoreVertical, PanelRightClose, PanelRightOpen, WifiOff, ArrowLeft } from 'lucide-react';
 import { UserProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 type ChatHeaderProps = {
   roomId: string;
@@ -11,6 +12,7 @@ type ChatHeaderProps = {
   isCollaborationSpaceVisible: boolean;
   onToggleCollaborationSpace: () => void;
   isOnline?: boolean; // User's online status
+  onBack?: () => void; // Mobile back navigation
 };
 
 export function ChatHeader({
@@ -18,9 +20,12 @@ export function ChatHeader({
   otherUser,
   isCollaborationSpaceVisible,
   onToggleCollaborationSpace,
-  isOnline = true
+  isOnline = true,
+  onBack
 }: ChatHeaderProps) {
   const [networkStatus, setNetworkStatus] = useState(navigator.onLine);
+  const [showMenu, setShowMenu] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const handleOnline = () => setNetworkStatus(true);
@@ -35,9 +40,31 @@ export function ChatHeader({
     };
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showMenu && !(event.target as Element).closest('.relative')) {
+        setShowMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showMenu]);
+
   return (
     <header className="h-14 sm:h-16 flex items-center justify-between px-3 sm:px-4 lg:px-6 border-b border-white/10 bg-gradient-to-r from-black/60 to-neutral-900/60 backdrop-blur-md sticky top-0 z-20 shadow-lg">
       <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+        {isMobile && onBack && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onBack}
+            className="h-8 w-8 text-neutral-400 hover:text-white hover:bg-white/10 transition-all duration-200 hover:scale-105 flex-shrink-0"
+            title="Назад"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+        )}
         {otherUser && (
           <div className="flex items-center gap-2">
             <div
@@ -79,14 +106,56 @@ export function ChatHeader({
             <PanelRightOpen className="w-4 h-4 sm:w-5 sm:h-5" />
           }
         </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 sm:h-9 sm:w-9 text-neutral-400 hover:text-white hover:bg-white/10 transition-all duration-200 hover:scale-105"
-          title="Меню"
-        >
-          <MoreVertical className="w-4 h-4 sm:w-5 sm:h-5" />
-        </Button>
+        <div className="relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowMenu(!showMenu)}
+            className="h-8 w-8 sm:h-9 sm:w-9 text-neutral-400 hover:text-white hover:bg-white/10 transition-all duration-200 hover:scale-105"
+            title="Меню"
+          >
+            <MoreVertical className="w-4 h-4 sm:w-5 sm:h-5" />
+          </Button>
+
+          {showMenu && (
+            <div className="absolute right-0 top-full mt-2 w-48 bg-neutral-900 border border-white/10 rounded-lg shadow-xl z-50">
+              <div className="py-2">
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    // Add room settings functionality
+                    alert('Настройки комнаты (в разработке)');
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-neutral-300 hover:bg-white/10 hover:text-white transition-colors"
+                >
+                  Настройки комнаты
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    // Add user list functionality
+                    alert('Список пользователей (в разработке)');
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-neutral-300 hover:bg-white/10 hover:text-white transition-colors"
+                >
+                  Участники
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMenu(false);
+                    // Add clear chat functionality
+                    if (confirm('Очистить историю чата?')) {
+                      alert('Очистка чата (в разработке)');
+                    }
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
+                >
+                  Очистить чат
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );

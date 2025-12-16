@@ -6,6 +6,9 @@ import type { Message, Room, UserProfile } from '@/lib/types';
 import { ChatHeader } from './ChatHeader';
 import MessageList from './MessageList';
 import { MessageInput } from './MessageInput';
+import { NewMessageNotification } from './NewMessageNotification';
+import { ConnectionStatus } from './ConnectionStatus';
+import { MobileErrorHandler } from '../mobile/MobileErrorHandler';
 import DoodlePad from './DoodlePad';
 import { X } from 'lucide-react';
 import { useChatService } from '@/hooks/useChatService';
@@ -26,6 +29,7 @@ type ChatAreaProps = {
   roomId: string;
   isCollabSpaceVisible: boolean;
   onToggleCollaborationSpace: () => void;
+  onMobileBack?: () => void; // Mobile back navigation
 };
 
 export const ChatArea = memo(function ChatArea({
@@ -33,12 +37,15 @@ export const ChatArea = memo(function ChatArea({
   roomId,
   isCollabSpaceVisible,
   onToggleCollaborationSpace,
+  onMobileBack,
 }: ChatAreaProps) {
   const [replyTo, setReplyTo] = useState<Message | null>(null);
   const [showDoodlePad, setShowDoodlePad] = useState(false);
   const [imageForView, setImageForView] = useState<string | null>(null);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([]);
+  const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
+  const [newMessageCount, setNewMessageCount] = useState(0);
   const [inputAreaHeight, setInputAreaHeight] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('chatarea-input-height');
@@ -46,8 +53,30 @@ export const ChatArea = memo(function ChatArea({
     }
     return 120;
   });
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   const isMobile = useIsMobile();
+
+  // Mobile keyboard detection
+  useEffect(() => {
+    if (!isMobile) return;
+
+    const handleResize = () => {
+      const viewportHeight = window.visualViewport?.height || window.innerHeight;
+      const windowHeight = window.innerHeight;
+      const keyboardHeight = windowHeight - viewportHeight;
+
+      setKeyboardVisible(keyboardHeight > 150); // Keyboard is visible if viewport shrunk by more than 150px
+    };
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize);
+      return () => window.visualViewport?.removeEventListener('resize', handleResize);
+    } else {
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, [isMobile]);
 
   // Save input area height to localStorage
   const handleInputAreaResize = (height: number) => {
@@ -84,6 +113,7 @@ export const ChatArea = memo(function ChatArea({
     typingUsers: serviceTypingUsers,
     service,
     hasMoreMessages,
+    connectionState,
   } = useChatService(roomId, user);
 
   // Use presence hook for online status
@@ -92,6 +122,7 @@ export const ChatArea = memo(function ChatArea({
   // Audio for new messages
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const lastMessageCountRef = useRef<number>(0);
+  const messageListRef = useRef<any>(null);
 
   useEffect(() => {
     setTypingUsers(serviceTypingUsers);
@@ -196,7 +227,11 @@ export const ChatArea = memo(function ChatArea({
       logger.debug('[ChatArea] Message sent successfully', { roomId, userId: user.id });
     } catch (error) {
       logger.error('Failed to send message', error as Error, { roomId, userId: user.id });
-      toast({ title: 'Failed to send message', variant: 'destructive' });
+      toast({
+        title: 'Не удалось отправить сообщение',
+        description: 'Проверьте подключение к интернету и попробуйте снова',
+        variant: 'destructive'
+      });
     }
   }, [service, user, replyTo, roomId, toast]);
 
@@ -214,7 +249,11 @@ export const ChatArea = memo(function ChatArea({
       setShowDoodlePad(false);
     } catch (error) {
       logger.error('Failed to send doodle', error as Error, { roomId, userId: user.id });
-      toast({ title: 'Failed to send doodle', variant: 'destructive' });
+      toast({
+        title: 'Не удалось отправить рисунок',
+        description: 'Проверьте подключение к интернету и попробуйте снова',
+        variant: 'destructive'
+      });
     }
   }, [service, user, roomId, toast]);
 
@@ -231,7 +270,11 @@ export const ChatArea = memo(function ChatArea({
       });
     } catch (error) {
       logger.error('Failed to send sticker', error as Error, { roomId, userId: user.id });
-      toast({ title: 'Failed to send sticker', variant: 'destructive' });
+      toast({
+        title: 'Не удалось отправить стикер',
+        description: 'Проверьте подключение к интернету и попробуйте снова',
+        variant: 'destructive'
+      });
     }
   }, [service, user, roomId, toast]);
 
@@ -357,9 +400,47 @@ export const ChatArea = memo(function ChatArea({
     typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 2000);
   }, []);
 
+  const scrollToBottom = useCallback(() => {
+    if (messageListRef.current) {
+      messageListRef.current.scrollToIndex({
+        index: allMessages.length - 1,
+        behavior: 'smooth',
+        align: 'end',
+      });
+      setIsUserScrolledUp(false);
+      setNewMessageCount(0);
+    }
+  }, [allMessages.length]);
+
+  // Track if user scrolled up to show new message notification
+  const handleScroll = useCallback((isAtBottom: boolean) => {
+    setIsUserScrolledUp(!isAtBottom);
+    if (isAtBottom) {
+      setNewMessageCount(0);
+    }
+  }, []);
+
+  // Count new messages when user is scrolled up
+  useEffect(() => {
+    if (isUserScrolledUp && persistedMessages.length > lastMessageCountRef.current) {
+      const newMessages = persistedMessages.slice(lastMessageCountRef.current);
+      const newMessagesFromOthers = newMessages.filter(
+        msg => msg.user.id !== user.id && msg.type !== 'system'
+      );
+      setNewMessageCount(prev => prev + newMessagesFromOthers.length);
+    }
+  }, [persistedMessages, isUserScrolledUp, user.id]);
+
 
   return (
     <>
+      <ConnectionStatus />
+      <MobileErrorHandler
+        isOnline={connectionState?.isOnline}
+        isConnected={connectionState?.isConnected}
+        isReconnecting={connectionState?.isReconnecting}
+        onRetry={() => window.location.reload()}
+      />
       <section className="flex-1 flex flex-col md:border-r border-white/10 bg-black/50 backdrop-blur-sm relative h-full min-h-0">
         <ChatHeader
           roomId={roomId}
@@ -367,11 +448,13 @@ export const ChatArea = memo(function ChatArea({
           isCollaborationSpaceVisible={isCollabSpaceVisible}
           onToggleCollaborationSpace={onToggleCollaborationSpace}
           isOnline={isOnline}
+          onBack={onMobileBack}
         />
 
         {/* Messages area with proper flex grow */}
-        <div className="flex-1 min-h-0 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden relative">
           <MessageList
+            ref={messageListRef}
             messages={allMessages}
             isLoading={isInitialLoad && allMessages.length === 0}
             currentUserId={user.id}
@@ -381,6 +464,12 @@ export const ChatArea = memo(function ChatArea({
             onReply={handleReply}
             onLoadMore={service?.loadMoreMessages}
             hasMoreMessages={hasMoreMessages}
+            onScroll={handleScroll}
+          />
+          <NewMessageNotification
+            hasNewMessages={isUserScrolledUp && newMessageCount > 0}
+            newMessageCount={newMessageCount}
+            onScrollToBottom={scrollToBottom}
           />
         </div>
 
@@ -396,7 +485,8 @@ export const ChatArea = memo(function ChatArea({
 
         {/* Input area - resizable height on desktop */}
         <div
-          className="flex-shrink-0 relative bg-black/30 backdrop-blur-sm border-t border-white/10"
+          className={`flex-shrink-0 relative bg-black/30 backdrop-blur-sm border-t border-white/10 ${isMobile && keyboardVisible ? 'pb-safe-area-inset-bottom' : ''
+            }`}
           style={{
             height: isMobile ? 'auto' : `${inputAreaHeight}px`,
             minHeight: isMobile ? 'auto' : '80px'

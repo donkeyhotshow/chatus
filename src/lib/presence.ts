@@ -41,7 +41,7 @@ async function executeCleanup() {
 
 // Setup beforeunload handler
 if (typeof window !== 'undefined') {
-  window.addEventListener('beforeunload', (event) => {
+  window.addEventListener('beforeunload', (_event) => {
     // Execute cleanup synchronously for beforeunload
     // Note: async operations may not complete, but we try
     executeCleanup().catch(err => {

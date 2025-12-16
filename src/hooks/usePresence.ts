@@ -13,7 +13,7 @@ interface UsePresenceReturn {
 /**
  * Hook for managing user presence using Realtime Database
  */
-export function usePresence(roomId: string, userId: string | null): UsePresenceReturn {
+export function usePresence(_roomId: string, userId: string | null): UsePresenceReturn {
   const [presence, setPresence] = useState<PresenceState>({
     state: 'offline',
     lastChanged: new Date(),
@@ -109,4 +109,3 @@ export function usePresence(roomId: string, userId: string | null): UsePresenceR
     updatePresence,
   };
 }
-

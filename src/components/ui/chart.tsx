@@ -61,7 +61,7 @@ export const ChartContainer = React.forwardRef<
 })
 ChartContainer.displayName = "Chart"
 
-export const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
+export const ChartStyle = ({ id: _id, config: _config }: { id: string; config: ChartConfig }) => {
   // Chart styles would be generated here based on id and config
   return null
 }

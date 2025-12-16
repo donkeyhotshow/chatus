@@ -139,7 +139,16 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
                 />
             )}
             <Card className="bg-neutral-950/80 border-white/10 backdrop-blur-sm w-full max-w-sm">
-                <CardHeader className="text-center">
+                <CardHeader className="text-center relative">
+                    <Button
+                        onClick={onGameEnd}
+                        variant="ghost"
+                        size="sm"
+                        className="absolute top-4 left-4 text-neutral-400 hover:text-white z-10"
+                        title="Back to Lobby"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                    </Button>
                     <CardTitle className="font-headline text-2xl">Tic-Tac-Toe</CardTitle>
                     <CardTitle className="text-sm font-medium text-neutral-400 pt-2">{getStatus()}</CardTitle>
                 </CardHeader>
@@ -150,7 +159,7 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
                                 key={i}
                                 onClick={() => handleClick(i)}
                                 className={`
-                                    h-20 w-20 bg-neutral-900 rounded-lg flex items-center justify-center text-4xl font-bold 
+                                    h-20 w-20 bg-neutral-900 rounded-lg flex items-center justify-center text-4xl font-bold
                                     transition-all duration-200 hover:bg-neutral-800 disabled:cursor-not-allowed
                                     ${lastMoveIndex === i ? 'ring-2 ring-cyan-400 ring-offset-2 ring-offset-neutral-950' : ''}
                                     ${!cell && myTurn && !winner ? 'hover:scale-105' : ''}

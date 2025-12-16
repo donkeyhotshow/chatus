@@ -53,7 +53,9 @@ export class DrawingService {
   private compressPath(points: DrawPoint[], tolerance: number): DrawPoint[] {
     if (points.length < 3) return points;
 
-    const simplified: DrawPoint[] = [points[0]];
+    const firstPoint = points[0];
+    if (!firstPoint) return [];
+    const simplified: DrawPoint[] = [firstPoint];
 
     for (let i = 1; i < points.length - 1; i++) {
       const prev = points[i - 1];
@@ -63,7 +65,10 @@ export class DrawingService {
       if (distance > tolerance) simplified.push(curr);
     }
 
-    simplified.push(points[points.length - 1]);
+    const lastPoint = points[points.length - 1];
+    if (lastPoint) {
+      simplified.push(lastPoint);
+    }
     return simplified;
   }
 

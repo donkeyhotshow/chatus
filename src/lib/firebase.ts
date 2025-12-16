@@ -45,44 +45,47 @@ const isBrowser = typeof window !== "undefined";
 if (hasValidConfig && isBrowser) {
   try {
     console.log('Initializing Firebase...');
-    app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
+    const existingApps = getApps();
+    app = existingApps.length > 0 ? existingApps[0]! : initializeApp(firebaseConfig);
     console.log('Firebase app initialized:', !!app);
 
-    auth = getAuth(app);
-    console.log('Firebase auth initialized:', !!auth);
+    if (app) {
+      auth = getAuth(app);
+      console.log('Firebase auth initialized:', !!auth);
 
-    db = getDatabase(app);
-    console.log('Firebase database initialized:', !!db);
+      db = getDatabase(app);
+      console.log('Firebase database initialized:', !!db);
 
-    firestore = getFirestore(app);
-    console.log('Firebase firestore initialized:', !!firestore);
+      firestore = getFirestore(app);
+      console.log('Firebase firestore initialized:', !!firestore);
 
-    storage = getStorage(app);
-    console.log('Firebase storage initialized:', !!storage);
+      storage = getStorage(app);
+      console.log('Firebase storage initialized:', !!storage);
 
-    // Analytics: init only when supported in browser
-    analyticsIsSupported()
-      .then((supported) => {
-        if (supported && app) {
-          try {
-            analytics = getAnalytics(app);
-            console.log('Firebase analytics initialized:', !!analytics);
-          } catch {
-            analytics = null;
+      // Analytics: init only when supported in browser
+      analyticsIsSupported()
+        .then((supported) => {
+          if (supported && app) {
+            try {
+              analytics = getAnalytics(app);
+              console.log('Firebase analytics initialized:', !!analytics);
+            } catch {
+              analytics = null;
+            }
           }
-        }
-      })
-      .catch(() => {
-        analytics = null;
-      });
+        })
+        .catch(() => {
+          analytics = null;
+        });
 
-    // Messaging: browser only
-    try {
-      messaging = getMessaging(app);
-      console.log('Firebase messaging initialized:', !!messaging);
-    } catch (error) {
-      console.warn('Firebase messaging initialization failed:', error);
-      messaging = null;
+      // Messaging: browser only
+      try {
+        messaging = getMessaging(app);
+        console.log('Firebase messaging initialized:', !!messaging);
+      } catch (error) {
+        console.warn('Firebase messaging initialization failed:', error);
+        messaging = null;
+      }
     }
   } catch (error) {
     // Log error for debugging
