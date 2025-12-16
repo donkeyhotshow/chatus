@@ -71,7 +71,8 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
 
     const { guard } = useActionGuard();
 
-    const handleClick = guard((i: number) => {
+    const handleClick = guard((...args: unknown[]) => {
+        const i = args[0] as number;
         if (winner || displayBoard?.[i] || !myTurn || !otherUser) return;
 
         // Оптимистичное обновление

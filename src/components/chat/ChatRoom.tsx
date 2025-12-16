@@ -6,9 +6,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Room } from '@/lib/types';
 import { ChatArea } from './ChatArea';
 import { ProfileCreationDialog } from './ProfileCreationDialog';
-import { MessageCircle, Gamepad2 } from 'lucide-react';
+// Icons removed as they are not used in this component
 import { MobileNavigation } from '../mobile/MobileNavigation';
-import { MobileErrorHandler } from '../mobile/MobileErrorHandler';
+// MobileErrorHandler removed as it's not used in this component
 import { ResizablePanel } from '../ui/ResizablePanel';
 
 // Lazy load heavy components

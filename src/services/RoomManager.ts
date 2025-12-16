@@ -2,14 +2,14 @@
 
 /**
  * RoomManager - Менеджер состояния комнаты
- * 
+ *
  * Управляет всеми аспектами комнаты:
  * - Участники и их профили
  * - Сообщения (с пагинацией)
  * - Игры и их состояния
  * - Холст (canvas sheets и paths)
  * - Подписки Firestore
- * 
+ *
  * Архитектура: Singleton на комнату для изоляции состояния
  */
 
@@ -18,9 +18,9 @@ import {
 } from "firebase/firestore";
 import { Auth } from "firebase/auth";
 import { FirebaseStorage } from "firebase/storage";
-import { ChatService, getChatService } from "./ChatService";
 import { logger } from "@/lib/logger";
 import type { UserProfile, Message, GameState, Room } from "@/lib/types";
+import { ChatService, getChatService } from "./ChatService";
 
 type RoomManagerListener = () => void;
 
@@ -37,7 +37,7 @@ export interface RoomManagerState {
 
 /**
  * RoomManager - централизованное управление состоянием комнаты
- * 
+ *
  * Преимущества:
  * - Изоляция состояния между комнатами
  * - Автоматическая очистка подписок
@@ -49,10 +49,10 @@ export class RoomManager {
   private firestore: Firestore;
   private auth: Auth;
   private storage: FirebaseStorage;
-  
+
   // Внутренний ChatService для этой комнаты
   private chatService: ChatService;
-  
+
   // Состояние комнаты
   private state: RoomManagerState = {
     room: null,
@@ -64,17 +64,17 @@ export class RoomManager {
     isInitialLoad: true,
     isConnected: false,
   };
-  
+
   // Подписки для очистки
   private unsubscribes: Unsubscribe[] = [];
-  
+
   // Слушатели изменений состояния
   private listeners: RoomManagerListener[] = [];
-  
+
   // Защита от race conditions
   private isJoining: boolean = false;
   private joinPromise: Promise<void> | null = null;
-  
+
   constructor(
     roomId: string,
     firestore: Firestore,
@@ -85,19 +85,19 @@ export class RoomManager {
     this.firestore = firestore;
     this.auth = auth;
     this.storage = storage;
-    
+
     // Получаем ChatService для этой комнаты (уже Singleton на комнату)
     this.chatService = getChatService(roomId, firestore, auth, storage);
-    
+
     // Подписываемся на изменения ChatService
     this.chatService.subscribe(() => {
       this.syncStateFromChatService();
     });
-    
+
     // Инициализируем состояние
     this.syncStateFromChatService();
   }
-  
+
   /**
    * Синхронизирует состояние RoomManager из ChatService
    */
@@ -112,17 +112,17 @@ export class RoomManager {
       isInitialLoad: this.chatService.isInitialLoad,
       isConnected: true,
     };
-    
+
     this.notify();
   }
-  
+
   /**
    * Получить текущее состояние
    */
   public getState(): RoomManagerState {
     return { ...this.state };
   }
-  
+
   /**
    * Подписаться на изменения состояния
    */
@@ -130,21 +130,21 @@ export class RoomManager {
     this.listeners.push(listener);
     return () => this.unsubscribe(listener);
   }
-  
+
   /**
    * Отписаться от изменений
    */
   public unsubscribe(listener: RoomManagerListener) {
     this.listeners = this.listeners.filter(l => l !== listener);
   }
-  
+
   /**
    * Уведомить всех слушателей об изменении
    */
   private notify() {
     this.listeners.forEach(listener => listener());
   }
-  
+
   /**
    * Присоединиться к комнате
    */
@@ -153,7 +153,7 @@ export class RoomManager {
     if (this.isJoining && this.joinPromise) {
       return this.joinPromise;
     }
-    
+
     this.isJoining = true;
     this.joinPromise = (async () => {
       try {
@@ -165,10 +165,10 @@ export class RoomManager {
         this.joinPromise = null;
       }
     })();
-    
+
     return this.joinPromise;
   }
-  
+
   /**
    * Покинуть комнату
    */
@@ -177,7 +177,7 @@ export class RoomManager {
     this.state.isConnected = false;
     this.notify();
   }
-  
+
   /**
    * Отправить сообщение
    */
@@ -187,21 +187,21 @@ export class RoomManager {
   ): Promise<void> {
     return this.chatService.sendMessage(messageData, clientMessageId);
   }
-  
+
   /**
    * Загрузить больше сообщений (пагинация)
    */
   public async loadMoreMessages(): Promise<void> {
     return this.chatService.loadMoreMessages();
   }
-  
+
   /**
    * Удалить сообщение
    */
   public async deleteMessage(messageId: string): Promise<void> {
     return this.chatService.deleteMessage(messageId);
   }
-  
+
   /**
    * Переключить реакцию на сообщение
    */
@@ -212,7 +212,7 @@ export class RoomManager {
   ): Promise<void> {
     return this.chatService.toggleReaction(messageId, emoji, user);
   }
-  
+
   /**
    * Установить статус набора текста
    * TODO: Restore when ChatService implements setTypingStatus
@@ -222,73 +222,73 @@ export class RoomManager {
     return this.chatService.setTypingStatus(username, isTyping);
   }
   */
-  
+
   /**
    * Загрузить изображение
    */
   public async uploadImage(file: File): Promise<string> {
     return this.chatService.uploadImage(file);
   }
-  
+
   /**
    * Обновить состояние игры
    */
   public async updateGameState(gameId: string, newState: Partial<GameState>): Promise<void> {
     return this.chatService.updateGameState(gameId, newState);
   }
-  
+
   /**
    * Удалить игру
    */
   public async deleteGame(gameId: string): Promise<void> {
     return this.chatService.deleteGame(gameId);
   }
-  
+
   /**
    * Создать лист холста
    */
   public async createCanvasSheet(name: string) {
     return this.chatService.createCanvasSheet(name);
   }
-  
+
   /**
    * Сохранить путь рисования
    */
   public async saveCanvasPath(pathData: Omit<import("@/lib/types").CanvasPath, 'id' | 'createdAt'>) {
     return this.chatService.saveCanvasPath(pathData);
   }
-  
+
   /**
    * Очистить лист холста
    */
   public async clearCanvasSheet(sheetId: string) {
     return this.chatService.clearCanvasSheet(sheetId);
   }
-  
+
   /**
    * Получить ChatService (для обратной совместимости)
    */
   public getChatService(): ChatService {
     return this.chatService;
   }
-  
+
   /**
    * Отключиться и очистить все ресурсы
    */
   public async disconnect(): Promise<void> {
     // Отписаться от ChatService
     this.chatService.unsubscribe(() => this.syncStateFromChatService());
-    
+
     // Отключить ChatService
     await this.chatService.disconnect();
-    
+
     // Очистить все подписки
     this.unsubscribes.forEach(unsub => unsub());
     this.unsubscribes = [];
-    
+
     // Очистить слушатели
     this.listeners = [];
-    
+
     // Сбросить состояние
     this.state = {
       room: null,
@@ -300,10 +300,10 @@ export class RoomManager {
       isInitialLoad: true,
       isConnected: false,
     };
-    
+
     logger.info("RoomManager disconnected", { roomId: this.roomId });
   }
-  
+
   /**
    * Получить ID комнаты
    */
@@ -320,7 +320,7 @@ const roomManagers = new Map<string, RoomManager>();
 
 /**
  * Получить RoomManager для комнаты (Singleton на комнату)
- * 
+ *
  * @param roomId - ID комнаты
  * @param firestore - Экземпляр Firestore
  * @param auth - Экземпляр Auth
@@ -337,12 +337,16 @@ export function getRoomManager(
     roomManagers.set(roomId, new RoomManager(roomId, firestore, auth, storage));
     logger.info("RoomManager created", { roomId });
   }
-  return roomManagers.get(roomId)!;
+  const manager = roomManagers.get(roomId);
+  if (!manager) {
+    throw new Error(`RoomManager not found for room ${roomId}`);
+  }
+  return manager;
 }
 
 /**
  * Отключить и удалить RoomManager для комнаты
- * 
+ *
  * @param roomId - ID комнаты
  */
 export async function disconnectRoomManager(roomId: string): Promise<void> {
@@ -365,11 +369,10 @@ export function getActiveRoomIds(): string[] {
  * Очистить все RoomManager (для тестов)
  */
 export async function clearAllRoomManagers(): Promise<void> {
-  const disconnectPromises = Array.from(roomManagers.values()).map(manager => 
+  const disconnectPromises = Array.from(roomManagers.values()).map(manager =>
     manager.disconnect()
   );
   await Promise.all(disconnectPromises);
   roomManagers.clear();
   logger.info("All RoomManagers cleared");
 }
-

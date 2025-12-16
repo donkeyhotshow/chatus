@@ -9,9 +9,12 @@ class SoundDesigner {
     constructor() {
         if (typeof window !== 'undefined') {
             try {
-                this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-            } catch (e) {
-                console.warn('Web Audio API not supported');
+                this.audioContext = new (window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext)();
+            } catch {
+                if (process.env.NODE_ENV === 'development') {
+                    // eslint-disable-next-line no-console
+                    console.warn('Web Audio API not supported');
+                }
             }
         }
     }
@@ -180,7 +183,10 @@ export function useSoundDesign() {
             else if (soundType === 'playColorSelect') await designer.playColorSelect();
             else if (soundType === 'playSuccess') await designer.playSuccess();
         } catch (error) {
-            console.warn('Sound playback failed:', error);
+            if (process.env.NODE_ENV === 'development') {
+                // eslint-disable-next-line no-console
+                console.warn('Sound playback failed:', error);
+            }
         }
     }, [getSoundDesigner]);
 
@@ -189,12 +195,20 @@ export function useSoundDesign() {
 
         try {
             if (typeof pattern === 'string' && pattern in HapticPatterns) {
-                navigator.vibrate(HapticPatterns[pattern]);
+                const hapticPattern = HapticPatterns[pattern];
+                if (Array.isArray(hapticPattern)) {
+                    navigator.vibrate([...hapticPattern]);
+                } else {
+                    navigator.vibrate(hapticPattern as number);
+                }
             } else {
                 navigator.vibrate(pattern as number | number[]);
             }
         } catch (error) {
-            console.warn('Haptic feedback failed:', error);
+            if (process.env.NODE_ENV === 'development') {
+                // eslint-disable-next-line no-console
+                console.warn('Haptic feedback failed:', error);
+            }
         }
     }, []);
 

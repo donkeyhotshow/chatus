@@ -92,7 +92,7 @@ async function avatarConfetti() {
         colors: colors,
         shapes: ['square'],
         scalar: 0.6,
-        gravity: 0.8,
+
     });
 
     // Дополнительный взрыв через 200мс
@@ -125,8 +125,8 @@ async function canvasConfetti() {
                 colors: colors,
                 shapes: ['circle'],
                 scalar: 1.2,
-                gravity: 0.6,
-                drift: (Math.random() - 0.5) * 2, // Случайный дрифт
+
+
             });
         }, i * 150);
     }
@@ -144,7 +144,7 @@ async function achievementConfetti() {
         colors: colors,
         shapes: ['star'],
         scalar: 1.5,
-        gravity: 0.4,
+
     });
 
     // Дополнительные звезды

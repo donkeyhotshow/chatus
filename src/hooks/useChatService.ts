@@ -1,10 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { ChatService, getChatService } from '../services/ChatService';
-import type { Message, UserProfile, GameState } from '../lib/types';
 import { useFirebase } from '@/components/firebase/FirebaseProvider';
-import { useConnectionManager } from './useConnectionManager';
 import { logger } from '@/lib/logger';
+import type { Message, UserProfile, GameState } from '../lib/types';
+import { ChatService, getChatService } from '../services/ChatService';
+import { useConnectionManager } from './useConnectionManager';
 
 interface ChatState {
   messages: Message[];
@@ -105,28 +105,20 @@ export const useChatService = (roomId: string, currentUser?: UserProfile) => {
     };
 
     // Handle connection errors
-    const handleError = (error: Error) => {
-      connectionManager.handleConnectionError(error);
-    };
+    // const handleError = (error: Error) => {
+    //   connectionManager.handleConnectionError(error);
+    // };
 
     chatService.subscribe(handleUpdate);
     handleUpdate(); // Initial state
 
-    // Subscribe to service errors if available
-    if (chatService.on) {
-      chatService.on('error', handleError);
-    }
-
     return () => {
       chatService.unsubscribe(handleUpdate);
-      if (chatService.off) {
-        chatService.off('error', handleError);
-      }
       // Note: Don't call disconnect() here as ChatService is singleton per room
       // Disconnect should only be called when explicitly leaving the room
       // Calling it here causes issues with fast room switching and state loss
     };
-  }, [roomId, currentUser, firebaseContext]);
+  }, [roomId, currentUser, firebaseContext, connectionManager]);
 
   return {
     ...state,

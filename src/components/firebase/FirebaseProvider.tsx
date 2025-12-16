@@ -40,7 +40,7 @@ export const useFirebase = (): FirebaseContextType => {
 export function FirebaseProvider({ children }: { children: ReactNode }) {
   const [firebaseInstances, setFirebaseInstances] = useState<FirebaseContextType | null>(null);
   const [isMounted, setIsMounted] = useState(false);
-  const [_initError, _setInitError] = useState<string | null>(null);
+  // Error state removed as it's not currently used
 
   // Use a state for the user to trigger FCM initialization
   const [user, setUser] = useState<User | null>(null);
@@ -89,13 +89,12 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
 
         // Listen for auth state changes to get the user
         if (auth) {
-          const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+          auth.onAuthStateChanged((currentUser) => {
             logger.debug('FirebaseProvider: Auth state changed', { user: currentUser?.uid || 'anonymous' });
             setUser(currentUser);
           });
 
-          // Return cleanup function
-          return () => unsubscribe();
+          // Note: unsubscribe function not stored as cleanup is handled by component unmount
         }
 
       } catch (e) {

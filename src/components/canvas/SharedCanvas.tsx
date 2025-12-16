@@ -281,7 +281,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     };
   };
 
-  const getTouchPos = (touch: Touch) => {
+  const getTouchPos = (touch: React.Touch) => {
     const canvas = canvasRef.current;
     if (!canvas) {
       return { x: 0, y: 0 };
@@ -293,7 +293,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     };
   };
 
-  const getTouchDistance = (touches: TouchList) => {
+  const getTouchDistance = (touches: React.TouchList) => {
     if (touches.length < 2) return 0;
     const touch1 = touches[0];
     const touch2 = touches[1];
@@ -303,7 +303,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     );
   };
 
-  const getTouchCenter = (touches: TouchList) => {
+  const getTouchCenter = (touches: React.TouchList) => {
     if (touches.length < 2) return { x: 0, y: 0 };
     const touch1 = touches[0];
     const touch2 = touches[1];

@@ -2,7 +2,7 @@
 
 interface AnalyticsEvent {
     name: string
-    properties?: Record<string, any>
+    properties?: Record<string, unknown>
     timestamp?: number
 }
 
@@ -24,7 +24,7 @@ class Analytics {
     }
 
     // Отслеживание событий
-    track(name: string, properties?: Record<string, any>): void {
+    track(name: string, properties?: Record<string, unknown>): void {
         const event: AnalyticsEvent = {
             name,
             properties: {
@@ -41,7 +41,8 @@ class Analytics {
 
         if (this.isProduction) {
             this.sendEvent(event)
-        } else {
+        } else if (process.env.NODE_ENV === 'development') {
+            // eslint-disable-next-line no-console
             console.log('📊 Analytics Event:', event)
         }
     }
@@ -59,7 +60,8 @@ class Analytics {
 
         if (this.isProduction) {
             this.sendMetric(metric)
-        } else {
+        } else if (process.env.NODE_ENV === 'development') {
+            // eslint-disable-next-line no-console
             console.log(`⚡ Performance Metric: ${name} = ${value}${unit}`)
         }
     }
@@ -85,7 +87,7 @@ class Analytics {
     }
 
     // Отслеживание ошибок
-    trackError(error: Error, context?: Record<string, any>): void {
+    trackError(error: Error, context?: Record<string, unknown>): void {
         this.track('error', {
             message: error.message,
             stack: error.stack,
@@ -95,7 +97,7 @@ class Analytics {
     }
 
     // Отслеживание пользовательских действий
-    trackUserAction(action: string, target?: string, properties?: Record<string, any>): void {
+    trackUserAction(action: string, target?: string, properties?: Record<string, unknown>): void {
         this.track('user_action', {
             action,
             target,
@@ -117,10 +119,12 @@ class Analytics {
 
         // Memory usage
         if ('memory' in performance) {
-            const memory = (performance as any).memory
-            this.recordMetric('memory_used', memory.usedJSHeapSize, 'bytes')
-            this.recordMetric('memory_total', memory.totalJSHeapSize, 'bytes')
-            this.recordMetric('memory_limit', memory.jsHeapSizeLimit, 'bytes')
+            const memory = (performance as { memory?: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } }).memory
+            if (memory) {
+                this.recordMetric('memory_used', memory.usedJSHeapSize, 'bytes')
+                this.recordMetric('memory_total', memory.totalJSHeapSize, 'bytes')
+                this.recordMetric('memory_limit', memory.jsHeapSizeLimit, 'bytes')
+            }
         }
     }
 
@@ -129,7 +133,7 @@ class Analytics {
         try {
             // Здесь можно интегрировать с Google Analytics, Mixpanel, Amplitude и т.д.
             if (typeof window !== 'undefined' && 'gtag' in window) {
-                (window as any).gtag('event', event.name, event.properties)
+                (window as { gtag?: (command: string, eventName: string, parameters?: Record<string, unknown>) => void }).gtag?.('event', event.name, event.properties)
             }
 
             // Или отправить на собственный сервер
@@ -139,7 +143,10 @@ class Analytics {
             //   body: JSON.stringify(event)
             // })
         } catch (error) {
-            console.error('Failed to send analytics event:', error)
+            if (process.env.NODE_ENV === 'development') {
+                // eslint-disable-next-line no-console
+                console.error('Failed to send analytics event:', error)
+            }
         }
     }
 
@@ -148,7 +155,7 @@ class Analytics {
         try {
             // Интеграция с системами мониторинга
             if (typeof window !== 'undefined' && 'gtag' in window) {
-                (window as any).gtag('event', 'performance_metric', {
+                (window as { gtag?: (command: string, eventName: string, parameters?: Record<string, unknown>) => void }).gtag?.('event', 'performance_metric', {
                     event_category: 'Performance',
                     event_label: metric.name,
                     value: Math.round(metric.value),
@@ -159,7 +166,10 @@ class Analytics {
                 })
             }
         } catch (error) {
-            console.error('Failed to send performance metric:', error)
+            if (process.env.NODE_ENV === 'development') {
+                // eslint-disable-next-line no-console
+                console.error('Failed to send performance metric:', error)
+            }
         }
     }
 

@@ -4,17 +4,17 @@ import {
   collection, query, orderBy, onSnapshot, addDoc,
   serverTimestamp, where, Unsubscribe, deleteDoc, doc, runTransaction, limit, setDoc, getDoc, Firestore, writeBatch, getDocs, DocumentReference, DocumentSnapshot, startAfter, Timestamp, arrayRemove, DocumentData
 } from "firebase/firestore";
-import { TypingManager } from '@/lib/realtime';
-import { ref, uploadBytes, getDownloadURL, FirebaseStorage } from "firebase/storage";
-import { Message, CanvasPath, Reaction, UserProfile, GameState, Room, FirebaseError } from "@/lib/types";
 import { Auth, signInAnonymously } from "firebase/auth";
+import { ref, uploadBytes, getDownloadURL, FirebaseStorage } from "firebase/storage";
 import { errorEmitter } from "@/lib/error-emitter";
 import { FirestorePermissionError } from "@/lib/errors";
-import { logger } from "@/lib/logger";
-import { getMessageQueue } from "./MessageQueue";
 import { isFirebaseConfigValid } from "@/lib/firebase-config";
 import { isDemoMode } from "@/lib/demo-mode";
+import { logger } from "@/lib/logger";
+import { TypingManager } from '@/lib/realtime';
+import { Message, CanvasPath, Reaction, UserProfile, GameState, Room, FirebaseError } from "@/lib/types";
 import { withRetryAndTimeout } from "@/lib/utils";
+import { getMessageQueue } from "./MessageQueue";
 
 type ChatServiceListener = () => void;
 
@@ -86,9 +86,10 @@ export class ChatService {
   private get messageQueue() {
     if (!this._messageQueue) {
       this._messageQueue = getMessageQueue();
-      // Setup message queue callback
-      this._messageQueue.setSendCallback((messageData, clientMessageId) => {
-        return this.sendMessage(messageData, clientMessageId);
+      // Setup message queue callback with proper binding to avoid circular reference
+      this._messageQueue.setSendCallback(async (messageData, clientMessageId) => {
+        // Use a bound method to avoid "Cannot access before initialization" errors
+        return await this.sendMessageInternal(messageData, clientMessageId);
       });
     }
     return this._messageQueue;
@@ -215,15 +216,15 @@ export class ChatService {
           id: doc.id,
           ...data,
           // Ensure senderId exists (backward compatibility)
-          senderId: (data as any)?.senderId || (data as any)?.user?.id || '',
+          senderId: (data as { senderId?: string; user?: { id?: string } })?.senderId || (data as { senderId?: string; user?: { id?: string } })?.user?.id || '',
         } as Message;
       });
 
 
       // Set snapshots only if we have messages
-      if (documentSnapshots && (documentSnapshots as any).docs && (documentSnapshots as any).docs.length > 0) {
-        this.firstMessageSnapshot = (documentSnapshots as any).docs[0];
-        this.lastMessageSnapshot = (documentSnapshots as any).docs[(documentSnapshots as any).docs.length - 1];
+      if (documentSnapshots && (documentSnapshots as { docs?: unknown[] }).docs && (documentSnapshots as { docs: unknown[] }).docs.length > 0) {
+        this.firstMessageSnapshot = (documentSnapshots as { docs: unknown[] }).docs[0];
+        this.lastMessageSnapshot = (documentSnapshots as { docs: unknown[] }).docs[(documentSnapshots as { docs: unknown[] }).docs.length - 1];
       } else {
         this.firstMessageSnapshot = null;
         this.lastMessageSnapshot = null;
@@ -288,14 +289,14 @@ export class ChatService {
         const msg: Message = {
           id: docSnapshot.id,
           ...data,
-          senderId: (data as any)?.senderId || (data as any)?.user?.id || '',
-          reactions: (data as any)?.reactions || [],
-          delivered: (data as any)?.delivered ?? false,
-          seen: (data as any)?.seen ?? false,
+          senderId: (data as { senderId?: string; user?: { id?: string } })?.senderId || (data as { senderId?: string; user?: { id?: string } })?.user?.id || '',
+          reactions: (data as { reactions?: unknown[] })?.reactions || [],
+          delivered: (data as { delivered?: boolean })?.delivered ?? false,
+          seen: (data as { seen?: boolean })?.seen ?? false,
         } as Message;
 
         // Deduplicate by id/clientMessageId
-        const dedupeKey = msg.id || (msg as any).clientMessageId;
+        const dedupeKey = msg.id || (msg as { clientMessageId?: string }).clientMessageId;
         if (dedupeKey && this.receivedMessageIds.has(dedupeKey)) return;
         if (dedupeKey) this.receivedMessageIds.add(dedupeKey);
 
@@ -562,13 +563,13 @@ export class ChatService {
         }
 
         const roomData = roomDoc.data() as Room;
-        const updatedParticipants = (roomData.participants || []).filter(id => id !== this.currentUser!.id);
-        const updatedProfiles = (roomData.participantProfiles || []).filter(p => p.id !== this.currentUser!.id);
+        const updatedParticipants = (roomData.participants || []).filter(id => id !== this.currentUser?.id);
+        const updatedProfiles = (roomData.participantProfiles || []).filter(p => p.id !== this.currentUser?.id);
 
         transaction.update(roomRef, {
           participants: updatedParticipants,
           participantProfiles: updatedProfiles,
-          typing: arrayRemove(this.currentUser!.name),
+          typing: arrayRemove(this.currentUser?.name || ''),
           lastUpdated: serverTimestamp()
         });
       }), { timeoutMs: 30_000, attempts: 3, backoffMs: 500 });
@@ -597,6 +598,10 @@ export class ChatService {
   // --- Messages with Rate Limiting ---
 
   public async sendMessage(messageData: Omit<Message, 'id' | 'createdAt' | 'reactions' | 'delivered' | 'seen'>, clientMessageId?: string) {
+    return this.sendMessageInternal(messageData, clientMessageId);
+  }
+
+  private async sendMessageInternal(messageData: Omit<Message, 'id' | 'createdAt' | 'reactions' | 'delivered' | 'seen'>, clientMessageId?: string) {
     // Prevent re-entrant concurrent sends that could cause race conditions.
     // Do not await timers here (breaks tests with fake timers). If another send
     // is in progress, we proceed but mark sendingMessage to avoid deep reentrancy.
@@ -692,7 +697,7 @@ export class ChatService {
     try {
       await withRetryAndTimeout(() => addDoc(collection(this.firestore, 'rooms', this.roomId, 'messages'), {
         ...messageData,
-        senderId: this.currentUser!.id, // Quick access for filtering/indexing
+        senderId: this.currentUser?.id || '', // Quick access for filtering/indexing
         clientMessageId: msgId, // Store for deduplication on receive
         createdAt: serverTimestamp(),
         reactions: [],
@@ -828,7 +833,7 @@ export class ChatService {
     try {
       await runTransaction(this.firestore, async (transaction) => {
         const messageDoc = await transaction.get(messageRef);
-        if (!messageDoc.exists()) throw "Document does not exist!";
+        if (!messageDoc.exists()) throw new Error("Document does not exist!");
 
         const messageData = messageDoc.data() as Message;
         const newReactions = messageData.reactions || [];
@@ -905,7 +910,7 @@ export class ChatService {
     let hasUpdates = false;
 
     this.messages.forEach(msg => {
-      if (msg.senderId !== this.currentUser!.id && !msg.seen) {
+      if (msg.senderId !== this.currentUser?.id && !msg.seen) {
         const msgRef = doc(this.firestore, 'rooms', this.roomId, 'messages', msg.id);
         batch.update(msgRef, { seen: true });
         hasUpdates = true;
@@ -936,7 +941,7 @@ export class ChatService {
     }
 
     const safeFileName = Date.now().toString();
-    const storagePath = `chat_images/${this.roomId}/${this.currentUser!.id}/${safeFileName}`;
+    const storagePath = `chat_images/${this.roomId}/${this.currentUser?.id || 'anonymous'}/${safeFileName}`;
     const storageRef = ref(this.storage, storagePath);
 
     try {
@@ -1196,7 +1201,11 @@ export function getChatService(
     chatServices.set(roomId, new ChatService(roomId, firestore, auth, storage));
     logger.info("ChatService created", { roomId });
   }
-  return chatServices.get(roomId)!;
+  const service = chatServices.get(roomId);
+  if (!service) {
+    throw new Error(`ChatService not found for room ${roomId}`);
+  }
+  return service;
 }
 
 /**

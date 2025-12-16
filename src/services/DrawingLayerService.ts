@@ -175,7 +175,8 @@ export class DrawingLayerService {
 
   renderAllLayers() {
     if (!this.canvas) return;
-    const ctx = this.canvas.getContext('2d')!;
+    const ctx = this.canvas.getContext('2d');
+    if (!ctx) return;
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     const sorted = [...this.layers].sort((a, b) => a.zIndex - b.zIndex);
     sorted.forEach((layer) => {

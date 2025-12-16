@@ -55,11 +55,12 @@ export function CollaborativeCanvas({ roomId }: CollaborativeCanvasProps) {
     const canvas = canvasRef.current;
     if (!canvas || !user || !firestore) return;
 
-    const handleMouseMove = throttle((e: MouseEvent) => {
+    const handleMouseMove = throttle((e: unknown) => {
+      const mouseEvent = e as MouseEvent;
       if (!canvas || !user || !firestore) return;
       const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      const x = mouseEvent.clientX - rect.left;
+      const y = mouseEvent.clientY - rect.top;
 
       void setDoc(doc(firestore!, `rooms/${roomId}/cursors/${user.uid}`), {
         x,

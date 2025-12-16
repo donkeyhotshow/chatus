@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { usest } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { logger } from '@/lib/logger';
 
 interface ConnectionState {

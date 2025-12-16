@@ -59,7 +59,7 @@ export function MessageInput({ onSendMessage, onImageSend, onDoodleClick, onInpu
         if (textareaRef.current) {
           textareaRef.current.style.height = 'auto';
         }
-      } catch (error) {
+      } catch {
         toast({
           title: "Ошибка отправки",
           description: "Не удалось отправить сообщение. Проверьте подключение к интернету.",
@@ -98,7 +98,7 @@ export function MessageInput({ onSendMessage, onImageSend, onDoodleClick, onInpu
       setIsUploading(true);
       try {
         await onImageSend(file);
-      } catch (error) {
+      } catch {
         toast({
           title: "Ошибка загрузки",
           description: "Не удалось загрузить изображение. Проверьте подключение к интернету.",

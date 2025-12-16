@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { MessageCircle, enTool, Users, Send, Wifi, WifiOff, Palette, Sparkles } from 'lucide-react';
+import { MessageCircle, PenTool, Users, Send, Gamepad2 } from 'lucide-react';
 
 export default function DemoPage() {
     const [activeTab, setActiveTab] = useState<'chat' | 'games' | 'canvas' | 'users'>('chat');

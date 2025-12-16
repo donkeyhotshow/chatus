@@ -7,7 +7,7 @@ import { FirebaseProvider } from '@/components/firebase/FirebaseProvider';
 import { BackgroundChanger } from '@/components/layout/BackgroundChanger';
 import { ErrorBoundaryWrapper } from '@/components/ErrorBoundaryWrapper';
 import { ClientLayout } from '@/components/layout/ClientLayout';
-import Script from 'next/script';
+// Script import removed as it's not used
 // import { PerformanceMonitor } from '@/components/performance/PerformanceMonitor';
 
 const APP_NAME = "ЧАТ ДЛЯ НАС";

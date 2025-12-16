@@ -1,6 +1,6 @@
 /**
  * useRoomManager - хук для работы с RoomManager
- * 
+ *
  * Предоставляет удобный интерфейс для работы с комнатой через RoomManager
  * Автоматически управляет подписками и очисткой ресурсов
  */
@@ -8,18 +8,18 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useFirebase } from '@/components/firebase/FirebaseProvider';
+import type { UserProfile, Message, GameState } from '../lib/types';
 import {
   getRoomManager,
   type RoomManager,
   type RoomManagerState
 } from '../services/RoomManager';
-import { useFirebase } from '@/components/firebase/FirebaseProvider';
-import type { UserProfile, Message, GameState } from '../lib/types';
 
 export interface UseRoomManagerReturn {
   // Состояние
   state: RoomManagerState;
-  
+
   // Методы
   joinRoom: (user: UserProfile, validateRoom?: boolean) => Promise<void>;
   leaveRoom: () => Promise<void>;
@@ -34,13 +34,13 @@ export interface UseRoomManagerReturn {
   uploadImage: (file: File) => Promise<string>;
   updateGameState: (gameId: string, newState: Partial<GameState>) => Promise<void>;
   deleteGame: (gameId: string) => Promise<void>;
-  createCanvasSheet: (name: string) => Promise<any>;
+  createCanvasSheet: (name: string) => Promise<{ id: string; name: string }>;
   saveCanvasPath: (pathData: Omit<import('../lib/types').CanvasPath, 'id' | 'createdAt'>) => Promise<void>;
   clearCanvasSheet: (sheetId: string) => Promise<void>;
-  
+
   // Прямой доступ к RoomManager (для расширенного использования)
   roomManager: RoomManager | null;
-  
+
   // Флаги состояния
   isLoading: boolean;
   isConnected: boolean;
@@ -48,7 +48,7 @@ export interface UseRoomManagerReturn {
 
 /**
  * Хук для работы с RoomManager
- * 
+ *
  * @param roomId - ID комнаты
  * @returns Объект с состоянием и методами для работы с комнатой
  */
@@ -78,7 +78,7 @@ export function useRoomManager(roomId: string): UseRoomManagerReturn {
       firebaseContext.auth,
       firebaseContext.storage
     );
-    
+
     setRoomManager(manager);
 
     // Подписка на изменения состояния
@@ -197,4 +197,3 @@ export function useRoomManager(roomId: string): UseRoomManagerReturn {
     isConnected: state.isConnected,
   };
 }
-

@@ -135,7 +135,10 @@ export class PresenceManager {
     // Генеруємо унікальний ID для цього з'єднання
     const connectionsRef = ref(this.rtdb, `connections/${userId}`);
     const newConnRef = push(connectionsRef);
-    this.connId = newConnRef.key!;
+    this.connId = newConnRef.key;
+    if (!this.connId) {
+      throw new Error('Failed to generate connection ID');
+    }
     this.connRef = newConnRef;
 
     // Встановлюємо connection як активне
@@ -181,7 +184,7 @@ export class PresenceManager {
     });
     try {
       logger.debug('PresenceManager.updateAggregatedStatus', { userId, activeConnections: count });
-    } catch (err) {
+    } catch {
       // Non-critical logging error
     }
   }
@@ -216,7 +219,7 @@ export class PresenceManager {
     if (this.unsubscribe) {
       try {
         this.unsubscribe();
-      } catch (err) {
+      } catch {
         // swallow errors
       } finally {
         this.unsubscribe = null;

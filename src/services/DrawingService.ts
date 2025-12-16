@@ -121,7 +121,11 @@ export class DrawingRenderer {
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      throw new Error('Failed to get 2D context from canvas');
+    }
+    this.ctx = ctx;
   }
 
   onStrokeReceived(stroke: Stroke) {

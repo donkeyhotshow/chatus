@@ -59,7 +59,9 @@ export class AdvancedDrawingTools {
     if (this.colorsEqual(target, replacement)) return;
     const stack: [number, number][] = [[x, y]];
     while (stack.length) {
-      const [px, py] = stack.pop()!;
+      const coords = stack.pop();
+      if (!coords) continue;
+      const [px, py] = coords;
       if (px < 0 || px >= ctx.canvas.width || py < 0 || py >= ctx.canvas.height) continue;
       const current = this.getPixelColor(imageData, px, py);
       if (this.colorsEqual(current, target)) {

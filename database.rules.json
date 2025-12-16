@@ -5,24 +5,27 @@
     // Firebase presence system - connections tracking
     "connections": {
       "$userId": {
+        ".read": "auth != null",
         "$connectionId": {
           ".write": "auth != null && auth.uid === $userId",
-          ".read": "auth != null && auth.uid === $userId"
+          ".read": "auth != null"
         }
       }
     },
     // Typing indicators - user can write only to their own typing status
     "typing": {
       "$chatId": {
+        ".read": "auth != null",
         "$userId": {
           ".write": "auth != null && auth.uid === $userId",
           ".read": "auth != null",
-          ".validate": "newData.isBoolean()"
+          ".validate": "newData.isBoolean() || newData.val() === null"
         }
       }
     },
     // Presence status - user can write only to their own status
     "status": {
+      ".read": "auth != null",
       "$userId": {
         ".write": "auth != null && auth.uid === $userId",
         ".read": "auth != null",
@@ -31,6 +34,7 @@
     },
     // Legacy messages (if any)
     "messages": {
+      ".read": "auth != null",
       "$messageId": {
         ".read": "auth != null",
         ".write": "auth != null",

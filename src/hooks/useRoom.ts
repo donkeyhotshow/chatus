@@ -19,7 +19,7 @@ interface UseRoomResult {
 
 /**
  * Hook for managing room data and validation
- * 
+ *
  * Features:
  * - Loads room data from Firestore
  * - Validates room existence
@@ -45,7 +45,7 @@ export function useRoom(roomId: string): UseRoomResult {
     let decodedRoomId = roomId;
     try {
       decodedRoomId = decodeURIComponent(roomId);
-    } catch (e) {
+    } catch {
       // ignore decode errors, use raw
     }
     decodedRoomId = String(decodedRoomId).trim().replace(/[\r\n]+/g, '');
@@ -121,13 +121,13 @@ export function useRoom(roomId: string): UseRoomResult {
       }
     } catch (err) {
       const error = err as Error;
-      const firebaseError = err as any;
-      
+      const firebaseError = err as { code?: string };
+
       // Suppress offline errors in demo mode or when client is offline
-      if (isDemoMode() || 
-          error.message?.includes('client is offline') ||
-          error.message?.includes('Failed to get document') ||
-          firebaseError.code === 'unavailable') {
+      if (isDemoMode() ||
+        error.message?.includes('client is offline') ||
+        error.message?.includes('Failed to get document') ||
+        firebaseError.code === 'unavailable') {
         // In demo mode or offline, create mock room
         const mockRoom: Room = {
           id: roomId,
@@ -142,7 +142,7 @@ export function useRoom(roomId: string): UseRoomResult {
         setIsLoading(false);
         return;
       }
-      
+
       // If permission denied, attempt to self-join by appending auth.uid to participants
       if (firebaseError && firebaseError.code === 'permission-denied' && firebaseContext?.auth?.currentUser) {
         try {
@@ -196,7 +196,7 @@ export function useRoom(roomId: string): UseRoomResult {
     let decodedRoomId = roomId;
     try {
       decodedRoomId = decodeURIComponent(roomId);
-    } catch (e) {
+    } catch {
       // ignore
     }
     decodedRoomId = String(decodedRoomId).trim().replace(/[\r\n]+/g, '');
@@ -208,12 +208,12 @@ export function useRoom(roomId: string): UseRoomResult {
       return exists;
     } catch (err) {
       const error = err as Error;
-      const firebaseError = err as any;
-      
+      const firebaseError = err as { code?: string };
+
       // Suppress offline errors
       if (error.message?.includes('client is offline') ||
-          error.message?.includes('Failed to get document') ||
-          firebaseError.code === 'unavailable') {
+        error.message?.includes('Failed to get document') ||
+        firebaseError.code === 'unavailable') {
         // In offline mode, assume room exists (for demo mode compatibility)
         if (isDemoMode()) {
           setExists(true);
@@ -221,7 +221,7 @@ export function useRoom(roomId: string): UseRoomResult {
         }
         return false;
       }
-      
+
       logger.error('Failed to validate room', error, { roomId });
       return false;
     }
@@ -244,4 +244,3 @@ export function useRoom(roomId: string): UseRoomResult {
     validate,
   };
 }
-

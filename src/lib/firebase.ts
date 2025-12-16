@@ -12,12 +12,16 @@ const hasValidConfig = Boolean(
   process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
 );
 
-console.log('Firebase config check:', {
-  hasValidConfig,
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? 'present' : 'missing',
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ? 'present' : 'missing',
-  isBrowser: typeof window !== 'undefined'
-});
+// Firebase config validation (development only)
+if (process.env.NODE_ENV === 'development') {
+  // eslint-disable-next-line no-console
+  console.log('Firebase config check:', {
+    hasValidConfig,
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? 'present' : 'missing',
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ? 'present' : 'missing',
+    isBrowser: typeof window !== 'undefined'
+  });
+}
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "dummy-api-key",
@@ -44,23 +48,42 @@ const isBrowser = typeof window !== "undefined";
 // Initialize Firebase only if config is valid AND we're in browser
 if (hasValidConfig && isBrowser) {
   try {
-    console.log('Initializing Firebase...');
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.log('Initializing Firebase...');
+    }
     const existingApps = getApps();
-    app = existingApps.length > 0 ? existingApps[0]! : initializeApp(firebaseConfig);
-    console.log('Firebase app initialized:', !!app);
+    app = existingApps.length > 0 ? existingApps[0] : initializeApp(firebaseConfig);
+
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.log('Firebase app initialized:', !!app);
+    }
 
     if (app) {
       auth = getAuth(app);
-      console.log('Firebase auth initialized:', !!auth);
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.log('Firebase auth initialized:', !!auth);
+      }
 
       db = getDatabase(app);
-      console.log('Firebase database initialized:', !!db);
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.log('Firebase database initialized:', !!db);
+      }
 
       firestore = getFirestore(app);
-      console.log('Firebase firestore initialized:', !!firestore);
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.log('Firebase firestore initialized:', !!firestore);
+      }
 
       storage = getStorage(app);
-      console.log('Firebase storage initialized:', !!storage);
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.log('Firebase storage initialized:', !!storage);
+      }
 
       // Analytics: init only when supported in browser
       analyticsIsSupported()
@@ -68,7 +91,10 @@ if (hasValidConfig && isBrowser) {
           if (supported && app) {
             try {
               analytics = getAnalytics(app);
-              console.log('Firebase analytics initialized:', !!analytics);
+              if (process.env.NODE_ENV === 'development') {
+                // eslint-disable-next-line no-console
+                console.log('Firebase analytics initialized:', !!analytics);
+              }
             } catch {
               analytics = null;
             }
@@ -81,25 +107,36 @@ if (hasValidConfig && isBrowser) {
       // Messaging: browser only
       try {
         messaging = getMessaging(app);
-        console.log('Firebase messaging initialized:', !!messaging);
+        if (process.env.NODE_ENV === 'development') {
+          // eslint-disable-next-line no-console
+          console.log('Firebase messaging initialized:', !!messaging);
+        }
       } catch (error) {
-        console.warn('Firebase messaging initialization failed:', error);
+        if (process.env.NODE_ENV === 'development') {
+          // eslint-disable-next-line no-console
+          console.warn('Firebase messaging initialization failed:', error);
+        }
         messaging = null;
       }
     }
   } catch (error) {
     // Log error for debugging
-    console.error('Firebase initialization failed:', error);
     if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.error('Firebase initialization failed:', error);
       // eslint-disable-next-line no-console
       console.warn('Firebase initialization skipped (build time or invalid config)');
     }
   }
 } else {
-  if (!isBrowser) {
-    console.log('Firebase initialization skipped (server-side)');
-  } else {
-    console.warn('Firebase config invalid or missing');
+  if (process.env.NODE_ENV === 'development') {
+    if (!isBrowser) {
+      // eslint-disable-next-line no-console
+      console.log('Firebase initialization skipped (server-side)');
+    } else {
+      // eslint-disable-next-line no-console
+      console.warn('Firebase config invalid or missing');
+    }
   }
 }
 

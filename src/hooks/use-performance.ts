@@ -17,6 +17,7 @@ export function usePerformance() {
         // В продакшене отправляем в аналитику
         if (process.env.NODE_ENV === 'production') {
             // Здесь можно интегрировать с Google Analytics, Sentry и т.д.
+            // eslint-disable-next-line no-console
             console.info(`Performance metric: ${name} = ${value}ms`)
         }
     }, [])
@@ -50,7 +51,7 @@ export function usePerformance() {
                 // First Input Delay
                 const fidObserver = new PerformanceObserver((list) => {
                     for (const entry of list.getEntries()) {
-                        const fidEntry = entry as any
+                        const fidEntry = entry as PerformanceEntry & { processingStart?: number }
                         if (fidEntry.processingStart) {
                             metricsRef.current.fid = fidEntry.processingStart - entry.startTime
                             reportMetric('FID', fidEntry.processingStart - entry.startTime)
@@ -63,7 +64,7 @@ export function usePerformance() {
                 let clsValue = 0
                 const clsObserver = new PerformanceObserver((list) => {
                     for (const entry of list.getEntries()) {
-                        const clsEntry = entry as any
+                        const clsEntry = entry as PerformanceEntry & { hadRecentInput?: boolean; value?: number }
                         if (!clsEntry.hadRecentInput && clsEntry.value) {
                             clsValue += clsEntry.value
                         }
@@ -80,7 +81,10 @@ export function usePerformance() {
                     clsObserver.disconnect()
                 }
             } catch (error) {
-                console.warn('Performance monitoring not supported:', error)
+                if (process.env.NODE_ENV === 'development') {
+                    // eslint-disable-next-line no-console
+                    console.warn('Performance monitoring not supported:', error)
+                }
                 return undefined
             }
         }
@@ -94,17 +98,23 @@ export function useMemoryMonitor() {
     useEffect(() => {
         if (typeof window !== 'undefined' && 'performance' in window && 'memory' in performance) {
             const checkMemory = () => {
-                const memory = (performance as any).memory
+                const memory = (performance as Performance & { memory?: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } }).memory
                 if (memory) {
                     const used = Math.round(memory.usedJSHeapSize / 1048576)
                     const total = Math.round(memory.totalJSHeapSize / 1048576)
                     const limit = Math.round(memory.jsHeapSizeLimit / 1048576)
 
-                    console.info(`Memory usage: ${used}MB / ${total}MB (limit: ${limit}MB)`)
+                    if (process.env.NODE_ENV === 'development') {
+                        // eslint-disable-next-line no-console
+                        console.info(`Memory usage: ${used}MB / ${total}MB (limit: ${limit}MB)`)
+                    }
 
                     // Предупреждение при высоком использовании памяти
                     if (used / limit > 0.8) {
-                        console.warn('High memory usage detected!')
+                        if (process.env.NODE_ENV === 'development') {
+                            // eslint-disable-next-line no-console
+                            console.warn('High memory usage detected!')
+                        }
                     }
                 }
             }

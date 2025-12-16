@@ -21,6 +21,7 @@ class Logger {
 
     // Always log errors (in development directly, in production with marker for future tracking)
     if (this.isDevelopment) {
+      // eslint-disable-next-line no-console
       console.error(formatted);
     }
 
@@ -28,6 +29,7 @@ class Logger {
     if (!this.isDevelopment && typeof window !== 'undefined') {
       // Future: Send to Sentry or other error tracking
       // For now, still log to console with clear production marker
+      // eslint-disable-next-line no-console
       console.error('[PROD ERROR]', formatted);
     }
   }
@@ -37,6 +39,7 @@ class Logger {
     const ctx = errorOrContext instanceof Error ? context : errorOrContext;
     const formatted = this.formatMessage('warn', message, error, ctx);
     if (this.isDevelopment) {
+      // eslint-disable-next-line no-console
       console.warn(formatted);
     }
   }
@@ -44,6 +47,7 @@ class Logger {
   info(message: string, context?: LogContext): void {
     if (this.isDevelopment) {
       const formatted = this.formatMessage('info', message, undefined, context);
+      // eslint-disable-next-line no-console
       console.info(formatted);
     }
   }
@@ -53,10 +57,10 @@ class Logger {
       const error = errorOrContext instanceof Error ? errorOrContext : undefined;
       const ctx = errorOrContext instanceof Error ? context : errorOrContext;
       const formatted = this.formatMessage('debug', message, error, ctx);
+      // eslint-disable-next-line no-console
       console.debug(formatted);
     }
   }
 }
 
 export const logger = new Logger();
-

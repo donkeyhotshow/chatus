@@ -3,7 +3,7 @@
 import { useCallback, useRef, useMemo, useState, useEffect } from 'react'
 
 // Debounce функция с типизацией
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number,
   immediate = false
@@ -26,13 +26,13 @@ export function debounce<T extends (...args: any[]) => any>(
 }
 
 // Throttle функция с типизацией
-export function throttle<T extends (...args: any[]) => any>(
+export function throttle<T extends (...args: unknown[]) => unknown>(
   func: T,
   limit: number
 ): (...args: Parameters<T>) => void {
   let inThrottle: boolean
 
-  return function executedFunction(this: any, ...args: Parameters<T>) {
+  return function executedFunction(this: unknown, ...args: Parameters<T>) {
     if (!inThrottle) {
       func.apply(this, args)
       inThrottle = true
@@ -42,7 +42,7 @@ export function throttle<T extends (...args: any[]) => any>(
 }
 
 // Хук для стабильного callback с зависимостями
-export function useStableCallback<T extends (...args: any[]) => any>(
+export function useStableCallback<T extends (...args: unknown[]) => unknown>(
   callback: T,
   deps: React.DependencyList
 ): T {
@@ -51,7 +51,7 @@ export function useStableCallback<T extends (...args: any[]) => any>(
   // Обновляем ref при изменении зависимостей
   useMemo(() => {
     ref.current = callback
-  }, deps)
+  }, [callback, ...deps])
 
   // Возвращаем стабильную функцию
   return useCallback((...args: Parameters<T>) => {
@@ -99,7 +99,7 @@ export function useThrottle<T>(value: T, limit: number): T {
 
 // Мемоизация с глубоким сравнением (Hook должен быть в компоненте)
 export function useDeepMemo<T>(factory: () => T, deps: React.DependencyList): T {
-  return useMemo(factory, deps)
+  return useMemo(factory, [factory, ...deps])
 }
 
 // Утилита для измерения производительности
@@ -135,7 +135,7 @@ export async function measureAsyncPerformance<T>(
 }
 
 // Хук для отслеживания изменений значения
-export function useWhyDidYouUpdate<T extends Record<string, any>>(
+export function useWhyDidYouUpdate<T extends Record<string, unknown>>(
   name: string,
   props: T
 ): void {
@@ -144,7 +144,7 @@ export function useWhyDidYouUpdate<T extends Record<string, any>>(
   useEffect(() => {
     if (previous.current) {
       const allKeys = Object.keys({ ...previous.current, ...props })
-      const changedProps: Record<string, { from: any; to: any }> = {}
+      const changedProps: Record<string, { from: unknown; to: unknown }> = {}
 
       allKeys.forEach(key => {
         if (previous.current![key] !== props[key]) {
@@ -185,13 +185,13 @@ function shallowEqual<T>(obj1: T, obj2: T): boolean {
     return false
   }
 
-  const keys1 = Object.keys(obj1 as any)
-  const keys2 = Object.keys(obj2 as any)
+  const keys1 = Object.keys(obj1 as Record<string, unknown>)
+  const keys2 = Object.keys(obj2 as Record<string, unknown>)
 
   if (keys1.length !== keys2.length) return false
 
   for (const key of keys1) {
-    if (!(key in (obj2 as any)) || (obj1 as any)[key] !== (obj2 as any)[key]) {
+    if (!(key in (obj2 as Record<string, unknown>)) || (obj1 as Record<string, unknown>)[key] !== (obj2 as Record<string, unknown>)[key]) {
       return false
     }
   }

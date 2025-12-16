@@ -23,12 +23,20 @@ export function HomeClient() {
 
   const handleJoinRoom = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('handleJoinRoom called', { username, roomCode });
-    console.log('Router object:', router);
-    console.log('Current pathname:', window.location.pathname);
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.log('handleJoinRoom called', { username, roomCode });
+      // eslint-disable-next-line no-console
+      console.log('Router object:', router);
+      // eslint-disable-next-line no-console
+      console.log('Current pathname:', window.location.pathname);
+    }
 
     if (!username.trim()) {
-      console.log('Username validation failed');
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.log('Username validation failed');
+      }
       toast({
         title: "Введите ник",
         description: "Пожалуйста, введите ваше имя или ник.",
@@ -37,7 +45,10 @@ export function HomeClient() {
       return;
     }
     if (!roomCode.trim()) {
-      console.log('Room code validation failed');
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.log('Room code validation failed');
+      }
       toast({
         title: "Введите код комнаты",
         description: "Пожалуйста, введите код комнаты.",
@@ -46,27 +57,42 @@ export function HomeClient() {
       return;
     }
 
-    console.log('Validation passed, navigating to chat');
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.log('Validation passed, navigating to chat');
+    }
     // Сохраняем ник в localStorage для использования в чате
     localStorage.setItem('chatUsername', username.trim());
 
     // Переходим в реальную комнату чата
     const chatUrl = `/chat/${roomCode.trim().toUpperCase()}`;
-    console.log('Navigating to:', chatUrl);
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.log('Navigating to:', chatUrl);
+    }
 
     try {
       router.push(chatUrl);
-      console.log('Router.push called successfully');
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.log('Router.push called successfully');
+      }
 
       // Дополнительная проверка через setTimeout
       setTimeout(() => {
         if (window.location.pathname === '/') {
-          console.error('Navigation failed, using window.location');
+          if (process.env.NODE_ENV === 'development') {
+            // eslint-disable-next-line no-console
+            console.error('Navigation failed, using window.location');
+          }
           window.location.href = chatUrl;
         }
       }, 1000);
     } catch (error) {
-      console.error('Router navigation failed:', error);
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.error('Router navigation failed:', error);
+      }
       // Fallback to window.location
       window.location.href = chatUrl;
     }

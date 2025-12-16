@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 
-interface KeyboardAwareInputProps extends React.InputHTMLAttbutes<HTMLInputElement> {
+interface KeyboardAwareInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     onKeyboardShow?: () => void;
     onKeyboardHide?: () => void;
     stickyOnKeyboard?: boolean;
@@ -13,7 +13,7 @@ export const KeyboardAwareInput = forwardRef<HTMLInputElement, KeyboardAwareInpu
     ({ onKeyboardShow, onKeyboardHide, stickyOnKeyboard = true, className, ...props }, ref) => {
         const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
         const [initialViewportHeight, setInitialViewportHeight] = useState(0);
-        const inputRef = useRef<HTMLInputElement>(null);
+        const inputRef = useRef<HTMLInputElement | null>(null);
 
         useEffect(() => {
             // Store initial viewport height

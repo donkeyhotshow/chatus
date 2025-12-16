@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Wifi, WifiOff, AlertCircle } from 'lucide-react';
+import { Wifi, WifiOff } from 'lucide-react';
 import { Alert, AlertDescription } from '../ui/alert';
 
 interface ConnectionStatusProps {

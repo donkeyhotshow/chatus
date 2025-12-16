@@ -62,7 +62,7 @@ export function ToastNotificationComponent({ toast, onDismiss }: ToastNotificati
         }
 
         return () => clearTimeout(timer);
-    }, [toast.duration]);
+    }, [toast.duration, handleDismiss]);
 
     const handleDismiss = () => {
         setIsExiting(true);

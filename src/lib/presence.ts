@@ -41,7 +41,7 @@ async function executeCleanup() {
 
 // Setup beforeunload handler
 if (typeof window !== 'undefined') {
-  window.addEventListener('beforeunload', (_event) => {
+  window.addEventListener('beforeunload', () => {
     // Execute cleanup synchronously for beforeunload
     // Note: async operations may not complete, but we try
     executeCleanup().catch(err => {
@@ -116,7 +116,7 @@ export function createPresenceManager(userId: string): PresenceManagerHandle {
   const tryRestore = () => {
     // If there's no active connId, try to re-establish presence
     // manager.connId is internal; check safely
-    const connId = (manager as RTDBPresenceManager & { connId: string | null }).connId;
+    const connId = (manager as any).connId;
     if (!connId) {
       manager.goOnline(userId).catch((err) => {
         logger.debug('createPresenceManager: restore attempt failed', { error: String(err), userId });

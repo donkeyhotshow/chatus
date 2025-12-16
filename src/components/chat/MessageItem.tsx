@@ -4,7 +4,7 @@
 import { memo, useState, useEffect } from 'react';
 import type { Message } from '@/lib/types';
 import { EmojiRain } from './EmojiRain';
-import { VisuallyHidden } from '../ui/VisuallyHidden';
+// VisuallyHidden removed as it's not used
 import { format } from 'date-fns';
 import { Smile, Trash2, CornerUpLeft, Clock, Check, CheckCheck } from 'lucide-react';
 
@@ -189,13 +189,21 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
           {isOwn && (
             <div className="flex items-center">
               {message.id.startsWith('temp_') ? (
-                <Clock className="w-3 h-3 text-neutral-400" title="Отправляется..." />
+                <div title="Отправляется...">
+                  <Clock className="w-3 h-3 text-neutral-400" />
+                </div>
               ) : message.seen ? (
-                <CheckCheck className="w-3 h-3 text-blue-400" title="Прочитано" />
+                <div title="Прочитано">
+                  <CheckCheck className="w-3 h-3 text-blue-400" />
+                </div>
               ) : message.delivered ? (
-                <Check className="w-3 h-3 text-neutral-400" title="Доставлено" />
+                <div title="Доставлено">
+                  <Check className="w-3 h-3 text-neutral-400" />
+                </div>
               ) : (
-                <Check className="w-3 h-3 text-neutral-600" title="Отправлено" />
+                <div title="Отправлено">
+                  <Check className="w-3 h-3 text-neutral-600" />
+                </div>
               )}
             </div>
           )}

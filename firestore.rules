@@ -9,30 +9,36 @@ service cloud.firestore {
     // Chat rooms - users can read/write if authenticated
     match /rooms/{roomId} {
       allow read, write: if request.auth != null;
-    }
 
-    // Messages - users can read/write their own messages if authenticated
-    match /rooms/{roomId}/messages/{messageId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null &&
-        request.auth.uid == request.resource.data.senderId;
-      allow update, delete: if request.auth != null &&
-        request.auth.uid == resource.data.senderId;
-    }
+      // Messages - users can read all messages, create their own, update/delete their own
+      match /messages/{messageId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null &&
+          request.auth.uid == request.resource.data.senderId;
+        allow update: if request.auth != null && (
+          // Allow sender to update their own messages
+          request.auth.uid == resource.data.senderId ||
+          // Allow updating seen/delivered status by any authenticated user
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seen', 'delivered', 'reactions'])
+        );
+        allow delete: if request.auth != null &&
+          request.auth.uid == resource.data.senderId;
+      }
 
-    // Canvas drawings - similar to messages
-    match /rooms/{roomId}/drawings/{drawingId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null &&
-        request.auth.uid == request.resource.data.userId;
-      allow update, delete: if request.auth != null &&
-        request.auth.uid == resource.data.userId;
-    }
+      // Canvas drawings - similar to messages
+      match /drawings/{drawingId} {
+        allow read: if request.auth != null;
+        allow create: if request.auth != null &&
+          request.auth.uid == request.resource.data.userId;
+        allow update, delete: if request.auth != null &&
+          request.auth.uid == resource.data.userId;
+      }
 
-    // Game states - participants can read/write
-    match /rooms/{roomId}/games/{gameId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
+      // Game states - participants can read/write
+      match /games/{gameId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null;
+      }
     }
 
     // Deny all other paths

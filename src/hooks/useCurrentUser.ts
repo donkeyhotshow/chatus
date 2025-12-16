@@ -1,15 +1,15 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { UserProfile } from '@/lib/types';
-import { getUserFromStorage, saveUserToStorage } from '@/lib/storage';
-import { getChatService } from '@/services/ChatService';
-import { useFirebase } from '@/components/firebase/FirebaseProvider';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { logger } from '@/lib/logger';
+import type { DocumentReference, DocumentSnapshot, DocumentData } from 'firebase/firestore';
+import { useFirebase } from '@/components/firebase/FirebaseProvider';
 import { isFirebaseConfigValid } from '@/lib/firebase-config';
 import { isDemoMode } from '@/lib/demo-mode';
-import type { DocumentReference, DocumentSnapshot } from 'firebase/firestore';
+import { logger } from '@/lib/logger';
+import { getUserFromStorage, saveUserToStorage } from '@/lib/storage';
+import { UserProfile } from '@/lib/types';
+import { getChatService } from '@/services/ChatService';
 
 /**
  * Stable user identification hook
@@ -69,7 +69,7 @@ export function useCurrentUser(roomId: string) {
       };
 
       // Helper: try cache first, then server
-      const fetchDocCacheFirst = async <T = any>(ref: DocumentReference): Promise<DocumentSnapshot<T>> => {
+      const fetchDocCacheFirst = async <T = DocumentData>(ref: DocumentReference): Promise<DocumentSnapshot<T>> => {
         try {
           // Try cache first (fast if persistence enabled)
           const cacheSnap = await getDoc(ref);
@@ -112,7 +112,7 @@ export function useCurrentUser(roomId: string) {
             let userDoc;
             try {
               userDoc = await fetchDocCacheFirst(userDocRef);
-            } catch (err) {
+            } catch {
               userDoc = null;
             }
 
@@ -138,7 +138,7 @@ export function useCurrentUser(roomId: string) {
           let userDoc;
           try {
             userDoc = await fetchDocCacheFirst(userDocRef);
-          } catch (err) {
+          } catch {
             userDoc = null;
           }
 
@@ -151,7 +151,7 @@ export function useCurrentUser(roomId: string) {
         }
       } catch (err) {
         const error = err as Error;
-        const firebaseError = err as any;
+        const firebaseError = err as { code?: string };
 
         // Check if it's a Firebase offline/client error - handle gracefully in demo mode
         const isOfflineError =
@@ -230,7 +230,7 @@ export function useCurrentUser(roomId: string) {
       let userDoc;
       try {
         userDoc = await getDoc(userDocRef);
-      } catch (err) {
+      } catch {
         userDoc = null;
       }
 

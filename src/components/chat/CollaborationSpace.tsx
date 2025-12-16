@@ -292,7 +292,7 @@ export function CollaborationSpace({
 
         {/* USERS TAB */}
         <div className={`flex-1 ${activeTab === 'users' ? 'flex flex-col' : 'hidden'} ${isMobile ? 'pb-4' : ''}`}>
-          <UserList users={allUsers} currentUserId={user.id} />
+          <UserList users={allUsers} currentUserId={user?.id || ''} />
         </div>
       </div>
     </aside>

@@ -6,7 +6,7 @@ import { isDemoMode } from './demo-mode';
 import { logger } from './logger';
 
 // Кэшируем конфигурацию для избежания повторных вычислений
-let cachedConfig: any = null;
+let cachedConfig: Record<string, string> | null = null;
 let configValidationCache: boolean | null = null;
 
 function sanitizeEnv(value: unknown) {

@@ -9,7 +9,7 @@ import { ToastContainer, useToastNotifications } from '../ui/toast-notification'
 import { useDeviceInfo } from '../../hooks/use-mobile';
 import { useSoundDesign } from '../../hooks/use-sound-design';
 import { ConfettiEffect, useConfetti } from '../effects/ConfettiEffect';
-import { getRandomMessage, humanizeError, getRandomEmoji } from '../../utils/friendly-messages';
+import { getRandomMessage, getRandomEmoji } from '../../utils/friendly-messages';
 import { AnimatedButton } from '../layout/AnimatedTabTransition';
 import { MessageCircle, Gamepad2, PenTool, Users, Send, Wifi, WifiOff, Palette, Sparkles } from 'lucide-react';
 
@@ -20,7 +20,7 @@ export function CyberpunkUIShowcase() {
     const [isConnected, setIsConnected] = useState(true);
     const [message, setMessage] = useState('');
     const [confettiTrigger, setConfettiTrigger] = useState(false);
-    const [confettiType, setConfettiType] = useState<'success' | 'avatar' | 'canvas' | 'achievement'>('success');
+    const [confettiType] = useState<'success' | 'avatar' | 'canvas' | 'achievement'>('success');
 
     const deviceInfo = useDeviceInfo();
     const soundDesign = useSoundDesign();
@@ -261,15 +261,21 @@ export function CyberpunkUIShowcase() {
                                     <AnimatedButton
                                         onClick={handleColorSelect}
                                         className="w-10 h-10 bg-gradient-to-br from-red-500 to-pink-500 rounded-full border-2 border-white/20 hover:scale-110 transition-all duration-200"
-                                    />
+                                    >
+                                        <span className="sr-only">Red</span>
+                                    </AnimatedButton>
                                     <AnimatedButton
                                         onClick={handleColorSelect}
                                         className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full border-2 border-white/20 hover:scale-110 transition-all duration-200"
-                                    />
+                                    >
+                                        <span className="sr-only">Blue</span>
+                                    </AnimatedButton>
                                     <AnimatedButton
                                         onClick={handleColorSelect}
                                         className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full border-2 border-white/20 hover:scale-110 transition-all duration-200"
-                                    />
+                                    >
+                                        <span className="sr-only">Green</span>
+                                    </AnimatedButton>
                                 </div>
                             </div>
 
