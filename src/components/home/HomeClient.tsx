@@ -24,6 +24,8 @@ export function HomeClient() {
   const handleJoinRoom = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('handleJoinRoom called', { username, roomCode });
+    console.log('Router object:', router);
+    console.log('Current pathname:', window.location.pathname);
 
     if (!username.trim()) {
       console.log('Username validation failed');
@@ -47,9 +49,27 @@ export function HomeClient() {
     console.log('Validation passed, navigating to chat');
     // Сохраняем ник в localStorage для использования в чате
     localStorage.setItem('chatUsername', username.trim());
-    const chatUrl = `/chat/${roomCode.trim().toUpperCase()}`;
+
+    // Временно используем тестовую страницу для проверки роутинга
+    const chatUrl = `/chat/test`;
     console.log('Navigating to:', chatUrl);
-    router.push(chatUrl);
+
+    try {
+      router.push(chatUrl);
+      console.log('Router.push called successfully');
+
+      // Дополнительная проверка через setTimeout
+      setTimeout(() => {
+        if (window.location.pathname === '/') {
+          console.error('Navigation failed, using window.location');
+          window.location.href = chatUrl;
+        }
+      }, 1000);
+    } catch (error) {
+      console.error('Router navigation failed:', error);
+      // Fallback to window.location
+      window.location.href = chatUrl;
+    }
   };
 
   return (

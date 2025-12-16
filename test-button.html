@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<h <title>Test Button Click</title>
+    </head>
+
+    <body>
+        <h1>Тест кнопки входа в чат</h1>
+        <p>Откройте консоль браузера (F12) и нажмите кнопку ниже:</p>
+
+        <script>
+            // Открываем приложение и тестируем кнопку
+            window.open('https://chatus-omega.vercel.app', '_blank');
+
+            // Инструкции для пользователя
+            console.log('=== ИНСТРУКЦИИ ДЛЯ ТЕСТИРОВАНИЯ ===');
+            console.log('1. Откройте https://chatus-omega.vercel.app');
+            console.log('2. Введите любой ник (например: "Тест")');
+            console.log('3. Введите любой код комнаты (например: "123456")');
+            console.log('4. Нажмите кнопку "Войти в чат"');
+            console.log('5. Проверьте консоль на наличие отладочных сообщений:');
+            console.log('   - "Button clicked!"');
+            console.log('   - "handleJoinRoom called"');
+            console.log('   - "Validation passed, navigating to chat"');
+            console.log('   - "Navigating to: /chat/123456"');
+            console..Приложение должно перейти на страницу чата');
+        </script>
+
+        <div style="margin-top: 20px; padding: 20px; background: #f0f0f0; border-radius: 8px;">
+            <h3>Ожидаемое поведение:</h3>
+            <ol>
+                <li>При вводе ника и кода комнаты кнопка становится активной</li>
+                <li>При нажатии кнопки в консоли появляются отладочные сообщения</li>
+                <li>Происходит переход на страницу /chat/[КОД_КОМНАТЫ]</li>
+                <li>Ник сохраняется в localStorage</li>
+            </ol>
+
+            <h3>Если кнопка не работает:</h3>
+            <ul>
+                <li>Проверьте консоль на наличие JavaScript ошибок</li>
+                <li>Убедитесь что поля заполнены</li>
+                <li>Проверьте что кнопка не заблокирована (disabled)</li>
+            </ul>
+        </div>
+    </body>
+
+</html>
