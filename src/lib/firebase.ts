@@ -30,7 +30,7 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "G-XXXXXXXXXX",
 };
 
-// Only initialize Firebase if we have valid config
+// Only initialize Firebase if we have valid config AND we're in browser
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 let db: Database | null = null;
@@ -41,8 +41,8 @@ let messaging: Messaging | null = null;
 
 const isBrowser = typeof window !== "undefined";
 
-// Initialize Firebase only if config is valid
-if (hasValidConfig) {
+// Initialize Firebase only if config is valid AND we're in browser
+if (hasValidConfig && isBrowser) {
   try {
     console.log('Initializing Firebase...');
     app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
@@ -61,32 +61,28 @@ if (hasValidConfig) {
     console.log('Firebase storage initialized:', !!storage);
 
     // Analytics: init only when supported in browser
-    if (isBrowser) {
-      analyticsIsSupported()
-        .then((supported) => {
-          if (supported && app) {
-            try {
-              analytics = getAnalytics(app);
-              console.log('Firebase analytics initialized:', !!analytics);
-            } catch {
-              analytics = null;
-            }
+    analyticsIsSupported()
+      .then((supported) => {
+        if (supported && app) {
+          try {
+            analytics = getAnalytics(app);
+            console.log('Firebase analytics initialized:', !!analytics);
+          } catch {
+            analytics = null;
           }
-        })
-        .catch(() => {
-          analytics = null;
-        });
-    }
+        }
+      })
+      .catch(() => {
+        analytics = null;
+      });
 
     // Messaging: browser only
-    if (isBrowser) {
-      try {
-        messaging = getMessaging(app);
-        console.log('Firebase messaging initialized:', !!messaging);
-      } catch (error) {
-        console.warn('Firebase messaging initialization failed:', error);
-        messaging = null;
-      }
+    try {
+      messaging = getMessaging(app);
+      console.log('Firebase messaging initialized:', !!messaging);
+    } catch (error) {
+      console.warn('Firebase messaging initialization failed:', error);
+      messaging = null;
     }
   } catch (error) {
     // Log error for debugging
@@ -97,7 +93,11 @@ if (hasValidConfig) {
     }
   }
 } else {
-  console.warn('Firebase config invalid or missing');
+  if (!isBrowser) {
+    console.log('Firebase initialization skipped (server-side)');
+  } else {
+    console.warn('Firebase config invalid or missing');
+  }
 }
 
 export function getClientFirebase() {
