@@ -12,6 +12,13 @@ const hasValidConfig = Boolean(
   process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
 );
 
+console.log('Firebase config check:', {
+  hasValidConfig,
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? 'present' : 'missing',
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ? 'present' : 'missing',
+  isBrowser: typeof window !== 'undefined'
+});
+
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "dummy-api-key",
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "dummy.firebaseapp.com",
@@ -37,45 +44,60 @@ const isBrowser = typeof window !== "undefined";
 // Initialize Firebase only if config is valid
 if (hasValidConfig) {
   try {
+    console.log('Initializing Firebase...');
     app = !getApps().length ? initializeApp(firebaseConfig) : getApps()[0];
+    console.log('Firebase app initialized:', !!app);
 
     auth = getAuth(app);
+    console.log('Firebase auth initialized:', !!auth);
+
     db = getDatabase(app);
+    console.log('Firebase database initialized:', !!db);
+
     firestore = getFirestore(app);
+    console.log('Firebase firestore initialized:', !!firestore);
+
     storage = getStorage(app);
+    console.log('Firebase storage initialized:', !!storage);
 
-    // Analytics: init only when supported in browser
-    if (isBrowser) {
-      analyticsIsSupported()
-        .then((supported) => {
-          if (supported && app) {
-            try {
-              analytics = getAnalytics(app);
-            } catch {
-              analytics = null;
-            }
-          }
-        })
-        .catch(() => {
-          analytics = null;
-        });
-    }
+    // Analytics: init only when supported in browser (temporarily disabled for debugging)
+    // if (isBrowser) {
+    //   analyticsIsSupported()
+    //     .then((supported) => {
+    //       if (supported && app) {
+    //         try {
+    //           analytics = getAnalytics(app);
+    //         } catch {
+    //           analytics = null;
+    //         }
+    //       }
+    //     })
+    //     .catch(() => {
+    //       analytics = null;
+    //     });
+    // }
+    analytics = null;
 
-    // Messaging: browser only
-    if (isBrowser) {
-      try {
-        messaging = getMessaging(app);
-      } catch {
-        messaging = null;
-      }
-    }
+    // Messaging: browser only (temporarily disabled for debugging)
+    // if (isBrowser) {
+    //   try {
+    //     messaging = getMessaging(app);
+    //   } catch {
+    //     messaging = null;
+    //   }
+    // }
+    messaging = null;
   } catch (error) {
-    // Silently fail during build time
+    // Log error for debugging
+    console.error('Firebase initialization failed:', error);
     if (process.env.NODE_ENV === 'development') {
       // eslint-disable-next-line no-console
       console.warn('Firebase initialization skipped (build time or invalid config)');
     }
   }
+} else {
+  console.warn('Firebase config invalid or missing');
+}
 }
 
 export function getClientFirebase() {

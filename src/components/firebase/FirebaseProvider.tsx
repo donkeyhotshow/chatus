@@ -40,6 +40,7 @@ export const useFirebase = (): FirebaseContextType => {
 export function FirebaseProvider({ children }: { children: ReactNode }) {
   const [firebaseInstances, setFirebaseInstances] = useState<FirebaseContextType | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [initError, setInitError]State<string | null > (null);
 
   // Use a state for the user to trigger FCM initialization
   const [user, setUser] = useState<User | null>(null);
@@ -48,104 +49,136 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
     setIsMounted(true);
     logger.debug('FirebaseProvider: Attempting to get Firebase instances');
 
-    try {
-      const { app, firestore, auth, storage, rtdb, analytics, messaging } = getClientFirebase();
+    const initFirebase = async () => {
+      try {
+        const { app, firestore, auth, storage, rtdb, analytics, messaging } = getClientFirebase();
 
-      // Only set instances if Firebase is actually initialized
-      if (!app || !firestore || !auth) {
-        logger.warn('FirebaseProvider: Firebase not initialized (likely build time)');
-        return;
+        // Check if Firebase is initialized
+        if (!app) {
+          setInitError('Firebase app not initialized');
+          logger.error('FirebaseProvider: Firebase app not initialized');
+          return;
+        }
+
+        if (!firestore) {
+          setInitError('Firestore not initialized');
+          logger.error('FirebaseProvider: Firestore not initialized');
+          return;
+        }
+
+        if (!auth) {
+          setInitError('Firebase Auth not initialized');
+          logger.error('FirebaseProvider: Firebase Auth not initialized');
+          urn;
+        }
+
+        setFirebaseInstances({
+          app,
+          firestore,
+          db: firestore,
+          user: null,
+          auth,
+          storage,
+          rtdb,
+          analytics,
+          messaging
+        });
+        logger.debug('FirebaseProvider: Firebase instances successfully set');
+
+        // Listen for auth state changes to get the user
+        const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+          logger.debug('FirebaseProvider: Auth state changed', { user: currentUser?.uid || 'anonymous' });
+          setUser(currentUser);
+        });
+
+        return () => unsubscribe();
+
+      } catch (e) {
+        const error = e as Error;
+        setInitError(error.message);
+        logger.error('FirebaseProvider: Failed to get Firebase instances', error);
       }
+    };
 
-      setFirebaseInstances({
-        app,
-        firestore,
-        db: firestore,
-        user: null,
-        auth,
-        storage,
-        rtdb,
-        analytics,
-        messaging
-      });
-      logger.debug('FirebaseProvider: Firebase instances successfully set');
-
-      // Listen for auth state changes to get the user
-      const unsubscribe = auth.onAuthStateChanged((currentUser) => {
-        setUser(currentUser);
-      });
-
-      return () => unsubscribe();
-
-    } catch (e) {
-      logger.error('FirebaseProvider: Failed to get Firebase instances', e as Error);
-    }
+    initFirebase();
   }, []);
 
-  // Initialize FCM when user is available and not anonymous
-  useEffect(() => {
-    if (user && !user.isAnonymous && firebaseInstances) {
-      const fcmManager = new FCMManager();
-      fcmManager.initialize(user.uid);
-      // store manager for consumers
-      firebaseInstances.fcmManager = fcmManager;
-      setFirebaseInstances({ ...firebaseInstances });
-    }
-  }, [user, firebaseInstances]);
-
-  // Initialize PresenceManager when user logs in (non-anonymous)
+  // Initialize FCM when user is available and not anonymous (disabled for debugging)
   const presenceManagerRef = useRef<unknown | null>(null);
   const fcmManagerRef = useRef<FCMManager | null>(null);
+
   useEffect(() => {
     if (!firebaseInstances) return;
 
-    if (user && !user.isAnonymous) {
-      try {
-        const pm = createPresenceManager(user.uid);
-        presenceManagerRef.current = pm;
-        logger.debug('FirebaseProvider: PresenceManager initialized', { uid: user.uid });
-      } catch (err) {
-        logger.error('FirebaseProvider: Failed to initialize PresenceManager', err as Error);
-      }
-    } else {
-      // user logged out or anonymous - ensure cleanup of previous manager
-      if (presenceManagerRef.current) {
-        try {
-          // prefer disconnect if available, otherwise goOffline
-          const pm = presenceManagerRef.current as { disconnect?: () => void; goOffline?: () => void };
-          if (typeof pm.disconnect === 'function') {
-            pm.disconnect();
-          } else if (typeof pm.goOffline === 'function') {
-            pm.goOffline();
-          }
-        } catch (err) {
-          logger.error('FirebaseProvider: Error while cleaning up PresenceManager', err as Error);
-        } finally {
-          presenceManagerRef.current = null;
-        }
-      }
-    }
-
-    // no explicit cleanup here since createPresenceManager registers unload cleanup
-  }, [user, firebaseInstances]);
-
-  // Expose presence and fcm managers in FirebaseContext
-  useEffect(() => {
-    if (!firebaseInstances) return;
+    // Update instances with current user
     const inst = { ...firebaseInstances };
-    inst.presenceManager = presenceManagerRef.current;
-    if (fcmManagerRef.current) inst.fcmManager = fcmManagerRef.current;
     inst.user = user;
     setFirebaseInstances(inst);
-  }, [firebaseInstances, user]);
 
-  if (!isMounted || !firebaseInstances) {
-    logger.debug('FirebaseProvider: Not mounted or instances not ready, showing fallback UI');
+    // TODO: Re-enable FCM and PresenceManager after debugging
+    // if (user && !user.isAnonymous) {
+    //   try {
+    //     const fcmManager = new FCMManager();
+    //     fcmManager.initialize(user.uid);
+    //     inst.fcmManager = fcmManager;
+    //
+    //     const pm = createPresenceManager(user.uid);
+    //     presenceManagerRef.current = pm;
+    //     inst.presenceManager = pm;
+    //
+    //     logger.debug('FirebaseProvider: FCM and PresenceManager initialized', { uid: user.uid });
+    //   } catch (err) {
+    //     logger.error('FirebaseProvider: Failed to initialize FCM/PresenceManager', err as Error);
+    //   }
+    // }
+  }, [user, firebaseInstances]);
+
+  if (!isMounted) {
+    logger.debug('FirebaseProvider: Not mounted, showing loading UI');
     return (
       <div className="flex h-screen w-full items-center justify-center bg-black text-white">
         <div className="animate-pulse flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-          <span className="font-mono text-white/70 tracking-widest">INITIALIZING...</span>
+          <span className="font-mono text-white/70 tracking-widest">ЗАГРУЗКА...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (initError) {
+    logger.error('FirebaseProvider: Initialization error, showing error UI');
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-black text-white">
+        <div className="text-center p-8 max-w-md">
+          <div className="mb-6">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center">
+              <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold mb-2">Ошибка инициализации</h1>
+            <p className="text-gray-400 mb-4">
+              {initError}
+            </p>
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full px-4 py-2 bg-white text-black rounded hover:bg-gray-200 transition-colors"
+          >
+            Перезагрузить страницу
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!firebaseInstances) {
+    logger.debug('FirebaseProvider: Instances not ready, showing loading UI');
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-black text-white">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+          <span className="font-mono text-white/70 tracking-widest">ИНИЦИАЛИЗАЦИЯ...</span>
         </div>
       </div>
     );
