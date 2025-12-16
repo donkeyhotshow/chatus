@@ -35,7 +35,7 @@ export function HomeClient() {
       return;
     }
     if (!roomCode.trim()) {
-      console.t: "desom code validation failed');
+      console.log('Room code validation failed');
       toast({
         title: "Введите код комнаты",
         description: "Пожалуйста, введите код комнаты.",
