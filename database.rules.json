@@ -2,11 +2,21 @@
   "rules": {
     ".read": false,
     ".write": false,
+    // Firebase presence system - connections tracking
+    "connections": {
+      "$userId": {
+        "$connectionId": {
+          ".write": "auth.uid === $userId",
+          ".read": "auth.uid === $userId"
+        }
+      }
+    },
     // Typing indicators - user can write only to their own typing status
     "typing": {
       "$chatId": {
         "$userId": {
           ".write": "auth.uid === $userId",
+          ".read": "auth != null",
           ".validate": "newData.isBoolean()"
         }
       }
@@ -15,12 +25,15 @@
     "status": {
       "$userId": {
         ".write": "auth.uid === $userId",
+        ".read": "auth != null",
         ".validate": "newData.hasChildren(['state', 'lastChanged']) && newData.child('state').isString() && (newData.child('state').val() === 'online' || newData.child('state').val() === 'offline')"
       }
     },
     // Legacy messages (if any)
     "messages": {
       "$messageId": {
+        ".read": "auth != null",
+        ".write": "auth != null",
         ".validate": "newData.hasChildren(['text','ts','senderId']) && newData.child('text').isString() && newData.child('text').val().length <= 1000 && newData.child('ts').isNumber() && newData.child('senderId').isString() && newData.child('senderId').val() === auth.uid"
       }
     },

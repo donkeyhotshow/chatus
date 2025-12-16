@@ -125,7 +125,14 @@ export const ChatArea = memo(function ChatArea({
 
   const allMessages = useMemo(() => {
     const combined = [...persistedMessages, ...optimisticMessages];
-    combined.sort((a, b) => a.createdAt.toMillis() - b.createdAt.toMillis());
+
+    // Safe sort with null checks
+    combined.sort((a, b) => {
+      const aTime = a.createdAt?.toMillis?.() || 0;
+      const bTime = b.createdAt?.toMillis?.() || 0;
+      return aTime - bTime;
+    });
+
     // Debug logging in development
     if (process.env.NODE_ENV === 'development' && combined.length > 0) {
       logger.debug('[ChatArea] All messages', {

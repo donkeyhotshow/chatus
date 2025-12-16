@@ -396,19 +396,22 @@ export class ChatService {
 
     // In demo mode, return a mock user ID
     if (isDemoMode()) {
-      if (!this.auth.currentUser) {
+      const currentUser = this.auth.currentUser;
+      if (!currentUser) {
         // Create a mock user ID for demo mode
         const mockUserId = `demo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         return mockUserId;
       }
-      return this.auth.currentUser.uid;
+      return currentUser.uid;
     }
 
-    if (!this.auth.currentUser) {
+    const currentUser = this.auth.currentUser;
+    if (!currentUser) {
       const userCredential = await signInAnonymously(this.auth);
-      return userCredential.user.uid;
+      const newUser = userCredential.user;
+      return newUser.uid;
     }
-    return this.auth.currentUser.uid;
+    return currentUser.uid;
   }
 
   public async resolveUser(name: string, avatar: string): Promise<UserProfile> {
