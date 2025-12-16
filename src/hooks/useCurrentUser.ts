@@ -13,7 +13,7 @@ import type { DocumentReference, DocumentSnapshot } from 'firebase/firestore';
 
 /**
  * Stable user identification hook
- * 
+ *
  * Ensures:
  * - Same user is restored after page reload
  * - No duplicate users with same name/UID
@@ -48,7 +48,7 @@ export function useCurrentUser(roomId: string) {
         return;
       }
 
-      // Set timeout for loading (10 seconds max)
+      // Set timeout for loading (5 seconds max)
       timeoutId = setTimeout(() => {
         logger.warn('[useCurrentUser] User loading timed out, using localStorage fallback');
         if (isMounted) {
@@ -58,7 +58,7 @@ export function useCurrentUser(roomId: string) {
           }
           setIsLoading(false);
         }
-      }, 10000);
+      }, 5000);
 
       // Helper: promise timeout
       const withTimeout = <T>(p: Promise<T>, ms = 7000): Promise<T> => {
@@ -305,4 +305,3 @@ export function useCurrentUser(roomId: string) {
     createProfile,
   };
 }
-

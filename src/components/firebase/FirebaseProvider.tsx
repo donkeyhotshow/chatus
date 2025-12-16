@@ -94,7 +94,8 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
             setUser(currentUser);
           });
 
-          return () => unsubscribe();
+          // Return cleanup function
+          return unsubscribe;
         }
 
       } catch (e) {
@@ -121,28 +122,36 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
   // Initialize FCM when user is available and not anonymous (disabled for debugging)
   const presenceManagerRef = useRef<unknown | null>(null);
   const fcmManagerRef = useRef<FCMManager | null>(null);
+  const [contextValue, setContextValue] = useState<FirebaseContextType | null>(null);
 
   useEffect(() => {
     if (!firebaseInstances) return;
 
-    // Update instances with current user
-    const inst = { ...firebaseInstances };
-    inst.user = user;
-    setFirebaseInstances(inst);
+    // Create new context value with current user
+    const newContextValue = {
+      ...firebaseInstances,
+      user,
+      presenceManager: presenceManagerRef.current,
+      fcmManager: fcmManagerRef.current
+    };
 
     // Initialize FCM and PresenceManager for authenticated users
     if (user && !user.isAnonymous) {
       try {
-        const fcmManager = new FCMManager();
-        fcmManager.initialize(user.uid).catch((err) => {
-          logger.error('FirebaseProvider: FCM initialization failed', err as Error);
-        });
-        inst.fcmManager = fcmManager;
-        fcmManagerRef.current = fcmManager;
+        if (!fcmManagerRef.current) {
+          const fcmManager = new FCMManager();
+          fcmManager.initialize(user.uid).catch((err) => {
+            logger.error('FirebaseProvider: FCM initialization failed', err as Error);
+          });
+          fcmManagerRef.current = fcmManager;
+          newContextValue.fcmManager = fcmManager;
+        }
 
-        const pm = createPresenceManager(user.uid);
-        presenceManagerRef.current = pm;
-        inst.presenceManager = pm;
+        if (!presenceManagerRef.current) {
+          const pm = createPresenceManager(user.uid);
+          presenceManagerRef.current = pm;
+          newContextValue.presenceManager = pm;
+        }
 
         logger.debug('FirebaseProvider: FCM and PresenceManager initialized', { uid: user.uid });
       } catch (err) {
@@ -162,9 +171,16 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
           logger.error('FirebaseProvider: Error while cleaning up PresenceManager', err as Error);
         } finally {
           presenceManagerRef.current = null;
+          newContextValue.presenceManager = null;
         }
       }
+      if (fcmManagerRef.current) {
+        fcmManagerRef.current = null;
+        newContextValue.fcmManager = null;
+      }
     }
+
+    setContextValue(newContextValue);
   }, [user, firebaseInstances]);
 
   // Simplified loading logic - just wait for mount and instances
@@ -181,7 +197,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
 
   logger.debug('FirebaseProvider: Rendering children with FirebaseContext');
   return (
-    <FirebaseContext.Provider value={firebaseInstances}>
+    <FirebaseContext.Provider value={contextValue || firebaseInstances}>
       {children}
     </FirebaseContext.Provider>
   );

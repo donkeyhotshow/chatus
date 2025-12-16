@@ -21,14 +21,50 @@ import { logger } from '@/lib/logger';
 import { isDemoMode } from '@/lib/demo-mode';
 import { getChatService } from '@/services/ChatService';
 
-const LoadingSpinner = ({ text }: { text: string }) => (
-  <div className="flex h-full w-full items-center justify-center bg-black">
-    <div className="animate-pulse flex flex-col items-center gap-4">
-      <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-      <span className="font-mono text-white/70 tracking-widest">{text}</span>
+const LoadingSpinner = ({ text }: { text: string }) => {
+  const [showFallback, setShowFallback] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowFallback(true);
+    }, 8000); // Show fallback after 8 seconds
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (showFallback) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-black text-white p-8">
+        <div className="max-w-md space-y-4 text-center">
+          <h2 className="text-xl font-bold text-yellow-400">⚠️ Долгая загрузка</h2>
+          <p className="text-neutral-300">
+            Загрузка занимает больше времени, чем обычно. Возможные причины:
+          </p>
+          <ul className="list-disc list-inside text-neutral-400 space-y-1 text-sm">
+            <li>Медленное интернет-соединение</li>
+            <li>Проблемы с Firebase сервером</li>
+            <li>Блокировка браузером</li>
+          </ul>
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-neutral-200 transition"
+          >
+            Перезагрузить страницу
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-black">
+      <div className="animate-pulse flex flex-col items-center gap-4">
+        <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+        <span className="font-mono text-white/70 tracking-widest">{text}</span>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export function ChatRoom({ roomId }: { roomId: string }) {
   const [isCollabSpaceVisible, setIsCollabSpaceVisible] = useState(false);
