@@ -1,11 +1,11 @@
 name: Deploy Firebase & Vercel
-on: 
+on:
   push:
     branches:  ["main"]
-  workflow_dispatch: 
+  workflow_dispatch:
 
 jobs:
-  prepr: 
+  prepr:
     name: prepr-checks
     runs-on: ubuntu-latest
     outputs:
@@ -16,7 +16,7 @@ jobs:
 
       - name: Setup Node.js 20
         uses: actions/setup-node@v6
-        with: 
+        with:
           node-version: 20
 
       - name: Ensure scripts executable
@@ -29,7 +29,7 @@ jobs:
       - name: Upload prepr-report
         if: always()
         uses: actions/upload-artifact@v6
-        with: 
+        with:
           name: prepr-report
           path: prepr-report.json
 
@@ -68,6 +68,15 @@ jobs:
             chmod 600 "${{ github.workspace }}/firebase-sa.json"
           fi
 
+      - name: Build Firebase Functions
+        run: |
+          if [ -d "functions" ]; then
+            cd functions
+            npm ci
+            npm run build
+            cd ..
+          fi
+
       - name:  "Firebase:  deploy backend"
         env:
           FIREBASE_TOKEN: ${{ secrets. FIREBASE_TOKEN }}
@@ -75,13 +84,13 @@ jobs:
         run: |
           if [ -n "$FIREBASE_TOKEN" ]; then
             echo "Deploying Firebase backend to project $FIREBASE_PROJECT_ID"
-            firebase deploy --only firestore: rules,storage:rules,functions --project "$FIREBASE_PROJECT_ID" --token "$FIREBASE_TOKEN"
+            firebase deploy --only firestore:rules,storage:rules,functions --project "$FIREBASE_PROJECT_ID" --token "$FIREBASE_TOKEN"
           else
             echo "Skipping Firebase deploy - FIREBASE_TOKEN not set"
           fi
 
       - name: "Vercel: deploy"
-        env: 
+        env:
           VERCEL_TOKEN:  ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
