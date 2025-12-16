@@ -60,33 +60,34 @@ if (hasValidConfig) {
     storage = getStorage(app);
     console.log('Firebase storage initialized:', !!storage);
 
-    // Analytics: init only when supported in browser (temporarily disabled for debugging)
-    // if (isBrowser) {
-    //   analyticsIsSupported()
-    //     .then((supported) => {
-    //       if (supported && app) {
-    //         try {
-    //           analytics = getAnalytics(app);
-    //         } catch {
-    //           analytics = null;
-    //         }
-    //       }
-    //     })
-    //     .catch(() => {
-    //       analytics = null;
-    //     });
-    // }
-    analytics = null;
+    // Analytics: init only when supported in browser
+    if (isBrowser) {
+      analyticsIsSupported()
+        .then((supported) => {
+          if (supported && app) {
+            try {
+              analytics = getAnalytics(app);
+              console.log('Firebase analytics initialized:', !!analytics);
+            } catch {
+              analytics = null;
+            }
+          }
+        })
+        .catch(() => {
+          analytics = null;
+        });
+    }
 
-    // Messaging: browser only (temporarily disabled for debugging)
-    // if (isBrowser) {
-    //   try {
-    //     messaging = getMessaging(app);
-    //   } catch {
-    //     messaging = null;
-    //   }
-    // }
-    messaging = null;
+    // Messaging: browser only
+    if (isBrowser) {
+      try {
+        messaging = getMessaging(app);
+        console.log('Firebase messaging initialized:', !!messaging);
+      } catch (error) {
+        console.warn('Firebase messaging initialization failed:', error);
+        messaging = null;
+      }
+    }
   } catch (error) {
     // Log error for debugging
     console.error('Firebase initialization failed:', error);

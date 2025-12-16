@@ -115,22 +115,41 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
     inst.user = user;
     setFirebaseInstances(inst);
 
-    // TODO: Re-enable FCM and PresenceManager after debugging
-    // if (user && !user.isAnonymous) {
-    //   try {
-    //     const fcmManager = new FCMManager();
-    //     fcmManager.initialize(user.uid);
-    //     inst.fcmManager = fcmManager;
-    //
-    //     const pm = createPresenceManager(user.uid);
-    //     presenceManagerRef.current = pm;
-    //     inst.presenceManager = pm;
-    //
-    //     logger.debug('FirebaseProvider: FCM and PresenceManager initialized', { uid: user.uid });
-    //   } catch (err) {
-    //     logger.error('FirebaseProvider: Failed to initialize FCM/PresenceManager', err as Error);
-    //   }
-    // }
+    // Initialize FCM and PresenceManager for authenticated users
+    if (user && !user.isAnonymous) {
+      try {
+        const fcmManager = new FCMManager();
+        fcmManager.initialize(user.uid).catch((err) => {
+          logger.error('FirebaseProvider: FCM initialization failed', err as Error);
+        });
+        inst.fcmManager = fcmManager;
+        fcmManagerRef.current = fcmManager;
+
+        const pm = createPresenceManager(user.uid);
+        presenceManagerRef.current = pm;
+        inst.presenceManager = pm;
+
+        logger.debug('FirebaseProvider: FCM and PresenceManager initialized', { uid: user.uid });
+      } catch (err) {
+        logger.error('FirebaseProvider: Failed to initialize FCM/PresenceManager', err as Error);
+      }
+    } else {
+      // Clean up when user logs out or becomes anonymous
+      if (presenceManagerRef.current) {
+        try {
+          const pm = presenceManagerRef.current as { disconnect?: () => void; goOffline?: () => void };
+          if (typeof pm.disconnect === 'function') {
+            pm.disconnect();
+          } else if (typeof pm.goOffline === 'function') {
+            pm.goOffline();
+          }
+        } catch (err) {
+          logger.error('FirebaseProvider: Error while cleaning up PresenceManager', err as Error);
+        } finally {
+          presenceManagerRef.current = null;
+        }
+      }
+    }
   }, [user, firebaseInstances]);
 
   if (!isMounted) {
