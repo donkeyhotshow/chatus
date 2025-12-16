@@ -95,13 +95,13 @@ export default function RootLayout({
           {/* <PerformanceMonitor /> */}
           <FirebaseProvider>
             <ClientLayout>
-              <div className="flex flex-col w-full bg-black text-neutral-200 font-sans selection:bg-white selection:text-black overflow-hidden min-h-screen">
-                <header className="h-14 shrink-0 border-b border-white/10 flex items-center px-6 bg-neutral-950 z-50">
-                  <div className="flex items-center gap-3 select-none group cursor-default">
-                    <div className="p-1.5 bg-white text-black rounded-lg group-hover:scale-105 transition-transform duration-200">
-                      <MessageSquareDashed className="w-5 h-5" />
+              <div className="flex flex-col w-full bg-black text-neutral-200 font-sans selection:bg-cyan-400 selection:text-black overflow-hidden min-h-screen min-h-[100dvh] supports-[height:100dvh]:min-h-[100dvh]">
+                <header className="h-12 sm:h-14 shrink-0 border-b border-white/10 flex items-center px-3 sm:px-4 lg:px-6 bg-gradient-to-r from-neutral-950 to-black z-50 shadow-lg">
+                  <div className="flex items-center gap-2 sm:gap-3 select-none group cursor-default">
+                    <div className="p-1 sm:p-1.5 bg-gradient-to-br from-cyan-400 to-blue-500 text-black rounded-lg group-hover:scale-105 transition-transform duration-200 shadow-lg">
+                      <MessageSquareDashed className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
-                    <span className="font-mono font-bold text-lg tracking-[0.2em] text-white">
+                    <span className="font-mono font-bold text-sm sm:text-lg tracking-[0.1em] sm:tracking-[0.2em] text-white">
                       ЧАТ ДЛЯ НАС
                     </span>
                   </div>
@@ -109,7 +109,7 @@ export default function RootLayout({
 
                 <BackgroundChanger />
 
-                <div className="relative z-10 flex w-full flex-1 overflow-hidden">
+                <div className="relative z-10 flex w-full flex-1 overflow-hidden min-h-0">
                   {children}
                 </div>
               </div>

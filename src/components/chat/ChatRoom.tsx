@@ -6,6 +6,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Room } from '@/lib/types';
 import { ChatArea } from './ChatArea';
 import { ProfileCreationDialog } from './ProfileCreationDialog';
+import { MessageCircle, Gamepad2 } from 'lucide-react';
+import { MobileNavigation } from '../mobile/MobileNavigation';
+import { ResizablePanel } from '../ui/ResizablePanel';
 
 // Lazy load heavy components
 const CollaborationSpace = lazy(() => import('./CollaborationSpace').then(m => ({ default: m.CollaborationSpace })));
@@ -68,6 +71,14 @@ const LoadingSpinner = ({ text }: { text: string }) => {
 
 export function ChatRoom({ roomId }: { roomId: string }) {
   const [isCollabSpaceVisible, setIsCollabSpaceVisible] = useState(false);
+  const [mobileActiveTab, setMobileActiveTab] = useState<'chat' | 'games' | 'canvas' | 'users'>('chat');
+  const [collabSpaceWidth, setCollabSpaceWidth] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('chatroom-collab-width');
+      return saved ? parseInt(saved, 10) : 380;
+    }
+    return 380;
+  });
 
   const { toast } = useToast();
   const firebaseContext = useFirebase();
@@ -91,11 +102,38 @@ export function ChatRoom({ roomId }: { roomId: string }) {
 
   useEffect(() => {
     if (isMobile) {
+      // On mobile, show collaboration space only when explicitly toggled
+      setIsCollabSpaceVisible(false);
+    } else {
+      // On desktop, show collaboration space by default
+      setIsCollabSpaceVisible(true);
+    }
+  }, [isMobile]);
+
+  // Handle mobile tab changes
+  const handleMobileTabChange = (tab: 'chat' | 'games' | 'canvas' | 'users') => {
+    setMobileActiveTab(tab);
+    if (tab === 'chat') {
       setIsCollabSpaceVisible(false);
     } else {
       setIsCollabSpaceVisible(true);
     }
-  }, [isMobile]);
+  };
+
+  // Handle collaboration space toggle
+  const handleToggleCollabSpace = () => {
+    setIsCollabSpaceVisible(prev => !prev);
+    if (isMobile && !isCollabSpaceVisible) {
+      // When opening collab space on mobile, default to games tab
+      setMobileActiveTab('games');
+    }
+  };
+
+  // Save collab space width to localStorage
+  const handleCollabSpaceResize = (width: number) => {
+    setCollabSpaceWidth(width);
+    localStorage.setItem('chatroom-collab-width', width.toString());
+  };
 
   // Use both useDoc (for real-time updates) and useRoom (for validation)
   const roomDocRef = useMemo(() => {
@@ -285,28 +323,95 @@ export function ChatRoom({ roomId }: { roomId: string }) {
   }
 
   const otherUser = room?.participantProfiles?.find(p => p.id !== user?.id);
-  const showChatArea = !isMobile || (isMobile && !isCollabSpaceVisible);
 
   return (
-    <div className="flex h-full w-full">
-      {user && showChatArea && (
-        <ChatArea
-          user={user}
-          roomId={roomId}
+    <div className="flex flex-col h-full w-full overflow-hidden">
+      {/* Main Content Area */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Chat Area - Always visible on desktop, conditionally on mobile */}
+        {user && (
+          <div className={`
+            transition-all duration-300 ease-in-out min-w-0
+            ${isMobile
+              ? (mobileActiveTab === 'chat' ? 'flex-1' : 'hidden')
+              : (isCollabSpaceVisible ? 'flex-1' : 'w-full')
+            }
+          `}>
+            <ChatArea
+              user={user}
+              roomId={roomId}
+              isCollabSpaceVisible={isCollabSpaceVisible}
+              onToggleCollaborationSpace={handleToggleCollabSpace}
+            />
+          </div>
+        )}
+
+        {/* Collaboration Space - Resizable and Collapsible */}
+        {user && (
+          <>
+            {isMobile ? (
+              // Mobile: Simple toggle without resize
+              <div className={`
+                transition-all duration-300 ease-in-out
+                ${isCollabSpaceVisible && mobileActiveTab !== 'chat' ? 'flex-1' : 'hidden'}
+              `}>
+                <Suspense fallback={
+                  <div className="flex h-full items-center justify-center bg-neutral-900">
+                    <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full"></div>
+                  </div>
+                }>
+                  <CollaborationSpace
+                    isVisible={isCollabSpaceVisible}
+                    roomId={roomId}
+                    user={user}
+                    otherUser={otherUser}
+                    allUsers={room?.participantProfiles || []}
+                    mobileActiveTab={mobileActiveTab}
+                  />
+                </Suspense>
+              </div>
+            ) : (
+              // Desktop: Resizable panel
+              <ResizablePanel
+                defaultWidth={collabSpaceWidth}
+                minWidth={280}
+                maxWidth={800}
+                resizeHandle="left"
+                onResize={handleCollabSpaceResize}
+                disabled={!isCollabSpaceVisible}
+                className={`
+                  transition-all duration-300 ease-in-out
+                  ${isCollabSpaceVisible ? 'opacity-100' : 'w-0 opacity-0 overflow-hidden'}
+                `}
+              >
+                <Suspense fallback={
+                  <div className="flex h-full items-center justify-center bg-neutral-900">
+                    <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full"></div>
+                  </div>
+                }>
+                  <CollaborationSpace
+                    isVisible={isCollabSpaceVisible}
+                    roomId={roomId}
+                    user={user}
+                    otherUser={otherUser}
+                    allUsers={room?.participantProfiles || []}
+                    mobileActiveTab={undefined}
+                  />
+                </Suspense>
+              </ResizablePanel>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Mobile Navigation */}
+      {isMobile && user && (
+        <MobileNavigation
+          activeTab={mobileActiveTab}
+          onTabChange={handleMobileTabChange}
           isCollabSpaceVisible={isCollabSpaceVisible}
-          onToggleCollaborationSpace={() => setIsCollabSpaceVisible(v => !v)}
+          onToggleCollabSpace={handleToggleCollabSpace}
         />
-      )}
-      {user && (
-        <Suspense fallback={<div className="flex-1 flex items-center justify-center bg-black"><div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full"></div></div>}>
-          <CollaborationSpace
-            isVisible={isCollabSpaceVisible}
-            roomId={roomId}
-            user={user}
-            otherUser={otherUser}
-            allUsers={room?.participantProfiles || []}
-          />
-        </Suspense>
       )}
     </div>
   );

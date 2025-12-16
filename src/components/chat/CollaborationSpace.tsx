@@ -14,6 +14,7 @@ import { useCollection } from '@/hooks/useCollection';
 import { logger } from '@/lib/logger';
 import { cn } from '@/lib/utils';
 import { collection, query, orderBy, Timestamp, doc } from 'firebase/firestore';
+import { VerticalResizer } from '../ui/VerticalResizer';
 
 // Lazy load heavy components
 const SharedCanvas = lazy(() => import('../canvas/SharedCanvas').then(m => ({ default: m.SharedCanvas })));
@@ -31,6 +32,7 @@ type CollaborationSpaceProps = {
   user: UserProfile | null;
   otherUser?: UserProfile;
   allUsers: UserProfile[];
+  mobileActiveTab?: 'chat' | 'games' | 'canvas' | 'users';
 };
 
 export function CollaborationSpace({
@@ -39,15 +41,31 @@ export function CollaborationSpace({
   user,
   otherUser,
   allUsers,
+  mobileActiveTab,
 }: CollaborationSpaceProps) {
   const { service } = useChatService(roomId, user || undefined);
   const [activeTab, setActiveTab] = useState<'games' | 'canvas' | 'users'>('games');
+  const [canvasHeight, setCanvasHeight] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('collabspace-canvas-height');
+      return saved ? parseInt(saved, 10) : 400;
+    }
+    return 400;
+  });
+
   const [activeSheetId, setActiveSheetId] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const collabSpaceRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { db } = useFirebase()!;
   const isMobile = useIsMobile();
+
+  // Sync with mobile active tab
+  useEffect(() => {
+    if (isMobile && mobileActiveTab && mobileActiveTab !== 'chat') {
+      setActiveTab(mobileActiveTab);
+    }
+  }, [isMobile, mobileActiveTab]);
 
 
   // Subscribe to game state for maze
@@ -84,6 +102,12 @@ export function CollaborationSpace({
       setActiveSheetId(sheets[0].id);
     }
   }, [sheets, sheetsLoading, activeSheetId, handleCreateNewSheet]);
+
+  // Save canvas height to localStorage
+  const handleCanvasResize = (height: number) => {
+    setCanvasHeight(height);
+    localStorage.setItem('collabspace-canvas-height', height.toString());
+  };
 
   const navigateSheet = (direction: 'next' | 'prev') => {
     if (!activeSheetId || !sheets || sheets.length < 2) return;
@@ -151,27 +175,29 @@ export function CollaborationSpace({
     <aside
       ref={collabSpaceRef}
       className={cn(`
-        flex flex-col bg-neutral-950 border-l border-white/10 transition-all duration-300 z-40`,
+        flex flex-col bg-gradient-to-b from-neutral-900 to-neutral-950 transition-all duration-300 z-40 shadow-2xl`,
         isFullscreen
-          ? 'fixed inset-0 w-screen h-screen'
+          ? 'fixed inset-0 w-screen h-screen z-50'
           : 'relative h-full',
-        isMobile ? 'w-full' : 'w-[400px]'
+        isMobile
+          ? 'w-full border-none'
+          : 'w-full border-l border-white/20'
       )}
     >
-      {!isFullscreen && (
-        <nav className="flex p-2 gap-1 border-b border-white/5 shrink-0">
+      {!isFullscreen && !isMobile && (
+        <nav className="flex p-2 sm:p-3 gap-1 border-b border-white/10 shrink-0 bg-black/20 backdrop-blur-sm">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg text-sm font-medium transition-all
+              className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-3 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200
                 ${activeTab === tab.id
-                  ? "bg-white text-black shadow-lg"
-                  : "text-neutral-500 hover:text-white hover:bg-white/5"
+                  ? "bg-gradient-to-r from-white to-gray-100 text-black shadow-lg transform scale-105"
+                  : "text-neutral-400 hover:text-white hover:bg-white/10 hover:scale-102"
                 }`}
             >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
+              <tab.icon className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">{tab.label}</span>
             </button>
           ))}
         </nav>
@@ -181,34 +207,43 @@ export function CollaborationSpace({
 
         {/* CANVAS TAB */}
         <div className={`flex-1 flex flex-col h-full ${activeTab === 'canvas' ? 'flex' : 'hidden'}`}>
-          <div className="p-4 border-b border-white/5 shrink-0 z-10 bg-neutral-950/90 backdrop-blur-sm flex justify-between items-center">
-            <div className="flex items-center gap-2 bg-neutral-900 rounded-lg p-1 border border-white/5">
-              <button onClick={() => navigateSheet('prev')} disabled={!sheets || sheets.length <= 1 || activeGame?.type === 'maze'} className="p-1 hover:text-white text-neutral-500 disabled:opacity-30">
+          <div className={`p-2 sm:p-4 border-b border-white/5 shrink-0 z-10 bg-neutral-950/90 backdrop-blur-sm flex justify-between items-center ${isMobile ? 'gap-2' : ''}`}>
+            <div className="flex items-center gap-1 sm:gap-2 bg-neutral-900 rounded-lg p-1 border border-white/5">
+              <button onClick={() => navigateSheet('prev')} disabled={!sheets || sheets.length <= 1 || activeGame?.type === 'maze'} className="p-1 hover:text-white text-neutral-500 disabled:opacity-30 touch-target">
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <span className="text-xs font-mono font-bold w-16 text-center text-white truncate">
+              <span className="text-xs font-mono font-bold w-12 sm:w-16 text-center text-white truncate">
                 {activeGame?.type === 'maze' ? 'MAZE' : (activeSheet?.name || '...')}
               </span>
-              <button onClick={() => navigateSheet('next')} disabled={!sheets || sheets.length <= 1 || activeGame?.type === 'maze'} className="p-1 hover:text-white text-neutral-500 disabled:opacity-30">
+              <button onClick={() => navigateSheet('next')} disabled={!sheets || sheets.length <= 1 || activeGame?.type === 'maze'} className="p-1 hover:text-white text-neutral-500 disabled:opacity-30 touch-target">
                 <ChevronRight className="w-4 h-4" />
               </button>
               <div className="w-[1px] h-4 bg-white/10 mx-1"></div>
-              <button onClick={handleCreateNewSheet} disabled={activeGame?.type === 'maze'} className="p-1 hover:text-green-400 text-neutral-500 disabled:opacity-30" title="New Sheet">
+              <button onClick={handleCreateNewSheet} disabled={activeGame?.type === 'maze'} className="p-1 hover:text-green-400 text-neutral-500 disabled:opacity-30 touch-target" title="New Sheet">
                 <Plus className="w-4 h-4" />
               </button>
             </div>
 
-            <button
-              onClick={handleFullscreenToggle}
-              className="p-2.5 rounded-xl bg-neutral-800 text-white hover:bg-neutral-700 transition-colors"
-              title={isFullscreen ? "Exit Fullscreen" : "Toggle Fullscreen"}
-            >
-              {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
-            </button>
+            {!isMobile && (
+              <button
+                onClick={handleFullscreenToggle}
+                className="p-2.5 rounded-xl bg-neutral-800 text-white hover:bg-neutral-700 transition-colors touch-target"
+                title={isFullscreen ? "Exit Fullscreen" : "Toggle Fullscreen"}
+              >
+                {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+              </button>
+            )}
           </div>
 
-          <div className={`flex-1 bg-[#0d0d0d] relative overflow-hidden ${!isFullscreen ? 'm-4 rounded-2xl border border-white/10' : ''}`}>
-
+          {/* Canvas area with resizable height on desktop */}
+          <div
+            className={`bg-[#0d0d0d] relative overflow-hidden ${!isFullscreen && !isMobile ? 'm-4 rounded-2xl border border-white/10' : isMobile ? 'm-2 rounded-xl border border-white/10' : ''}`}
+            style={{
+              height: isMobile || isFullscreen ? 'auto' : `${canvasHeight}px`,
+              minHeight: isMobile || isFullscreen ? 'auto' : '200px',
+              flex: isMobile || isFullscreen ? '1' : 'none'
+            }}
+          >
             {activeSheetId && user && (
               <Suspense fallback={<div className="h-full w-full flex items-center justify-center"><div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full"></div></div>}>
                 <SharedCanvas
@@ -226,6 +261,24 @@ export function CollaborationSpace({
               </div>
             )}
           </div>
+
+          {/* Vertical resizer for canvas (desktop only) */}
+          {!isMobile && !isFullscreen && (
+            <VerticalResizer
+              onResize={handleCanvasResize}
+              minHeight={200}
+              maxHeight={800}
+              className="mx-4 bg-white/5 hover:bg-cyan-400/30"
+            />
+          )}
+
+          {/* Additional content area below canvas */}
+          <div className="flex-1 min-h-0 p-4">
+            <div className="text-xs text-neutral-500 text-center">
+              {!isMobile && 'Перетащите границы для изменения размера • '}
+              Используйте колесо мыши для масштабирования холста
+            </div>
+          </div>
         </div>
 
         {/* GAMES TAB */}
@@ -238,7 +291,7 @@ export function CollaborationSpace({
         </div>
 
         {/* USERS TAB */}
-        <div className={`flex-1 overflow-y-auto ${activeTab === 'users' ? 'block' : 'hidden'}`}>
+        <div className={`flex-1 overflow-y-auto custom-scrollbar ${activeTab === 'users' ? 'block' : 'hidden'} ${isMobile ? 'pb-4' : ''}`}>
           <UserList users={allUsers} />
         </div>
       </div>

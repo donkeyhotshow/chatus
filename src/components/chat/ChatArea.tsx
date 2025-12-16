@@ -18,6 +18,8 @@ import { useFirebase } from '../firebase/FirebaseProvider';
 import { Timestamp } from 'firebase/firestore';
 import { logger } from '@/lib/logger';
 import { useDebounce } from 'use-debounce';
+import { VerticalResizer } from '../ui/VerticalResizer';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 type ChatAreaProps = {
   user: UserProfile;
@@ -37,6 +39,21 @@ export const ChatArea = memo(function ChatArea({
   const [imageForView, setImageForView] = useState<string | null>(null);
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([]);
+  const [inputAreaHeight, setInputAreaHeight] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('chatarea-input-height');
+      return saved ? parseInt(saved, 10) : 120;
+    }
+    return 120;
+  });
+
+  const isMobile = useIsMobile();
+
+  // Save input area height to localStorage
+  const handleInputAreaResize = (height: number) => {
+    setInputAreaHeight(height);
+    localStorage.setItem('chatarea-input-height', height.toString());
+  };
 
   const { db } = useFirebase()!;
   const { toast } = useToast();
@@ -343,7 +360,7 @@ export const ChatArea = memo(function ChatArea({
 
   return (
     <>
-      <section className="flex-1 flex flex-col border-r border-white/10 bg-black/50 backdrop-blur-sm relative">
+      <section className="flex-1 flex flex-col md:border-r border-white/10 bg-black/50 backdrop-blur-sm relative h-full min-h-0">
         <ChatHeader
           roomId={roomId}
           otherUser={otherUser}
@@ -351,19 +368,40 @@ export const ChatArea = memo(function ChatArea({
           onToggleCollaborationSpace={onToggleCollaborationSpace}
           isOnline={isOnline}
         />
-        <MessageList
-          messages={allMessages}
-          isLoading={isInitialLoad && allMessages.length === 0}
-          currentUserId={user.id}
-          onReaction={handleToggleReaction}
-          onDeleteMessage={handleDeleteMessage}
-          onImageClick={(imageUrl) => setImageForView(imageUrl)}
-          onReply={handleReply}
-          onLoadMore={service?.loadMoreMessages}
-          hasMoreMessages={hasMoreMessages}
-        />
 
-        <div className="relative">
+        {/* Messages area with proper flex grow */}
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <MessageList
+            messages={allMessages}
+            isLoading={isInitialLoad && allMessages.length === 0}
+            currentUserId={user.id}
+            onReaction={handleToggleReaction}
+            onDeleteMessage={handleDeleteMessage}
+            onImageClick={(imageUrl) => setImageForView(imageUrl)}
+            onReply={handleReply}
+            onLoadMore={service?.loadMoreMessages}
+            hasMoreMessages={hasMoreMessages}
+          />
+        </div>
+
+        {/* Vertical resizer for input area (desktop only) */}
+        {!isMobile && (
+          <VerticalResizer
+            onResize={handleInputAreaResize}
+            minHeight={80}
+            maxHeight={300}
+            className="bg-white/5 hover:bg-cyan-400/30"
+          />
+        )}
+
+        {/* Input area - resizable height on desktop */}
+        <div
+          className="flex-shrink-0 relative bg-black/30 backdrop-blur-sm border-t border-white/10"
+          style={{
+            height: isMobile ? 'auto' : `${inputAreaHeight}px`,
+            minHeight: isMobile ? 'auto' : '80px'
+          }}
+        >
           {typingUsers.length > 0 && (
             <div className="absolute -top-6 left-8 flex items-center gap-2 animate-pulse">
               <div className="flex gap-1">

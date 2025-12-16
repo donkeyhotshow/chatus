@@ -60,12 +60,15 @@ const MessageList = memo(({
   if (messages.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center h-full px-6 py-8">
-        <div className="flex flex-col items-center gap-4 text-center max-w-sm">
-          <div className="text-6xl opacity-40 mb-2">💬</div>
-          <h2 className="text-xl font-semibold text-white">Сообщений пока нет</h2>
-          <p className="text-sm text-neutral-400 leading-relaxed">
-            Напишите первое сообщение, чтобы начать общение
-          </p>
+        <div className="flex flex-col items-center gap-6 text-center max-w-sm">
+          <div className="text-7xl opacity-50 mb-2 animate-pulse">💬</div>
+          <div className="space-y-2">
+            <h2 className="text-xl sm:text-2xl font-bold text-white">Начните общение</h2>
+            <p className="text-sm sm:text-base text-neutral-400 leading-relaxed">
+              Напишите первое сообщение, чтобы начать диалог
+            </p>
+          </div>
+          <div className="w-16 h-1 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full opacity-60"></div>
         </div>
       </div>
     );
@@ -96,13 +99,13 @@ const MessageList = memo(({
           })();
 
           return (
-            <div className="px-4 py-1">
+            <div className="px-3 sm:px-4 py-1">
               {isNewDay && (
-                <div className="flex justify-center my-4">
-                  <span className="bg-neutral-800/50 text-neutral-400 text-[10px] font-medium px-3 py-1 rounded-full border border-white/5">
+                <div className="flex justify-center my-6">
+                  <span className="bg-neutral-800/70 text-neutral-300 text-xs font-semibold px-4 py-2 rounded-full border border-white/10 shadow-lg backdrop-blur-sm">
                     {msg.createdAt && 'seconds' in msg.createdAt
-                      ? new Date(msg.createdAt.seconds * 1000).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })
-                      : 'Today'}
+                      ? new Date(msg.createdAt.seconds * 1000).toLocaleDateString('ru-RU', { weekday: 'long', month: 'long', day: 'numeric' })
+                      : 'Сегодня'}
                   </span>
                 </div>
               )}

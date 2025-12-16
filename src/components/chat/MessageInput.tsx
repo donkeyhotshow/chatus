@@ -100,7 +100,7 @@ export function MessageInput({ onSendMessage, onImageSend, onDoodleClick, onInpu
 
   return (
     <div
-      className="w-full bg-neutral-900/90 border-t border-white/10 backdrop-blur-md z-20"
+      className="w-full bg-gradient-to-t from-black/80 to-neutral-900/90 border-t border-white/20 backdrop-blur-md z-20 shadow-2xl"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       {showStickerPicker && (
@@ -109,7 +109,7 @@ export function MessageInput({ onSendMessage, onImageSend, onDoodleClick, onInpu
           onClose={() => setShowStickerPicker(false)}
         />
       )}
-      <div className="max-w-content mx-auto flex items-end gap-2 px-2 py-2 md:px-4 md:py-3">
+      <div className="max-w-content mx-auto flex items-end gap-2 sm:gap-3 px-3 py-3 sm:px-4 sm:py-4">
         <button
           onClick={() => setShowStickerPicker(p => !p)}
           className="w-10 h-10 shrink-0 flex items-center justify-center rounded-full text-neutral-400 hover:text-white hover:bg-white/10 transition-all mb-0.5"
@@ -118,15 +118,15 @@ export function MessageInput({ onSendMessage, onImageSend, onDoodleClick, onInpu
           <Smile className="w-6 h-6" />
         </button>
 
-        <div className="flex-1 relative bg-neutral-800/50 border border-white/10 rounded-[20px] focus-within:ring-1 focus-within:ring-white/20 transition-all min-h-[44px] flex items-center">
+        <div className="flex-1 relative bg-gradient-to-r from-neutral-800/60 to-neutral-700/60 border border-white/20 rounded-[22px] focus-within:ring-2 focus-within:ring-cyan-400/50 focus-within:border-cyan-400/50 transition-all duration-200 min-h-[44px] flex items-center shadow-lg backdrop-blur-sm">
           <textarea
             ref={textareaRef}
-            placeholder="Сообщение..."
+            placeholder="Напишите сообщение..."
             value={text}
             onChange={handleTextChange}
             onKeyDown={handleKeyDown}
             rows={1}
-            className="w-full bg-transparent border-none focus:ring-0 text-white placeholder-neutral-500 px-4 py-2.5 max-h-[120px] resize-none overflow-y-auto leading-relaxed scrollbar-hide"
+            className="w-full bg-transparent border-none focus:ring-0 text-white placeholder-neutral-400 px-4 py-3 max-h-[120px] resize-none overflow-y-auto leading-relaxed scrollbar-hide text-sm sm:text-base"
             aria-label="Сообщение"
             style={{ minHeight: '44px' }}
           />
@@ -140,32 +140,35 @@ export function MessageInput({ onSendMessage, onImageSend, onDoodleClick, onInpu
           className="hidden"
         />
 
-        {/* Mobile-optimized actions menu or direct buttons */}
-        <div className="flex items-center gap-1 mb-0.5">
+        {/* Action buttons */}
+        <div className="flex items-center gap-1 sm:gap-2 mb-0.5">
           <button
             onClick={onDoodleClick}
-            className="w-10 h-10 flex items-center justify-center rounded-full text-neutral-400 hover:text-white hover:bg-white/10 transition-all hidden sm:flex"
+            className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-full text-neutral-400 hover:text-cyan-400 hover:bg-cyan-400/10 transition-all duration-200 hover:scale-110 hidden sm:flex"
             aria-label="Рисовать"
+            title="Рисовать"
           >
-            <Brush className="w-5 h-5" />
+            <Brush className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="w-10 h-10 flex items-center justify-center rounded-full text-neutral-400 hover:text-white hover:bg-white/10 transition-all"
+            className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-full text-neutral-400 hover:text-blue-400 hover:bg-blue-400/10 transition-all duration-200 hover:scale-110"
             aria-label="Прикрепить файл"
+            title="Прикрепить изображение"
           >
-            <Paperclip className="w-5 h-5" />
+            <Paperclip className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
           <button
             onClick={handleSend}
             disabled={!text.trim()}
-            className={`w-10 h-10 flex items-center justify-center rounded-full transition-all ${text.trim()
-              ? 'bg-white text-black hover:scale-105 active:scale-95'
+            className={`w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-full transition-all duration-200 ${text.trim()
+              ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:scale-110 active:scale-95 shadow-lg shadow-cyan-500/25'
               : 'bg-white/10 text-neutral-500 cursor-not-allowed'
               }`}
             aria-label="Отправить"
+            title="Отправить сообщение"
           >
-            <Send className="w-5 h-5 ml-0.5" />
+            <Send className="w-4 h-4 sm:w-5 sm:h-5 ml-0.5" />
           </button>
         </div>
       </div>
