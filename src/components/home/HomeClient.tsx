@@ -14,6 +14,7 @@ export function HomeClient() {
   const [roomCode, setRoomCode] = useState('');
   const [username, setUsername] = useState('');
   const [demoMode, setDemoMode] = useState(false);
+  const [isFormValid, setIsFormValid] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -26,6 +27,17 @@ export function HomeClient() {
       setUsername(savedUsername.trim());
     }
   }, []);
+
+  // Валідація форми в реальному часі
+  useEffect(() => {
+    const trimmedUsername = username.trim();
+    const trimmedRoomCode = roomCode.trim();
+
+    const isUsernameValid = trimmedUsername.length >= 2 && trimmedUsername.length <= 20;
+    const isRoomCodeValid = trimmedRoomCode.length >= 3 && trimmedRoomCode.length <= 6 && /^[A-Z0-9]+$/.test(trimmedRoomCode);
+
+    setIsFormValid(isUsernameValid && isRoomCodeValid);
+  }, [username, roomCode]);
 
   const handleJoinRoom = (e: React.FormEvent) => {
     e.preventDefault();
@@ -184,56 +196,94 @@ export function HomeClient() {
         </CardHeader>
         <form onSubmit={handleJoinRoom}>
           <CardContent className="space-y-4">
-            <Input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="ВАШ НИК ИЛИ ИМЯ"
-              className="text-center font-mono text-base sm:text-lg tracking-widest h-12 sm:h-14 bg-black/50 border-white/10 focus:ring-white/50 text-white placeholder:text-neutral-500"
-              maxLength={20}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  const roomCodeInput = document.querySelector('input[placeholder="КОД КОМНАТЫ"]') as HTMLInputElement;
-                  if (roomCodeInput) {
-                    roomCodeInput.focus();
+            <div className="space-y-2">
+              <Input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="ВАШ НИК ИЛИ ИМЯ"
+                className={`text-center font-mono text-base sm:text-lg tracking-widest h-12 sm:h-14 bg-black/50 border-white/10 focus:ring-white/50 text-white placeholder:text-neutral-500 transition-all duration-200 ${username.trim().length > 0 && username.trim().length < 2
+                  ? 'border-red-500/50 focus:ring-red-500/50'
+                  : username.trim().length >= 2
+                    ? 'border-green-500/50 focus:ring-green-500/50'
+                    : ''
+                  }`}
+                maxLength={20}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const roomCodeInput = document.querySelector('input[placeholder="КОД КОМНАТЫ"]') as HTMLInputElement;
+                    if (roomCodeInput) {
+                      roomCodeInput.focus();
+                    }
                   }
-                }
-              }}
-              autoComplete="username"
-              title="Введите ваш ник (2-20 символов)"
-            />
-            <Input
-              value={roomCode}
-              onChange={(e) => {
-                const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-                setRoomCode(value);
-              }}
-              placeholder="КОД КОМНАТЫ"
-              className="text-center font-mono text-base sm:text-lg tracking-widest h-12 sm:h-14 bg-black/50 border-white/10 focus:ring-white/50 text-white placeholder:text-neutral-500"
-              maxLength={6}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  if (username.trim() && roomCode.trim()) {
-                    handleJoinRoom(e as any);
+                }}
+                autoComplete="username"
+                title="Введите ваш ник (2-20 символов)"
+              />
+              {username.trim().length > 0 && username.trim().length < 2 && (
+                <p className="text-xs text-red-400 text-center animate-in fade-in slide-in-from-top-1 duration-200">
+                  Минимум 2 символа
+                </p>
+              )}
+              {username.trim().length >= 2 && (
+                <p className="text-xs text-green-400 text-center animate-in fade-in slide-in-from-top-1 duration-200">
+                  ✓ Ник подходит
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Input
+                value={roomCode}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                  setRoomCode(value);
+                }}
+                placeholder="КОД КОМНАТЫ"
+                className={`text-center font-mono text-base sm:text-lg tracking-widest h-12 sm:h-14 bg-black/50 border-white/10 focus:ring-white/50 text-white placeholder:text-neutral-500 transition-all duration-200 ${roomCode.trim().length > 0 && roomCode.trim().length < 3
+                  ? 'border-red-500/50 focus:ring-red-500/50'
+                  : roomCode.trim().length >= 3
+                    ? 'border-green-500/50 focus:ring-green-500/50'
+                    : ''
+                  }`}
+                maxLength={6}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (isFormValid) {
+                      handleJoinRoom(e as any);
+                    }
                   }
-                }
-              }}
-              autoComplete="off"
-              title="Введите код комнаты (3-6 символов, буквы и цифры)"
-            />
+                }}
+                autoComplete="off"
+                title="Введите код комнаты (3-6 символов, буквы и цифры)"
+              />
+              {roomCode.trim().length > 0 && roomCode.trim().length < 3 && (
+                <p className="text-xs text-red-400 text-center animate-in fade-in slide-in-from-top-1 duration-200">
+                  Минимум 3 символа
+                </p>
+              )}
+              {roomCode.trim().length >= 3 && (
+                <p className="text-xs text-green-400 text-center animate-in fade-in slide-in-from-top-1 duration-200">
+                  ✓ Код подходит
+                </p>
+              )}
+            </div>
           </CardContent>
           <CardFooter className="px-6 pb-6">
             <Button
               type="submit"
-              className="w-full font-bold bg-white text-black hover:bg-neutral-200 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:hover:scale-100"
+              className={`w-full font-bold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:hover:scale-100 min-h-[44px] ${isFormValid
+                ? 'bg-white text-black hover:bg-neutral-200'
+                : 'bg-neutral-600 text-neutral-400 cursor-not-allowed opacity-50'
+                }`}
               size="lg"
-              disabled={!username.trim() || !roomCode.trim()}
+              disabled={!isFormValid}
               onClick={(e) => {
                 if (process.env.NODE_ENV === 'development') {
-                  console.log('Button clicked!', { username, roomCode });
+                  console.log('Button clicked!', { username, roomCode, isFormValid });
                 }
-                if (!username.trim() || !roomCode.trim()) {
+                if (!isFormValid) {
                   if (process.env.NODE_ENV === 'development') {
                     console.log('Button disabled due to validation');
                   }

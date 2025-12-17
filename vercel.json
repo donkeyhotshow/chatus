@@ -8,8 +8,10 @@
   ],
   "rewrites": [
     {
-      "source": "/chat/:roomId",
-      "destination": "/chat/:roomId"
+      "source": "/chat/:roomId*",
+      "destination": "/chat/:roomId*"
     }
-  ]
+  ],
+  "trailingSlash": false,
+  "cleanUrls": true
 }

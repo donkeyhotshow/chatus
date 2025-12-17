@@ -108,6 +108,8 @@
   html,
   body {
     height: 100%;
+    height: 100dvh;
+    /* Dynamic viewport height */
     overflow: hidden;
     position: fixed;
     width: 100%;
@@ -1607,4 +1609,404 @@ body {
 
 .mobile-nav-item:active {
   transform: scale(0.95);
+}
+
+/* ===== CHATUS V2.0 МОБІЛЬНІ ПОКРАЩЕННЯ ===== */
+
+/* Динамічна висота в'юпорта для всіх елементів */
+.h-screen-dynamic {
+  height: 100vh;
+  height: 100dvh;
+  /* Dynamic viewport height */
+}
+
+.min-h-screen-dynamic {
+  min-height: 100vh;
+  min-height: 100dvh;
+  /* Dynamic viewport height */
+}
+
+.max-h-screen-dynamic {
+  max-height: 100vh;
+  max-height: 100dvh;
+  /* Dynamic viewport height */
+}
+
+/* Покращені touch targets */
+.touch-target-enhanced {
+  min-width: 48px;
+  min-height: 48px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(6, 182, 212, 0.2);
+}
+
+/* Мобільні input поля з правильним розміром шрифту */
+.mobile-input {
+  font-size: 16px !important;
+  /* Запобігає zoom на iOS */
+  line-height: 1.5;
+  min-height: 48px;
+}
+
+/* Покращена клавіатурна адаптація */
+@media (max-width: 768px) {
+  .keyboard-adaptive-container {
+    height: 100vh;
+    height: 100dvh;
+    transition: height 0.3s ease;
+  }
+
+  .keyboard-visible .keyboard-adaptive-container {
+    height: calc(100vh - env(keyboard-inset-height, 0px));
+    height: calc(100dvh - env(keyboard-inset-height, 0px));
+  }
+
+  /* Фіксований input на мобільних */
+  .mobile-message-input {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.98) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  /* Відступ для контенту над фіксованим input */
+  .mobile-content-with-fixed-input {
+    padding-bottom: 80px;
+    /* Висота input + відступи */
+  }
+
+  /* Покращена прокрутка на мобільних */
+  .mobile-scroll-container {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    overscroll-behavior-y: contain;
+  }
+
+  /* Покращені кнопки для мобільних */
+  .mobile-button {
+    min-height: 48px;
+    min-width: 48px;
+    padding: 12px 16px;
+    font-size: 16px;
+    line-height: 1.5;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(6, 182, 212, 0.2);
+  }
+
+  /* Покращені форми */
+  .mobile-form-field {
+    margin-bottom: 16px;
+  }
+
+  .mobile-form-field input,
+  .mobile-form-field textarea {
+    font-size: 16px !important;
+    min-height: 48px;
+    padding: 12px 16px;
+    border-radius: 12px;
+  }
+
+  /* Покращені модальні вікна */
+  .mobile-modal {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    border-radius: 0;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  /* Покращена навігація */
+  .mobile-navigation {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.98) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    bordop: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Покращені списки повідомлень */
+  .mobile-message-list {
+    padding-bottom: 100px;
+    /* Простір для навігації + input */
+    scroll-padding-bottom: 100px;
+  }
+}
+
+/* Landscape орієнтація на мобільних */
+@media (max-width: 768px) and (orientation: landscape) {
+  .mobile-landscape-compact {
+    padding: 8px;
+  }
+
+  .mobile-landscape-header {
+    height: 48px;
+    min-height: 48px;
+  }
+
+  .mobile-landscape-navigation {
+    height: 56px;
+    min-height: 56px;
+  }
+}
+
+/* Покращення для великих мобільних екранів */
+@media (min-width: 414px) and (max-width: 768px) {
+  .large-mobile-spacing {
+    padding: 16px;
+  }
+
+  .large-mobile-button {
+    min-height: 52px;
+    padding: 14px 20px;
+  }
+}
+
+/* Покращення для малих мобільних екранів */
+@media (max-width: 360px) {
+  .small-mobile-compact {
+    padding: 8px;
+    font-size: 14px;
+  }
+
+  .small-mobile-button {
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .small-mobile-input {
+    font-size: 16px !important;
+    /* Все ще 16px для запобігання zoom */
+    padding: 10px 12px;
+  }
+}
+
+/* Покращення доступності */
+@media (prefers-reduced-motion: reduce) {
+  .mobile-animation-disabled * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* High contrast mode для мобільних */
+@media (prefers-contrast: high) and (max-width: 768px) {
+  .mobile-high-contrast {
+    border-width: 2px;
+    border-color: #ffffff;
+  }
+
+  .mobile-high-contrast-text {
+    color: #ffffff;
+    background-color: #000000;
+  }
+}
+
+/* Покращення для темної теми на мобільних */
+@media (prefers-color-scheme: dark) and (max-width: 768px) {
+  .mobile-dark-theme {
+    background-color: #000000;
+    color: #ffffff;
+  }
+
+  .mobile-dark-theme input,
+  .mobile-dark-theme textarea {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+  }
+
+  .mobile-dark-theme button {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+  }
+}
+
+/* Покращення для світлої теми на мобільних */
+@media (prefers-color-scheme: light) and (max-width: 768px) {
+  .mobile-light-theme {
+    background-color: #ffffff;
+    color: #000000;
+  }
+
+  .mobile-light-theme input,
+  .mobile-light-theme textarea {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #000000;
+  }
+
+  .mobile-light-theme button {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #000000;
+  }
+}
+
+/* Покращення для пристроїв з вирізами (notch) */
+@supports (padding: max(0px)) {
+  .mobile-safe-area-full {
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  .mobile-safe-area-horizontal {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  .mobile-safe-area-vertical {
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+}
+
+/* Покращення для iOS Safari */
+@supports (-webkit-touch-callout: none) {
+  .ios-safari-fix {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ios-safari-input-fix {
+    -webkit-appearance: none;
+    border-radius: 0;
+  }
+
+  .ios-safari-button-fix {
+    -webkit-appearance: none;
+    border-radius: 12px;
+  }
+}
+
+/* Покращення для Android Chrome */
+@media screen and (-webkit-min-device-pixel-ratio: 0) and (max-width: 768px) {
+  .android-chrome-fix {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  .android-chrome-input-fix {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+}
+
+/* Утиліти для мобільної розробки */
+.mobile-only {
+  display: none;
+}
+
+.desktop-only {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .mobile-only {
+    display: block;
+  }
+
+  .desktop-only {
+    display: none;
+  }
+
+  .mobile-flex {
+    display: flex;
+  }
+
+  .mobile-grid {
+    display: grid;
+  }
+
+  .mobile-hidden {
+    display: none;
+  }
+
+  .mobile-visible {
+    display: block;
+  }
+}
+
+/* Покращені анімації для мобільних */
+@media (max-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .mobile-slide-up {
+    animation: mobile-slide-up 0.3s ease-out;
+  }
+
+  .mobile-slide-down {
+    animation: mobile-slide-down 0.3s ease-out;
+  }
+
+  .mobile-fade-in {
+    animation: mobile-fade-in 0.2s ease-out;
+  }
+
+  @keyframes mobile-slide-up {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes mobile-slide-down {
+    from {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes mobile-fade-in {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+/* Покращення продуктивності на мобільних */
+@media (max-width: 768px) {
+  .mobile-performance-optimized {
+    will-change: transform;
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+
+  .mobile-gpu-accelerated {
+    transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
+  }
 }

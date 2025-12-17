@@ -21,6 +21,7 @@ export const viewport = {
   interactiveWidget: 'resizes-content',
   themeColor: '#080808',
   viewportFit: 'cover',
+  height: 'device-height',
 };
 
 export const metadata: Metadata = {
@@ -99,7 +100,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#080808" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://firebasestorage.googleapis.com" />
@@ -121,7 +122,7 @@ export default function RootLayout({
             })();
           `}
         </Script> */}
-        <div className="flex flex-col w-full bg-black text-neutral-200 font-sans selection:bg-cyan-400 selection:text-black overflow-hidden min-h-screen min-h-[100dvh] supports-[height:100dvh]:min-h-[100dvh]">
+        <div className="flex flex-col w-full bg-black text-neutral-200 font-sans selection:bg-cyan-400 selection:text-black overflow-hidden h-full h-[100dvh] supports-[height:100dvh]:h-[100dvh]">
           <header className="h-12 sm:h-14 shrink-0 border-b border-white/10 flex items-center px-3 sm:px-4 lg:px-6 bg-gradient-to-r from-neutral-950 to-black z-50 shadow-lg">
             <a
               href="/"

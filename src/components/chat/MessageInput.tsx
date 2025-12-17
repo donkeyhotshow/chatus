@@ -180,8 +180,11 @@ export function MessageInput({ onSendMessage, onImageSend, onDoodleClick, onInpu
 
   return (
     <div
-      className="w-full bg-gradient-to-t from-black/80 to-neutral-900/90 border-t border-white/20 backdrop-blur-md z-20 shadow-2xl"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      className="w-full bg-gradient-to-t from-black/80 to-neutral-900/90 border-t border-white/20 backdrop-blur-md z-20 shadow-2xl safe-area-inset-bottom"
+      style={{
+        paddingBottom: 'max(12px, env(safe-area-inset-bottom))',
+        minHeight: '60px' // Мінімальна висота для touch targets
+      }}
     >
       {showStickerPicker && (
         <StickerPicker
@@ -198,7 +201,7 @@ export function MessageInput({ onSendMessage, onImageSend, onDoodleClick, onInpu
           <Smile className="w-6 h-6" />
         </button>
 
-        <div className="flex-1 relative bg-gradient-to-r from-neutral-800/60 to-neutral-700/60 border border-white/20 rounded-[22px] focus-within:ring-2 focus-within:ring-cyan-400/50 focus-within:border-cyan-400/50 transition-all duration-200 min-h-[44px] flex items-center shadow-lg backdrop-blur-sm">
+        <div className="flex-1 relative bg-gradient-to-r from-neutral-800/60 to-neutral-700/60 border border-white/20 rounded-[22px] focus-within:ring-2 focus-within:ring-cyan-400/50 focus-within:border-cyan-400/50 transition-all duration-200 min-h-[48px] flex items-center shadow-lg backdrop-blur-sm">
           <textarea
             ref={textareaRef}
             placeholder="Напишите сообщение..."
@@ -207,9 +210,12 @@ export function MessageInput({ onSendMessage, onImageSend, onDoodleClick, onInpu
             onKeyDown={handleKeyDown}
             rows={1}
             maxLength={MAX_MESSAGE_LENGTH + 100} // Allow typing a bit over to show warning
-            className="w-full bg-transparent border-none focus:ring-0 text-white placeholder-neutral-400 px-4 py-3 max-h-[120px] resize-none overflow-y-auto leading-relaxed scrollbar-hide text-sm sm:text-base pr-20"
+            className="w-full bg-transparent border-none focus:ring-0 text-white placeholder-neutral-400 px-4 py-3 max-h-[120px] resize-none overflow-y-auto leading-relaxed scrollbar-hide mobile-input pr-20"
             aria-label="Сообщение"
-            style={{ minHeight: '44px' }}
+            style={{
+              minHeight: '48px',
+              fontSize: '16px' // Запобігає zoom на iOS
+            }}
           />
           <MessageLengthIndicator
             currentLength={text.length}
