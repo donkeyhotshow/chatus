@@ -72,6 +72,12 @@ const nextConfig = {
   // Force dynamic rendering to avoid static generation issues
   output: 'standalone',
 
+  // Disable static generation for problematic pages
+  trailingSlash: false,
+  generateBuildId: async () => {
+    return 'build-' + Date.now()
+  },
+
   // Experimental features for better performance
   experimental: {
     optimizePackageImports: [
