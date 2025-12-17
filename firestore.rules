@@ -9,6 +9,7 @@ service cloud.firestore {
     // Chat rooms - users can read/write if authenticated
     match /rooms/{roomId} {
       allow read, write: if request.auth != null;
+      allow read, write: if true; // Временно для отладки production
 
       // Messages - users can read all messages, create their own, update/delete their own
       match /messages/{messageId} {

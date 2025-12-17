@@ -69,6 +69,9 @@ const nextConfig = {
     ]
   },
 
+  // Force dynamic rendering to avoid static generation issues
+  output: 'standalone',
+
   // Experimental features for better performance
   experimental: {
     optimizePackageImports: [

@@ -6,7 +6,7 @@ import { ArrowLeft, ArrowRight, Palette, User, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { ValidatedInput } from '@/components/ui/ValidatedInput';
-import { useToast } from '@/components/ui/Toast';
+import { useToast } from '@/components/ui/toast';
 
 interface ProfileData {
     avatar: string | null;

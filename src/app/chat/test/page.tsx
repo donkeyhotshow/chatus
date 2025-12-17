@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 export default function TestChatPage() {
     return (
         <div className="h-full w-full flex items-center justify-center bg-black text-white">

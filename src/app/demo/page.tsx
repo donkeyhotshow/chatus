@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from 'react';
+
+export const dynamic = 'force-dynamic';
 import { MessageCircle, PenTool, Users, Send, Gamepad2 } from 'lucide-react';
 
 export default function DemoPage() {

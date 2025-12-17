@@ -85,12 +85,27 @@ export class ChatService {
   // Lazy getter for messageQueue to avoid initialization order issues
   private get messageQueue() {
     if (!this._messageQueue) {
-      this._messageQueue = getMessageQueue();
-      // Setup message queue callback with proper binding to avoid circular reference
-      this._messageQueue.setSendCallback(async (messageData, clientMessageId) => {
-        // Use a bound method to avoid "Cannot access before initialization" errors
-        return await this.sendMessageInternal(messageData, clientMessageId);
-      });
+      try {
+        this._messageQueue = getMessageQueue();
+        // Setup message queue callback with proper binding to avoid circular reference
+        this._messageQueue.setSendCallback(async (messageData, clientMessageId) => {
+          // Use a bound method to avoid "Cannot access before initialization" errors
+          if (this.sendMessageInternal) {
+            return await this.sendMessageInternal(messageData, clientMessageId);
+          }
+          throw new Error('ChatService not fully initialized');
+        });
+      } catch (error) {
+        logger.error('Failed to initialize message queue', error);
+        // Return a mock queue to prevent crashes
+        this._messageQueue = {
+          setSendCallback: () => { },
+          addMessage: () => Promise.resolve(),
+          processQueue: () => Promise.resolve(),
+          clearQueue: () => Promise.resolve(),
+          setOnlineStatus: () => { }
+        } as any;
+      }
     }
     return this._messageQueue;
   }

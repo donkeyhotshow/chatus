@@ -52,8 +52,30 @@ if (hasValidConfig && isBrowser) {
       // eslint-disable-next-line no-console
       console.log('Initializing Firebase...');
     }
+
+    // Ensure we don't initialize multiple times
     const existingApps = getApps();
-    app = existingApps.length > 0 ? existingApps[0] : initializeApp(firebaseConfig);
+    if (existingApps.length > 0) {
+      pp = existingApps[0];
+    } else {
+      // Add timeout for initialization to prevent hanging
+      const initPromise = new Promise<FirebaseApp>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Firebase initialization timeout'));
+        }, 10000); // 10 second timeout
+
+        try {
+          const firebaseApp = initializeApp(firebaseConfig);
+          clearTimeout(timeout);
+          resolve(firebaseApp);
+        } catch (error) {
+          clearTimeout(timeout);
+          reject(error);
+        }
+      });
+
+      app = await initPromise;
+    }
 
     if (process.env.NODE_ENV === 'development') {
       // eslint-disable-next-line no-console

@@ -1,7 +1,9 @@
 "use client";
 
-import { MobileTestPage } from '@/components/mobile/MobileTestPage';
+import { SimpleFallback } from '@/components/temp/SimpleFallback';
+
+export const dynamic = 'force-dynamic';
 
 export default function MobileDemoPage() {
-    return <MobileTestPage />;
+    return <SimpleFallback title="Mobile Demo" />;
 }
