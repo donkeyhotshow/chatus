@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { motion, sence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Search, MoreVertical } from 'lucide-react';
 import { UserProfile } from '@/lib/types';
 import { ChatArea } from '../chat/ChatArea';

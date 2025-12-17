@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useR, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import {
     ArrowLeft,

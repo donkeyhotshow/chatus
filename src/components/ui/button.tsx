@@ -6,14 +6,20 @@ import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'destructive' | 'ghost' | 'outline';
-  size?: 'sm' | 'md' | 'lg';
+  variant?: 'primary' | 'secondary' | 'destructive' | 'ghost' | 'outline' | 'default';
+  size?: 'sm' | 'md' | 'lg' | 'icon';
   isLoading?: boolean;
   loadingText?: string;
   children: React.ReactNode;
 }
 
-const buttonVariants = {
+export const buttonVariants = {
+  default: {
+    base: "bg-gradient-to-r from-cyan-500 to-blue-500 text-black font-semibold shadow-lg shadow-cyan-500/25",
+    hover: "hover:from-cyan-400 hover:to-blue-400 hover:shadow-cyan-500/40 hover:scale-105",
+    active: "active:scale-95",
+    disabled: "disabled:from-gray-400 disabled:to-gray-500 disabled:shadow-none disabled:cursor-not-allowed disabled:opacity-60"
+  },
   primary: {
     base: "bg-gradient-to-r from-cyan-500 to-blue-500 text-black font-semibold shadow-lg shadow-cyan-500/25",
     hover: "hover:from-cyan-400 hover:to-blue-400 hover:shadow-cyan-500/40 hover:scale-105",
@@ -49,7 +55,8 @@ const buttonVariants = {
 const sizeVariants = {
   sm: "px-3 py-1.5 text-sm min-h-[36px]",
   md: "px-4 py-2 text-base min-h-[44px]",
-  lg: "px-6 py-3 text-lg min-h-[52px]"
+  lg: "px-6 py-3 text-lg min-h-[52px]",
+  icon: "p-2 min-h-[40px] min-w-[40px]"
 };
 
 export function Button({

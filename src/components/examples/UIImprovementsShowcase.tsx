@@ -13,26 +13,29 @@ import {
     Info,
     AlertTriangle
 } from 'lucide-react';
-import {
-    Button,
-    ToastProvider,
-    useToast,
-    ProgressBar,
-    ValidatedInput,
-    ProfileCreationWizard
-} from '@/components/enhanced';
+import { Button } from '@/components/enhanced';
 
 function ToastDemo() {
-    const { success, error, warning, info } = useToast();
+    const [message, setMessage] = useState('');
+
+    const showToast = (type: string, title: string, description: string) => {
+        setMessage(`${type}: ${title} - ${description}`);
+        setTimeout(() => setMessage(''), 3000);
+    };
 
     return (
         <div className="space-y-4">
             <h3 className="text-lg font-semibold text-cyan-400 mb-4">Toast Уведомления</h3>
+            {message && (
+                <div className="p-3 bg-cyan-500/20 border border-cyan-500/30 rounded-lg text-cyan-300 text-sm">
+                    {message}
+                </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
                 <Button
-                    variant="primary"
+                    variant="default"
                     size="sm"
-                    onClick={() => success('Успех!', 'Аватар успешно сохранен')}
+                    onClick={() => showToast('SUCCESS', 'Успех!', 'Аватар успешно сохранен')}
                 >
                     <CheckCircle className="w-4 h-4 mr-2" />
                     Success
@@ -40,7 +43,7 @@ function ToastDemo() {
                 <Button
                     variant="destructive"
                     size="sm"
-                    onClick={() => error('Ошибка!', 'Не удалось сохранить данные')}
+                    onClick={() => showToast('ERROR', 'Ошибка!', 'Не удалось сохранить данные')}
                 >
                     <AlertCircle className="w-4 h-4 mr-2" />
                     Error
@@ -48,7 +51,7 @@ function ToastDemo() {
                 <Button
                     variant="secondary"
                     size="sm"
-                    onClick={() => warning('Внимание!', 'Не забудьте сохранить изменения')}
+                    onClick={() => showToast('WARNING', 'Внимание!', 'Не забудьте сохранить изменения')}
                 >
                     <AlertTriangle className="w-4 h-4 mr-2" />
                     Warning
@@ -56,7 +59,7 @@ function ToastDemo() {
                 <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => info('Информация', 'Новая функция доступна')}
+                    onClick={() => showToast('INFO', 'Информация', 'Новая функция доступна')}
                 >
                     <Info className="w-4 h-4 mr-2" />
                     Info
@@ -79,9 +82,9 @@ function ButtonDemo() {
         <div className="space-y-4">
             <h3 className="text-lg font-semibold text-cyan-400 mb-4">Кнопки с состояниями</h3>
             <div className="grid grid-cols-2 gap-3">
-                <Button variant="primary">
+                <Button variant="default">
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Primary
+                    Default
                 </Button>
                 <Button variant="secondary">
                     Secondary
@@ -96,12 +99,11 @@ function ButtonDemo() {
                     Outline
                 </Button>
                 <Button
-                    variant="primary"
-                    isLoading={isLoading}
-                    loadingText="Сохранение..."
+                    variant="default"
+                    disabled={isLoading}
                     onClick={handleAsyncAction}
                 >
-                    Async Action
+                    {isLoading ? 'Сохранение...' : 'Async Action'}
                 </Button>
             </div>
         </div>
@@ -111,37 +113,29 @@ function ButtonDemo() {
 function ProgressDemo() {
     const [currentStep, setCurrentStep] = useState(1);
 
-    const steps = [
-        {
-            id: 'avatar',
-            label: 'Аватар',
-            description: 'Создание образа',
-            completed: currentStep > 0
-        },
-        {
-            id: 'username',
-            label: 'Имя',
-            description: 'Выбор имени',
-            completed: currentStep > 1
-        },
-        {
-            id: 'settings',
-            label: 'Настройки',
-            description: 'Конфигурация',
-            completed: currentStep > 2
-        },
-        {
-            id: 'complete',
-            label: 'Готово',
-            description: 'Завершение',
-            completed: currentStep > 3
-        }
-    ];
+    const steps = ['Аватар', 'Имя', 'Настройки', 'Готово'];
 
     return (
         <div className="space-y-4">
             <h3 className="text-lg font-semibold text-cyan-400 mb-4">Прогресс-бар</h3>
-            <ProgressBar steps={steps} currentStep={currentStep} />
+            <div className="flex items-center space-x-2">
+                {steps.map((step, index) => (
+                    <div key={step} className="flex items-center">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${index < currentStep
+                            ? 'bg-cyan-500 text-white'
+                            : index === currentStep
+                                ? 'bg-cyan-500/50 text-cyan-300 border-2 border-cyan-500'
+                                : 'bg-slate-700 text-slate-400'
+                            }`}>
+                            {index + 1}
+                        </div>
+                        {index < steps.length - 1 && (
+                            <div className={`w-12 h-0.5 ${index < currentStep ? 'bg-cyan-500' : 'bg-slate-700'
+                                }`} />
+                        )}
+                    </div>
+                ))}
+            </div>
             <div className="flex gap-2">
                 <Button
                     variant="outline"
@@ -152,7 +146,7 @@ function ProgressDemo() {
                     Назад
                 </Button>
                 <Button
-                    variant="primary"
+                    variant="default"
                     size="sm"
                     onClick={() => setCurrentStep(Math.min(4, currentStep + 1))}
                     disabled={currentStep === 4}
@@ -169,76 +163,88 @@ function ValidationDemo() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    const usernameRules = [
-        { test: (v: string) => v.length >= 3, message: "Минимум 3 символа" },
-        { test: (v: string) => v.length <= 20, message: "Максимум 20 символов" },
-        { test: (v: string) => /^[a-zA-Z0-9_]+$/.test(v), message: "Только буквы, цифры и _" }
-    ];
+    const validateUsername = (value: string) => {
+        if (value.length < 3) return { valid: false, message: "Минимум 3 символа" };
+        if (value.length > 20) return { valid: false, message: "Максимум 20 символов" };
+        if (!/^[a-zA-Z0-9_]+$/.test(value)) return { valid: false, message: "Только буквы, цифры и _" };
+        return { valid: true, message: "Отлично!" };
+    };
 
-    const emailRules = [
-        { test: (v: string) => /\S+@\S+\.\S+/.test(v), message: "Введите корректный email" }
-    ];
+    const validateEmail = (value: string) => {
+        if (!/\S+@\S+\.\S+/.test(value)) return { valid: false, message: "Введите корректный email" };
+        return { valid: true, message: "Email корректный" };
+    };
 
-    const passwordRules = [
-        { test: (v: string) => v.length >= 8, message: "Минимум 8 символов" },
-        { test: (v: string) => /[A-Z]/.test(v), message: "Заглавная буква" },
-        { test: (v: string) => /[0-9]/.test(v), message: "Цифра" },
-        { test: (v: string) => /[!@#$%^&*]/.test(v), message: "Спецсимвол", type: 'warning' as const }
-    ];
+    const validatePassword = (value: string) => {
+        if (value.length < 8) return { valid: false, message: "Минимум 8 символов" };
+        if (!/[A-Z]/.test(value)) return { valid: false, message: "Нужна заглавная буква" };
+        if (!/[0-9]/.test(value)) return { valid: false, message: "Нужна цифра" };
+        return { valid: true, message: "Пароль надежный" };
+    };
+
+    const usernameValidation = validateUsername(username);
+    const emailValidation = validateEmail(email);
+    const passwordValidation = validatePassword(password);
 
     return (
         <div className="space-y-4">
             <h3 className="text-lg font-semibold text-cyan-400 mb-4">Валидация в реальном времени</h3>
             <div className="space-y-4">
-                <ValidatedInput
-                    label="Имя пользователя"
-                    value={username}
-                    onChange={setUsername}
-                    validationRules={usernameRules}
-                    suggestions={['user123', 'player456', 'gamer789']}
-                    onSuggestionSelect={setUsername}
-                    placeholder="Введите имя пользователя"
-                />
+                <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Имя пользователя</label>
+                    <input
+                        type="text"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        placeholder="Введите имя пользователя"
+                        className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    />
+                    {username && (
+                        <p className={`text-sm mt-1 ${usernameValidation.valid ? 'text-green-400' : 'text-red-400'}`}>
+                            {usernameValidation.message}
+                        </p>
+                    )}
+                </div>
 
-                <ValidatedInput
-                    label="Email"
-                    type="email"
-                    value={email}
-                    onChange={setEmail}
-                    validationRules={emailRules}
-                    placeholder="example@domain.com"
-                />
+                <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Email</label>
+                    <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="example@domain.com"
+                        className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    />
+                    {email && (
+                        <p className={`text-sm mt-1 ${emailValidation.valid ? 'text-green-400' : 'text-red-400'}`}>
+                            {emailValidation.message}
+                        </p>
+                    )}
+                </div>
 
-                <ValidatedInput
-                    label="Пароль"
-                    type="password"
-                    value={password}
-                    onChange={setPassword}
-                    validationRules={passwordRules}
-                    placeholder="Введите пароль"
-                />
+                <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">Пароль</label>
+                    <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Введите пароль"
+                        className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                    />
+                    {password && (
+                        <p className={`text-sm mt-1 ${passwordValidation.valid ? 'text-green-400' : 'text-red-400'}`}>
+                            {passwordValidation.message}
+                        </p>
+                    )}
+                </div>
             </div>
         </div>
     );
 }
 
 export function UIImprovementsShowcase() {
-    const [showProfileWizard, setShowProfileWizard] = useState(false);
-
-    if (showProfileWizard) {
-        return (
-            <ProfileCreationWizard
-                onComplete={(profile) => {
-                    console.log('Profile created:', profile);
-                    setShowProfileWizard(false);
-                }}
-                onCancel={() => setShowProfileWizard(false)}
-            />
-        );
-    }
-
     return (
-        <ToastProvider>
+        <div>
             <div className="min-h-screen bg-gradient-to-br from-slate-950 to-slate-900 text-white p-8">
                 <div className="max-w-6xl mx-auto">
 
@@ -317,9 +323,9 @@ export function UIImprovementsShowcase() {
                                 прогресс-баром и визуальной обратной связью
                             </p>
                             <Button
-                                variant="primary"
+                                variant="default"
                                 size="lg"
-                                onClick={() => setShowProfileWizard(true)}
+                                onClick={() => alert('Мастер создания профиля (демо)')}
                             >
                                 <User className="w-5 h-5 mr-2" />
                                 Открыть мастер создания профиля
@@ -371,6 +377,6 @@ export function UIImprovementsShowcase() {
                     </motion.div>
                 </div>
             </div>
-        </ToastProvider>
+        </div>
     );
 }

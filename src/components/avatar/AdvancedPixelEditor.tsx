@@ -408,7 +408,7 @@ export function AdvancedPixelEditor({
             drawPixel(coords.x, coords.y, selectedColor);
         }
     };
-    ndleCanvasMouseMove = (e: React.MouseEvent) => {
+    const handleCanvasMouseMove = (e: React.MouseEvent) => {
         if (!isDrawing || selectedTool === 'pipette') return;
 
         const coords = getPixelCoordinates(e);

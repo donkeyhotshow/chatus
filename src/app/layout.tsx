@@ -24,6 +24,7 @@ export const viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://chatus.vercel.app'),
   applicationName: APP_NAME,
   title: {
     default: APP_NAME,
