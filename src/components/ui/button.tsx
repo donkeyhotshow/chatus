@@ -59,7 +59,7 @@ const sizeVariants = {
   icon: "p-2 min-h-[40px] min-w-[40px]"
 };
 
-export function Button({
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
   variant = 'primary',
   size = 'md',
   isLoading = false,
@@ -68,7 +68,7 @@ export function Button({
   children,
   disabled,
   ...props
-}: ButtonProps) {
+}, ref) => {
   const variantClasses = buttonVariants[variant];
   const sizeClasses = sizeVariants[size];
 
@@ -76,6 +76,7 @@ export function Button({
 
   return (
     <motion.button
+      ref={ref}
       className={cn(
         // Base styles
         "relative inline-flex items-center justify-center rounded-xl font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:ring-offset-2 focus:ring-offset-slate-900",
@@ -128,4 +129,6 @@ export function Button({
       )}
     </motion.button>
   );
-}
+});
+
+Button.displayName = "Button";

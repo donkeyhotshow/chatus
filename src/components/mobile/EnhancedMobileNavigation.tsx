@@ -27,7 +27,7 @@ export function EnhancedMobileNavigation({
 }: EnhancedMobileNavigationProps) {
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
     const [lastActiveTab, setLastActiveTab] = useState(activeTab);
-    const { playSound, triggerHaptic } = useSoundDesign();
+    const { playSound, vibrate } = useSoundDesign();
     const profileMenuRef = useRef<HTMLDivElement>(null);
 
     // Close profile menu when clicking outside
@@ -52,14 +52,14 @@ export function EnhancedMobileNavigation({
     const handleTabChange = (tab: 'chat' | 'games' | 'canvas' | 'users') => {
         // Enhanced feedback based on tab
         if (tab === 'canvas') {
-            playSound('canvas');
-            triggerHaptic([15, 20, 15, 20, 15]);
+            playSound('playCanvasSaved');
+            vibrate([15, 20, 15, 20, 15]);
         } else if (tab === 'games') {
-            playSound('success');
-            triggerHaptic([10, 30, 10]);
+            playSound('playSuccess');
+            vibrate([10, 30, 10]);
         } else {
-            playSound('message');
-            triggerHaptic([10]);
+            playSound('playMessageSent');
+            vibrate([10]);
         }
 
         onTabChange(tab);
@@ -67,8 +67,8 @@ export function EnhancedMobileNavigation({
 
     const handleProfileToggle = () => {
         setIsProfileMenuOpen(!isProfileMenuOpen);
-        playSound('color');
-        triggerHaptic([5, 10, 5]);
+        playSound('playColorSelect');
+        vibrate([5, 10, 5]);
         onToggleCollabSpace();
     };
 
