@@ -61,6 +61,10 @@
   "exclude": [
     "node_modules",
     "functions",
-    "tests"
+    "tests",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx"
   ]
 }

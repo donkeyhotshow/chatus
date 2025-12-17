@@ -175,13 +175,16 @@ export function CollaborationSpace({
     <aside
       ref={collabSpaceRef}
       className={cn(`
-        flex flex-col bg-gradient-to-b from-neutral-900 to-neutral-950 transition-all duration-300 z-40 shadow-2xl`,
+        flex flex-col bg-gradient-to-b from-neutral-900 to-neutral-950 transition-all duration-300 shadow-2xl`,
         isFullscreen
           ? 'fixed inset-0 w-screen h-screen z-50'
-          : 'relative h-full',
-        isMobile
-          ? 'w-full border-none'
-          : 'w-full border-l border-white/20'
+          : isMobile
+            ? `
+              fixed inset-0 z-50
+              transform transition-transform duration-300 ease-in-out
+              ${isVisible ? 'translate-x-0' : 'translate-x-full'}
+            `
+            : 'relative h-full w-full border-l border-white/20 z-40'
       )}
     >
       {!isFullscreen && !isMobile && (

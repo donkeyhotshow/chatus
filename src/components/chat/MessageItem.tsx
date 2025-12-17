@@ -4,9 +4,9 @@
 import { memo, useState, useEffect } from 'react';
 import type { Message } from '@/lib/types';
 import { EmojiRain } from './EmojiRain';
-// VisuallyHidden removed as it's not used
 import { format } from 'date-fns';
 import { Smile, Trash2, CornerUpLeft, Clock, Check, CheckCheck } from 'lucide-react';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 type MessageItemProps = {
   message: Message;
@@ -15,11 +15,17 @@ type MessageItemProps = {
   onDelete: (messageId: string) => void;
   onImageClick: (imageUrl: string) => void;
   onReply: (message: Message) => void;
+  reactions?: { emoji: string; count: number; users: string[] }[];
 };
 
-const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, onReply }: MessageItemProps) => {
+const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, onReply, reactions = [] }: MessageItemProps) => {
   const [showEmojiRain, setShowEmojiRain] = useState(false);
   const [rainEmoji, setRainEmoji] = useState('');
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
+
+  // Адаптивность
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  const isTouchDevice = useMediaQuery('(hover: none)');
 
   useEffect(() => {
     // Reset state when message changes to prevent animation on new messages
@@ -126,10 +132,10 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
         )}
 
         {hasContent ? (
-          <div className={`relative p-0 rounded-2xl shadow-lg border transition-all duration-200 backdrop-blur-sm
+          <div className={`relative p-0 rounded-3xl shadow-2xl border transition-all duration-500 backdrop-blur-xl
             ${isOwn
-              ? `${isSticker ? 'bg-transparent border-none' : 'bg-gradient-to-br from-white to-gray-100 text-black rounded-tr-md border-white/50 shadow-[0_4px_20px_rgba(255,255,255,0.15)]'}`
-              : `${isSticker ? 'bg-transparent border-none' : 'bg-gradient-to-br from-neutral-800 to-neutral-900 text-white rounded-tl-md border-white/20 shadow-[0_4px_20px_rgba(0,0,0,0.3)]'}`
+              ? `${isSticker ? 'bg-transparent border-none' : 'bg-gradient-to-br from-slate-50 via-white to-slate-100 text-slate-900 rounded-tr-lg border-white/60 shadow-[0_8px_40px_rgba(0,188,212,0.25),0_4px_20px_rgba(255,255,255,0.3)] before:absolute before:inset-0 before:bg-gradient-to-br before:from-cyan-400/10 before:to-blue-500/10 before:rounded-3xl before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300'}`
+              : `${isSticker ? 'bg-transparent border-none' : 'bg-gradient-to-br from-slate-900/95 via-slate-800/98 to-slate-900/95 text-white rounded-tl-lg border-cyan-500/30 shadow-[0_8px_40px_rgba(0,0,0,0.6),0_4px_20px_rgba(0,188,212,0.2),inset_0_1px_0_rgba(255,255,255,0.1)] before:absolute before:inset-0 before:bg-gradient-to-br before:from-cyan-400/5 before:to-purple-500/5 before:rounded-3xl before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300'}`
             }
             ${message.id.startsWith('temp_') ? 'opacity-60' : ''}
           `}>
@@ -147,33 +153,85 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
 
             {renderContent()}
 
+            {/* Reactions */}
+            {reactions.length > 0 && (
+              <div className={`flex flex-wrap gap-2 px-4 sm:px-6 pb-3 sm:pb-4 ${isMobile ? 'max-w-full overflow-x-auto scrollbar-none' : ''}`}>
+                {reactions.map((reaction) => (
+                  <button
+                    key={reaction.emoji}
+                    className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full bg-gradient-to-r from-slate-800/80 to-slate-700/80 ${!isTouchDevice ? 'hover:from-cyan-500/20 hover:to-blue-500/20 hover:border-cyan-400/50 hover:shadow-cyan-500/25 hover:scale-105' : 'active:scale-95'} border border-slate-600/50 backdrop-blur-sm transition-all duration-300 text-xs sm:text-sm shadow-lg min-h-[44px] sm:min-h-auto`}
+                    onClick={() => onReaction(message.id, reaction.emoji)}
+                    title={`${reaction.emoji} от ${reaction.users.join(', ')}`}
+                  >
+                    <span className="text-base sm:text-lg">{reaction.emoji}</span>
+                    {reaction.count > 1 && <span className="text-white/80 font-medium">{reaction.count}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Action buttons */}
-            <div className={`absolute top-1/2 -translate-y-1/2 ${isOwn ? 'left-[-5rem]' : 'right-[-5rem]'}
-              opacity-0 group-hover:opacity-100 transition-all duration-200 flex gap-1 items-center bg-black/80 rounded-full p-1.5 backdrop-blur-md border border-white/20 shadow-lg
+            <div className={`
+              ${isMobile || isTouchDevice
+                ? 'static opacity-100 mt-3 justify-center'
+                : `absolute top-1/2 -translate-y-1/2 ${isOwn ? 'left-[-6rem]' : 'right-[-6rem]'} opacity-0 group-hover:opacity-100`
+              }
+              transition-all duration-300 flex gap-2 items-center bg-gradient-to-r from-slate-900/95 to-slate-800/95 rounded-2xl p-2 backdrop-blur-xl border border-cyan-500/30 shadow-[0_8px_32px_rgba(0,0,0,0.6),0_4px_16px_rgba(0,188,212,0.2)]
               ${message.id.startsWith('temp_') ? 'hidden' : ''}
-              `}>
+            `}>
 
               <button
                 onClick={() => onReply(message)}
-                className="p-1.5 rounded-full hover:bg-cyan-500/20 text-neutral-300 hover:text-cyan-400 transition-all duration-200 hover:scale-110"
+                className={`p-2.5 sm:p-2 rounded-xl text-slate-300 transition-all duration-300 border border-transparent min-h-[44px] min-w-[44px] sm:min-h-auto sm:min-w-auto flex items-center justify-center ${!isTouchDevice
+                    ? 'hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-blue-500/20 hover:text-cyan-300 hover:scale-110 hover:shadow-lg hover:shadow-cyan-500/25 hover:border-cyan-400/30'
+                    : 'active:scale-95 active:bg-cyan-500/20'
+                  }`}
                 title="Ответить"
               >
-                <CornerUpLeft className="w-3.5 h-3.5" />
+                <CornerUpLeft className="w-4 h-4" />
               </button>
-              <button
-                onClick={() => onReaction(message.id, '❤️')}
-                className="p-1.5 rounded-full hover:bg-pink-500/20 text-neutral-300 hover:text-pink-400 transition-all duration-200 hover:scale-110"
-                title="Поставить лайк"
-              >
-                <Smile className="w-3.5 h-3.5" />
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => setShowReactionPicker(!showReactionPicker)}
+                  className={`p-2.5 sm:p-2 rounded-xl text-slate-300 transition-all duration-300 border border-transparent min-h-[44px] min-w-[44px] sm:min-h-auto sm:min-w-auto flex items-center justify-center ${!isTouchDevice
+                      ? 'hover:bg-gradient-to-r hover:from-pink-500/20 hover:to-purple-500/20 hover:text-pink-300 hover:scale-110 hover:shadow-lg hover:shadow-pink-500/25 hover:border-pink-400/30'
+                      : 'active:scale-95 active:bg-pink-500/20'
+                    }`}
+                  title="Добавить реакцию"
+                >
+                  <Smile className="w-4 h-4" />
+                </button>
+
+                {showReactionPicker && (
+                  <div className={`absolute ${isMobile ? 'bottom-full mb-3 left-1/2 -translate-x-1/2' : 'bottom-full mb-3 right-0'} bg-gradient-to-br from-slate-900/98 to-slate-800/98 backdrop-blur-xl border border-cyan-500/30 rounded-2xl p-3 flex gap-2 z-20 shadow-[0_12px_40px_rgba(0,0,0,0.8),0_4px_16px_rgba(0,188,212,0.3)]`}>
+                    {['👍', '❤️', '😂', '😮', '😢', '🔥'].map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => {
+                          onReaction(message.id, emoji);
+                          setShowReactionPicker(false);
+                        }}
+                        className={`p-2.5 sm:p-2 rounded-xl text-xl transition-all duration-300 min-h-[44px] min-w-[44px] sm:min-h-auto sm:min-w-auto flex items-center justify-center ${!isTouchDevice
+                            ? 'hover:bg-gradient-to-r hover:from-cyan-500/20 hover:to-purple-500/20 hover:scale-125 hover:shadow-lg'
+                            : 'active:scale-95 active:bg-cyan-500/20'
+                          }`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               {isOwn && (
                 <button
                   onClick={() => onDelete(message.id)}
-                  className="p-1.5 rounded-full hover:bg-red-500/20 text-neutral-300 hover:text-red-400 transition-all duration-200 hover:scale-110"
+                  className={`p-2.5 sm:p-2 rounded-xl text-slate-300 transition-all duration-300 border border-transparent min-h-[44px] min-w-[44px] sm:min-h-auto sm:min-w-auto flex items-center justify-center ${!isTouchDevice
+                      ? 'hover:bg-gradient-to-r hover:from-red-500/20 hover:to-pink-500/20 hover:text-red-300 hover:scale-110 hover:shadow-lg hover:shadow-red-500/25 hover:border-red-400/30'
+                      : 'active:scale-95 active:bg-red-500/20'
+                    }`}
                   title="Удалить"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash2 className="w-4 h-4" />
                 </button>
               )}
             </div>

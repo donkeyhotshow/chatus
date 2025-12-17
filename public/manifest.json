@@ -1,151 +1,117 @@
 {
     "name": "ЧАТ ДЛЯ НАС",
-    "short_name": "ЧАТ ДЛЯ НАС",
-    "description": "Чат для совместной работы в реальном времени с поддержкой рисования и игр.",
-    "icons": [
-        {
-            "src": "/icon-72x72.png",
-            "sizes": "72x72",
-            "type": "image/png",
-            "purpose": "any"
-        },
-        {
-            "src": "/icon-96x96.png",
-            "sizes": "96x96",
-            "type": "image/png",
-            "purpose": "any"
-        },
-        {
-            "src": "/icon-128x128.png",
-            "sizes": "128x128",
-            "type": "image/png",
-            "purpose": "any"
-        },
-        {
-            "src": "/icon-144x144.png",
-            "sizes": "144x144",
-            "type": "image/png",
-            "purpose": "any"
-        },
-        {
-            "src": "/icon-152x152.png",
-            "sizes": "152x152",
-            "type": "image/png",
-            "purpose": "any"
-        },
-        {
-            "src": "/icon-192x192.png",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "any maskable"
-        },
-        {
-            "src": "/icon-384x384.png",
-            "sizes": "384x384",
-            "type": "image/png",
-            "purpose": "any"
-        },
-        {
-            "src": "/icon-512x512.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "any maskable"
-        }
-    ],
-    "theme_color": "#080808",
-    "background_color": "#000000",
-    "start_url": "/",
-    "scope": "/",
+    "short_name": "ChatUs",
+    "description": "Современное мобильное чат-приложение с пиксельными аватарами",
+    "start_url": "/mobile-demo",
     "display": "standalone",
+    "background_color": "#000000",
+    "theme_color": "#06b6d4",
     "orientation": "portrait-primary",
     "categories": [
         "social",
-        "productivity",
         "communication"
     ],
     "lang": "ru",
     "dir": "ltr",
-    "display_override": [
-        "window-controls-overlay",
-        "standalone",
-        "minimal-ui"
+    "scope": "/",
+    "icons": [
+        {
+            "src": "/icons/icon-72x72.png",
+            "sizes": "72x72",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/icons/icon-96x96.png",
+            "sizes": "96x96",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/icons/icon-128x128.png",
+            "sizes": "128x128",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/icons/icon-144x144.png",
+            "sizes": "144x144",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/icons/icon-152x152.png",
+            "sizes": "152x152",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/icons/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/icons/icon-384x384.png",
+            "sizes": "384x384",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/icons/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable any"
+        }
     ],
+    "screenshots": [
+        {
+            "src": "/screenshots/mobile-chat.png",
+            "sizes": "390x844",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "Основной чат"
+        },
+        {
+            "src": "/screenshots/mobile-profile.png",
+            "sizes": "390x844",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "Создание профиля"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Новый чат",
+            "short_name": "Чат",
+            "description": "Начать новый разговор",
+            "url": "/mobile-demo?action=new-chat",
+            "icons": [
+                {
+                    "src": "/icons/shortcut-chat.png",
+                    "sizes": "96x96"
+                }
+            ]
+        },
+        {
+            "name": "Настройки",
+            "short_name": "Настройки",
+            "description": "Открыть настройки приложения",
+            "url": "/mobile-demo?action=settings",
+            "icons": [
+                {
+                    "src": "/icons/shortcut-settings.png",
+                    "sizes": "96x96"
+                }
+            ]
+        }
+    ],
+    "related_applications": [],
+    "prefer_related_applications": false,
     "edge_side_panel": {
         "preferred_width": 400
     },
     "launch_handler": {
         "client_mode": "focus-existing"
-    },
-    "shortcuts": [
-        {
-            "name": "Создать комнату",
-            "short_name": "Новая комната",
-            "description": "Создать новую комнату для чата",
-            "url": "/?action=create-room",
-            "icons": [
-                {
-                    "src": "/icon-192x192.png",
-                    "sizes": "192x192",
-                    "type": "image/png"
-                }
-            ]
-        },
-        {
-            "name": "Присоединиться",
-            "short_name": "Войти",
-            "description": "Присоединиться к существующей комнате",
-            "url": "/?action=join-room",
-            "icons": [
-                {
-                    "src": "/icon-192x192.png",
-                    "sizes": "192x192",
-                    "type": "image/png"
-                }
-            ]
-        }
-    ],
-    "screenshots": [
-        {
-            "src": "/screenshot-wide.png",
-            "sizes": "1280x720",
-            "type": "image/png",
-            "form_factor": "wide",
-            "label": "Главный экран чата"
-        },
-        {
-            "src": "/screenshot-narrow.png",
-            "sizes": "640x1136",
-            "type": "image/png",
-            "form_factor": "narrow",
-            "label": "Мобильная версия чата"
-        }
-    ],
-    "related_applications": [],
-    "prefer_related_applications": false,
-    "protocol_handlers": [
-        {
-            "protocol": "web+chatus",
-            "url": "/join?room=%s"
-        }
-    ],
-    "share_target": {
-        "action": "/share",
-        "method": "POST",
-        "enctype": "multipart/form-data",
-        "params": {
-            "title": "title",
-            "text": "text",
-            "url": "url",
-            "files": [
-                {
-                    "name": "files",
-                    "accept": [
-                        "image/*",
-                        "text/*",
-                        ".pdf"
-                    ]
-                }
-            ]
-        }
     }
 }

@@ -33,17 +33,37 @@ const LoadingSpinner = () => (
 
 
 export function ProfileCreationDialog({ isOpen, onProfileCreate, roomId, isCreating }: ProfileCreationDialogProps) {
-  const [username, setUsername] = useState('');
-  const [avatarDataUrl, setAvatarDataUrl] = useState('');
+  // Исправление: Инициализируем состояние сразу, избегая "Cannot access before initialization"
+  const [username, setUsername] = useState(() => {
+    // Безопасная инициализация с проверкой на клиентскую сторону
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('chatUsername') || '';
+    }
+    return '';
+  });
+
+  const [avatarDataUrl, setAvatarDataUrl] = useState(() => {
+    // Безопасная инициализация аватара
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('chatAvatar') || '';
+    }
+    return '';
+  });
+
   const { toast } = useToast();
 
-  // Load saved username from localStorage on component mount
+  // Сохраняем данные пользователя в localStorage при изменении
   useEffect(() => {
-    const savedUsername = localStorage.getItem('chatUsername');
-    if (savedUsername) {
-      setUsername(savedUsername);
+    if (typeof window !== 'undefined' && username) {
+      localStorage.setItem('chatUsername', username);
     }
-  }, []);
+  }, [username]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && avatarDataUrl) {
+      localStorage.setItem('chatAvatar', avatarDataUrl);
+    }
+  }, [avatarDataUrl]);
 
   const handleFinalSave = async () => {
     if (!username.trim()) {

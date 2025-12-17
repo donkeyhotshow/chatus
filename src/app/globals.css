@@ -4,44 +4,99 @@
 
 @layer base {
   :root {
+    /* Legacy Tailwind tokens for compatibility */
     --background: 0 0% 8%;
-    /* Deep Black */
     --foreground: 0 0% 90%;
-    /* Light Grey */
-
     --card: 0 0% 12%;
     --card-foreground: 0 0% 95%;
-
     --popover: 0 0% 5%;
     --popover-foreground: 0 0% 95%;
-
     --primary: 0 0% 98%;
-    /* White */
     --primary-foreground: 0 0% 5%;
-    /* Black */
-
     --secondary: 0 0% 15%;
     --secondary-foreground: 0 0% 98%;
-
     --muted: 0 0% 15%;
     --muted-foreground: 0 0% 60%;
-
     --accent: 0 0% 80%;
-    /* Light Grey for accents */
     --accent-foreground: 0 0% 5%;
-
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-
     --border: 0 0% 100% / 0.1;
-    /* White with 10% opacity */
     --input: 0 0% 14%;
     --ring: 0 0% 90%;
-
     --radius: 0.5rem;
+
+    /* New theme system tokens */
+    --bg-primary: #000000;
+    --bg-secondary: #0a0a0a;
+    --bg-tertiary: #171717;
+    --bg-elevated: #262626;
+    --text-primary: #ffffff;
+    --text-secondary: #a3a3a3;
+    --text-muted: #525252;
+    --border-primary: rgba(255, 255, 255, 0.1);
+    --border-secondary: rgba(255, 255, 255, 0.05);
+
+    /* Accent colors (default cyan) */
+    --accent-primary: #06b6d4;
+    --accent-soft: #0891b2;
+    --accent-light: #67e8f9;
+    --accent-dark: #0e7490;
+
+    /* Spacing tokens */
+    --spacing-xs: 0.5rem;
+    --spacing-sm: 0.75rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --control-height: 3rem;
+    --message-padding: 0.75rem 1rem;
+
+    /* Animation tokens */
+    --transition-fast: 140ms ease;
+    --transition-normal: 200ms ease;
+    --transition-slow: 300ms ease;
+
+    /* Typography scale */
+    --text-xs: clamp(0.75rem, 0.75rem + 0.1vw, 0.8rem);
+    --text-sm: clamp(0.875rem, 0.875rem + 0.1vw, 0.95rem);
+    --text-base: clamp(1rem, 1rem + 0.2vw, 1.125rem);
+    --text-lg: clamp(1.125rem, 1.125rem + 0.2vw, 1.25rem);
+    --text-xl: clamp(1.25rem, 1.25rem + 0.3vw, 1.5rem);
 
     /* iOS viewport height fix */
     --vh: 1vh;
+  }
+
+  /* Light theme overrides */
+  [data-theme="light"] {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9fafb;
+    --bg-tertiary: #f3f4f6;
+    --bg-elevated: #ffffff;
+    --text-primary: #111827;
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;
+    --border-primary: rgba(0, 0, 0, 0.1);
+    --border-secondary: rgba(0, 0, 0, 0.05);
+  }
+
+  /* Compact density overrides */
+  [data-density="compact"] {
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 0.75rem;
+    --spacing-lg: 1rem;
+    --spacing-xl: 1.5rem;
+    --control-height: 2.5rem;
+    --message-padding: 0.5rem 0.75rem;
+  }
+
+  /* Reduced motion overrides */
+  [data-reduced-motion="true"] * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
@@ -1231,4 +1286,325 @@ body {
   .bg-gradient-to-r {
     background: var(--tw-gradient-from);
   }
+}
+
+/* Мобильные улучшения */
+@layer utilities {
+
+  /* Touch targetмум 44x44px для удобного касания */
+  .touch-target {
+    min-width: 44px;
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
+  /* Безопасные зоны для устройств с вырезами */
+  .safe-area-pt {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-area-pl {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-area-pr {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Высота с учетом клавиатуры */
+  .keyboard-aware-height {
+    height: calc(100vh - env(keyboard-inset-height, 0px));
+  }
+
+  /* Отключение выделения текста для UI элементов */
+  .no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  /* Улучшенная прокрутка на мобильных */
+  .smooth-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  /* Скрытие полос прокрутки на мобильных */
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Эффекты свечения для киберпанк темы */
+  .neon-glow-cyan {
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.5);
+  }
+
+  .neon-glow-pink {
+    box-shadow: 0 0 20px rgba(236, 72, 153, 0.5);
+  }
+
+  .neon-glow {
+    box-shadow: 0 0 30px rgba(6, 182, 212, 0.6), 0 0 60px rgba(236, 72, 153, 0.4);
+  }
+
+  /* Анимации для мобильных взаимодействий */
+  .tap-highlight {
+    -webkit-tap-highlight-color: rgba(6, 182, 212, 0.2);
+  }
+
+  /* Улучшенная типографика для мобильных */
+  .mobile-text-sm {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  .mobile-text-base {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  .mobile-text-lg {
+    font-size: 18px;
+    line-height: 1.4;
+  }
+
+  /* Градиенты для тем */
+  .theme-cyberpunk {
+    background: linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #000000 100%);
+  }
+
+  .theme-neon {
+    background: linear-gradient(135deg, #4c1d95 0%, #000000 50%, #be185d 100%);
+  }
+
+  .theme-matrix {
+    background: linear-gradient(135deg, #14532d 0%, #000000 50%, #166534 100%);
+  }
+
+  .theme-sunset {
+    background: linear-gradient(135deg, #ea580c 0%, #000000 50%, #dc2626 100%);
+  }
+
+  .theme-ocean {
+    background: linear-gradient(135deg, #0369a1 0%, #000000 50%, #0891b2 100%);
+  }
+}
+
+/* Мобильные медиа-запросы */
+@media (max-width: 768px) {
+
+  /* Увеличиваем размеры шрифтов на мобильных для лучшей читаемости */
+  html {
+    font-size: 16px;
+  }
+
+  /* Улучшаем отступы для мобильных */
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  /* Скрываем курсор на мобильных */
+  * {
+    cursor: none !important;
+  }
+
+  /* Отключаем hover эффекты на мобильных */
+  .hover\:scale-105:hover {
+    transform: none;
+  }
+}
+
+/* Специальные стили для iOS */
+@supports (-webkit-touch-callout: none) {
+
+  /* Отключаем выделение и контекстные меню */
+  * {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+  }
+
+  /* Разрешаем выделение только для полей ввода */
+  input,
+  textarea {
+    -webkit-user-select: text;
+  }
+
+  /* Фиксируем проблему с viewport на iOS */
+  .ios-viewport-fix {
+    height: -webkit-fill-available;
+  }
+}
+
+/* Анимации для жестов */
+@keyframes swipe-feedback {
+  0% {
+    transform: translateX(0);
+  }
+
+  50% {
+    transform: translateX(10px);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.swipe-feedback {
+  animation: swipe-feedback 0.3s ease-out;
+}
+
+/* Улучшенные фокус-стили для доступности */
+.focus-visible:focus-visible {
+  outline: 2px solid #06b6d4;
+  outline-offset: 2px;
+}
+
+/* Стили для индикаторов загрузки */
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.5);
+  }
+
+  50% {
+    opacity: 0.7;
+    box-shadow: 0 0 30px rgba(6, 182, 212, 0.8);
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Стили для модальных окон на мобильных */
+.mobile-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+}
+
+/* Улучшенные стили для кнопок на мобильных */
+.mobile-button {
+  min-height: 48px;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  touch-action: manipulation;
+}
+
+.mobile-button:active {
+  transform: scale(0.95);
+}
+
+/* Стили для панелей на мобильных */
+.mobile-panel {
+  background: rgba(23, 23, 23, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Улучшенные стили для полей ввода на мобильных */
+.mobile-input {
+  min-height: 48px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 16px;
+  /* Предотвращает зум на iOS */
+  background: rgba(38, 38, 38, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.mobile-input:focus {
+  border-color: #06b6d4;
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+  outline: none;
+}
+
+/* Стили для сообщений в чате */
+.message-bubble {
+  max-width: 80%;
+  padding: 12px 16px;
+  border-radius: 18px;
+  word-wrap: break-word;
+  hyphens: auto;
+}
+
+.message-bubble.own {
+  background: linear-gradient(135deg, #06b6d4, #3b82f6);
+  color: white;
+  border-bottom-right-radius: 6px;
+}
+
+.message-bubble.other {
+  background: rgba(38, 38, 38, 0.8);
+  color: white;
+  border-bottom-left-radius: 6px;
+}
+
+/* Адаптивная сетка для палитры цветов */
+.color-palette {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(48px, 1fr));
+  gap: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* Стили для пиксельного редактора */
+.pixel-canvas {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  touch-action: none;
+}
+
+/* Улучшенные стили для навигации */
+.mobile-nav {
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+  min-height: 60px;
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  touch-action: manipulation;
+}
+
+.mobile-nav-item.active {
+  background: rgba(6, 182, 212, 0.2);
+  color: #06b6d4;
+  transform: translateY(-2px);
+}
+
+.mobile-nav-item:active {
+  transform: scale(0.95);
 }

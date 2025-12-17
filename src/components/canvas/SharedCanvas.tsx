@@ -100,6 +100,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     return canvas?.getContext('2d');
   }, []);
 
+  // Улучшенная функция рисования с реальным временем
   const drawPath = useCallback((ctx: CanvasRenderingContext2D, path: CanvasPath) => {
     if (path.points.length < 2) return;
 
@@ -112,40 +113,67 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
+    // Настройка стиля линии
     if (path.brush === 'dashed') {
       ctx.setLineDash([path.strokeWidth * 2, path.strokeWidth * 3]);
     } else {
       ctx.setLineDash([]);
     }
 
+    // Неоновый эффект
     if (!isErasingPath && path.brush === 'neon') {
       ctx.shadowColor = path.color;
       ctx.shadowBlur = path.strokeWidth * 1.5;
+      ctx.globalAlpha = 0.8;
     } else {
       ctx.shadowColor = 'transparent';
       ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
     }
 
     ctx.beginPath();
-    ctx.moveTo(path.points[0], path.points[1]);
 
-    if (path.brush === 'calligraphy' && path.velocities) {
-      for (let i = 2; i < path.points.length; i += 2) {
-        const speed = path.velocities[i / 2 - 1] || 1;
-        const dynamicWidth = Math.max(1, path.strokeWidth - speed * (path.strokeWidth * 0.8));
-        ctx.lineWidth = dynamicWidth;
-        ctx.lineTo(path.points[i], path.points[i + 1]);
-        ctx.stroke(); // Stroke each segment with new width
-        ctx.beginPath(); // Start new path segment
-        ctx.moveTo(path.points[i], path.points[i + 1]);
+    // Проверяем, что у нас есть достаточно точек
+    if (path.points.length >= 2) {
+      ctx.moveTo(path.points[0], path.points[1]);
+
+      // Используем quadraticCurveTo для более плавных линий
+      if (path.points.length >= 4) {
+        for (let i = 2; i < path.points.length - 2; i += 2) {
+          const xc = (path.points[i] + path.points[i + 2]) / 2;
+          const yc = (path.points[i + 1] + path.points[i + 3]) / 2;
+          ctx.quadraticCurveTo(path.points[i], path.points[i + 1], xc, yc);
+        }
+        // Рисуем последний сегмент
+        const lastIndex = path.points.length - 2;
+        ctx.quadraticCurveTo(
+          path.points[lastIndex - 2],
+          path.points[lastIndex - 1],
+          path.points[lastIndex],
+          path.points[lastIndex + 1]
+        );
+      } else {
+        // Если точек мало, рисуем прямую линию
+        ctx.lineTo(path.points[2], path.points[3]);
       }
-    } else {
-      for (let i = 2; i < path.points.length; i += 2) {
-        ctx.lineTo(path.points[i], path.points[i + 1]);
-      }
+
       ctx.stroke();
     }
 
+    ctx.restore();
+  }, []);
+
+  // Функция для рисования линии в реальном времени
+  const drawLine = useCallback((ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number, color: string, width: number = 2) => {
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
     ctx.restore();
   }, []);
 

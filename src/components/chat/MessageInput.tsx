@@ -53,16 +53,56 @@ export function MessageInput({ onSendMessage, onImageSend, onDoodleClick, onInpu
     if (trimmedText && !isSending && trimmedText.length <= MAX_MESSAGE_LENGTH) {
       setIsSending(true);
       try {
-        await onSendMessage(trimmedText);
-        setText('');
-        // Reset height
-        if (textareaRef.current) {
-          textareaRef.current.style.height = 'auto';
+        // Добавляем retry логику для надежной отправки
+        let retryCount = 0;
+        const maxRetries = 3;
+
+        while (retryCount < maxRetries) {
+          try {
+            await onSendMessage(trimmedText);
+            setText('');
+            // Reset height
+            if (textareaRef.current) {
+              textareaRef.current.style.height = 'auto';
+            }
+            // Успешная отправка - выходим из цикла
+            break;
+          } catch (error) {
+            retryCount++;
+            if (retryCount >= maxRetries) {
+              throw error; // Если все попытки исчерпаны, выбрасываем ошибку
+            }
+            // Ждем перед повторной попыткой (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+          }
         }
-      } catch {
+
+        // Показываем успешное уведомление
+        toast({
+          title: "Сообщение отправлено",
+          description: "Ваше сообщение успешно доставлено",
+          variant: "default",
+        });
+
+      } catch (error) {
+        console.error('Message send error:', error);
+
+        // Определяем тип ошибки для более точного сообщения
+        let errorMessage = "Не удалось отправить сообщение. Проверьте подключение к интернету.";
+
+        if (error instanceof Error) {
+          if (error.message.includes('offline')) {
+            errorMessage = "Вы находитесь в автономном режиме. Сообщение будет отправлено при восстановлении соединения.";
+          } else if (error.message.includes('permission')) {
+            errorMessage = "Недостаточно прав для отправки сообщения. Обратитесь к администратору.";
+          } else if (error.message.includes('rate limit')) {
+            errorMessage = "Слишком много сообщений. Подождите немного перед отправкой следующего.";
+          }
+        }
+
         toast({
           title: "Ошибка отправки",
-          description: "Не удалось отправить сообщение. Проверьте подключение к интернету.",
+          description: errorMessage,
           variant: "destructive",
         });
       } finally {
@@ -152,7 +192,7 @@ export function MessageInput({ onSendMessage, onImageSend, onDoodleClick, onInpu
       <div className="max-w-content mx-auto flex items-end gap-2 sm:gap-3 px-3 py-3 sm:px-4 sm:py-4">
         <button
           onClick={() => setShowStickerPicker(p => !p)}
-          className="w-10 h-10 shrink-0 flex items-center justify-center rounded-full text-neutral-400 hover:text-white hover:bg-white/10 transition-all mb-0.5"
+          className="min-w-[44px] min-h-[44px] w-11 h-11 shrink-0 flex items-center justify-center rounded-full text-neutral-400 hover:text-white hover:bg-white/10 transition-all mb-0.5 touch-target"
           aria-label="Стикеры"
         >
           <Smile className="w-6 h-6" />
@@ -186,19 +226,20 @@ export function MessageInput({ onSendMessage, onImageSend, onDoodleClick, onInpu
         />
 
         {/* Action buttons */}
-        <div className="flex items-center gap-1 sm:gap-2 mb-0.5">
+        {/* Action buttons - увеличенные для мобильных */}
+        <div className="flex items-center gap-2 sm:gap-2 mb-0.5">
           <button
             onClick={onDoodleClick}
-            className="w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-full text-neutral-400 hover:text-cyan-400 hover:bg-cyan-400/10 transition-all duration-200 hover:scale-110 hidden sm:flex"
+            className="min-w-[44px] min-h-[44px] w-11 h-11 sm:w-11 sm:h-11 flex items-center justify-center rounded-full text-neutral-400 hover:text-cyan-400 hover:bg-cyan-400/10 transition-all duration-200 hover:scale-110 hidden sm:flex touch-target"
             aria-label="Рисовать"
             title="Рисовать"
           >
-            <Brush className="w-4 h-4 sm:w-5 sm:h-5" />
+            <Brush className="w-5 h-5 sm:w-5 sm:h-5" />
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            className={`w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-full transition-all duration-200 ${isUploading
+            className={`min-w-[44px] min-h-[44px] w-11 h-11 sm:w-11 sm:h-11 flex items-center justify-center rounded-full transition-all duration-200 touch-target ${isUploading
               ? 'text-blue-400 bg-blue-400/20 animate-pulse cursor-not-allowed'
               : 'text-neutral-400 hover:text-blue-400 hover:bg-blue-400/10 hover:scale-110'
               }`}
@@ -206,15 +247,15 @@ export function MessageInput({ onSendMessage, onImageSend, onDoodleClick, onInpu
             title={isUploading ? "Загрузка изображения..." : "Прикрепить изображение"}
           >
             {isUploading ? (
-              <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+              <div className="w-5 h-5 sm:w-5 sm:h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
             ) : (
-              <Paperclip className="w-4 h-4 sm:w-5 sm:h-5" />
+              <Paperclip className="w-5 h-5 sm:w-5 sm:h-5" />
             )}
           </button>
           <button
             onClick={handleSend}
             disabled={!text.trim() || isSending || text.length > MAX_MESSAGE_LENGTH}
-            className={`w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-full transition-all duration-200 ${text.trim() && !isSending && text.length <= MAX_MESSAGE_LENGTH
+            className={`min-w-[44px] min-h-[44px] w-11 h-11 sm:w-11 sm:h-11 flex items-center justify-center rounded-full transition-all duration-200 touch-target ${text.trim() && !isSending && text.length <= MAX_MESSAGE_LENGTH
               ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:scale-110 active:scale-95 shadow-lg shadow-cyan-500/25'
               : isSending
                 ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white cursor-not-allowed'
@@ -226,9 +267,9 @@ export function MessageInput({ onSendMessage, onImageSend, onDoodleClick, onInpu
             title={isSending ? "Отправка сообщения..." : text.length > MAX_MESSAGE_LENGTH ? "Сообщение слишком длинное" : "Отправить сообщение"}
           >
             {isSending ? (
-              <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <div className="w-5 h-5 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              <Send className="w-4 h-4 sm:w-5 sm:h-5 ml-0.5" />
+              <Send className="w-5 h-5 sm:w-5 sm:h-5 ml-0.5" />
             )}
           </button>
         </div>

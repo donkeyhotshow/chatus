@@ -3,6 +3,7 @@
 
 import { useState, useCallback, useMemo, lazy, Suspense } from 'react';
 import { Gamepad, ArrowLeft, Swords, Dices, Hand, Puzzle, Box, Castle } from 'lucide-react';
+import { GameCard } from './GameCard';
 import { UserProfile, GameType, GameState, TDGrid, TDNode } from '@/lib/types';
 
 // Lazy load game components
@@ -130,6 +131,7 @@ const generateTDGrid = (width: number, height: number): { grid: TDGrid; pathsFla
 
 export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
   const [activeGameId, setActiveGameId] = useState<GameType | null>(null);
+  const [loadingGameId, setLoadingGameId] = useState<GameType | null>(null);
 
   const { db } = useFirebase()!;
   const { service } = useChatService(roomId, user);
@@ -150,6 +152,7 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
   const handleStartGame = async (gameId: GameType) => {
     if (!service) return;
 
+    setLoadingGameId(gameId);
     const hostId = user.id;
 
     const initialStates: { [key in GameType]?: Partial<GameState> } = {
@@ -183,6 +186,7 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
 
     setActiveGameId(gameId);
     await service.updateGameState(gameId, initialState);
+    setLoadingGameId(null);
   };
 
   const handleEndGame = async () => {
@@ -252,23 +256,22 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
   }
 
   return (
-    <div className="p-4 flex flex-col h-full">
-      <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-500 mb-4 px-2">Game Lobby</h2>
-      <div className="space-y-2 overflow-y-auto">
+    <div className="p-6 flex flex-col h-full bg-gradient-to-br from-slate-950/50 to-slate-900/80 backdrop-blur-xl">
+      <div className="mb-6">
+        <h2 className="text-xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text text-transparent mb-2 tracking-wide">Game Lobby</h2>
+        <div className="h-0.5 bg-gradient-to-r from-cyan-500/50 via-purple-500/50 to-transparent rounded-full"></div>
+      </div>
+      <div className="space-y-4 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-500/30 scrollbar-track-transparent">
         {gamesList.map((game) => (
-          <div
+          <GameCard
             key={game.id}
+            id={game.id}
+            title={game.name}
+            description={game.description}
+            icon={<game.icon className="w-7 h-7" />}
+            isLoading={loadingGameId === game.id}
             onClick={() => handleStartGame(game.id)}
-            className="flex items-center gap-4 p-3 rounded-lg hover:bg-neutral-900 transition-colors cursor-pointer border border-transparent hover:border-white/10"
-          >
-            <div className="p-3 bg-neutral-800/50 text-white rounded-lg">
-              <game.icon className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-bold text-white text-sm">{game.name}</h3>
-              <p className="text-xs text-neutral-400">{game.description}</p>
-            </div>
-          </div>
+          />
         ))}
       </div>
     </div>
