@@ -26,6 +26,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { MessageSearch } from './MessageSearch';
 import { TypingIndicator } from './TypingIndicator';
 import { EnhancedMessageInput } from './EnhancedMessageInput';
+import { useChatPersistence, useUserPreferences } from '@/hooks/use-chat-persistence';
 
 type ChatAreaProps = {
   user: UserProfile;
@@ -61,6 +62,10 @@ export const ChatArea = memo(function ChatArea({
   const [searchQuery, setSearchQuery] = useState('');
 
   const isMobile = useIsMobile();
+
+  // Chat persistence hooks
+  const { saveMessages, loadMessages, hasHistory } = useChatPersistence(roomId);
+  const { updateLastRoomId } = useUserPreferences();
 
   // Mobile keyboard detection
   useEffect(() => {
@@ -129,6 +134,26 @@ export const ChatArea = memo(function ChatArea({
   const lastMessageCountRef = useRef<number>(0);
   const messageListRef = useRef<any>(null);
 
+  // Save messages to localStorage when they change
+  useEffect(() => {
+    if (persistedMessages && persistedMessages.length > 0) {
+      saveMessages(persistedMessages);
+    }
+  }, [persistedMessages, saveMessages]);
+
+  // Update last room ID for user preferences
+  useEffect(() => {
+    updateLastRoomId(roomId);
+  }, [roomId, updateLastRoomId]);
+
+  // Load cached messages on initial load
+  const cachedMessages = useMemo(() => {
+    if (isInitialLoad && hasHistory) {
+      return loadMessages();
+    }
+    return [];
+  }, [isInitialLoad, hasHistory, loadMessages]);
+
   useEffect(() => {
     setTypingUsers(serviceTypingUsers);
   }, [serviceTypingUsers]);
@@ -177,26 +202,40 @@ export const ChatArea = memo(function ChatArea({
   }, []);
 
   const allMessages = useMemo(() => {
-    const combined = [...persistedMessages, ...optimisticMessages];
+    // Combine cached messages (if initial load), persisted messages, and optimistic messages
+    const combined = [
+      ...(isInitialLoad && cachedMessages.length > 0 ? cachedMessages : []),
+      ...persistedMessages,
+      ...optimisticMessages
+    ];
+
+    // Remove duplicates based on message ID
+    const uniqueMessages = combined.reduce((acc, message) => {
+      if (!acc.find(m => m.id === message.id)) {
+        acc.push(message);
+      }
+      return acc;
+    }, [] as Message[]);
 
     // Safe sort with null checks
-    combined.sort((a, b) => {
+    uniqueMessages.sort((a, b) => {
       const aTime = a.createdAt?.toMillis?.() || 0;
       const bTime = b.createdAt?.toMillis?.() || 0;
       return aTime - bTime;
     });
 
     // Debug logging in development
-    if (process.env.NODE_ENV === 'development' && combined.length > 0) {
+    if (process.env.NODE_ENV === 'development' && uniqueMessages.length > 0) {
       logger.debug('[ChatArea] All messages', {
+        cachedCount: cachedMessages.length,
         persistedCount: persistedMessages.length,
         optimisticCount: optimisticMessages.length,
-        totalCount: combined.length,
-        messageIds: combined.map(m => m.id)
+        totalCount: uniqueMessages.length,
+        messageIds: uniqueMessages.map(m => m.id)
       });
     }
-    return combined;
-  }, [persistedMessages, optimisticMessages]);
+    return uniqueMessages;
+  }, [persistedMessages, optimisticMessages, cachedMessages, isInitialLoad]);
 
 
   const otherUser = useMemo(() => {

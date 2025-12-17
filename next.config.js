@@ -78,6 +78,16 @@ const nextConfig = {
     return 'build-' + Date.now()
   },
 
+  // SPA routing configuration
+  async rewrites() {
+    return [
+      {
+        source: '/chat/:roomId*',
+        destination: '/chat/:roomId*',
+      },
+    ]
+  },
+
   // Experimental features for better performance
   experimental: {
     optimizePackageImports: [
