@@ -33,7 +33,17 @@ const FirebaseContext = createContext<FirebaseContextType | null>(null);
 
 export const useFirebase = (): FirebaseContextType => {
   const ctx = useContext(FirebaseContext);
-  if (!ctx) throw new Error('useFirebase must be used within FirebaseProvider');
+  if (!ctx) {
+    // More detailed error for debugging
+    console.error('useFirebase called outside of FirebaseProvider. Make sure the component is wrapped in FirebaseProvider.');
+    throw new Error('useFirebase must be used within FirebaseProvider');
+  }
+  return ctx;
+};
+
+// Safe version that returns null instead of throwing
+export const useFirebaseSafe = (): FirebaseContextType | null => {
+  const ctx = useContext(FirebaseContext);
   return ctx;
 };
 
