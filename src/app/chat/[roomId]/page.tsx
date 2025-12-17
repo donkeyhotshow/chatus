@@ -24,3 +24,5 @@ export default async function ChatPage({ params }: ChatPageProps) {
     </div>
   );
 }
+return <ChatRoom roomId={decodedRoomId} />;
+}
