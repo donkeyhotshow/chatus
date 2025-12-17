@@ -1,10 +1,16 @@
 import { initializeApp, getApps, FirebaseApp } from "firebase/app";
-import { getAnalytics, isSupported as analyticsIsSupported, Analytics } from "firebase/analytics";
-import { getAuth, Auth } from "firebase/auth";
-import { getDatabase, Database } from "firebase/database";
-import { getFirestore, Firestore } from "firebase/firestore";
-import { getMessaging, Messaging } from "firebase/messaging";
-import { getStorage, FirebaseStorage } from "firebase/storage";
+import { getAnalytics, isSupported as analyticsIsSupported } from "firebase/analytics";
+import type { Analytics } from "firebase/analytics";
+import { getAuth } from "firebase/auth";
+import type { Auth } from "firebase/auth";
+import { getDatabase } from "firebase/database";
+import type { Database } from "firebase/database";
+import { getFirestore } from "firebase/firestore";
+import type { Firestore } from "firebase/firestore";
+import { getMessaging } from "firebase/messaging";
+import type { Messaging } from "firebase/messaging";
+import { getStorage } from "firebase/storage";
+import type { FirebaseStorage } from "firebase/storage";
 
 // Check if we have valid Firebase config (not during build time)
 const hasValidConfig = Boolean(
@@ -56,25 +62,18 @@ if (hasValidConfig && isBrowser) {
     // Ensure we don't initialize multiple times
     const existingApps = getApps();
     if (existingApps.length > 0) {
-      pp = existingApps[0];
+      app = existingApps[0];
     } else {
-      // Add timeout for initialization to prevent hanging
-      const initPromise = new Promise<FirebaseApp>((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Firebase initialization timeout'));
-        }, 10000); // 10 second timeout
-
-        try {
-          const firebaseApp = initializeApp(firebaseConfig);
-          clearTimeout(timeout);
-          resolve(firebaseApp);
-        } catch (error) {
-          clearTimeout(timeout);
-          reject(error);
+      // Initialize Firebase synchronously
+      try {
+        app = initializeApp(firebaseConfig);
+      } catch (error) {
+        if (process.env.NODE_ENV === 'development') {
+          // eslint-disable-next-line no-console
+          console.error('Firebase initialization failed:', error);
         }
-      });
-
-      app = await initPromise;
+        app = null;
+      }
     }
 
     if (process.env.NODE_ENV === 'development') {

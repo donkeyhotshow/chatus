@@ -123,14 +123,18 @@ export default function RootLayout({
         </Script> */}
         <div className="flex flex-col w-full bg-black text-neutral-200 font-sans selection:bg-cyan-400 selection:text-black overflow-hidden min-h-screen min-h-[100dvh] supports-[height:100dvh]:min-h-[100dvh]">
           <header className="h-12 sm:h-14 shrink-0 border-b border-white/10 flex items-center px-3 sm:px-4 lg:px-6 bg-gradient-to-r from-neutral-950 to-black z-50 shadow-lg">
-            <div className="flex items-center gap-2 sm:gap-3 select-none group cursor-default">
+            <a
+              href="/"
+              className="flex items-center gap-2 sm:gap-3 select-none group cursor-pointer hover:opacity-80 transition-opacity duration-200"
+              title="Вернуться на главную"
+            >
               <div className="p-1 sm:p-1.5 bg-gradient-to-br from-cyan-400 to-blue-500 text-black rounded-lg group-hover:scale-105 transition-transform duration-200 shadow-lg flex items-center justify-center">
                 <span className="text-sm sm:text-base">💬</span>
               </div>
               <span className="font-mono font-bold text-sm sm:text-lg tracking-[0.1em] sm:tracking-[0.2em] text-white">
                 ЧАТ ДЛЯ НАС
               </span>
-            </div>
+            </a>
           </header>
 
           <div className="relative z-10 flex w-full flex-1 overflow-hidden min-h-0">
