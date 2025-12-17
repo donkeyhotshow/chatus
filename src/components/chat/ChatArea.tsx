@@ -246,6 +246,10 @@ export const ChatArea = memo(function ChatArea({
     setReplyTo(message);
   }, []);
 
+  const handleImageClick = useCallback((imageUrl: string) => {
+    setImageForView(imageUrl);
+  }, []);
+
   const handleSend = useCallback(async (text: string) => {
     if (!service) {
       logger.warn('[ChatArea] Cannot send message: service is not available', { roomId, userId: user.id });
@@ -541,7 +545,6 @@ export const ChatArea = memo(function ChatArea({
         {/* Messages area with mobile-optimized spacing */}
         <div className={`
           flex-1 min-h-0 overflow-hidden relative
-          ${isMobile ? 'pb-20' : ''} // Добавляем отступ снизу на мобильных для фиксированного input
         `}>
           <MessageList
             ref={messageListRef}
@@ -550,7 +553,7 @@ export const ChatArea = memo(function ChatArea({
             currentUserId={user.id}
             onReaction={handleToggleReaction}
             onDeleteMessage={handleDeleteMessage}
-            onImageClick={(imageUrl) => setImageForView(imageUrl)}
+            onImageClick={handleImageClick}
             onReply={handleReply}
             onLoadMore={service?.loadMoreMessages}
             hasMoreMessages={hasMoreMessages}
@@ -573,28 +576,18 @@ export const ChatArea = memo(function ChatArea({
           />
         )}
 
-        {/* Input area - mobile-optimized with keyboard handling */}
+        {/* Input area - Flex item, no longer fixed */}
         <div
           className={`
-            flex-shrink-0 relative border-t border-white/10
+            flex-shrink-0 relative border-t border-white/10 z-20
             ${isMobile
-              ? `
-                fixed bottom-0 left-0 right-0 z-50
-                bg-black/95 backdrop-blur-xl
-                ${keyboardVisible ? 'pb-0' : 'pb-safe-area-inset-bottom'}
-                shadow-2xl shadow-black/50
-              `
+              ? 'bg-black/95 backdrop-blur-xl pb-safe-area-inset-bottom shadow-[0_-4px_20px_rgba(0,0,0,0.5)]'
               : 'bg-black/30 backdrop-blur-sm'
             }
           `}
           style={{
             height: isMobile ? 'auto' : `${inputAreaHeight}px`,
             minHeight: isMobile ? 'auto' : '80px',
-            // На мобильных добавляем отступ снизу для сообщений
-            ...(isMobile && {
-              transform: keyboardVisible ? 'translateY(0)' : 'translateY(0)',
-              transition: 'transform 0.3s ease-in-out'
-            })
           }}
         >
           {typingUsers.length > 0 && (

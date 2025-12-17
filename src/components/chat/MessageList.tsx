@@ -1,7 +1,7 @@
 
 "use client";
 
-import { memo, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
+import { memo, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 import MessageItem from './MessageItem';
 import type { Message } from '@/lib/types';
@@ -78,6 +78,42 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
     );
   }
 
+  const renderItem = useCallback((index: number, msg: Message) => {
+    const prevMsg = messages[index - 1];
+    const isNewDay = !prevMsg || (() => {
+      const currentDate = msg.createdAt && 'seconds' in msg.createdAt
+        ? new Date(msg.createdAt.seconds * 1000)
+        : new Date();
+      const prevDate = prevMsg.createdAt && 'seconds' in prevMsg.createdAt
+        ? new Date(prevMsg.createdAt.seconds * 1000)
+        : new Date();
+      return currentDate.toDateString() !== prevDate.toDateString();
+    })();
+
+    return (
+      <div className="px-3 sm:px-4 py-1">
+        {isNewDay && (
+          <div className="flex justify-center my-6">
+            <span className="bg-neutral-800/70 text-neutral-300 text-xs font-semibold px-4 py-2 rounded-full border border-white/10 shadow-lg backdrop-blur-sm">
+              {msg.createdAt && 'seconds' in msg.createdAt
+                ? new Date(msg.createdAt.seconds * 1000).toLocaleDateString('ru-RU', { weekday: 'long', month: 'long', day: 'numeric' })
+                : 'Сегодня'}
+            </span>
+          </div>
+        )}
+        <MessageItem
+          key={msg.id}
+          message={msg}
+          isOwn={msg.user.id === currentUserId}
+          onDelete={onDeleteMessage}
+          onReaction={onReaction}
+          onImageClick={onImageClick}
+          onReply={onReply}
+        />
+      </div>
+    );
+  }, [messages, currentUserId, onDeleteMessage, onReaction, onImageClick, onReply]);
+
   return (
     <div className="flex-1 h-full">
       <Virtuoso
@@ -93,41 +129,7 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
         atBottomStateChange={(atBottom) => {
           onScroll?.(atBottom);
         }}
-        itemContent={(index, msg) => {
-          const prevMsg = messages[index - 1];
-          const isNewDay = !prevMsg || (() => {
-            const currentDate = msg.createdAt && 'seconds' in msg.createdAt
-              ? new Date(msg.createdAt.seconds * 1000)
-              : new Date();
-            const prevDate = prevMsg.createdAt && 'seconds' in prevMsg.createdAt
-              ? new Date(prevMsg.createdAt.seconds * 1000)
-              : new Date();
-            return currentDate.toDateString() !== prevDate.toDateString();
-          })();
-
-          return (
-            <div className="px-3 sm:px-4 py-1">
-              {isNewDay && (
-                <div className="flex justify-center my-6">
-                  <span className="bg-neutral-800/70 text-neutral-300 text-xs font-semibold px-4 py-2 rounded-full border border-white/10 shadow-lg backdrop-blur-sm">
-                    {msg.createdAt && 'seconds' in msg.createdAt
-                      ? new Date(msg.createdAt.seconds * 1000).toLocaleDateString('ru-RU', { weekday: 'long', month: 'long', day: 'numeric' })
-                      : 'Сегодня'}
-                  </span>
-                </div>
-              )}
-              <MessageItem
-                key={msg.id}
-                message={msg}
-                isOwn={msg.user.id === currentUserId}
-                onDelete={onDeleteMessage}
-                onReaction={onReaction}
-                onImageClick={onImageClick}
-                onReply={onReply}
-              />
-            </div>
-          );
-        }}
+        itemContent={renderItem}
         style={{ height: '100%' }}
         components={{
           Header: hasMoreMessages ? () => (
