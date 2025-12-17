@@ -200,14 +200,18 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
     }
   };
 
+  // Active Game View with Premium Header
   if (activeGameId) {
     if (activeGameId === 'maze' && gameState?.type === 'maze') {
       return (
-        <div className="h-full w-full flex flex-col items-center justify-center text-center p-4">
-          <h3 className="text-lg font-bold text-white">Maze Active</h3>
-          <p className="text-sm text-neutral-400 mb-4">Go to the &apos;Canvas&apos; tab to solve it together.</p>
-          <Button onClick={handleEndGame} variant="destructive">
-            End Maze
+        <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 bg-black/40 backdrop-blur-md">
+          <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-purple-500/20 animate-pulse">
+            <Puzzle className="w-8 h-8 text-white" />
+          </div>
+          <h3 className="text-2xl font-bold text-white mb-2 tracking-tight">Maze Active</h3>
+          <p className="text-neutral-400 mb-8 max-w-xs leading-relaxed">Go to the &apos;Canvas&apos; tab to solve the maze together with your team.</p>
+          <Button onClick={handleEndGame} variant="destructive" className="rounded-full px-8 hover:scale-105 transition-transform">
+            End Maze Session
           </Button>
         </div>
       )
@@ -221,58 +225,84 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
       roomId
     };
 
-    if (gameState && gameState.type === activeGameId) {
-      const GameLoadingFallback = () => (
-        <div className="h-full w-full flex items-center justify-center bg-black">
-          <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full"></div>
-        </div>
-      );
-
-      const gameComponents: { [key in GameType]?: React.ReactElement } = {
-        'tic-tac-toe': <Suspense fallback={<GameLoadingFallback />}><TicTacToe {...commonProps} gameState={gameState} /></Suspense>,
-        'rock-paper-scissors': <Suspense fallback={<GameLoadingFallback />}><RockPaperScissors {...commonProps} gameState={gameState} /></Suspense>,
-        'click-war': <Suspense fallback={<GameLoadingFallback />}><ClickWar {...commonProps} gameState={gameState} /></Suspense>,
-        'dice-roll': <Suspense fallback={<GameLoadingFallback />}><DiceRoll {...commonProps} gameState={gameState} /></Suspense>,
-        'physics-sandbox': <Suspense fallback={<GameLoadingFallback />}><PhysicsWorld onGameEnd={handleEndGame} user={user} roomId={roomId} /></Suspense>,
-        'tower-defense': <Suspense fallback={<GameLoadingFallback />}><TowerDefense {...commonProps} gameState={gameState} /></Suspense>,
-      };
-      const CurrentGame = gameComponents[activeGameId];
-      if (CurrentGame) return CurrentGame;
-    }
-
-    // Fallback if gameState is not ready or doesn't match
+    // Game Container with consistent header
     return (
-      <div className="h-full w-full flex flex-col items-center justify-center">
-        <div className="animate-pulse flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-          <span className="font-mono text-white/70 tracking-widest">LOADING GAME...</span>
+      <div className="flex flex-col h-full relative">
+        {/* Minimalist Game Header */}
+        <div className="absolute top-4 left-4 z-50">
+          <Button
+            onClick={handleEndGame}
+            variant="ghost"
+            size="sm"
+            className="bg-black/20 hover:bg-white/10 text-white/70 hover:text-white backdrop-blur-md border border-white/5 rounded-full px-4 transition-all hover:scale-105"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Lobby
+          </Button>
         </div>
-        <Button onClick={handleEndGame} variant="ghost" size="sm" className="mt-8 text-neutral-400 hover:text-white">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Lobby
-        </Button>
+
+        <div className="flex-1 h-full">
+          {gameState && gameState.type === activeGameId ? (
+            (() => {
+              const GameLoadingFallback = () => (
+                <div className="h-full w-full flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="w-10 h-10 border-2 border-white/20 border-t-cyan-400 rounded-full animate-spin"></div>
+                    <span className="text-xs font-mono text-cyan-400/80 tracking-widest uppercase">Loading Game...</span>
+                  </div>
+                </div>
+              );
+
+              const gameComponents: { [key in GameType]?: React.ReactElement } = {
+                'tic-tac-toe': <Suspense fallback={<GameLoadingFallback />}><TicTacToe {...commonProps} gameState={gameState} /></Suspense>,
+                'rock-paper-scissors': <Suspense fallback={<GameLoadingFallback />}><RockPaperScissors {...commonProps} gameState={gameState} /></Suspense>,
+                'click-war': <Suspense fallback={<GameLoadingFallback />}><ClickWar {...commonProps} gameState={gameState} /></Suspense>,
+                'dice-roll': <Suspense fallback={<GameLoadingFallback />}><DiceRoll {...commonProps} gameState={gameState} /></Suspense>,
+                'physics-sandbox': <Suspense fallback={<GameLoadingFallback />}><PhysicsWorld onGameEnd={handleEndGame} user={user} roomId={roomId} /></Suspense>,
+                'tower-defense': <Suspense fallback={<GameLoadingFallback />}><TowerDefense {...commonProps} gameState={gameState} /></Suspense>,
+              };
+              return gameComponents[activeGameId] || null;
+            })()
+          ) : (
+            <div className="h-full w-full flex flex-col items-center justify-center">
+              <div className="animate-pulse flex flex-col items-center gap-4">
+                <div className="w-12 h-12 border-4 border-white/10 border-t-cyan-500 rounded-full animate-spin"></div>
+                <span className="font-mono text-cyan-500/70 tracking-widest text-sm">INITIALIZING...</span>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
 
+  // Lobby View
   return (
-    <div className="p-6 flex flex-col h-full bg-gradient-to-br from-slate-950/50 to-slate-900/80 backdrop-blur-xl">
-      <div className="mb-6">
-        <h2 className="text-xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text text-transparent mb-2 tracking-wide">Game Lobby</h2>
-        <div className="h-0.5 bg-gradient-to-r from-cyan-500/50 via-purple-500/50 to-transparent rounded-full"></div>
+    <div className="flex flex-col h-full bg-gradient-to-br from-neutral-950 via-neutral-900 to-neutral-950">
+      <div className="p-6 pb-2 shrink-0">
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-2xl font-bold text-white tracking-tight">Game Lobby</h2>
+          <div className="px-2 py-1 rounded-full bg-white/5 border border-white/5 text-[10px] font-mono text-neutral-400 uppercase tracking-wider">
+            {gamesList.length} Games Available
+          </div>
+        </div>
+        <p className="text-sm text-neutral-400">Select a game to play with your team.</p>
       </div>
-      <div className="space-y-4 overflow-y-auto scrollbar-thin scrollbar-thumb-cyan-500/30 scrollbar-track-transparent">
-        {gamesList.map((game) => (
-          <GameCard
-            key={game.id}
-            id={game.id}
-            title={game.name}
-            description={game.description}
-            icon={<game.icon className="w-7 h-7" />}
-            isLoading={loadingGameId === game.id}
-            onClick={() => handleStartGame(game.id)}
-          />
-        ))}
+
+      <div className="flex-1 overflow-y-auto p-6 pt-2 scrollbar-hide">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-20">
+          {gamesList.map((game) => (
+            <GameCard
+              key={game.id}
+              id={game.id}
+              title={game.name}
+              description={game.description}
+              icon={<game.icon className="w-6 h-6" />}
+              isLoading={loadingGameId === game.id}
+              onClick={() => handleStartGame(game.id)}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

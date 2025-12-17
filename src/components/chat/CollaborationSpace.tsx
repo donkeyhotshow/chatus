@@ -15,6 +15,7 @@ import { logger } from '@/lib/logger';
 import { cn } from '@/lib/utils';
 import { collection, query, orderBy, Timestamp, doc } from 'firebase/firestore';
 import { VerticalResizer } from '../ui/VerticalResizer';
+import { useSwipe } from '@/hooks/use-swipe';
 
 // Lazy load heavy components
 const SharedCanvas = lazy(() => import('../canvas/SharedCanvas').then(m => ({ default: m.SharedCanvas })));
@@ -171,11 +172,34 @@ export function CollaborationSpace({
     return null;
   }
 
+  // Swipe handling for mobile tab switching
+  const handleSwipeLeft = () => {
+    if (!isMobile) return;
+    const currentIndex = tabs.findIndex(t => t.id === activeTab);
+    if (currentIndex < tabs.length - 1) {
+      setActiveTab(tabs[currentIndex + 1].id);
+    }
+  };
+
+  const handleSwipeRight = () => {
+    if (!isMobile) return;
+    const currentIndex = tabs.findIndex(t => t.id === activeTab);
+    if (currentIndex > 0) {
+      setActiveTab(tabs[currentIndex - 1].id);
+    }
+  };
+
+  const swipeHandlers = useSwipe({
+    onSwipedLeft: handleSwipeLeft,
+    onSwipedRight: handleSwipeRight,
+  });
+
   return (
     <aside
       ref={collabSpaceRef}
+      {...swipeHandlers}
       className={cn(`
-        flex flex-col bg-gradient-to-b from-neutral-900 to-neutral-950 transition-all duration-300 shadow-2xl`,
+        flex flex-col bg-gradient-to-b from-neutral-900 to-neutral-950 transition-all duration-300 shadow-2xl touch-pan-y`, // touch-pan-y allows vertical scroll but captures horizontal swipes
         isFullscreen
           ? 'fixed inset-0 w-screen h-screen z-50'
           : isMobile

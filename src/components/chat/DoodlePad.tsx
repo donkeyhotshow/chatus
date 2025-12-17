@@ -160,30 +160,34 @@ export default function DoodlePad({ onClose, onSend }: DoodlePadProps) {
   };
 
   return (
-    <div className="absolute bottom-20 left-4 right-4 md:left-6 md:w-96 z-50 bg-neutral-950 border border-white/10 rounded-xl shadow-2xl p-4 animate-in slide-in-from-bottom-5 duration-200">
+    <div className="absolute bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[500px] z-50 bg-black/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-4 animate-in slide-in-from-bottom-10 fade-in duration-300 ring-1 ring-white/5">
 
+      {/* Header */}
       <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-2 text-white">
-          <PenTool className="w-4 h-4" />
-          <span className="text-sm font-medium tracking-wide">Sketch</span>
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg">
+            <PenTool className="w-3.5 h-3.5 text-white" />
+          </div>
+          <span className="text-sm font-semibold text-white tracking-wide">Doodle</span>
         </div>
         <div className="flex gap-1">
-          <button onClick={handleUndo} disabled={history.length < 2} className="p-2 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white disabled:opacity-30 transition-all">
+          <button onClick={handleUndo} disabled={history.length < 2} className="p-2 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white disabled:opacity-30 transition-all active:scale-95">
             <Undo2 className="w-4 h-4" />
           </button>
-          <button onClick={handleClear} className="p-2 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white transition-all">
+          <button onClick={handleClear} className="p-2 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-red-400 transition-all active:scale-95">
             <Trash2 className="w-4 h-4" />
           </button>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white transition-all">
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white transition-all active:scale-95">
             <X className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      <div className="relative w-full aspect-video bg-neutral-800 rounded-lg border border-white/20 overflow-hidden touch-none">
+      {/* Canvas Area */}
+      <div className="relative w-full aspect-video bg-[#1a1a1a] rounded-xl border border-white/10 overflow-hidden touch-none shadow-inner">
         <canvas
           ref={canvasRef}
-          className="w-full h-full cursor-crosshair bg-neutral-800"
+          className="w-full h-full cursor-crosshair"
           onMouseDown={startDraw}
           onMouseMove={draw}
           onMouseUp={stopDraw}
@@ -192,46 +196,41 @@ export default function DoodlePad({ onClose, onSend }: DoodlePadProps) {
           onTouchMove={draw}
           onTouchEnd={stopDraw}
         />
-        {/* Canvas background grid for better visibility */}
-        <div className="absolute inset-0 pointer-events-none opacity-10">
-          <svg width="100%" height="100%" className="w-full h-full">
-            <defs>
-              <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="white" strokeWidth="1" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#grid)" />
-          </svg>
+        {/* Subtle dot grid pattern */}
+        <div className="absolute inset-0 pointer-events-none opacity-20"
+          style={{ backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
         </div>
       </div>
 
+      {/* Tools Footer */}
       <div className="flex items-center justify-between mt-4 gap-4">
 
-        <div className="flex gap-2">
+        {/* Colors */}
+        <div className="flex gap-2 p-1 bg-white/5 rounded-full border border-white/5">
           {PALETTE.map(c => (
             <button
               key={c}
               onClick={() => setColor(c)}
-              className={`w-6 h-6 rounded-full border border-white/10 transition-transform ${color === c ? 'scale-110 ring-2 ring-white ring-offset-1 ring-offset-black' : 'hover:scale-105 opacity-60 hover:opacity-100'}`}
+              className={`w-6 h-6 rounded-full transition-all duration-200 ${color === c ? 'scale-110 ring-2 ring-white ring-offset-2 ring-offset-black' : 'hover:scale-105 opacity-70 hover:opacity-100'}`}
               style={{ backgroundColor: c }}
             />
           ))}
         </div>
 
-        <div className="h-4 w-[1px] bg-white/10"></div>
-
-        <div className="flex gap-1">
-          <button onClick={() => setLineWidth(3)} className={`p-1.5 rounded hover:bg-white/5 ${lineWidth === 3 ? 'text-white' : 'text-neutral-500'}`}>
+        {/* Line Width */}
+        <div className="flex gap-1 bg-white/5 rounded-lg p-1 border border-white/5">
+          <button onClick={() => setLineWidth(3)} className={`p-1.5 rounded hover:bg-white/10 transition-all ${lineWidth === 3 ? 'text-white bg-white/10' : 'text-neutral-500'}`}>
             <div className="w-1.5 h-1.5 bg-current rounded-full" />
           </button>
-          <button onClick={() => setLineWidth(6)} className={`p-1.5 rounded hover:bg-white/5 ${lineWidth === 6 ? 'text-white' : 'text-neutral-500'}`}>
+          <button onClick={() => setLineWidth(6)} className={`p-1.5 rounded hover:bg-white/10 transition-all ${lineWidth === 6 ? 'text-white bg-white/10' : 'text-neutral-500'}`}>
             <div className="w-3 h-3 bg-current rounded-full" />
           </button>
         </div>
 
+        {/* Send Button */}
         <button
           onClick={handleSend}
-          className="ml-auto px-4 py-2 bg-white text-black text-xs font-bold rounded-lg flex items-center gap-2 hover:bg-neutral-200 transition-colors"
+          className="ml-auto px-5 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs font-bold rounded-full flex items-center gap-2 hover:shadow-lg hover:shadow-cyan-500/25 hover:scale-105 active:scale-95 transition-all duration-200"
         >
           Send <Check className="w-3 h-3" />
         </button>
