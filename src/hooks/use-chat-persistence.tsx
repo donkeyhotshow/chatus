@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useCallback } from 'react';
-import { useLocalStorage, localStorageUtils }./ use - local - storage';
+import { useLocalStorage, localStorageUtils } from './use-local-storage';
 import { Message } from '@/lib/types';
 
 interface ChatPersistenceData {
