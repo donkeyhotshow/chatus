@@ -142,19 +142,19 @@ export function EnhancedMessageInput({
     const quickEmojis = ['👍', '❤️', '😂', '😮', '😢', '😡', '👏', '🔥'];
 
     return (
-        <div className={cn("relative", className)}>
+        <div className={cn("relative w-full z-20", className)}>
             {/* Drag overlay */}
             <AnimatePresence>
                 {isDragOver && (
                     <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute inset-0 bg-cyan-500/20 border-2 border-dashed border-cyan-500 rounded-lg flex items-center justify-center z-10"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="absolute inset-0 -top-20 bg-cyan-500/10 backdrop-blur-md border-2 border-dashed border-cyan-500/50 rounded-2xl flex items-center justify-center z-50 mx-4 mb-4"
                     >
-                        <div className="text-center">
-                            <Image className="w-12 h-12 mx-auto mb-2 text-cyan-400" />
-                            <p className="text-cyan-300 font-medium">Отпустите для загрузки файла</p>
+                        <div className="text-center p-6">
+                            <Image className="w-12 h-12 mx-auto mb-2 text-cyan-400 animate-bounce" />
+                            <p className="text-cyan-300 font-bold text-lg">Drop files here</p>
                         </div>
                     </motion.div>
                 )}
@@ -164,16 +164,16 @@ export function EnhancedMessageInput({
             <AnimatePresence>
                 {showEmojiPicker && (
                     <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        initial={{ opacity: 0, y: 20, scale: 0.9 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute bottom-full left-0 right-0 mb-2 bg-neutral-800 border border-neutral-700 rounded-lg p-3 shadow-xl"
+                        exit={{ opacity: 0, y: 20, scale: 0.9 }}
+                        className="absolute bottom-full left-4 mb-4 bg-neutral-900/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl w-72 z-50"
                     >
                         <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm font-medium text-white">Быстрые реакции</span>
+                            <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Quick Reactions</span>
                             <button
                                 onClick={() => setShowEmojiPicker(false)}
-                                className="p-1 hover:bg-white/10 rounded touch-target"
+                                className="p-1 hover:bg-white/10 rounded-full transition-colors"
                             >
                                 <X className="w-4 h-4 text-neutral-400" />
                             </button>
@@ -188,7 +188,7 @@ export function EnhancedMessageInput({
                                         inputRef.current?.focus();
                                         triggerHaptic('light');
                                     }}
-                                    className="p-3 text-2xl hover:bg-white/10 rounded-lg transition-colors touch-target"
+                                    className="aspect-square flex items-center justify-center text-2xl hover:bg-white/10 rounded-xl transition-all hover:scale-110 active:scale-95"
                                 >
                                     {emoji}
                                 </button>
@@ -199,115 +199,100 @@ export function EnhancedMessageInput({
             </AnimatePresence>
 
             {/* Main Input Area */}
-            <div
-                className={cn(
-                    "flex items-end gap-3 p-4 bg-black/95 backdrop-blur border-t border-white/10 safe-area-inset-bottom transition-colors",
-                    isDragOver && "bg-cyan-500/10"
-                )}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-            >
-                {/* Message Input */}
-                <div className="flex-1 relative">
-                    <input
-                        ref={inputRef}
-                        type="text"
-                        value={message}
-                        onChange={handleInputChange}
-                        onKeyDown={handleKeyDown}
-                        placeholder={placeholder}
-                        disabled={disabled}
-                        className={cn(
-                            "w-full bg-neutral-800 text-white placeholder-neutral-400 px-4 py-3 rounded-lg border border-neutral-700 focus:border-cyan-500 focus:outline-none transition-colors focus-visible-enhanced",
-                            "md:h-12 h-14", // Больше на мобильных
-                            "md:text-sm text-base", // 16px на мобильных (предотвращает zoom на iOS)
-                            disabled && "opacity-50 cursor-not-allowed"
-                        )}
-                        style={{ fontSize: '16px' }} // Дополнительная защита от zoom на iOS
-                    />
-
-                    {/* Character count for long messages */}
-                    {message.length > 100 && (
-                        <div className="absolute -top-6 right-0 text-xs text-neutral-500">
-                            {message.length}/1000
-                        </div>
+            <div className="px-2 pb-2 md:px-4 md:pb-4 w-full max-w-5xl mx-auto">
+                <div
+                    className={cn(
+                        "flex items-end gap-2 p-2 bg-neutral-900/80 backdrop-blur-xl border border-white/10 rounded-[24px] shadow-2xl transition-all duration-300",
+                        isDragOver && "ring-2 ring-cyan-500/50 bg-neutral-900/90"
                     )}
-                </div>
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                >
+                    {/* Left Actions */}
+                    <div className="flex items-center gap-1 pb-1 pl-1">
+                        <button
+                            onClick={() => {
+                                setShowEmojiPicker(!showEmojiPicker);
+                                triggerHaptic('light');
+                            }}
+                            disabled={disabled}
+                            className={cn(
+                                "p-2.5 rounded-full transition-all duration-200 hover:bg-white/10 active:scale-95",
+                                showEmojiPicker ? "text-cyan-400 bg-cyan-400/10" : "text-neutral-400 hover:text-white",
+                                disabled && "opacity-50 cursor-not-allowed"
+                            )}
+                        >
+                            <Smile className="w-5 h-5" />
+                        </button>
+                        <button
+                            onClick={() => {
+                                fileInputRef.current?.click();
+                                triggerHaptic('light');
+                            }}
+                            disabled={disabled}
+                            className={cn(
+                                "p-2.5 rounded-full transition-all duration-200 hover:bg-white/10 active:scale-95 text-neutral-400 hover:text-white",
+                                disabled && "opacity-50 cursor-not-allowed"
+                            )}
+                        >
+                            <Paperclip className="w-5 h-5" />
+                        </button>
+                    </div>
 
-                {/* Action Buttons */}
-                <div className="flex items-center gap-2">
-                    {/* Emoji Picker Button */}
-                    <button
-                        onClick={() => {
-                            setShowEmojiPicker(!showEmojiPicker);
-                            triggerHaptic('light');
-                        }}
-                        disabled={disabled}
-                        className={cn(
-                            "p-3 rounded-lg transition-colors touch-target focus-visible-enhanced",
-                            showEmojiPicker
-                                ? "bg-cyan-500/20 text-cyan-400"
-                                : "hover:bg-white/10 text-neutral-400",
-                            disabled && "opacity-50 cursor-not-allowed"
-                        )}
-                    >
-                        <Smile className="w-6 h-6" />
-                    </button>
-
-                    {/* File Upload Button */}
-                    <button
-                        onClick={() => {
-                            fileInputRef.current?.click();
-                            triggerHaptic('light');
-                        }}
-                        disabled={disabled}
-                        className={cn(
-                            "p-3 hover:bg-white/10 rounded-lg transition-colors touch-target focus-visible-enhanced",
-                            "text-neutral-400",
-                            disabled && "opacity-50 cursor-not-allowed"
-                        )}
-                    >
-                        <Paperclip className="w-6 h-6" />
-                    </button>
-
-                    {/* Voice Message Button (placeholder) */}
-                    <button
-                        disabled={disabled}
-                        className={cn(
-                            "p-3 hover:bg-white/10 rounded-lg transition-colors touch-target focus-visible-enhanced",
-                            "text-neutral-400",
-                            disabled && "opacity-50 cursor-not-allowed"
-                        )}
-                    >
-                        <Mic className="w-6 h-6" />
-                    </button>
+                    {/* Message Input */}
+                    <div className="flex-1 relative min-w-0 py-1.5">
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={message}
+                            onChange={handleInputChange}
+                            onKeyDown={handleKeyDown}
+                            placeholder={placeholder}
+                            disabled={disabled}
+                            className={cn(
+                                "w-full bg-transparent text-white placeholder-neutral-500 px-2 py-1 focus:outline-none transition-colors",
+                                "text-[16px]", // Prevents iOS zoom
+                                disabled && "cursor-not-allowed"
+                            )}
+                            style={{ fontSize: '16px' }}
+                        />
+                    </div>
 
                     {/* Send Button */}
-                    <motion.button
-                        onClick={handleSend}
-                        disabled={!message.trim() || disabled}
-                        whileHover={{ scale: message.trim() ? 1.05 : 1 }}
-                        whileTap={{ scale: message.trim() ? 0.95 : 1 }}
-                        className={cn(
-                            "p-3 rounded-lg transition-all touch-target focus-visible-enhanced",
-                            message.trim() && !disabled
-                                ? "bg-cyan-500 text-black hover:bg-cyan-400 shadow-lg shadow-cyan-500/25"
-                                : "bg-neutral-700 text-neutral-500 cursor-not-allowed"
-                        )}
-                    >
-                        <Send className="w-6 h-6" />
-                    </motion.button>
+                    <div className="pb-1 pr-1">
+                        <motion.button
+                            onClick={handleSend}
+                            disabled={!message.trim() || disabled}
+                            whileHover={{ scale: message.trim() ? 1.05 : 1 }}
+                            whileTap={{ scale: message.trim() ? 0.95 : 1 }}
+                            className={cn(
+                                "p-2.5 rounded-full transition-all duration-300 flex items-center justify-center",
+                                message.trim() && !disabled
+                                    ? "bg-gradient-to-tr from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40"
+                                    : "bg-white/5 text-neutral-600 cursor-not-allowed"
+                            )}
+                        >
+                            <Send className="w-5 h-5 ml-0.5" />
+                        </motion.button>
+                    </div>
+
+                    {/* Hidden file input */}
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        onChange={handleFileSelect}
+                        accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
+                        className="hidden"
+                    />
                 </div>
 
-                {/* Hidden file input */}
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    onChange={handleFileSelect}
-                    accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
-                    className="hidden"
-                />
+                {/* Character count */}
+                {message.length > 100 && (
+                    <div className="absolute -top-6 right-8 text-[10px] font-mono text-neutral-500 bg-black/50 px-2 py-1 rounded-full backdrop-blur-sm">
+                        {message.length}/1000
+                    </div>
+                )}
             </div>
         </div>
     );

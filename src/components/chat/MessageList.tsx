@@ -94,9 +94,9 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
       <div className="px-3 sm:px-4 py-1">
         {isNewDay && (
           <div className="flex justify-center my-6">
-            <span className="bg-neutral-800/70 text-neutral-300 text-xs font-semibold px-4 py-2 rounded-full border border-white/10 shadow-lg backdrop-blur-sm">
+            <span className="bg-black/40 text-neutral-400 text-[10px] font-medium px-3 py-1 rounded-full border border-white/5 backdrop-blur-sm uppercase tracking-widest">
               {msg.createdAt && 'seconds' in msg.createdAt
-                ? new Date(msg.createdAt.seconds * 1000).toLocaleDateString('ru-RU', { weekday: 'long', month: 'long', day: 'numeric' })
+                ? new Date(msg.createdAt.seconds * 1000).toLocaleDateString('ru-RU', { weekday: 'short', month: 'short', day: 'numeric' })
                 : 'Сегодня'}
             </span>
           </div>
