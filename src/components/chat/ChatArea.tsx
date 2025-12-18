@@ -10,7 +10,7 @@ import { NewMessageNotification } from './NewMessageNotification';
 import { ConnectionStatus } from './ConnectionStatus';
 import { MobileErrorHandler } from '../mobile/MobileErrorHandler';
 import DoodlePad from './DoodlePad';
-import { X } from 'lucide-react';
+import { X, MessageCircle } from 'lucide-react';
 import { useChatService } from '@/hooks/useChatService';
 import { usePresence } from '@/hooks/usePresence';
 import { useToast } from '@/hooks/use-toast';
@@ -314,9 +314,10 @@ export const ChatArea = memo(function ChatArea({
   }, [service]);
 
   const handleTypingStop = useCallback(() => {
-    // ChatService doesn't have a stop typing method, so we'll handle this differently
-    // The typing indicator will timeout automatically
-  }, []);
+    if (service) {
+      service.stopTyping();
+    }
+  }, [service]);
 
   const handleSendDoodle = useCallback(async (imageUrl: string) => {
     if (!service) return;
@@ -427,25 +428,9 @@ export const ChatArea = memo(function ChatArea({
     }
   }, [service, user, roomId, toast]);
 
-  const [isTyping, setIsTyping] = useState(false);
-  const [debouncedIsTyping] = useDebounce(isTyping, 500);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    if (!service) return;
-    if (debouncedIsTyping) {
-      service.sendTyping();
-    }
-  }, [debouncedIsTyping, service, user.name]);
 
-  // Cleanup typing timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-    };
-  }, []);
+
 
   const [isTabActive, setIsTabActive] = useState(true);
 
@@ -473,15 +458,14 @@ export const ChatArea = memo(function ChatArea({
     }
   }, [service, isTabActive, allMessages.length]);
 
-  const handleInputChange = useCallback(() => {
-    setIsTyping(true);
-    // Clear previous timeout
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
+  // Mark messages as delivered when online in the room
+  useEffect(() => {
+    if (service) {
+      service.markMessagesAsDelivered();
     }
-    // Set new timeout
-    typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 2000);
-  }, []);
+  }, [service, allMessages.length]);
+
+
 
   const scrollToBottom = useCallback(() => {
     if (messageListRef.current) {
@@ -546,19 +530,44 @@ export const ChatArea = memo(function ChatArea({
         <div className={`
           flex-1 min-h-0 overflow-hidden relative
         `}>
-          <MessageList
-            ref={messageListRef}
-            messages={allMessages}
-            isLoading={isInitialLoad && allMessages.length === 0}
-            currentUserId={user.id}
-            onReaction={handleToggleReaction}
-            onDeleteMessage={handleDeleteMessage}
-            onImageClick={handleImageClick}
-            onReply={handleReply}
-            onLoadMore={service?.loadMoreMessages}
-            hasMoreMessages={hasMoreMessages}
-            onScroll={handleScroll}
-          />
+          {allMessages.length === 0 && !isInitialLoad ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center space-y-6 z-10">
+              <div className="w-20 h-20 bg-cyan-500/10 rounded-[32px] flex items-center justify-center animate-bounce">
+                <MessageCircle className="w-10 h-10 text-cyan-400" />
+              </div>
+              <div className="space-y-2 max-w-xs">
+                <h3 className="text-xl font-bold text-white tracking-tight">ЗДЕСЬ ПОКА ПУСТО</h3>
+                <p className="text-sm text-neutral-500 leading-relaxed">
+                  Отправьте первое сообщение, чтобы начать общение. Или перейдите во вкладку <span className="text-cyan-400 font-bold">Игры</span>, чтобы развлечься!
+                </p>
+              </div>
+              <div className="flex flex-wrap justify-center gap-2">
+                {['Привет! 👋', 'Как дела?', 'Давай порисуем? 🎨', 'Сыграем? 🎮'].map(suggestion => (
+                  <button
+                    key={suggestion}
+                    onClick={() => service?.sendMessage({ text: suggestion, user, senderId: user.id })}
+                    className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-neutral-400 hover:text-white hover:bg-white/10 transition-all"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <MessageList
+              ref={messageListRef}
+              messages={allMessages}
+              isLoading={isInitialLoad && allMessages.length === 0}
+              currentUserId={user.id}
+              onReaction={handleToggleReaction}
+              onDeleteMessage={handleDeleteMessage}
+              onImageClick={handleImageClick}
+              onReply={handleReply}
+              onLoadMore={service?.loadMoreMessages}
+              hasMoreMessages={hasMoreMessages}
+              onScroll={handleScroll}
+            />
+          )}
           <NewMessageNotification
             hasNewMessages={isUserScrolledUp && newMessageCount > 0}
             newMessageCount={newMessageCount}

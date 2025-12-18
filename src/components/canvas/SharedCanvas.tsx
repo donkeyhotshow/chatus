@@ -5,13 +5,13 @@ import { CanvasPath, GameState, UserProfile } from '@/lib/types';
 import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useChatService } from '@/hooks/useChatService';
-import { Eraser, PenTool, Trash2, Brush, Tally1, Bot, Pen } from 'lucide-react';
+import { Eraser, PenTool, Trash2, Brush, Tally1, Bot, Pen, Send } from 'lucide-react';
 import { debounce } from '@/lib/utils';
 import { createCanvasBatcher } from '@/lib/canvas-batch';
 import { collection, query, where } from 'firebase/firestore';
 import { useFirebase } from '../firebase/FirebaseProvider';
 import { Slider } from '../ui/slider';
-import { useCollection, useDoc } from '@/hooks/useCollection'; // Note: using from same file is fine for this project size
+import { useCollection, useDoc } from '@/hooks/useCollection';
 import { doc } from 'firebase/firestore';
 import { logger } from '@/lib/logger';
 import { FloatingToolbar } from './FloatingToolbar';
@@ -602,6 +602,51 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     }
   };
 
+  const handleSendToChat = async () => {
+    const canvas = canvasRef.current;
+    if (!canvas || !service || !user) return;
+
+    try {
+      toast({ title: "Отправка в чат...", description: "Создаем изображение..." });
+
+      // Create a temporary canvas to capture the drawing with a background
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+      const tempCtx = tempCanvas.getContext('2d');
+      if (!tempCtx) return;
+
+      // Fill background
+      tempCtx.fillStyle = '#0d0d0d';
+      tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+      // Draw the main canvas onto the temp canvas
+      tempCtx.drawImage(canvas, 0, 0);
+
+      // Convert to blob
+      const blob = await new Promise<Blob | null>(resolve => tempCanvas.toBlob(resolve, 'image/png'));
+      if (!blob) throw new Error('Failed to create blob');
+
+      // Create a file from blob
+      const file = new File([blob], `drawing-${Date.now()}.png`, { type: 'image/png' });
+
+      // Upload and send
+      const imageUrl = await service.uploadImage(file);
+      await service.sendMessage({
+        text: 'Посмотрите мой рисунок! 🎨',
+        imageUrl,
+        user,
+        senderId: user.id,
+        type: 'image'
+      });
+
+      toast({ title: "Отправлено!", description: "Ваш рисунок теперь в чате." });
+    } catch (error) {
+      logger.error('Error sending drawing to chat', error as Error);
+      toast({ title: "Ошибка отправки", description: "Не удалось отправить рисунок в чат.", variant: "destructive" });
+    }
+  };
+
   return (
     <div className="h-full w-full relative flex flex-col">
       {/* Desktop toolbar - hidden on mobile */}
@@ -622,6 +667,13 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
             > <Eraser className="w-3.5 h-3.5 md:w-4 md:h-4" /></button>
             <button onClick={() => handleClearSheet(sheetId)} className="p-1.5 md:p-2 rounded-md md:rounded-lg bg-neutral-800 text-neutral-400 hover:bg-red-500/20 hover:text-red-400 flex items-center justify-center transition-all" title="Clear Current Sheet">
               <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
+            </button>
+            <button
+              onClick={handleSendToChat}
+              className="p-1.5 md:p-2 rounded-md md:rounded-lg bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 flex items-center justify-center transition-all"
+              title="Send to Chat"
+            >
+              <Send className="w-3.5 h-3.5 md:w-4 md:h-4" />
             </button>
           </div>
 
@@ -681,6 +733,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
           onStrokeWidthChange={setStrokeWidth}
           onBrushTypeChange={setBrushType}
           onClearSheet={() => handleClearSheet(sheetId)}
+          onSendToChat={handleSendToChat}
         />
       </div>
       <canvas

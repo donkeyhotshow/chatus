@@ -131,7 +131,7 @@ export function ImprovedMobileLayout({
                                     </h1>
                                     {activeTab === 'chat' && otherUser && (
                                         <p className="text-xs text-neutral-400">
-                                            с {otherUser.username}
+                                            с {otherUser.name}
                                         </p>
                                     )}
                                     {activeTab === 'users' && (

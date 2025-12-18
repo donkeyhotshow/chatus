@@ -1,6 +1,7 @@
 'use client';
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import * as Sentry from "@sentry/nextjs";
 
 interface Props {
   children: ReactNode;
@@ -35,8 +36,8 @@ export class ErrorBoundary extends Component<Props, State> {
       console.error('ErrorBoundary caught an error:', error, errorInfo);
     }
 
-    // In production, you might want to log to an error reporting service
-    // Example: Sentry.captureException(error, { contexts: { react: errorInfo } });
+    // In production, log to an error reporting service
+    Sentry.captureException(error, { extra: { errorInfo } });
   }
 
   private handleReset = (): void => {
@@ -129,7 +130,7 @@ export function useErrorHandler() {
     }
 
     // In production, log to error reporting service
-    // Example: Sentry.captureException(error, { contexts: { react: errorInfo } });
+    Sentry.captureException(error, { extra: { errorInfo } });
   };
 }
 

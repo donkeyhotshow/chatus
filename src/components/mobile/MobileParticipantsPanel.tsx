@@ -62,7 +62,7 @@ export function MobileParticipantsPanel({
 
     const formatLastSeen = (date: Date) => {
         const now = new Date();
-        const diffInMi = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+        const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
 
         if (diffInMinutes < 1) return 'только что';
         if (diffInMinutes < 60) return `${diffInMinutes} мин назад`;

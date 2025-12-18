@@ -2,7 +2,7 @@
     "name": "ЧАТ ДЛЯ НАС",
     "short_name": "ChatUs",
     "description": "Современное мобильное чат-приложение с пиксельными аватарами",
-    "start_url": "/mobile-demo",
+    "start_url": "/",
     "display": "standalone",
     "background_color": "#000000",
     "theme_color": "#06b6d4",
@@ -85,7 +85,7 @@
             "name": "Новый чат",
             "short_name": "Чат",
             "description": "Начать новый разговор",
-            "url": "/mobile-demo?action=new-chat",
+            "url": "/?action=new-chat",
             "icons": [
                 {
                     "src": "/icons/shortcut-chat.png",
@@ -97,7 +97,7 @@
             "name": "Настройки",
             "short_name": "Настройки",
             "description": "Открыть настройки приложения",
-            "url": "/mobile-demo?action=settings",
+            "url": "/?action=settings",
             "icons": [
                 {
                     "src": "/icons/shortcut-settings.png",

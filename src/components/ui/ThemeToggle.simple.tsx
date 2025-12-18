@@ -20,7 +20,7 @@ export function ThemeToggle({
     const themeIcons = {
         light: Sun,
         dark: Moon,
-        systeitor
+        system: Monitor
     };
 
     const ThemeIcon = themeIcons[currentTheme];

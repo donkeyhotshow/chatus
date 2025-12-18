@@ -7,6 +7,7 @@ import { FirebaseProvider } from '@/components/firebase/FirebaseProvider';
 import { BackgroundChanger } from '@/components/layout/BackgroundChanger';
 import { ErrorBoundaryWrapper } from '@/components/ErrorBoundaryWrapper';
 import { ClientLayout } from '@/components/layout/ClientLayout';
+import { Analytics } from "@vercel/analytics/react"
 // Script import removed as it's not used
 // import { PerformanceMonitor } from '@/components/performance/PerformanceMonitor';
 
@@ -131,6 +132,7 @@ export default function RootLayout({
               </div>
             </div>
             <Toaster />
+            <Analytics />
           </ErrorBoundaryWrapper>
         </FirebaseProvider>
       </body>

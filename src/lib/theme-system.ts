@@ -6,7 +6,7 @@ export type Density = 'comfortable' | 'compact';
 
 export interface UIPreferences {
     theme: ThemeMode;
-    accentColor: AccentColor;
+    accentColor: ThemeColor;
     density: Density;
     reducedMotion: boolean;
 }
@@ -177,7 +177,7 @@ export class ThemeManager {
         this.notifyListeners();
     }
 
-    public setAccentColor(color: AccentColor): void {
+    public setAccentColor(color: ThemeColor): void {
         this.preferences.accentColor = color;
         this.savePreferences();
         this.applyTheme();
@@ -239,7 +239,7 @@ export function useTheme() {
     return {
         preferences,
         setTheme: (theme: ThemeMode) => manager?.setTheme(theme),
-        setAccentColor: (color: AccentColor) => manager?.setAccentColor(color),
+        setAccentColor: (color: ThemeColor) => manager?.setAccentColor(color),
         setDensity: (density: Density) => manager?.setDensity(density),
     };
 }

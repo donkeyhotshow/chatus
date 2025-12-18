@@ -75,6 +75,9 @@ export class RoomManager {
   private isJoining: boolean = false;
   private joinPromise: Promise<void> | null = null;
 
+  // Bound methods for subscription
+  private boundSyncState: () => void;
+
   constructor(
     roomId: string,
     firestore: Firestore,
@@ -90,9 +93,8 @@ export class RoomManager {
     this.chatService = getChatService(roomId, firestore, auth, storage);
 
     // Подписываемся на изменения ChatService
-    this.chatService.subscribe(() => {
-      this.syncStateFromChatService();
-    });
+    this.boundSyncState = this.syncStateFromChatService.bind(this);
+    this.chatService.subscribe(this.boundSyncState);
 
     // Инициализируем состояние
     this.syncStateFromChatService();
@@ -215,13 +217,10 @@ export class RoomManager {
 
   /**
    * Установить статус набора текста
-   * TODO: Restore when ChatService implements setTypingStatus
    */
-  /*
-  public async setTypingStatus(username: string, isTyping: boolean): Promise<void> {
-    return this.chatService.setTypingStatus(username, isTyping);
+  public setTypingStatus(isTyping: boolean): void {
+    return this.chatService.setTypingStatus(isTyping);
   }
-  */
 
   /**
    * Загрузить изображение
@@ -277,7 +276,7 @@ export class RoomManager {
    */
   public async disconnect(): Promise<void> {
     // Отписаться от ChatService
-    this.chatService.unsubscribe(() => this.syncStateFromChatService());
+    this.chatService.unsubscribe(this.boundSyncState);
 
     // Отключить ChatService
     await this.chatService.disconnect();

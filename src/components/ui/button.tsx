@@ -1,16 +1,16 @@
 "use client";
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, HTMLMotionProps } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends HTMLMotionProps<'button'> {
   variant?: 'primary' | 'secondary' | 'destructive' | 'ghost' | 'outline' | 'default';
   size?: 'sm' | 'md' | 'lg' | 'icon';
   isLoading?: boolean;
   loadingText?: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 export const buttonVariants = {

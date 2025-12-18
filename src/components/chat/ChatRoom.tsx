@@ -1,18 +1,16 @@
-
 "use client";
 
-import { useState, useEffect, lazy, Suspense, useMemo } from 'react';
+import { useState, useEffect, lazy, Suspense, useMemo, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Room } from '@/lib/types';
+import { Room, UserProfile } from '@/lib/types';
 import { ChatArea } from './ChatArea';
 import { ProfileCreationDialog } from './ProfileCreationDialog';
-// Icons removed as they are not used in this component
 import { MobileNavigation } from '../mobile/MobileNavigation';
-// MobileErrorHandler removed as it's not used in this component
-import { ResizablePanel } from '../ui/ResizablePanel';
+import { ChatSidebar, ChatTab } from './ChatSidebar';
+import { UserList } from './UserList';
+import { ChatStats } from './ChatStats';
+import { useRouter } from 'next/navigation';
 
-// Lazy load heavy components
-const CollaborationSpace = lazy(() => import('./CollaborationSpace').then(m => ({ default: m.CollaborationSpace })));
 import { useFirebase } from '../firebase/FirebaseProvider';
 import { useDoc } from '@/hooks/useDoc';
 import { doc } from 'firebase/firestore';
@@ -24,6 +22,10 @@ import { useRoomManager } from '@/hooks/useRoomManager';
 import { logger } from '@/lib/logger';
 import { isDemoMode } from '@/lib/demo-mode';
 import { getChatService } from '@/services/ChatService';
+import { AnimatePresence, motion } from 'framer-motion';
+
+// Lazy load heavy components
+const CollaborationSpace = lazy(() => import('./CollaborationSpace').then(m => ({ default: m.CollaborationSpace })));
 
 const LoadingSpinner = ({ text }: { text: string }) => {
   const [showFallback, setShowFallback] = useState(false);
@@ -71,16 +73,9 @@ const LoadingSpinner = ({ text }: { text: string }) => {
 };
 
 export function ChatRoom({ roomId }: { roomId: string }) {
-  const [isCollabSpaceVisible, setIsCollabSpaceVisible] = useState(false);
-  const [mobileActiveTab, setMobileActiveTab] = useState<'chat' | 'games' | 'canvas' | 'users'>('chat');
-  const [collabSpaceWidth, setCollabSpaceWidth] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('chatroom-collab-width');
-      return saved ? parseInt(saved, 10) : 380;
-    }
-    return 380;
-  });
-
+  const [activeTab, setActiveTab] = useState<ChatTab>('chat');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const router = useRouter();
   const { toast } = useToast();
   const firebaseContext = useFirebase();
   const isMobile = useIsMobile();
@@ -101,48 +96,19 @@ export function ChatRoom({ roomId }: { roomId: string }) {
     leaveRoom
   } = useRoomManager(roomId);
 
-  useEffect(() => {
-    if (isMobile) {
-      // On mobile, show collaboration space only when explicitly toggled
-      setIsCollabSpaceVisible(false);
-    } else {
-      // On desktop, show collaboration space by default
-      setIsCollabSpaceVisible(true);
-    }
-  }, [isMobile]);
-
   // Handle mobile tab changes
-  const handleMobileTabChange = (tab: 'chat' | 'games' | 'canvas' | 'users') => {
-    setMobileActiveTab(tab);
-    if (tab === 'chat') {
-      setIsCollabSpaceVisible(false);
-    } else {
-      setIsCollabSpaceVisible(true);
+  const handleTabChange = (tab: ChatTab) => {
+    setActiveTab(tab);
+    if (isMobile) {
+      setIsSidebarOpen(false);
     }
   };
 
   // Handle mobile back navigation
   const handleMobileBack = () => {
-    if (isMobile && mobileActiveTab !== 'chat') {
-      // If not on chat tab, go back to chat
-      setMobileActiveTab('chat');
-      setIsCollabSpaceVisible(false);
+    if (isMobile && activeTab !== 'chat') {
+      setActiveTab('chat');
     }
-  };
-
-  // Handle collaboration space toggle
-  const handleToggleCollabSpace = () => {
-    setIsCollabSpaceVisible(prev => !prev);
-    if (isMobile && !isCollabSpaceVisible) {
-      // When opening collab space on mobile, default to games tab
-      setMobileActiveTab('games');
-    }
-  };
-
-  // Save collab space width to localStorage
-  const handleCollabSpaceResize = (width: number) => {
-    setCollabSpaceWidth(width);
-    localStorage.setItem('chatroom-collab-width', width.toString());
   };
 
   // Use both useDoc (for real-time updates) and useRoom (for validation)
@@ -168,10 +134,7 @@ export function ChatRoom({ roomId }: { roomId: string }) {
 
     // In demo mode, join room directly via ChatService
     if (isDemoMode()) {
-      // Firebase should be initialized even in demo mode (with dummy config)
-      // But we need to wait for firebaseContext to be available
       if (!firebaseContext?.db || !firebaseContext?.auth || !firebaseContext?.storage) {
-        logger.debug('[DEMO MODE] Waiting for Firebase context', { roomId, userId: user.id });
         return;
       }
       try {
@@ -181,7 +144,6 @@ export function ChatRoom({ roomId }: { roomId: string }) {
           firebaseContext.auth,
           firebaseContext.storage
         );
-        logger.info('[DEMO MODE] Joining room via ChatService', { roomId, userId: user.id });
         chatService.joinRoom(user, false).catch(err => {
           logger.error("Error joining room in demo mode", err as Error, { roomId, userId: user.id });
         });
@@ -196,17 +158,15 @@ export function ChatRoom({ roomId }: { roomId: string }) {
     }
 
     // Join room using RoomManager
-    // validateRoom=false allows auto-creation for new rooms
     joinRoom(user, false).catch(err => {
       const error = err as Error;
       const firebaseError = err as { code?: string };
 
-      // Suppress permission errors when offline
       if (error.message?.includes('Permission denied') ||
         error.message?.includes('client is offline') ||
         firebaseError.code === 'permission-denied' ||
         firebaseError.code === 'unavailable') {
-        return; // Silently ignore
+        return;
       }
 
       logger.error("Error joining room", error, { roomId, userId: user.id });
@@ -217,10 +177,8 @@ export function ChatRoom({ roomId }: { roomId: string }) {
       });
     });
 
-    // Cleanup on unmount
     return () => {
       if (isDemoMode()) {
-        // In demo mode, leave room via ChatService
         if (firebaseContext?.db && firebaseContext?.auth && firebaseContext?.storage) {
           const chatService = getChatService(
             roomId,
@@ -237,6 +195,13 @@ export function ChatRoom({ roomId }: { roomId: string }) {
       leaveRoom().catch(err => {
         logger.error("Error leaving room", err as Error, { roomId });
       });
+
+      // Disconnect RoomManager to prevent memory leaks and infinite singletons
+      import('@/services/RoomManager').then(({ disconnectRoomManager }) => {
+        disconnectRoomManager(roomId).catch(err => {
+          logger.error("Error disconnecting RoomManager", err as Error, { roomId });
+        });
+      });
     };
   }, [user, roomId, joinRoom, leaveRoom, firebaseContext, toast]);
 
@@ -252,60 +217,31 @@ export function ChatRoom({ roomId }: { roomId: string }) {
     }
   };
 
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem('chatUsername');
+    router.push('/');
+  }, [router]);
+
+  const handleSettings = useCallback(() => {
+    toast({ title: "Настройки", description: "Функционал в разработке" });
+  }, [toast]);
+
   if (!firebaseContext) {
     return <LoadingSpinner text="INITIALIZING..." />;
-  }
-
-  // Show Firebase config error if present (but not in demo mode)
-  if (!isDemoMode() && userError && userError.message?.includes('Firebase configuration is invalid')) {
-    return (
-      <div className="flex h-full w-full items-center justify-center bg-black text-white p-8">
-        <div className="max-w-2xl space-y-4">
-          <h1 className="text-2xl font-bold text-red-400">🔥 Firebase Configuration Required</h1>
-          <p className="text-neutral-300">
-            Your Firebase configuration is missing or invalid. Please set up your Firebase credentials to use this application.
-          </p>
-          <div className="bg-neutral-900 p-4 rounded-lg space-y-2 text-sm font-mono">
-            <p className="text-neutral-400">Quick fix:</p>
-            <ol className="list-decimal list-inside space-y-1 text-neutral-200">
-              <li>Open <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Firebase Console</a></li>
-              <li>Get your project configuration (Project Settings → General → Your apps → Web app)</li>
-              <li>Update <code className="bg-neutral-800 px-1 rounded">.env.local</code> file with real values</li>
-              <li>Restart the dev server</li>
-            </ol>
-          </div>
-          <div className="bg-blue-900/20 border border-blue-500/30 p-4 rounded-lg">
-            <p className="text-blue-300 text-sm font-semibold mb-2">💡 Для локального тестирования:</p>
-            <p className="text-blue-200 text-xs">
-              Добавьте <code className="bg-blue-900/50 px-1 rounded">NEXT_PUBLIC_DEMO_MODE=true</code> в <code className="bg-blue-900/50 px-1 rounded">.env.local</code> для работы без Firebase
-            </p>
-          </div>
-          <p className="text-sm text-neutral-500">
-            See <code className="bg-neutral-900 px-1 rounded">QUICK_FIX_FIREBASE.md</code> or <code className="bg-neutral-900 px-1 rounded">FIREBASE_SETUP.md</code> for detailed instructions.
-          </p>
-        </div>
-      </div>
-    );
   }
 
   if (isLoading) {
     return <LoadingSpinner text="ЗАГРУЗКА..." />;
   }
 
-  // Show error if Firebase Auth failed
   if (userError) {
     return (
       <div className="flex h-full w-full items-center justify-center bg-black">
         <div className="max-w-md p-8 bg-neutral-900 rounded-xl border border-red-500/50">
           <h2 className="text-xl font-bold text-red-500 mb-4">⚠️ Ошибка подключения</h2>
           <p className="text-neutral-300 mb-4">
-            Не удалось подключиться к серверу. Проверьте:
+            Не удалось подключиться к серверу.
           </p>
-          <ul className="list-disc list-inside text-neutral-400 space-y-2 mb-6">
-            <li>Включен ли Anonymous Auth в Firebase Console</li>
-            <li>Добавлен ли домен в Authorized domains</li>
-            <li>Интернет-соединение</li>
-          </ul>
           <button
             onClick={() => window.location.reload()}
             className="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-neutral-200 transition"
@@ -335,93 +271,76 @@ export function ChatRoom({ roomId }: { roomId: string }) {
   const otherUser = room?.participantProfiles?.find(p => p.id !== user?.id);
 
   return (
-    <div className="flex flex-col h-full w-full overflow-hidden mobile-viewport-fix">
-      {/* Main Content Area */}
-      <div className={`flex flex-1 overflow-hidden ${isMobile ? 'mobile-stack-layout' : ''}`}>
-        {/* Chat Area - Always visible on desktop, conditionally on mobile */}
-        {user && (
-          <div className={`
-            transition-all duration-300 ease-in-out min-w-0
-            ${isMobile
-              ? (mobileActiveTab === 'chat' ? 'flex-1 mobile-full-width' : 'mobile-hidden')
-              : (isCollabSpaceVisible ? 'flex-1' : 'w-full')
-            }
-          `}>
-            <ChatArea
-              user={user}
-              roomId={roomId}
-              isCollabSpaceVisible={isCollabSpaceVisible}
-              onToggleCollaborationSpace={handleToggleCollabSpace}
-              onMobileBack={handleMobileBack}
-            />
-          </div>
-        )}
+    <div className="flex h-full w-full overflow-hidden bg-black text-white">
+      {/* Sidebar - Hidden on mobile by default, but can be toggled */}
+      {!isMobile && (
+        <ChatSidebar
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          onLogout={handleLogout}
+          onSettings={handleSettings}
+        />
+      )}
 
-        {/* Collaboration Space - Resizable and Collapsible */}
-        {user && (
-          <>
-            {isMobile ? (
-              // Mobile: Simple toggle without resize
-              <div className={`
-                transition-all duration-300 ease-in-out
-                ${isCollabSpaceVisible && mobileActiveTab !== 'chat' ? 'flex-1 mobile-full-width' : 'mobile-hidden'}
-              `}>
-                <Suspense fallback={
-                  <div className="flex h-full items-center justify-center bg-neutral-900">
-                    <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full"></div>
-                  </div>
-                }>
-                  <CollaborationSpace
-                    isVisible={isCollabSpaceVisible}
-                    roomId={roomId}
-                    user={user}
-                    otherUser={otherUser}
-                    allUsers={room?.participantProfiles || []}
-                    mobileActiveTab={mobileActiveTab}
-                  />
-                </Suspense>
-              </div>
-            ) : (
-              // Desktop: Resizable panel
-              <ResizablePanel
-                defaultWidth={collabSpaceWidth}
-                minWidth={280}
-                maxWidth={800}
-                resizeHandle="left"
-                onResize={handleCollabSpaceResize}
-                disabled={!isCollabSpaceVisible}
-                className={`
-                  transition-all duration-300 ease-in-out
-                  ${isCollabSpaceVisible ? 'opacity-100' : 'w-0 opacity-0 overflow-hidden'}
-                `}
-              >
-                <Suspense fallback={
-                  <div className="flex h-full items-center justify-center bg-neutral-900">
-                    <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full"></div>
-                  </div>
-                }>
-                  <CollaborationSpace
-                    isVisible={isCollabSpaceVisible}
-                    roomId={roomId}
-                    user={user}
-                    otherUser={otherUser}
-                    allUsers={room?.participantProfiles || []}
-                    mobileActiveTab={undefined}
-                  />
-                </Suspense>
-              </ResizablePanel>
+      {/* Main Content Area */}
+      <main className="flex-1 flex flex-col min-w-0 relative overflow-hidden">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.2 }}
+            className="flex-1 flex flex-col h-full overflow-hidden"
+          >
+            {activeTab === 'chat' && (
+              <ChatArea
+                user={user}
+                roomId={roomId}
+                isCollabSpaceVisible={false}
+                onToggleCollaborationSpace={() => handleTabChange('canvas')}
+                onMobileBack={handleMobileBack}
+              />
             )}
-          </>
-        )}
-      </div>
+
+            {(activeTab === 'canvas' || activeTab === 'games') && (
+              <Suspense fallback={<LoadingSpinner text="LOADING..." />}>
+                <CollaborationSpace
+                  isVisible={true}
+                  roomId={roomId}
+                  user={user}
+                  otherUser={otherUser}
+                  allUsers={room?.participantProfiles || []}
+                  mobileActiveTab={activeTab === 'canvas' ? 'canvas' : 'games'}
+                />
+              </Suspense>
+            )}
+
+            {activeTab === 'users' && (
+              <div className="flex-1 p-6 overflow-y-auto">
+                <UserList users={room?.participantProfiles || []} currentUserId={user.id} />
+              </div>
+            )}
+
+            {activeTab === 'stats' && (
+              <ChatStats
+                messageCount={0}
+                userCount={room?.participantProfiles?.length || 0}
+                timeInChat="12м"
+              />
+            )}
+
+          </motion.div>
+        </AnimatePresence>
+      </main>
 
       {/* Mobile Navigation */}
-      {isMobile && user && (
+      {isMobile && (
         <MobileNavigation
-          activeTab={mobileActiveTab}
-          onTabChange={handleMobileTabChange}
-          isCollabSpaceVisible={isCollabSpaceVisible}
-          onToggleCollabSpace={handleToggleCollabSpace}
+          activeTab={activeTab === 'canvas' ? 'canvas' : activeTab === 'games' ? 'games' : activeTab === 'users' ? 'users' : 'chat'}
+          onTabChange={(tab) => handleTabChange(tab as ChatTab)}
+          isCollabSpaceVisible={activeTab !== 'chat'}
+          onToggleCollabSpace={() => handleTabChange(activeTab === 'chat' ? 'canvas' : 'chat')}
         />
       )}
     </div>

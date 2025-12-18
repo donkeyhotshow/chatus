@@ -31,7 +31,6 @@ export function EnhancedMessageInput({
     const fileInputRef = useRef<HTMLInputElement>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout>();
 
-    // Haptic feedback
     const triggerHaptic = useCallback((type: 'light' | 'medium' | 'heavy' = 'light') => {
         if ('vibrate' in navigator) {
             const patterns = { light: 10, medium: 20, heavy: 30 };
@@ -39,23 +38,19 @@ export function EnhancedMessageInput({
         }
     }, []);
 
-    // Handle input change with typing indicator
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setMessage(value);
 
-        // Typing indicator logic
         if (!isTyping && value.trim() && onTyping) {
             setIsTyping(true);
             onTyping(true);
         }
 
-        // Clear previous timeout
         if (typingTimeoutRef.current) {
             clearTimeout(typingTimeoutRef.current);
         }
 
-        // Set new timeout to stop typing indicator
         if (value.trim() && onTyping) {
             typingTimeoutRef.current = setTimeout(() => {
                 setIsTyping(false);
@@ -67,7 +62,6 @@ export function EnhancedMessageInput({
         }
     };
 
-    // Handle send message
     const handleSend = useCallback(() => {
         const trimmedMessage = message.trim();
         if (trimmedMessage && !disabled) {
@@ -77,14 +71,12 @@ export function EnhancedMessageInput({
             if (onTyping) onTyping(false);
             triggerHaptic('medium');
 
-            // Clear typing timeout
             if (typingTimeoutRef.current) {
                 clearTimeout(typingTimeoutRef.current);
             }
         }
     }, [message, disabled, onSend, onTyping, triggerHaptic]);
 
-    // Handle keyboard shortcuts
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -94,20 +86,17 @@ export function EnhancedMessageInput({
         }
     };
 
-    // Handle file selection
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file && onFileUpload) {
             onFileUpload(file);
             triggerHaptic('light');
         }
-        // Reset file input
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
     };
 
-    // Handle drag and drop
     const handleDragOver = (e: React.DragEvent) => {
         e.preventDefault();
         setIsDragOver(true);
@@ -121,7 +110,6 @@ export function EnhancedMessageInput({
     const handleDrop = (e: React.DragEvent) => {
         e.preventDefault();
         setIsDragOver(false);
-
         const file = e.dataTransfer.files[0];
         if (file && onFileUpload) {
             onFileUpload(file);
@@ -129,7 +117,6 @@ export function EnhancedMessageInput({
         }
     };
 
-    // Cleanup on unmount
     useEffect(() => {
         return () => {
             if (typingTimeoutRef.current) {
@@ -138,46 +125,31 @@ export function EnhancedMessageInput({
         };
     }, []);
 
-    // Quick emoji reactions
     const quickEmojis = ['👍', '❤️', '😂', '😮', '😢', '😡', '👏', '🔥'];
 
     return (
-        <div className={cn("relative w-full z-20", className)}>
-            {/* Drag overlay */}
+        <div className={cn("relative w-full", className)}>
             <AnimatePresence>
                 {isDragOver && (
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        className="absolute inset-0 -top-20 bg-cyan-500/10 backdrop-blur-md border-2 border-dashed border-cyan-500/50 rounded-2xl flex items-center justify-center z-50 mx-4 mb-4"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 -top-20 bg-cyan-500/5 backdrop-blur-sm border-2 border-dashed border-cyan-500/20 rounded-2xl flex items-center justify-center z-50 mx-4 mb-4"
                     >
-                        <div className="text-center p-6">
-                            <Image className="w-12 h-12 mx-auto mb-2 text-cyan-400 animate-bounce" />
-                            <p className="text-cyan-300 font-bold text-lg">Drop files here</p>
-                        </div>
+                        <p className="text-cyan-400 font-bold">Перетащите файлы сюда</p>
                     </motion.div>
                 )}
             </AnimatePresence>
 
-            {/* Emoji Picker */}
             <AnimatePresence>
                 {showEmojiPicker && (
                     <motion.div
-                        initial={{ opacity: 0, y: 20, scale: 0.9 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 20, scale: 0.9 }}
-                        className="absolute bottom-full left-4 mb-4 bg-neutral-900/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-2xl w-72 z-50"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="absolute bottom-full left-4 mb-4 bg-neutral-900/95 backdrop-blur-2xl border border-white/5 rounded-2xl p-4 shadow-2xl w-72 z-50"
                     >
-                        <div className="flex items-center justify-between mb-3">
-                            <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Quick Reactions</span>
-                            <button
-                                onClick={() => setShowEmojiPicker(false)}
-                                className="p-1 hover:bg-white/10 rounded-full transition-colors"
-                            >
-                                <X className="w-4 h-4 text-neutral-400" />
-                            </button>
-                        </div>
                         <div className="grid grid-cols-4 gap-2">
                             {quickEmojis.map((emoji) => (
                                 <button
@@ -188,7 +160,7 @@ export function EnhancedMessageInput({
                                         inputRef.current?.focus();
                                         triggerHaptic('light');
                                     }}
-                                    className="aspect-square flex items-center justify-center text-2xl hover:bg-white/10 rounded-xl transition-all hover:scale-110 active:scale-95"
+                                    className="aspect-square flex items-center justify-center text-2xl hover:bg-white/5 rounded-xl transition-all active:scale-90"
                                 >
                                     {emoji}
                                 </button>
@@ -198,19 +170,17 @@ export function EnhancedMessageInput({
                 )}
             </AnimatePresence>
 
-            {/* Main Input Area */}
-            <div className="px-2 pb-2 md:px-4 md:pb-4 w-full max-w-5xl mx-auto">
+            <div className="px-4 pb-4 w-full max-w-5xl mx-auto">
                 <div
                     className={cn(
-                        "flex items-end gap-2 p-2 bg-neutral-900/80 backdrop-blur-xl border border-white/10 rounded-[24px] shadow-2xl transition-all duration-300",
-                        isDragOver && "ring-2 ring-cyan-500/50 bg-neutral-900/90"
+                        "flex items-center gap-2 p-1.5 bg-white/5 border border-white/5 rounded-2xl transition-all duration-300",
+                        isDragOver && "border-cyan-500/50 bg-white/10"
                     )}
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
                 >
-                    {/* Left Actions */}
-                    <div className="flex items-center gap-1 pb-1 pl-1">
+                    <div className="flex items-center gap-0.5">
                         <button
                             onClick={() => {
                                 setShowEmojiPicker(!showEmojiPicker);
@@ -218,9 +188,9 @@ export function EnhancedMessageInput({
                             }}
                             disabled={disabled}
                             className={cn(
-                                "p-2.5 rounded-full transition-all duration-200 hover:bg-white/10 active:scale-95",
-                                showEmojiPicker ? "text-cyan-400 bg-cyan-400/10" : "text-neutral-400 hover:text-white",
-                                disabled && "opacity-50 cursor-not-allowed"
+                                "p-2.5 rounded-xl transition-all",
+                                showEmojiPicker ? "text-cyan-400 bg-cyan-400/10" : "text-neutral-500 hover:text-neutral-300 hover:bg-white/5",
+                                disabled && "opacity-50"
                             )}
                         >
                             <Smile className="w-5 h-5" />
@@ -231,17 +201,13 @@ export function EnhancedMessageInput({
                                 triggerHaptic('light');
                             }}
                             disabled={disabled}
-                            className={cn(
-                                "p-2.5 rounded-full transition-all duration-200 hover:bg-white/10 active:scale-95 text-neutral-400 hover:text-white",
-                                disabled && "opacity-50 cursor-not-allowed"
-                            )}
+                            className="p-2.5 rounded-xl text-neutral-500 hover:text-neutral-300 hover:bg-white/5 transition-all disabled:opacity-50"
                         >
                             <Paperclip className="w-5 h-5" />
                         </button>
                     </div>
 
-                    {/* Message Input */}
-                    <div className="flex-1 relative min-w-0 py-1.5">
+                    <div className="flex-1 relative min-w-0">
                         <input
                             ref={inputRef}
                             type="text"
@@ -250,34 +216,23 @@ export function EnhancedMessageInput({
                             onKeyDown={handleKeyDown}
                             placeholder={placeholder}
                             disabled={disabled}
-                            className={cn(
-                                "w-full bg-transparent text-white placeholder-neutral-500 px-2 py-1 focus:outline-none transition-colors",
-                                "text-[16px]", // Prevents iOS zoom
-                                disabled && "cursor-not-allowed"
-                            )}
-                            style={{ fontSize: '16px' }}
+                            className="w-full bg-transparent text-white placeholder-neutral-600 px-2 py-2 focus:outline-none text-sm disabled:cursor-not-allowed"
                         />
                     </div>
 
-                    {/* Send Button */}
-                    <div className="pb-1 pr-1">
-                        <motion.button
-                            onClick={handleSend}
-                            disabled={!message.trim() || disabled}
-                            whileHover={{ scale: message.trim() ? 1.05 : 1 }}
-                            whileTap={{ scale: message.trim() ? 0.95 : 1 }}
-                            className={cn(
-                                "p-2.5 rounded-full transition-all duration-300 flex items-center justify-center",
-                                message.trim() && !disabled
-                                    ? "bg-gradient-to-tr from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40"
-                                    : "bg-white/5 text-neutral-600 cursor-not-allowed"
-                            )}
-                        >
-                            <Send className="w-5 h-5 ml-0.5" />
-                        </motion.button>
-                    </div>
+                    <motion.button
+                        onClick={handleSend}
+                        disabled={!message.trim() || disabled}
+                        className={cn(
+                            "p-2.5 rounded-xl transition-all duration-300 flex items-center justify-center",
+                            message.trim() && !disabled
+                                ? "bg-white text-black hover:bg-neutral-200"
+                                : "text-neutral-600"
+                        )}
+                    >
+                        <Send className="w-5 h-5" />
+                    </motion.button>
 
-                    {/* Hidden file input */}
                     <input
                         ref={fileInputRef}
                         type="file"
@@ -286,14 +241,8 @@ export function EnhancedMessageInput({
                         className="hidden"
                     />
                 </div>
-
-                {/* Character count */}
-                {message.length > 100 && (
-                    <div className="absolute -top-6 right-8 text-[10px] font-mono text-neutral-500 bg-black/50 px-2 py-1 rounded-full backdrop-blur-sm">
-                        {message.length}/1000
-                    </div>
-                )}
             </div>
         </div>
     );
 }
+

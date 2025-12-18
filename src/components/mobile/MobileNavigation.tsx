@@ -9,6 +9,9 @@ type MobileNavigationProps = {
     onTabChange: (tab: 'chat' | 'games' | 'canvas' | 'users') => void;
     isCollabSpaceVisible: boolean;
     onToggleCollabSpace: () => void;
+    unreadCount?: number;
+    isTyping?: boolean;
+    connectionStatus?: string;
 };
 
 export function MobileNavigation({

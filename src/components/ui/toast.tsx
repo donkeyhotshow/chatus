@@ -5,9 +5,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface Toast {
+export type ToastActionElement = React.ReactElement;
+
+export interface ToastProps {
   id: string;
-  type: 'success' | 'error' | 'warning' | 'info';
+  type?: 'success' | 'error' | 'warning' | 'info';
+  variant?: 'default' | 'destructive' | 'success' | 'error' | 'warning' | 'info';
   title: string;
   description?: string;
   duration?: number;
@@ -15,7 +18,11 @@ interface Toast {
     label: string;
     onClick: () => void;
   };
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
+
+type Toast = ToastProps;
 
 interface ToastContextType {
   toasts: Toast[];
@@ -70,8 +77,11 @@ const toastStyles = {
 function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) => void }) {
   const [progress, setProgress] = useState(100);
   const duration = toast.duration || 5000;
-  const Icon = toastIcons[toast.type];
-  const styles = toastStyles[toast.type];
+
+  // Determine type from variant or type
+  const type = toast.type || (toast.variant === 'destructive' ? 'error' : (toast.variant as any)) || 'info';
+  const Icon = (toastIcons as any)[type] || toastIcons.info;
+  const styles = (toastStyles as any)[type] || toastStyles.info;
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
