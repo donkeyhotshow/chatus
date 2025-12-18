@@ -9,7 +9,7 @@ import { MessageInput } from './MessageInput';
 import { NewMessageNotification } from './NewMessageNotification';
 import { ConnectionStatus } from './ConnectionStatus';
 import { MobileErrorHandler } from '../mobile/MobileErrorHandler';
-import DoodlePad from './DoodlePad';
+import { DoodlePad } from '@/components/lazy/LazyComponents';
 import { X, MessageCircle } from 'lucide-react';
 import { useChatService } from '@/hooks/useChatService';
 import { usePresence } from '@/hooks/usePresence';
@@ -23,7 +23,7 @@ import { logger } from '@/lib/logger';
 import { useDebounce } from 'use-debounce';
 import { VerticalResizer } from '../ui/VerticalResizer';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { MessageSearch } from './MessageSearch';
+import { MessageSearch } from '@/components/lazy/LazyComponents';
 import { TypingIndicator } from './TypingIndicator';
 import { EnhancedMessageInput } from './EnhancedMessageInput';
 import { useChatPersistence, useUserPreferences } from '@/hooks/use-chat-persistence';
@@ -134,12 +134,14 @@ export const ChatArea = memo(function ChatArea({
   const lastMessageCountRef = useRef<number>(0);
   const messageListRef = useRef<any>(null);
 
-  // Save messages to localStorage when they change
+  // Save messages to localStorage when they change (debounced to prevent excessive saves)
+  const [debouncedMessages] = useDebounce(persistedMessages, 500);
+
   useEffect(() => {
-    if (persistedMessages && persistedMessages.length > 0) {
-      saveMessages(persistedMessages);
+    if (debouncedMessages && debouncedMessages.length > 0) {
+      saveMessages(debouncedMessages);
     }
-  }, [persistedMessages, saveMessages]);
+  }, [debouncedMessages, saveMessages]);
 
   // Update last room ID for user preferences
   useEffect(() => {
@@ -209,13 +211,15 @@ export const ChatArea = memo(function ChatArea({
       ...optimisticMessages
     ];
 
-    // Remove duplicates based on message ID
-    const uniqueMessages = combined.reduce((acc, message) => {
-      if (!acc.find(m => m.id === message.id)) {
-        acc.push(message);
+    // Remove duplicates based on message ID using Map for better performance
+    const uniqueMessagesMap = new Map<string, Message>();
+    combined.forEach(message => {
+      if (!uniqueMessagesMap.has(message.id)) {
+        uniqueMessagesMap.set(message.id, message);
       }
-      return acc;
-    }, [] as Message[]);
+    });
+
+    const uniqueMessages = Array.from(uniqueMessagesMap.values());
 
     // Safe sort with null checks
     uniqueMessages.sort((a, b) => {
@@ -224,16 +228,6 @@ export const ChatArea = memo(function ChatArea({
       return aTime - bTime;
     });
 
-    // Debug logging in development
-    if (process.env.NODE_ENV === 'development' && uniqueMessages.length > 0) {
-      logger.debug('[ChatArea] All messages', {
-        cachedCount: cachedMessages.length,
-        persistedCount: persistedMessages.length,
-        optimisticCount: optimisticMessages.length,
-        totalCount: uniqueMessages.length,
-        messageIds: uniqueMessages.map(m => m.id)
-      });
-    }
     return uniqueMessages;
   }, [persistedMessages, optimisticMessages, cachedMessages, isInitialLoad]);
 

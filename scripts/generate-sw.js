@@ -71,7 +71,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event - serve from cache with network fallback
+// Enhanced fetch event with better offline support
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -85,41 +85,62 @@ self.addEventListener('fetch', (event) => {
   // Skip API routes
   if (url.pathname.startsWith('/api/')) return;
 
-  event.respondWith(
-    caches.match(request)
-      .then((cachedResponse) => {
-        if (cachedResponse) {
-          // Serve from cache
-          return cachedResponse;
-        }
+  // Strategy: Cache First for static assets, Network First for dynamic content
+  const isStaticAsset = url.pathname.includes('/_next/static/') ||
+                       url.pathname.includes('/icons/') ||
+                       url.pathname.endsWith('.css') ||
+                       url.pathname.endsWith('.js');
 
-        // Network request with caching
-        return fetch(request)
-          .then((response) => {
-            // Don't cache non-successful responses
-            if (!response || response.status !== 200 || response.type !== 'basic') {
+  if (isStaticAsset) {
+    // Cache First strategy for static assets
+    event.respondWith(
+      caches.match(request)
+        .then((cachedResponse) => {
+          return cachedResponse || fetch(request)
+            .then((response) => {
+              if (response && response.status === 200) {
+                const responseToCache = response.clone();
+                caches.open(STATIC_CACHE)
+                  .then((cache) => cache.put(request, responseToCache));
+              }
               return response;
-            }
-
-            // Clone response for caching
+            });
+        })
+    );
+  } else {
+    // Network First strategy for dynamic content
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.status === 200) {
             const responseToCache = response.clone();
-
-            // Cache dynamic content
             caches.open(DYNAMIC_CACHE)
-              .then((cache) => {
-                cache.put(request, responseToCache);
-              });
-
-            return response;
-          })
-          .catch(() => {
-            // Fallback for offline
-            if (request.destination === 'document') {
-              return caches.match('/');
-            }
-          });
-      })
-  );
+              .then((cache) => cache.put(request, responseToCache));
+          }
+          return response;
+        })
+        .catch(() => {
+          // Fallback to cache when offline
+          return caches.match(request)
+            .then((cachedResponse) => {
+              if (cachedResponse) {
+                return cachedResponse;
+              }
+              // Ultimate fallback for navigation requests
+              if (request.destination === 'document') {
+                return caches.match('/').then((homeResponse) => {
+                  return homeResponse || new Response(
+                    '<html><body><h1>Offline</h1><p>Нет подключения к интернету</p></body></html>',
+                    { headers: { 'Content-Type': 'text/html' } }
+                  );
+                });
+              }
+              // Return offline response for other requests
+              return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
+            });
+        })
+    );
+  }
 });
 
 // Background message handling

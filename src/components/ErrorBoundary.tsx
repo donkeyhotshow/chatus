@@ -30,13 +30,21 @@ export class ErrorBoundary extends Component<Props, State> {
       errorInfo
     });
 
-    // Log error to console in development
+    // Enhanced error handling
     if (process.env.NODE_ENV === 'development') {
       // eslint-disable-next-line no-console
       console.error('ErrorBoundary caught an error:', error, errorInfo);
     }
 
-    // In production, log to an error reporting service
+    // Check for infinite loop errors and handle them specially
+    if (error.message.includes('Maximum update depth exceeded')) {
+      // Force component remount after a delay
+      setTimeout(() => {
+        this.setState({ hasError: false, error: undefined, errorInfo: undefined });
+      }, 1000);
+    }
+
+    // In production, log to error reporting service
     Sentry.captureException(error, { extra: { errorInfo } });
   }
 

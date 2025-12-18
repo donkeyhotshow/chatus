@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { setupGlobalErrorHandlers } from '@/lib/global-error-handler';
+// import { setupGlobalErrorHandlers } from '@/lib/global-error-handler';
 
 interface ClientLayoutProps {
   children: React.ReactNode;
@@ -9,7 +9,7 @@ interface ClientLayoutProps {
 
 export function ClientLayout({ children }: ClientLayoutProps) {
   useEffect(() => {
-    setupGlobalErrorHandlers();
+    // setupGlobalErrorHandlers();
   }, []);
 
   return <>{children}</>;

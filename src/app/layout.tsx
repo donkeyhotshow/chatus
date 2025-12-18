@@ -1,13 +1,12 @@
-
 import type { Metadata } from 'next';
-import { Toaster } from "@/components/ui/toaster"
 import './globals.css';
-// Temporary fix: using emoji instead of lucide icon
-import { FirebaseProvider } from '@/components/firebase/FirebaseProvider';
-import { BackgroundChanger } from '@/components/layout/BackgroundChanger';
-import { ErrorBoundaryWrapper } from '@/components/ErrorBoundaryWrapper';
-import { ClientLayout } from '@/components/layout/ClientLayout';
-import { Analytics } from "@vercel/analytics/react"
+import { SafeClientLayout } from '@/components/layout/SafeClientLayout';
+
+// import { Toaster } from "@/components/ui/toaster"
+// import { FirebaseProvider } from '@/components/firebase/FirebaseProvider';
+// import { BackgroundChanger } from '@/components/layout/BackgroundChanger';
+// import { ErrorBoundaryWrapper } from '@/components/ErrorBoundaryWrapper';
+// import { Analytics } from "@vercel/analytics/react"
 // Script import removed as it's not used
 // import { PerformanceMonitor } from '@/components/performance/PerformanceMonitor';
 
@@ -107,35 +106,42 @@ export default function RootLayout({
         <link rel="preconnect" href="https://firebasestorage.googleapis.com" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet" />
         <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/firebase-messaging-sw.js')
+                    .then(function(registration) {
+                      console.log('SW registered: ', registration);
+                    })
+                    .catch(function(registrationError) {
+                      console.log('SW registration failed: ', registrationError);
+                    });
+                });
+              }
+            `,
+          }}
+        />
       </head>
       <body suppressHydrationWarning>
-        <FirebaseProvider>
-          <ErrorBoundaryWrapper>
-            <div className="flex flex-col w-full bg-black text-neutral-200 font-sans selection:bg-cyan-400 selection:text-black overflow-hidden h-full h-[100dvh] supports-[height:100dvh]:h-[100dvh]">
-              <header className="h-12 sm:h-14 shrink-0 border-b border-white/10 flex items-center px-3 sm:px-4 lg:px-6 bg-gradient-to-r from-neutral-950 to-black z-50 shadow-lg">
-                <a
-                  href="/"
-                  className="flex items-center gap-2 sm:gap-3 select-none group cursor-pointer hover:opacity-80 transition-opacity duration-200"
-                  title="Вернуться на главную"
-                >
-                  <div className="p-1 sm:p-1.5 bg-gradient-to-br from-cyan-400 to-blue-500 text-black rounded-lg group-hover:scale-105 transition-transform duration-200 shadow-lg flex items-center justify-center">
-                    <span className="text-sm sm:text-base">💬</span>
-                  </div>
-                  <span className="font-mono font-bold text-sm sm:text-lg tracking-[0.1em] sm:tracking-[0.2em] text-white">
-                    ЧАТ ДЛЯ НАС
-                  </span>
-                </a>
-              </header>
-
-              <div className="relative z-10 flex w-full flex-1 overflow-hidden min-h-0">
-                {children}
-              </div>
-            </div>
-            <Toaster />
-            <Analytics />
-          </ErrorBoundaryWrapper>
-        </FirebaseProvider>
-      </body>
-    </html >
-  );
+        {/* <FirebaseProvider> */}
+        {/* <ErrorBoundaryWrapper> */}
+        <SafeClientLayout>
+          {/* <BackgroundChanger /> */}
+          <div className="flex flex-col w-full bg-black text-neutral-200 font-sans selection:bg-cyan-400 selection:text-black overflow-hidden h-full h-[100dvh] supports-[height:100dvh]:h-[100dvh]">
+            <header className="h-12 sm:h-14 shrink-0 border-b border-white/10 flex items-center px-3 sm:px-4 lg:px-6 bg-gradient-to-r from-neutral-950 to-black z-50 shadow-lg">
+              <a
+                href="/"
+                className="flex items-center gap-2 sm:gap-3 select-none group cursor-pointer hover:opacity-80 transition-opacity duration-200"
+                title="Вернуться на главную"
+              >
+                <div className="p-1 sm:p-1.5 bg-gradient-to-br from-cyan-400 to-blue-500 text-black rounded-lg group-hover:scale-105 transition-transform duration-200 shadow-lg flex items-center justify-center">
+                  <span className="text-sm sm:text-base">💬</span>
+                </div>
+                <span className="font-mono font-bold text-sm sm:text-lg tracking-[0.1em] sm:tracking-[0.2em] text-white">
+                  ЧАТ ДЛЯ НАС
+                </span>
+              </a>
+              );
 }

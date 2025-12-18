@@ -71,13 +71,45 @@ export class ChatService {
   }
 
   private syncAndNotify() {
-    this.messages = this.messageService.messages;
-    this.onlineUsers = this.presenceService.onlineUsers;
-    this.typingUsers = this.presenceService.typingUsers;
-    this.gameStates = this.gameService.gameStates;
-    this.isInitialLoad = this.messageService.isInitialLoad;
-    this.hasMoreMessages = this.messageService.hasMoreMessages;
-    this.notify();
+    // Batch state updates to prevent multiple re-renders
+    const newMessages = this.messageService.messages;
+    const newOnlineUsers = this.presenceService.onlineUsers;
+    const newTypingUsers = this.presenceService.typingUsers;
+    const newGameStates = this.gameService.gameStates;
+    const newIsInitialLoad = this.messageService.isInitialLoad;
+    const newHasMoreMessages = this.messageService.hasMoreMessages;
+
+    // Only update and notify if something actually changed
+    const hasChanges =
+      this.messages !== newMessages ||
+      this.onlineUsers !== newOnlineUsers ||
+      this.typingUsers !== newTypingUsers ||
+      this.gameStates !== newGameStates ||
+      this.isInitialLoad !== newIsInitialLoad ||
+      this.hasMoreMessages !== newHasMoreMessages;
+
+    if (hasChanges) {
+      this.messages = newMessages;
+      this.onlineUsers = newOnlineUsers;
+      this.typingUsers = newTypingUsers;
+      this.gameStates = newGameStates;
+      this.isInitialLoad = newIsInitialLoad;
+      this.hasMoreMessages = newHasMoreMessages;
+
+      // Debounce notifications to prevent excessive updates
+      this.debouncedNotify();
+    }
+  }
+
+  private notifyTimeout: NodeJS.Timeout | null = null;
+  private debouncedNotify() {
+    if (this.notifyTimeout) {
+      clearTimeout(this.notifyTimeout);
+    }
+    this.notifyTimeout = setTimeout(() => {
+      this.notify();
+      this.notifyTimeout = null;
+    }, 16); // ~60fps
   }
 
   private initListeners() {
