@@ -8,12 +8,12 @@ import { LoadingSpinner } from '@/components/ui/LoadingStates';
 
 // Lazy load heavy components
 export const LazyDoodlePad = lazy(() => import('@/components/chat/DoodlePad'));
-export const LazyPixelAvatarEditor = lazy(() => import('@/components/profile/PixelAvatarEditor'));
-export const LazyGameArea = lazy(() => import('@/components/games/GameArea'));
+export const LazyPixelAvatarEditor = lazy(() => import('@/components/avatar/PixelAvatarEditor'));
+export const LazyGameLobby = lazy(() => import('@/components/games/GameLobby'));
 export const LazyTicTacToe = lazy(() => import('@/components/games/TicTacToe'));
-export const LazyDrawingGame = lazy(() => import('@/components/games/DrawingGame'));
-export const LazyCollaborationSpace = lazy(() => import('@/components/collaboration/CollaborationSpace'));
-export const LazyCanvasEditor = lazy(() => import('@/components/canvas/CanvasEditor'));
+export const LazyRockPaperScissors = lazy(() => import('@/components/games/RockPaperScissors'));
+export const LazyCollaborationSpace = lazy(() => import('@/components/chat/CollaborationSpace'));
+export const LazySharedCanvas = lazy(() => import('@/components/canvas/SharedCanvas'));
 export const LazyMessageSearch = lazy(() => import('@/components/chat/MessageSearch'));
 
 // Wrapper components with loading states
@@ -58,7 +58,7 @@ export const PixelAvatarEditor: React.FC<any> = (props) => (
     </LazyWrapper>
 );
 
-export const GameArea: React.FC<any> = (props) => (
+export const GameLobby: React.FC<any> = (props) => (
     <LazyWrapper fallback={
         <div className="flex items-center justify-center p-8">
             <div className="text-center space-y-3">
@@ -67,7 +67,7 @@ export const GameArea: React.FC<any> = (props) => (
             </div>
         </div>
     }>
-        <LazyGameArea {...props} />
+        <LazyGameLobby {...props} />
     </LazyWrapper>
 );
 
@@ -84,16 +84,16 @@ export const TicTacToe: React.FC<any> = (props) => (
     </LazyWrapper>
 );
 
-export const DrawingGame: React.FC<any> = (props) => (
+export const RockPaperScissors: React.FC<any> = (props) => (
     <LazyWrapper fallback={
         <div className="flex items-center justify-center p-4">
             <div className="text-center space-y-2">
                 <LoadingSpinner />
-                <p className="text-xs text-neutral-400">Загрузка игры рисования...</p>
+                <p className="text-xs text-neutral-400">Загрузка камень-ножницы-бумага...</p>
             </div>
         </div>
     }>
-        <LazyDrawingGame {...props} />
+        <LazyRockPaperScissors {...props} />
     </LazyWrapper>
 );
 
@@ -110,7 +110,7 @@ export const CollaborationSpace: React.FC<any> = (props) => (
     </LazyWrapper>
 );
 
-export const CanvasEditor: React.FC<any> = (props) => (
+export const SharedCanvas: React.FC<any> = (props) => (
     <LazyWrapper fallback={
         <div className="flex items-center justify-center p-8">
             <div className="text-center space-y-3">
@@ -119,7 +119,7 @@ export const CanvasEditor: React.FC<any> = (props) => (
             </div>
         </div>
     }>
-        <LazyCanvasEditor {...props} />
+        <LazySharedCanvas {...props} />
     </LazyWrapper>
 );
 
@@ -138,9 +138,9 @@ export const MessageSearch: React.FC<any> = (props) => (
 
 // Preload functions for better UX
 export const preloadDoodlePad = () => import('@/components/chat/DoodlePad');
-export const preloadPixelAvatarEditor = () => import('@/components/profile/PixelAvatarEditor');
-export const preloadGameArea = () => import('@/components/games/GameArea');
-export const preloadCollaborationSpace = () => import('@/components/collaboration/CollaborationSpace');
+export const preloadPixelAvatarEditor = () => import('@/components/avatar/PixelAvatarEditor');
+export const preloadGameLobby = () => import('@/components/games/GameLobby');
+export const preloadCollaborationSpace = () => import('@/components/chat/CollaborationSpace');
 
 // Preload on user interaction
 export const preloadOnHover = (componentName: string) => {
@@ -150,7 +150,7 @@ export const preloadOnHover = (componentName: string) => {
         case 'avatar':
             return preloadPixelAvatarEditor;
         case 'games':
-            return preloadGameArea;
+            return preloadGameLobby;
         case 'collaboration':
             return preloadCollaborationSpace;
         default:
