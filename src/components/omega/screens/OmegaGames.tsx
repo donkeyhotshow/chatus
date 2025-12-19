@@ -42,7 +42,7 @@ export const OmegaGames = memo(function OmegaGames({
         {games.map(g => (
           <button key={g.id} className="omega-game-card" onClick={() => onStartGame(g.id)}>
             <div className="omega-game-icon">
-              <span className="material-icon}</span>
+              <span className="material-icons">{g.icon}</span>
             </div>
             <div className="omega-game-name">{g.name}</div>
             <div className="omega-game-desc">{g.desc}</div>

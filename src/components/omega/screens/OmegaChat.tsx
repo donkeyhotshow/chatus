@@ -1,4 +1,4 @@
-"use
+"use client";
 
 import { memo, useState, useCallback } from 'react';
 import { OmegaHeader } from '../OmegaHeader';

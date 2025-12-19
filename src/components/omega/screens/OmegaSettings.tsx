@@ -1,5 +1,6 @@
-"use clien
-ort { memo, useState } from 'react';
+"use client";
+
+import { memo, useState } from 'react';
 import { OmegaHeader } from '../OmegaHeader';
 
 const sections = [

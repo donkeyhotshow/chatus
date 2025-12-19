@@ -3,7 +3,7 @@
 import { memo, useState, useCallback, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
-inaInputProps {
+interface OmegaInputProps {
   onSend: (message: string) => void;
   onAddClick?: () => void;
   placeholder?: string;

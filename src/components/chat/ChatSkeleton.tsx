@@ -5,8 +5,8 @@ import { cn } from '@/lib/utils';
 // Skeleton для сообщений чата
 export function MessageSkeleton({ isOwn = false }: { isOwn?: boolean }) {
     return (
-        <div className={cn
-      "flex gap-3 px-4 py-2",
+        <div className={cn(
+            "flex gap-3 px-4 py-2",
             isOwn ? "flex-row-reverse" : "flex-row"
         )}>
             {/* Avatar */}
