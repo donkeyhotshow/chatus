@@ -63,14 +63,14 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
-      // Default error UI
+      // Default error UI - використовуємо CSS variables для консистентності
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-          <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6 text-center">
+        <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)] px-4">
+          <div className="max-w-sm w-full bg-[var(--bg-elevated)] border border-[var(--border-primary)] rounded-2xl p-6 text-center">
             <div className="mb-4">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+              <div className="mx-auto flex items-center justify-center h-14 w-14 rounded-xl bg-red-100 dark:bg-red-950/30">
                 <svg
-                  className="h-6 w-6 text-red-600"
+                  className="h-7 w-7 text-[var(--error)]"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -85,39 +85,39 @@ export class ErrorBoundary extends Component<Props, State> {
               </div>
             </div>
 
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">
-              Что-то пошло не так
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+              Щось пішло не так
             </h2>
 
-            <p className="text-gray-600 mb-6">
-              Произошла неожиданная ошибка. Попробуйте обновить страницу или повторить действие позже.
+            <p className="text-sm text-[var(--text-secondary)] mb-6">
+              Виникла несподівана помилка. Спробуйте оновити сторінку.
             </p>
 
             {process.env.NODE_ENV === 'development' && this.state.error && (
               <details className="mb-4 text-left">
-                <summary className="cursor-pointer text-sm text-gray-500 mb-2">
-                  Детали ошибки (только в разработке)
+                <summary className="cursor-pointer text-xs text-[var(--text-muted)] mb-2">
+                  Деталі помилки (тільки в розробці)
                 </summary>
-                <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto max-h-32">
+                <pre className="text-xs bg-[var(--bg-tertiary)] text-[var(--text-secondary)] p-2 rounded-lg overflow-auto max-h-32">
                   {this.state.error.toString()}
                   {this.state.errorInfo?.componentStack}
                 </pre>
               </details>
             )}
 
-            <div className="flex gap-3 justify-center">
+            <div className="flex flex-col gap-2">
               <button
                 onClick={this.handleReset}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                className="w-full py-3 bg-[var(--accent-primary)] text-[var(--accent-contrast)] font-medium rounded-xl hover:bg-[var(--accent-hover)] transition-colors"
               >
-                Попробовать снова
+                Спробувати знову
               </button>
 
               <button
                 onClick={this.handleReload}
-                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                className="w-full py-3 bg-[var(--bg-tertiary)] text-[var(--text-primary)] font-medium rounded-xl hover:bg-[var(--border-primary)] transition-colors"
               >
-                Обновить страницу
+                Оновити сторінку
               </button>
             </div>
           </div>

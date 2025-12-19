@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    /* Минималистичная монохромная палитра */
+    /* Light theme - Clean minimal */
     --bg-primary: #ffffff;
     --bg-secondary: #fafafa;
     --bg-tertiary: #f5f5f5;
@@ -15,13 +15,23 @@
     --border-primary: #e5e5e5;
     --border-secondary: #f0f0f0;
 
-    /* Единый акцент - нейтральный */
+    /* Accent */
     --accent-primary: #171717;
     --accent-hover: #262626;
     --accent-light: #f5f5f5;
     --accent-contrast: #ffffff;
 
-    /* Системные */
+    /* Functional Colors - Omega Theme */
+    --chat-primary: #10b981;    /* Emerald Green - чат */
+    --draw-primary: #f59e0b;    /* Amber - рисування */
+    --game-primary: #8b5cf6;    /* Violet - ігри */
+    --settings-primary: #6b7280; /* Gray - налаштування */
+
+    /* Glassmorphism */
+    --glass-bg: rgba(255, 255, 255, 0.8);
+    --glass-border: rgba(0, 0, 0, 0.1);
+
+    /* System */
     --success: #22c55e;
     --warning: #f59e0b;
     --error: #ef4444;
@@ -51,9 +61,9 @@
     /* Переходы */
     --transition: 150ms ease;
 
-    /* Навигация */
+    /* Navigation - iOS standards */
     --nav-height: 3.5rem;
-    --nav-height-mobile: 3.5rem;
+    --nav-height-mobile: 83px;  /* iOS standard bottom nav */
     --sidebar-width: 4rem;
     --sidebar-width-expanded: 13rem;
 
@@ -66,19 +76,30 @@
 
   .dark,
   [data-theme="dark"] {
-    --bg-primary: #0a0a0a;
-    --bg-secondary: #141414;
-    --bg-tertiary: #1c1c1c;
-    --bg-elevated: #171717;
-    --text-primary: #fafafa;
-    --text-secondary: #a3a3a3;
+    /* Omega Dark Theme */
+    --bg-primary: #0a0a0a;      /* Deep charcoal */
+    --bg-secondary: #1a1a1a;    /* Rich slate */
+    --bg-tertiary: #2a2a2a;     /* Hover states */
+    --bg-elevated: #141414;
+    --text-primary: #ffffff;    /* High contrast */
+    --text-secondary: #a1a1aa;  /* Light gray */
     --text-muted: #525252;
-    --border-primary: #262626;
-    --border-secondary: #1c1c1c;
-    --accent-primary: #fafafa;
+    --border-primary: #2a2a2a;
+    --border-secondary: #1a1a1a;
+    --accent-primary: #ffffff;
     --accent-hover: #e5e5e5;
-    --accent-light: #262626;
+    --accent-light: #1a1a1a;
     --accent-contrast: #0a0a0a;
+
+    /* Functional Colors - same in dark */
+    --chat-primary: #10b981;    /* Emerald Green */
+    --draw-primary: #f59e0b;    /* Amber */
+    --game-primary: #8b5cf6;    /* Violet */
+    --settings-primary: #6b7280;
+
+    /* Glassmorphism - dark */
+    --glass-bg: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.1);
   }
 
   @media (prefers-color-scheme: dark) {
@@ -367,4 +388,30 @@
       transition-duration: 0.01ms !important;
     }
   }
+
+  /* Glassmorphism */
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+  }
+
+  .glass-strong {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+rder: 1px solid var(--glass-border);
+  }
+
+  /* Functional color utilities */
+  .text-chat { color: var(--cary); }
+  .text-draw { color: var(--draw-primary); }
+  .text-game { color: var(--game-primary); }
+  .bg-chat { background-color: var(--chat-primary); }
+  .bg-draw { background-color: var(--draw-primary); }
+  .bg-game { background-color: var(--game-primary); }
+  .border-chat { border-color: var(--chat-primary); }
+  .border-draw { border-color: var(--draw-primary); }
+  .border-game { border-color: var(--game-primary); }
 }

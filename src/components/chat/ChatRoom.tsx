@@ -22,12 +22,16 @@ import { logger } from '@/lib/logger';
 import { isDemoMode } from '@/lib/demo-mode';
 import { getChatService } from '@/services/ChatService';
 import { cn } from '@/lib/utils';
+import { useSwipe } from '@/hooks/use-swipe';
+import { OnboardingTour, useOnboarding } from './OnboardingTour';
+import { ChatSkeleton } from './ChatSkeleton';
+import { AnimatedTabTransition } from '../layout/AnimatedTabTransition';
 
 // Lazy load heavy components
 const CollaborationSpace = lazy(() => import('./CollaborationSpace').then(m => ({ default: m.CollaborationSpace })));
 
-// Минималистичный спиннер загрузки
-function LoadingScreen({ text }: { text: string }) {
+// Skeleton-based loading з fallback
+function LoadingScreen({ text, showSkeleton = false }: { text: string; showSkeleton?: boolean }) {
     const [showFallback, setShowFallback] = useState(false);
 
     useEffect(() => {
@@ -51,6 +55,11 @@ function LoadingScreen({ text }: { text: string }) {
                 </div>
             </div>
         );
+    }
+
+    // Використовуємо skeleton для чату
+    if (showSkeleton) {
+        return <ChatSkeleton />;
     }
 
     return (
@@ -98,6 +107,9 @@ export function ChatRoom({ roomId }: { roomId: string }) {
     const { user, isLoading, createProfile, error: userError } = useCurrentUser(roomId);
     const [isCreating, setIsCreating] = useState(false);
 
+    // Onboarding
+    const { showOnboarding, completeOnboarding } = useOnboarding();
+
     usePresence(roomId, user?.id || null);
     const { validate } = useRoom(roomId);
     const { joinRoom, leaveRoom } = useRoomManager(roomId);
@@ -111,6 +123,24 @@ export function ChatRoom({ roomId }: { roomId: string }) {
             setActiveTab('chat');
         }
     }, [isMobile, activeTab]);
+
+    // Swipe gestures for mobile navigation
+    const swipeHandlers = useSwipe({
+        onSwipedLeft: () => {
+            if (isMobile && activeTab === 'chat') {
+                setActiveTab('canvas');
+            } else if (isMobile && activeTab === 'canvas') {
+                setActiveTab('games');
+            }
+        },
+        onSwipedRight: () => {
+            if (isMobile && activeTab === 'games') {
+                setActiveTab('canvas');
+            } else if (isMobile && activeTab === 'canvas') {
+                setActiveTab('chat');
+            }
+        },
+    });
 
     const roomDocRef = useMemo(() => {
         if (!firebaseContext?.db) return null;
@@ -191,9 +221,9 @@ export function ChatRoom({ roomId }: { roomId: string }) {
         toast({ title: "Настройки", description: "В разработке" });
     }, [toast]);
 
-    // Loading states
-    if (!firebaseContext) return <LoadingScreen text="Инициализация..." />;
-    if (isLoading) return <LoadingScreen text="Загрузка..." />;
+    // Loading states - використовуємо skeleton для кращого UX
+    if (!firebaseContext) return <LoadingScreen text="Инициализация..." showSkeleton />;
+    if (isLoading) return <LoadingScreen text="Загрузка..." showSkeleton />;
     if (userError) return <ErrorScreen onRetry={() => window.location.reload()} />;
 
     if (!user) {
@@ -207,12 +237,17 @@ export function ChatRoom({ roomId }: { roomId: string }) {
         );
     }
 
-    if (roomLoading && !room) return <LoadingScreen text="Подключение..." />;
+    if (roomLoading && !room) return <LoadingScreen text="Подключение..." showSkeleton />;
 
     const otherUser = room?.participantProfiles?.find(p => p.id !== user?.id);
 
     return (
         <div className="flex h-screen-safe w-full overflow-hidden bg-[var(--bg-primary)]">
+            {/* Onboarding Tour */}
+            {showOnboarding && user && (
+                <OnboardingTour onComplete={completeOnboarding} />
+            )}
+
             {/* Desktop Sidebar */}
             {!isMobile && (
                 <ChatSidebar
@@ -223,47 +258,52 @@ export function ChatRoom({ roomId }: { roomId: string }) {
                 />
             )}
 
-            {/* Main Content */}
-            <main className={cn(
-                "flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden",
-                isMobile && "pb-[var(--nav-height-mobile)]"
-            )}>
-                {activeTab === 'chat' && (
-                    <ChatArea
-                        user={user}
-                        roomId={roomId}
-                        isCollabSpaceVisible={false}
-                        onToggleCollaborationSpace={() => handleTabChange('canvas')}
-                        onMobileBack={handleMobileBack}
-                    />
+            {/* Main Content with swipe support and animations */}
+            <main
+                className={cn(
+                    "flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden",
+                    isMobile && "pb-[var(--nav-height-mobile)]"
                 )}
-
-                {(activeTab === 'canvas' || activeTab === 'games') && (
-                    <Suspense fallback={<LoadingScreen text="Загрузка..." />}>
-                        <CollaborationSpace
-                            isVisible={true}
-                            roomId={roomId}
+                {...(isMobile ? swipeHandlers : {})}
+            >
+                <AnimatedTabTransition activeTab={activeTab} className="flex-1 flex flex-col min-h-0">
+                    {activeTab === 'chat' && (
+                        <ChatArea
                             user={user}
-                            otherUser={otherUser}
-                            allUsers={room?.participantProfiles || []}
-                            mobileActiveTab={activeTab === 'canvas' ? 'canvas' : 'games'}
+                            roomId={roomId}
+                            isCollabSpaceVisible={false}
+                            onToggleCollaborationSpace={() => handleTabChange('canvas')}
+                            onMobileBack={handleMobileBack}
                         />
-                    </Suspense>
-                )}
+                    )}
 
-                {activeTab === 'users' && (
-                    <div className="flex-1 p-4 overflow-y-auto">
-                        <UserList users={room?.participantProfiles || []} currentUserId={user.id} />
-                    </div>
-                )}
+                    {(activeTab === 'canvas' || activeTab === 'games') && (
+                        <Suspense fallback={<LoadingScreen text="Загрузка..." showSkeleton />}>
+                            <CollaborationSpace
+                                isVisible={true}
+                                roomId={roomId}
+                                user={user}
+                                otherUser={otherUser}
+                                allUsers={room?.participantProfiles || []}
+                                mobileActiveTab={activeTab === 'canvas' ? 'canvas' : 'games'}
+                            />
+                        </Suspense>
+                    )}
 
-                {activeTab === 'stats' && (
-                    <ChatStats
-                        messageCount={0}
-                        userCount={room?.participantProfiles?.length || 0}
-                        timeInChat="0м"
-                    />
-                )}
+                    {activeTab === 'users' && (
+                        <div className="flex-1 p-4 overflow-y-auto">
+                            <UserList users={room?.participantProfiles || []} currentUserId={user.id} />
+                        </div>
+                    )}
+
+                    {activeTab === 'stats' && (
+                        <ChatStats
+                            messageCount={0}
+                            userCount={room?.participantProfiles?.length || 0}
+                            timeInChat="0м"
+                        />
+                    )}
+                </AnimatedTabTransition>
             </main>
 
             {/* Mobile Navigation - упрощенная */}

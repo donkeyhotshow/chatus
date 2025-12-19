@@ -1,47 +1,36 @@
-
 "use client";
 
 import { useState, useCallback, useMemo, lazy, Suspense } from 'react';
-import {
-  Gamepad, ArrowLeft, Swords, Dices, Hand, Puzzle,
-  Box, Castle, Search, Filter, Star, TrendingUp,
-  Clock, Users, Trophy
-} from 'lucide-react';
+import { Gamepad, ArrowLeft, Dices, Hand, Swords } from 'lucide-react';
 import { GameCard } from './GameCard';
-import { UserProfile, GameType, GameState, TDGrid, TDNode } from '@/lib/types';
-import { Input } from '@/components/ui/input';
+import { UserProfile, GameType, GameState } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { useChatService } from '@/hooks/useChatService';
-import { generateMaze } from '@/lib/maze-generator';
 import { useDoc } from '@/hooks/useDoc';
 import { doc } from 'firebase/firestore';
 import { useFirebase } from '../firebase/FirebaseProvider';
-import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 // Lazy load game components
 const TicTacToe = lazy(() => import('./TicTacToe').then(m => ({ default: m.TicTacToe })));
 const RockPaperScissors = lazy(() => import('./RockPaperScissors').then(m => ({ default: m.RockPaperScissors })));
 const ClickWar = lazy(() => import('./ClickWar').then(m => ({ default: m.ClickWar })));
 const DiceRoll = lazy(() => import('./DiceRoll').then(m => ({ default: m.DiceRoll })));
-const PhysicsWorld = lazy(() => import('./PhysicsWorld'));
-const TowerDefense = lazy(() => import('./TowerDefense').then(m => ({ default: m.TowerDefense })));
 
 type GameDefinition = {
   id: GameType;
   name: string;
   description: string;
   icon: React.ElementType;
-  category: 'Classic' | 'Action' | 'Strategy' | 'Sandbox';
-  rating: number;
-  players: string;
+  color: string;
 };
 
-// Упрощенный список игр - только простые и быстрые для двоих
+// Мінімальний список ігор - тільки швидкі для двох
 const gamesList: GameDefinition[] = [
-  { id: 'tic-tac-toe', name: 'Крестики-нолики', description: 'Классическая игра', icon: Gamepad, category: 'Classic', rating: 4.5, players: '2' },
-  { id: 'rock-paper-scissors', name: 'Камень-ножницы-бумага', description: 'Кто победит?', icon: Hand, category: 'Classic', rating: 4.4, players: '2' },
-  { id: 'dice-roll', name: 'Кости', description: 'Бросьте кости', icon: Dices, category: 'Classic', rating: 4.2, players: '1-2' },
-  { id: 'click-war', name: 'Кликер', description: 'Кто быстрее?', icon: Swords, category: 'Action', rating: 4.6, players: '2' },
+  { id: 'tic-tac-toe', name: 'Хрестики-нулики', description: 'Класична гра', icon: Gamepad, color: 'var(--game-primary)' },
+  { id: 'rock-paper-scissors', name: 'Камінь-ножиці-папір', description: 'Хто переможе?', icon: Hand, color: 'var(--game-primary)' },
+  { id: 'dice-roll', name: 'Кості', description: 'Киньте кості', icon: Dices, color: 'var(--game-primary)' },
+  { id: 'click-war', name: 'Клікер', description: 'Хто швидший?', icon: Swords, color: 'var(--game-primary)' },
 ];
 
 type GameLobbyProps = {
@@ -50,11 +39,21 @@ type GameLobbyProps = {
   otherUser?: UserProfile;
 };
 
+// Мінімалістичний loading
+function GameLoading() {
+  return (
+    <div className="h-full w-full flex items-center justify-center bg-[var(--bg-primary)]">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-2 border-[var(--border-primary)] border-t-[var(--game-primary)] rounded-full animate-spin" />
+        <span className="text-sm text-[var(--text-muted)]">Завантаження...</span>
+      </div>
+    </div>
+  );
+}
+
 export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
   const [activeGameId, setActiveGameId] = useState<GameType | null>(null);
   const [loadingGameId, setLoadingGameId] = useState<GameType | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState<string>('All');
 
   const { db } = useFirebase()!;
   const { service } = useChatService(roomId, user);
@@ -82,29 +81,9 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
       'rock-paper-scissors': { moves: {}, result: null, hostId },
       'click-war': { scores: {}, active: false, startTime: null, hostId },
       'dice-roll': { diceRoll: {}, hostId },
-      'tower-defense': {
-        tdTowers: [],
-        tdEnemies: [],
-        tdWave: 0,
-        tdBaseHealth: 20,
-        tdResources: 100,
-        tdStatus: 'waiting' as const,
-        tdScores: {},
-        tdSelectedTower: null,
-        hostId,
-      },
     };
 
-    let initialState: Partial<GameState> = { type: gameId, ...initialStates[gameId] };
-
-    if (gameId === 'maze') {
-      const maze = generateMaze(21, 15);
-      initialState = { ...initialState, maze: JSON.stringify(maze), hostId };
-      service.sendSystemMessage(`${user.name} начал Collaborative Maze!`);
-    } else if (gameId === 'physics-sandbox') {
-      service.sendSystemMessage(`${user.name} открыл Physics Sandbox.`);
-      initialState = { hostId };
-    }
+    const initialState: Partial<GameState> = { type: gameId, ...initialStates[gameId] };
 
     setActiveGameId(gameId);
     await service.updateGameState(gameId, initialState);
@@ -119,37 +98,8 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
     }
   };
 
-  const categories = ['All', 'Classic', 'Action', 'Strategy', 'Sandbox'];
-
-  const filteredGames = useMemo(() => {
-    return gamesList.filter(game => {
-      const matchesSearch = game.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        game.description.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = activeCategory === 'All' || game.category === activeCategory;
-      return matchesSearch && matchesCategory;
-    });
-  }, [searchQuery, activeCategory]);
-
+  // Активна гра
   if (activeGameId) {
-    if (activeGameId === 'maze' && gameState?.type === 'maze') {
-      return (
-        <div className="h-full w-full flex flex-col items-center justify-center text-center p-6 bg-black/40 backdrop-blur-md">
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="w-20 h-20 bg-gradient-to-br from-purple-500 to-pink-600 rounded-3xl flex items-center justify-center mb-8 shadow-2xl shadow-purple-500/20"
-          >
-            <Puzzle className="w-10 h-10 text-white" />
-          </motion.div>
-          <h3 className="text-3xl font-black text-white mb-3 tracking-tight">ЛАБИРИНТ АКТИВЕН</h3>
-          <p className="text-neutral-400 mb-10 max-w-xs leading-relaxed">Перейдите во вкладку &apos;Холст&apos;, чтобы решать лабиринт вместе.</p>
-          <Button onClick={handleEndGame} variant="destructive" className="rounded-2xl px-10 h-14 text-lg font-bold hover:scale-105 transition-transform">
-            Завершить сессию
-          </Button>
-        </div>
-      )
-    }
-
     const commonProps = {
       onGameEnd: handleEndGame,
       updateGameState: handleUpdateGameState,
@@ -159,157 +109,99 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
     };
 
     return (
-      <div className="flex flex-col h-full relative overflow-hidden">
-        <div className="absolute top-4 left-4 z-50">
-          <Button
+      <div className="flex flex-col h-full bg-[var(--bg-primary)]">
+        {/* Back button */}
+        <div className="p-3 border-b border-[var(--border-primary)]">
+          <button
             onClick={handleEndGame}
-            variant="ghost"
-            size="sm"
-            className="bg-black/40 hover:bg-white/10 text-white/70 hover:text-white backdrop-blur-xl border border-white/10 rounded-2xl px-5 h-10 transition-all"
+            className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors"
           >
-            <ArrowLeft className="mr-2 h-4 w-4" /> Назад в лобби
-          </Button>
+            <ArrowLeft className="w-4 h-4" />
+            Назад
+          </button>
         </div>
 
-        <div className="flex-1 h-full">
+        {/* Game content */}
+        <div className="flex-1 overflow-hidden">
           {gameState && gameState.type === activeGameId ? (
-            (() => {
-              const GameLoadingFallback = () => (
-                <div className="h-full w-full flex items-center justify-center bg-black/50 backdrop-blur-xl">
-                  <div className="flex flex-col items-center gap-6">
-                    <div className="w-16 h-16 border-4 border-white/5 border-t-cyan-500 rounded-full animate-spin"></div>
-                    <span className="text-sm font-black text-cyan-400 tracking-[0.3em] uppercase">Загрузка игры...</span>
-                  </div>
-                </div>
-              );
-
-              const gameComponents: { [key in GameType]?: React.ReactElement } = {
-                'tic-tac-toe': <Suspense fallback={<GameLoadingFallback />}><TicTacToe {...commonProps} gameState={gameState} /></Suspense>,
-                'rock-paper-scissors': <Suspense fallback={<GameLoadingFallback />}><RockPaperScissors {...commonProps} gameState={gameState} /></Suspense>,
-                'click-war': <Suspense fallback={<GameLoadingFallback />}><ClickWar {...commonProps} gameState={gameState} /></Suspense>,
-                'dice-roll': <Suspense fallback={<GameLoadingFallback />}><DiceRoll {...commonProps} gameState={gameState} /></Suspense>,
-                'physics-sandbox': <Suspense fallback={<GameLoadingFallback />}><PhysicsWorld onGameEnd={handleEndGame} user={user} roomId={roomId} /></Suspense>,
-                'tower-defense': <Suspense fallback={<GameLoadingFallback />}><TowerDefense {...commonProps} gameState={gameState} /></Suspense>,
-              };
-              return gameComponents[activeGameId] || null;
-            })()
+            <Suspense fallback={<GameLoading />}>
+              {activeGameId === 'tic-tac-toe' && <TicTacToe {...commonProps} gameState={gameState} />}
+              {activeGameId === 'rock-paper-scissors' && <RockPaperScissors {...commonProps} gameState={gameState} />}
+              {activeGameId === 'click-war' && <ClickWar {...commonProps} gameState={gameState} />}
+              {activeGameId === 'dice-roll' && <DiceRoll {...commonProps} gameState={gameState} />}
+            </Suspense>
           ) : (
-            <div className="h-full w-full flex flex-col items-center justify-center">
-              <div className="flex flex-col items-center gap-6">
-                <div className="w-16 h-16 border-4 border-white/5 border-t-cyan-500 rounded-full animate-spin"></div>
-                <span className="font-black text-cyan-500/70 tracking-[0.3em] text-sm uppercase">Инициализация...</span>
-              </div>
-            </div>
+            <GameLoading />
           )}
         </div>
       </div>
     );
   }
 
+  // Лобі - мінімалістичний дизайн
   return (
-    <div className="flex flex-col h-full bg-black">
-      {/* Lobby Header */}
-      <div className="p-8 pb-4 shrink-0 space-y-6">
-        <div className="flex flex-col gap-4">
-          {/* Breadcrumbs */}
-          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-neutral-600">
-            <span className="hover:text-neutral-400 cursor-pointer transition-colors" onClick={() => { setSearchQuery(''); setActiveCategory('All'); }}>Lobby</span>
-            <span>/</span>
-            <span className="text-cyan-500/80">{activeCategory}</span>
-            {searchQuery && (
-              <>
-                <span>/</span>
-                <span className="text-white/60">Search: {searchQuery}</span>
-              </>
-            )}
+    <div className="flex flex-col h-full bg-[var(--bg-primary)]">
+      {/* Header */}
+      <div className="p-4 border-b border-[var(--border-primary)]">
+        <div className="flex items-center gap-3">
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{ backgroundColor: 'var(--game-primary)', opacity: 0.15 }}
+          >
+            <Gamepad className="w-5 h-5" style={{ color: 'var(--game-primary)' }} />
           </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <h2 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-                ИГРОВОЙ ХАБ <TrendingUp className="text-cyan-400 w-6 h-6" />
-              </h2>
-              <p className="text-sm text-neutral-500 font-medium">Выберите игру, чтобы бросить вызов другу.</p>
-            </div>
-            <div className="hidden sm:flex items-center gap-4">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/5 border border-white/5">
-                <Trophy className="w-4 h-4 text-yellow-500" />
-                <span className="text-xs font-bold text-white">Top Rated</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Search and Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1 group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 group-focus-within:text-cyan-400 transition-colors" />
-            <Input
-              placeholder="Поиск игр..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-12 pl-11 bg-white/5 border-white/5 rounded-2xl focus:ring-cyan-500/20 focus:border-cyan-500/50 transition-all font-medium"
-            />
-          </div>
-          <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide">
-            {categories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-5 h-12 rounded-2xl text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap border ${activeCategory === cat
-                  ? 'bg-white text-black border-white'
-                  : 'bg-white/5 text-neutral-400 border-white/5 hover:bg-white/10'
-                  }`}
-              >
-                {cat}
-              </button>
-            ))}
+          <div>
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Ігри</h2>
+            <p className="text-xs text-[var(--text-muted)]">Виберіть гру для двох</p>
           </div>
         </div>
       </div>
 
-      {/* Games Grid */}
-      <div className="flex-1 overflow-y-auto p-8 pt-2 scrollbar-hide">
-        <AnimatePresence mode="popLayout">
-          {filteredGames.length > 0 ? (
-            <motion.div
-              layout
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-24"
-            >
-              {filteredGames.map((game) => (
-                <GameCard
-                  key={game.id}
-                  id={game.id}
-                  title={game.name}
-                  description={game.description}
-                  icon={<game.icon className="w-8 h-8" />}
-                  category={game.category}
-                  rating={game.rating}
-                  players={game.players}
-                  isLoading={loadingGameId === game.id}
-                  onClick={() => handleStartGame(game.id)}
-                />
-              ))}
-            </motion.div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="h-64 flex flex-col items-center justify-center text-center space-y-4"
-            >
-              <div className="w-16 h-16 rounded-3xl bg-white/5 flex items-center justify-center">
-                <Search className="w-8 h-8 text-neutral-600" />
-              </div>
-              <div className="space-y-1">
-                <h4 className="text-xl font-bold text-white">Ничего не найдено</h4>
-                <p className="text-neutral-500">Попробуйте изменить параметры поиска или фильтры.</p>
-              </div>
-              <Button variant="ghost" onClick={() => { setSearchQuery(''); setActiveCategory('All'); }}>
-                Сбросить фильтры
-              </Button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+      {/* Games list */}
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="grid grid-cols-2 gap-3">
+          {gamesList.map((game) => {
+            const isLoading = loadingGameId === game.id;
+            const Icon = game.icon;
+
+            return (
+              <button
+                key={game.id}
+                onClick={() => handleStartGame(game.id)}
+                disabled={isLoading}
+                className={cn(
+                  "flex flex-col items-center gap-2 p-4 rounded-xl border transition-all",
+                  "bg-[var(--bg-secondary)] border-[var(--border-primary)]",
+                  "hover:bg-[var(--bg-tertiary)] hover:border-[var(--game-primary)]/30",
+                  "active:scale-[0.98]",
+                  isLoading && "opacity-50 pointer-events-none"
+                )}
+              >
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: 'var(--game-primary)', opacity: 0.15 }}
+                >
+                  {isLoading ? (
+                    <div className="w-5 h-5 border-2 border-[var(--game-primary)] border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Icon className="w-6 h-6" style={{ color: 'var(--game-primary)' }} />
+                  )}
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium text-[var(--text-primary)]">{game.name}</p>
+                  <p className="text-xs text-[var(--text-muted)]">{game.description}</p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Hint */}
+        <div className="mt-6 p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-primary)]">
+          <p className="text-xs text-[var(--text-muted)] text-center">
+            💡 Ігри синхронізуються в реальному часі з вашим співрозмовником
+          </p>
+        </div>
       </div>
     </div>
   );

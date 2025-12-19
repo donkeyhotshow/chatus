@@ -15,11 +15,11 @@ interface MobileNavigationProps {
     className?: string;
 }
 
-// Упрощенная навигация - фокус на чате
+// Упрощенная навигация - фокус на чате з функціональними кольорами
 const tabs = [
-    { id: 'chat' as const, label: 'Чат', icon: MessageCircle },
-    { id: 'canvas' as const, label: 'Рисовать', icon: PenTool },
-    { id: 'games' as const, label: 'Игры', icon: Gamepad2 },
+    { id: 'chat' as const, label: 'Чат', icon: MessageCircle, color: 'var(--chat-primary)' },
+    { id: 'canvas' as const, label: 'Рисовать', icon: PenTool, color: 'var(--draw-primary)' },
+    { id: 'games' as const, label: 'Игры', icon: Gamepad2, color: 'var(--game-primary)' },
 ];
 
 export const MobileNavigation = memo(function MobileNavigation({
@@ -30,10 +30,10 @@ export const MobileNavigation = memo(function MobileNavigation({
 }: MobileNavigationProps) {
     return (
         <nav className={cn(
-            "fixed bottom-0 left-0 right-0 z-50 bg-[var(--bg-secondary)] border-t border-[var(--border-primary)] safe-bottom",
+            "fixed bottom-0 left-0 right-0 z-50 bg-[var(--bg-secondary)]/95 backdrop-blur-lg border-t border-[var(--border-primary)] safe-bottom",
             className
         )}>
-            <div className="flex items-center justify-around h-[var(--nav-height-mobile)] px-1">
+            <div className="flex items-center justify-around h-[var(--nav-height-mobile)] px-2">
                 {tabs.map((tab) => {
                     const isActive = activeTab === tab.id;
                     const showBadge = tab.id === 'chat' && unreadCount > 0;
@@ -48,29 +48,32 @@ export const MobileNavigation = memo(function MobileNavigation({
                                 onTabChange(tab.id);
                             }}
                             className={cn(
-                                "relative flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-colors duration-150 touch-target",
-                                isActive
-                                    ? "text-[var(--accent-primary)]"
-                                    : "text-[var(--text-muted)]"
+                                "relative flex flex-col items-center justify-center gap-1.5 flex-1 py-3 transition-all duration-200 touch-target min-h-[64px]",
+                                isActive ? "opacity-100" : "text-[var(--text-muted)] opacity-50"
                             )}
+                            style={isActive ? { color: tab.color } : undefined}
                         >
                             <div className="relative">
                                 <tab.icon className={cn(
-                                    "w-5 h-5 transition-transform duration-150",
+                                    "w-6 h-6 transition-all duration-200",
                                     isActive && "scale-110"
                                 )} />
                                 {showBadge && (
-                                    <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-[var(--error)] text-white text-[10px] font-medium rounded-full flex items-center justify-center">
+                                    <span className="absolute -top-2 -right-2 min-w-[20px] h-[20px] px-1 bg-[var(--error)] text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg">
                                         {unreadCount > 99 ? '99+' : unreadCount}
                                     </span>
                                 )}
                             </div>
-                            <span className={cn(
-                                "text-[10px] font-medium",
-                                isActive ? "text-[var(--accent-primary)]" : "text-[var(--text-muted)]"
-                            )}>
+                            <span className="text-[11px] font-semibold tracking-tight">
                                 {tab.label}
                             </span>
+                            {/* Active indicator - pill style */}
+                            {isActive && (
+                                <div
+                                    className="absolute bottom-2 w-10 h-1 rounded-full shadow-sm"
+                                    style={{ backgroundColor: tab.color }}
+                                />
+                            )}
                         </button>
                     );
                 })}

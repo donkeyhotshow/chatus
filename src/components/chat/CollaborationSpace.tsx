@@ -198,35 +198,37 @@ export function CollaborationSpace({
     <aside
       ref={collabSpaceRef}
       {...swipeHandlers}
-      className={cn(`
-        flex flex-col bg-gradient-to-b from-neutral-900 to-neutral-950 transition-all duration-300 shadow-2xl touch-pan-y`, // touch-pan-y allows vertical scroll but captures horizontal swipes
+      className={cn(
+        "flex flex-col bg-[var(--bg-primary)] transition-all duration-300 touch-pan-y",
         isFullscreen
           ? 'fixed inset-0 w-screen h-screen z-50'
           : isMobile
-            ? `
-              fixed inset-0 z-50
-              transform transition-transform duration-300 ease-in-out
-              ${isVisible ? 'translate-x-0' : 'translate-x-full'}
-            `
-            : 'relative h-full w-full border-l border-white/20 z-40'
+            ? `fixed inset-0 z-40 ${isVisible ? 'translate-x-0' : 'translate-x-full'}`
+            : 'relative h-full w-full border-l border-[var(--border-primary)] z-40'
       )}
     >
       {!isFullscreen && !isMobile && (
-        <nav className="flex p-2 sm:p-3 gap-1 border-b border-white/10 shrink-0 bg-black/20 backdrop-blur-sm">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 py-2 sm:py-3 px-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200
-                ${activeTab === tab.id
-                  ? "bg-gradient-to-r from-white to-gray-100 text-black shadow-lg transform scale-105"
-                  : "text-neutral-400 hover:text-white hover:bg-white/10 hover:scale-102"
-                }`}
-            >
-              <tab.icon className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">{tab.label}</span>
-            </button>
-          ))}
+        <nav className="flex p-2 gap-1 border-b border-[var(--border-primary)] shrink-0 bg-[var(--bg-secondary)]">
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.id;
+            const color = tab.id === 'canvas' ? 'var(--draw-primary)' : tab.id === 'games' ? 'var(--game-primary)' : 'var(--accent-primary)';
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-medium transition-all",
+                  isActive
+                    ? "bg-[var(--bg-tertiary)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
+                )}
+                style={isActive ? { color } : undefined}
+              >
+                <tab.icon className="w-4 h-4" />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
         </nav>
       )}
 
