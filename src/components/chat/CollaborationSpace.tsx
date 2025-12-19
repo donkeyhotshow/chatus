@@ -33,7 +33,7 @@ type CollaborationSpaceProps = {
   user: UserProfile | null;
   otherUser?: UserProfile;
   allUsers: UserProfile[];
-  mobileActiveTab?: 'chat' | 'games' | 'canvas' | 'users';
+  mobileActiveTab?: 'chat' | 'games' | 'canvas' | 'users' | 'stats';
 };
 
 export function CollaborationSpace({
@@ -45,7 +45,7 @@ export function CollaborationSpace({
   mobileActiveTab,
 }: CollaborationSpaceProps) {
   const { service } = useChatService(roomId, user || undefined);
-  const [activeTab, setActiveTab] = useState<'games' | 'canvas' | 'users'>('games');
+  const [activeTab, setActiveTab] = useState<'games' | 'canvas' | 'users' | 'stats'>('games');
   const [canvasHeight, setCanvasHeight] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('collabspace-canvas-height');
@@ -63,8 +63,8 @@ export function CollaborationSpace({
 
   // Sync with mobile active tab
   useEffect(() => {
-    if (isMobile && mobileActiveTab && mobileActiveTab !== 'chat') {
-      setActiveTab(mobileActiveTab);
+    if (isMobile && mobileActiveTab && mobileActiveTab !== 'chat' && mobileActiveTab !== 'stats') {
+      setActiveTab(mobileActiveTab as 'games' | 'canvas' | 'users');
     }
   }, [isMobile, mobileActiveTab]);
 

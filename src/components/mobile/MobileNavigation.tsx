@@ -4,7 +4,7 @@ import { memo } from 'react';
 import { MessageCircle, Gamepad2, PenTool, Users, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type MobileTab = 'chat' | 'games' | 'canvas' | 'users' | 'more';
+export type MobileTab = 'chat' | 'games' | 'canvas' | 'users' | 'more' | 'stats';
 
 interface MobileNavigationProps {
     activeTab: MobileTab;
@@ -15,12 +15,11 @@ interface MobileNavigationProps {
     className?: string;
 }
 
+// Упрощенная навигация - фокус на чате
 const tabs = [
     { id: 'chat' as const, label: 'Чат', icon: MessageCircle },
-    { id: 'canvas' as const, label: 'Холст', icon: PenTool },
+    { id: 'canvas' as const, label: 'Рисовать', icon: PenTool },
     { id: 'games' as const, label: 'Игры', icon: Gamepad2 },
-    { id: 'users' as const, label: 'Люди', icon: Users },
-    { id: 'more' as const, label: 'Ещё', icon: MoreHorizontal },
 ];
 
 export const MobileNavigation = memo(function MobileNavigation({

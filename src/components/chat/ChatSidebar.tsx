@@ -15,12 +15,11 @@ interface ChatSidebarProps {
     className?: string;
 }
 
+// Упрощенное меню - фокус на чате
 const menuItems = [
     { id: 'chat' as const, label: 'Чат', icon: MessageCircle },
     { id: 'canvas' as const, label: 'Рисование', icon: PenTool },
     { id: 'games' as const, label: 'Игры', icon: Gamepad2 },
-    { id: 'users' as const, label: 'Участники', icon: Users },
-    { id: 'stats' as const, label: 'Инфо', icon: BarChart3 },
 ];
 
 export const ChatSidebar = memo(function ChatSidebar({

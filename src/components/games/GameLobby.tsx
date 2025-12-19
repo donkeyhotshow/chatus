@@ -36,14 +36,12 @@ type GameDefinition = {
   players: string;
 };
 
+// Упрощенный список игр - только простые и быстрые для двоих
 const gamesList: GameDefinition[] = [
-  { id: 'tower-defense', name: 'Tower Defense', description: 'Защищайте базу вместе с другом.', icon: Castle, category: 'Strategy', rating: 4.9, players: '1-2' },
-  { id: 'physics-sandbox', name: 'Physics Sandbox', description: 'Стройте и разрушайте в мире физики.', icon: Box, category: 'Sandbox', rating: 4.8, players: '1-2' },
-  { id: 'maze', name: 'Collaborative Maze', description: 'Найдите выход из лабиринта сообща.', icon: Puzzle, category: 'Strategy', rating: 4.7, players: '1-2' },
-  { id: 'tic-tac-toe', name: 'Tic-Tac-Toe', description: 'Классические крестики-нолики.', icon: Gamepad, category: 'Classic', rating: 4.5, players: '2' },
-  { id: 'rock-paper-scissors', name: 'Rock Paper Scissors', description: 'Камень, ножницы, бумага.', icon: Hand, category: 'Classic', rating: 4.4, players: '2' },
-  { id: 'click-war', name: 'Click War', description: 'Кто кликает быстрее?', icon: Swords, category: 'Action', rating: 4.6, players: '2' },
-  { id: 'dice-roll', name: 'Dice Roll', description: 'Просто бросьте кости.', icon: Dices, category: 'Classic', rating: 4.2, players: '1-2' },
+  { id: 'tic-tac-toe', name: 'Крестики-нолики', description: 'Классическая игра', icon: Gamepad, category: 'Classic', rating: 4.5, players: '2' },
+  { id: 'rock-paper-scissors', name: 'Камень-ножницы-бумага', description: 'Кто победит?', icon: Hand, category: 'Classic', rating: 4.4, players: '2' },
+  { id: 'dice-roll', name: 'Кости', description: 'Бросьте кости', icon: Dices, category: 'Classic', rating: 4.2, players: '1-2' },
+  { id: 'click-war', name: 'Кликер', description: 'Кто быстрее?', icon: Swords, category: 'Action', rating: 4.6, players: '2' },
 ];
 
 type GameLobbyProps = {
@@ -316,4 +314,3 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
     </div>
   );
 }
-

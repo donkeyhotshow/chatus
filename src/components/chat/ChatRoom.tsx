@@ -266,17 +266,11 @@ export function ChatRoom({ roomId }: { roomId: string }) {
                 )}
             </main>
 
-            {/* Mobile Navigation */}
+            {/* Mobile Navigation - упрощенная */}
             {isMobile && (
                 <MobileNavigation
-                    activeTab={activeTab === 'stats' ? 'more' : activeTab}
-                    onTabChange={(tab) => {
-                        if (tab === 'more') {
-                            handleTabChange('stats');
-                        } else {
-                            handleTabChange(tab);
-                        }
-                    }}
+                    activeTab={activeTab}
+                    onTabChange={(tab) => handleTabChange(tab)}
                 />
             )}
         </div>
