@@ -10,7 +10,7 @@ export interface ToastProps {
     id: string;
     title?: string;
     description?: string;
-    type?: 'success' | 'error' | 'warning' | 'cyberpunk';
+    type?: 'success' | 'error' | 'warning' | 'info' | 'cyberpunk';
     duration?: number;
     action?: React.ReactNode;
     onClose?: () => void;
@@ -67,7 +67,7 @@ export function EnhancedToast({
 }: ToastProps) {
     const [isVisible, setIsVisible] = React.useState(true);
     const [progress, setProgress] = React.useState(100);
-    const { playSound, triggerHaptic } = useSoundDesign();
+    const { playSound, vibrate } = useSoundDesign();
     const timeoutRef = React.useRef<NodeJS.Timeout>();
     const intervalRef = React.useRef<NodeJS.Timeout>();
 
@@ -102,26 +102,26 @@ export function EnhancedToast({
     React.useEffect(() => {
         switch (type) {
             case 'success':
-                playSound('success');
-                triggerHaptic([10, 30, 10]);
+                playSound('playSuccess');
+                vibrate([10, 30, 10]);
                 break;
             case 'error':
-                playSound('error');
-                triggerHaptic([100, 50, 100]);
+                playSound('playError');
+                vibrate([100, 50, 100]);
                 break;
             case 'warning':
-                playSound('color');
-                triggerHaptic([50, 20, 50]);
+                playSound('playColorSelect');
+                vibrate([50, 20, 50]);
                 break;
             case 'cyberpunk':
-                playSound('canvas');
-                triggerHaptic([15, 20, 15, 20, 15]);
+                playSound('playCanvasSaved');
+                vibrate([15, 20, 15, 20, 15]);
                 break;
             default:
-                playSound('message');
-                triggerHaptic([10]);
+                playSound('playMessageSent');
+                vibrate([10]);
         }
-    }, [type, playSound, triggerHaptic]);
+    }, [type, playSound, vibrate]);
 
     const handleClose = () => {
         setIsVisible(false);
@@ -295,7 +295,7 @@ export function ToastContainer({
 }) {
     return (
         <div className="fixed inset-0 pointer-events-none z-[100]">
-            <AnimatePresence mode="multiple">
+            <AnimatePresence mode="popLayout">
                 {toasts.map((toast, index) => (
                     <motion.div
                         key={toast.id}

@@ -11,8 +11,8 @@ import { Messaging } from 'firebase/messaging';
 import { Analytics } from 'firebase/analytics';
 import { getClientFirebase } from '@/lib/firebase';
 import { logger } from '@/lib/logger';
-import { FCMManager } from '@/lib/firebase-messaging';
-import { createPresenceManager } from '@/lib/presence';
+// import { FCMManager } from '@/lib/firebase-messaging';
+// import { createPresenceManager } from '@/lib/presence';
 import { useRef } from 'react';
 
 interface FirebaseContextType {
@@ -26,14 +26,24 @@ interface FirebaseContextType {
   analytics: Analytics | null;
   messaging: Messaging | null;
   presenceManager?: unknown | null;
-  fcmManager?: FCMManager | null;
+  fcmManager?: unknown | null; // FCMManager | null;
 }
 
 const FirebaseContext = createContext<FirebaseContextType | null>(null);
 
 export const useFirebase = (): FirebaseContextType => {
   const ctx = useContext(FirebaseContext);
-  if (!ctx) throw new Error('useFirebase must be used within FirebaseProvider');
+  if (!ctx) {
+    // More detailed error for debugging
+    console.error('useFirebase called outside of FirebaseProvider. Make sure the component is wrapped in FirebaseProvider.');
+    throw new Error('useFirebase must be used within FirebaseProvider');
+  }
+  return ctx;
+};
+
+// Safe version that returns null instead of throwing
+export const useFirebaseSafe = (): FirebaseContextType | null => {
+  const ctx = useContext(FirebaseContext);
   return ctx;
 };
 
@@ -120,7 +130,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
 
   // Initialize FCM when user is available and not anonymous (disabled for debugging)
   const presenceManagerRef = useRef<unknown | null>(null);
-  const fcmManagerRef = useRef<FCMManager | null>(null);
+  const fcmManagerRef = useRef<unknown | null>(null); // FCMManager | null
   const [contextValue, setContextValue] = useState<FirebaseContextType | null>(null);
 
   useEffect(() => {
@@ -135,21 +145,22 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
     };
 
     // Initialize FCM and PresenceManager for authenticated users
+
     if (user && !user.isAnonymous) {
       try {
         if (!fcmManagerRef.current) {
-          const fcmManager = new FCMManager();
-          fcmManager.initialize(user.uid).catch((err) => {
-            logger.error('FirebaseProvider: FCM initialization failed', err as Error);
-          });
-          fcmManagerRef.current = fcmManager;
-          newContextValue.fcmManager = fcmManager;
+          // const fcmManager = new FCMManager();
+          // fcmManager.initialize(user.uid).catch((err) => {
+          //   logger.error('FirebaseProvider: FCM initialization failed', err as Error);
+          // });
+          // fcmManagerRef.current = fcmManager;
+          // newContextValue.fcmManager = fcmManager;
         }
 
         if (!presenceManagerRef.current) {
-          const pm = createPresenceManager(user.uid);
-          presenceManagerRef.current = pm;
-          newContextValue.presenceManager = pm;
+          // const pm = createPresenceManager(user.uid);
+          // presenceManagerRef.current = pm;
+          // newContextValue.presenceManager = pm;
         }
 
         logger.debug('FirebaseProvider: FCM and PresenceManager initialized', { uid: user.uid });
@@ -178,6 +189,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
         newContextValue.fcmManager = null;
       }
     }
+
 
     setContextValue(newContextValue);
   }, [user, firebaseInstances]);

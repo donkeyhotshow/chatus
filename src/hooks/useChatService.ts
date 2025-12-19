@@ -64,43 +64,55 @@ export const useChatService = (roomId: string, currentUser?: UserProfile) => {
 
     const handleUpdate = () => {
       setState(prevState => {
-        // Create new state object
-        const newState = {
-          messages: [...chatService.messages],
-          onlineUsers: [...chatService.onlineUsers],
-          typingUsers: [...chatService.typingUsers],
-          gameStates: { ...chatService.gameStates },
-          hasMoreMessages: chatService.hasMoreMessages,
-          isInitialLoad: chatService.isInitialLoad,
-        };
+        // Get current service state
+        const currentMessages = chatService.messages;
+        const currentOnlineUsers = chatService.onlineUsers;
+        const currentTypingUsers = chatService.typingUsers;
+        const currentGameStates = chatService.gameStates;
+        const currentHasMoreMessages = chatService.hasMoreMessages;
+        const currentIsInitialLoad = chatService.isInitialLoad;
 
-        // Always update if messages length changed (new message added/removed)
-        if (prevState.messages.length !== newState.messages.length) {
+        // Check if messages changed (most common case)
+        const messagesChanged =
+          prevState.messages.length !== currentMessages.length ||
+          prevState.messages.some((msg, idx) => msg.id !== currentMessages[idx]?.id);
+
+        // Check if other state changed
+        const onlineUsersChanged =
+          prevState.onlineUsers.length !== currentOnlineUsers.length ||
+          prevState.onlineUsers.some((user, idx) => user.id !== currentOnlineUsers[idx]?.id);
+
+        const typingUsersChanged =
+          prevState.typingUsers.length !== currentTypingUsers.length ||
+          prevState.typingUsers.some((userId, idx) => userId !== currentTypingUsers[idx]);
+
+        const gameStatesChanged =
+          Object.keys(prevState.gameStates).length !== Object.keys(currentGameStates).length ||
+          Object.keys(currentGameStates).some(key =>
+            prevState.gameStates[key] !== currentGameStates[key]
+          );
+
+        const hasMoreMessagesChanged = prevState.hasMoreMessages !== currentHasMoreMessages;
+        const isInitialLoadChanged = prevState.isInitialLoad !== currentIsInitialLoad;
+
+        // Only update if something actually changed
+        if (messagesChanged || onlineUsersChanged || typingUsersChanged ||
+          gameStatesChanged || hasMoreMessagesChanged || isInitialLoadChanged) {
+
           connectionManager.handleConnectionSuccess();
-          return newState;
+
+          return {
+            messages: messagesChanged ? [...currentMessages] : prevState.messages,
+            onlineUsers: onlineUsersChanged ? [...currentOnlineUsers] : prevState.onlineUsers,
+            typingUsers: typingUsersChanged ? [...currentTypingUsers] : prevState.typingUsers,
+            gameStates: gameStatesChanged ? { ...currentGameStates } : prevState.gameStates,
+            hasMoreMessages: currentHasMoreMessages,
+            isInitialLoad: currentIsInitialLoad,
+          };
         }
 
-        // If length is same, check if messages actually changed by comparing IDs
-        const messagesChanged = prevState.messages.some((msg, idx) =>
-          msg.id !== newState.messages[idx]?.id
-        );
-
-        // Also check other state changes
-        const otherStateChanged =
-          prevState.onlineUsers.length !== newState.onlineUsers.length ||
-          prevState.typingUsers.length !== newState.typingUsers.length ||
-          prevState.hasMoreMessages !== newState.hasMoreMessages ||
-          prevState.isInitialLoad !== newState.isInitialLoad;
-
-        // Always return new state if something changed
-        if (messagesChanged || otherStateChanged) {
-          connectionManager.handleConnectionSuccess();
-          return newState;
-        }
-
-        // Return new state anyway to ensure React detects changes
-        // This is safer than returning prevState which might prevent updates
-        return newState;
+        // No changes, return previous state
+        return prevState;
       });
     };
 

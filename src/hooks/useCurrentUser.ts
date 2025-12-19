@@ -48,16 +48,24 @@ export function useCurrentUser(roomId: string) {
         return;
       }
 
+      // Step 0: Try to load from storage immediately to avoid flickering
+      const initialStoredUser = getUserFromStorage();
+      if (initialStoredUser && isMounted) {
+        setUser(initialStoredUser);
+        // We still keep isLoading=true to verify with server, 
+        // but the UI can already show the user profile.
+      }
+
       // Set timeout for loading (5 seconds max)
       timeoutId = setTimeout(() => {
+        if (!isMounted) return;
+
         logger.warn('[useCurrentUser] User loading timed out, using localStorage fallback');
-        if (isMounted) {
-          const storedUser = getUserFromStorage();
-          if (storedUser) {
-            setUser(storedUser);
-          }
-          setIsLoading(false);
+        const storedUser = getUserFromStorage();
+        if (storedUser) {
+          setUser(storedUser);
         }
+        setIsLoading(false);
       }, 5000);
 
       // Helper: promise timeout

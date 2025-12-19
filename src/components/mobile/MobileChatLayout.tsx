@@ -6,7 +6,7 @@ import { ArrowLeft, X, Menu } from 'lucide-react';
 import { UserProfile } from '@/lib/types';
 import { ChatArea } from '../chat/ChatArea';
 import { CollaborationSpace } from '../chat/CollaborationSpace';
-import { MobileNavigation } from './MobileNavigation';
+import { MobileNavigation, MobileTab } from './MobileNavigation';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
@@ -25,7 +25,7 @@ export function MobileChatLayout({
     allUsers,
     onBack
 }: MobileChatLayoutProps) {
-    const [activeTab, setActiveTab] = useState<'chat' | 'games' | 'canvas' | 'users'>('chat');
+    const [activeTab, setActiveTab] = useState<MobileTab>('chat');
     const [isCollabSpaceVisible, setIsCollabSpaceVisible] = useState(false);
     const [keyboardVisible, setKeyboardVisible] = useState(false);
     const isMobile = useIsMobile();
@@ -51,7 +51,8 @@ export function MobileChatLayout({
         }
     }, [isMobile]);
 
-    const handleTabChange = useCallback((tab: 'chat' | 'games' | 'canvas' | 'users') => {
+    const handleTabChange = useCallback((tab: MobileTab) => {
+        if (tab === 'more') return; // Handle 'more' separately
         setActiveTab(tab);
 
         if (tab === 'chat') {
@@ -106,7 +107,7 @@ export function MobileChatLayout({
                             user={user}
                             otherUser={otherUser}
                             allUsers={allUsers}
-                            mobileActiveTab={activeTab}
+                            mobileActiveTab={activeTab === 'more' ? 'chat' : activeTab}
                         />
                     </div>
                 )}
@@ -202,7 +203,7 @@ export function MobileChatLayout({
                                 user={user}
                                 otherUser={otherUser}
                                 allUsers={allUsers}
-                                mobileActiveTab={activeTab}
+                                mobileActiveTab={activeTab === 'more' ? 'chat' : activeTab}
                             />
                         </motion.div>
                     )}
@@ -229,8 +230,7 @@ export function MobileChatLayout({
                 isCollabSpaceVisible={isCollabSpaceVisible}
                 onToggleCollabSpace={handleToggleCollabSpace}
                 unreadCount={0} // TODO: Implement unread count
-                isTyping={false} // TODO: Implement typing status
-                connectionStatus="connected" // TODO: Implement connection status
+
             />
 
             {/* Keyboard spacer */}

@@ -4,7 +4,7 @@ const DYNAMIC_CACHE = 'chatus-dynamic-v1.0.0';
 
 // Файлы для кэширования
 const STATIC_FILES = [
-    '/mobile-demo',
+    '/',
     '/manifest.json',
     '/_next/static/css/',
     '/_next/static/js/',
@@ -70,7 +70,6 @@ self.addEventListener('fetch', (event) => {
         caches.match(request)
             .then((cachedResponse) => {
                 if (cachedResponse) {
-                    console.log('[SW] Serving from cache:', request.url);
                     return cachedResponse;
                 }
 
@@ -89,7 +88,6 @@ self.addEventListener('fetch', (event) => {
                         if (shouldCache(request.url)) {
                             caches.open(DYNAMIC_CACHE)
                                 .then((cache) => {
-                                    console.log('[SW] Caching dynamic resource:', request.url);
                                     cache.put(request, responseToCache);
                                 });
                         }
@@ -97,11 +95,9 @@ self.addEventListener('fetch', (event) => {
                         return response;
                     })
                     .catch((error) => {
-                        console.error('[SW] Fetch failed:', error);
-
                         // Возвращаем офлайн страницу для навигационных запросов
                         if (request.destination === 'document') {
-                            return caches.match('/mobile-demo');
+                            return caches.match('/');
                         }
 
                         // Для изображений возвращаем placeholder
@@ -142,8 +138,6 @@ function shouldCache(url) {
 
 // Обработка push-уведомлений
 self.addEventListener('push', (event) => {
-    console.log('[SW] Push received');
-
     let data = {};
 
     if (event.data) {
@@ -188,33 +182,26 @@ self.addEventListener('push', (event) => {
 
 // Обработка кликов по уведомлениям
 self.addEventListener('notificationclick', (event) => {
-    console.log('[SW] Notification clicked:', event.action);
-
     event.notification.close();
 
     const action = event.action;
     const data = event.notification.data;
 
     if (action === 'reply') {
-        // Открываем приложение для ответа
         event.waitUntil(
-            clients.openWindow('/mobile-demo?action=reply&id=' + (data.messageId || ''))
+            clients.openWindow('/?action=reply&id=' + (data.messageId || ''))
         );
-    } else if (action === 'view' || !action) {
-        // Открываем приложение
+    } else {
         event.waitUntil(
             clients.matchAll({ type: 'window', includeUncontrolled: true })
                 .then((clientList) => {
-                    // Если приложение уже открыто, фокусируемся на нем
                     for (const client of clientList) {
-                        if (client.url.includes('/mobile-demo') && 'focus' in client) {
+                        if (client.url.includes('/') && 'focus' in client) {
                             return client.focus();
                         }
                     }
-
-                    // Иначе открываем новое окно
                     if (clients.openWindow) {
-                        return clients.openWindow('/mobile-demo');
+                        return clients.openWindow('/');
                     }
                 })
         );
@@ -223,70 +210,25 @@ self.addEventListener('notificationclick', (event) => {
 
 // Обработка закрытия уведомлений
 self.addEventListener('notificationclose', (event) => {
-    console.log('[SW] Notification closed');
-
-    // Можно отправить аналитику о закрытии уведомления
     const data = event.notification.data;
     if (data && data.trackingId) {
-        // Отправляем событие закрытия
         fetch('/api/analytics/notification-closed', {
             method: 'POST',
             body: JSON.stringify({ trackingId: data.trackingId }),
             headers: { 'Content-Type': 'application/json' }
-        }).catch(() => {
-            // Игнорируем ошибки аналитики
-        });
+        }).catch(() => { });
     }
 });
 
-// Синхронизация в фоне
+// Background sync - disabled as app uses Firebase SDK directly
+/*
 self.addEventListener('sync', (event) => {
-    console.log('[SW] Background sync:', event.tag);
-
     if (event.tag === 'sync-messages') {
-        event.waitUntil(syncMessages());
+        // Background sync for messages is handled by Firestore persistence
     }
 });
+*/
 
-// Функция синхронизации сообщений
-async function syncMessages() {
-    try {
-        // Получаем несинхронизированные сообщения из IndexedDB
-        const messages = await getUnsyncedMessages();
-
-        for (const message of messages) {
-            try {
-                const response = await fetch('/api/messages', {
-                    method: 'POST',
-                    body: JSON.stringify(message),
-                    headers: { 'Content-Type': 'application/json' }
-                });
-
-                if (response.ok) {
-                    // Помечаем сообщение как синхронизированное
-                    await markMessageAsSynced(message.id);
-                }
-            } catch (error) {
-                console.error('[SW] Failed to sync message:', error);
-            }
-        }
-    } catch (error) {
-        console.error('[SW] Sync failed:', error);
-    }
-}
-
-// Заглушки для работы с IndexedDB (нужно реализовать отдельно)
-async function getUnsyncedMessages() {
-    // Здесь должна быть логика получения несинхронизированных сообщений
-    return [];
-}
-
-async function markMessageAsSynced(messageId) {
-    // Здесь должна быть логика пометки сообщения как синхронизированного
-    console.log('Message synced:', messageId);
-}
-
-// Обработка ошибок
 self.addEventListener('error', (event) => {
     console.error('[SW] Error:', event.error);
 });

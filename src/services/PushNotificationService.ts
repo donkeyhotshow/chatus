@@ -6,7 +6,7 @@ export interface PushNotificationData {
     image?: string;
     data?: any;
     tag?: string;
-    actions?: NotificationAction[];
+    actions?: any[];
     vibrate?: number[];
     silent?: boolean;
     requireInteraction?: boolean;
@@ -119,7 +119,7 @@ class PushNotificationService {
             // Создаем новую подписку
             this.subscription = await this.registration.pushManager.subscribe({
                 userVisibleOnly: true,
-                applicationServerKey: this.urlBase64ToUint8Array(this.vapidPublicKey)
+                applicationServerKey: this.urlBase64ToUint8Array(this.vapidPublicKey) as any
             });
 
             console.log('Subscribed to push notifications');
@@ -162,7 +162,7 @@ class PushNotificationService {
             return;
         }
 
-        const options: NotificationOptions = {
+        const options: any = {
             body: data.body,
             icon: data.icon || '/icons/icon-192x192.png',
             badge: data.badge || '/icons/badge-72x72.png',

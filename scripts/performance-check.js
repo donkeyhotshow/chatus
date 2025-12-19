@@ -1,168 +1,246 @@
-#!/usr/bin/env node
-
-const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-console.log('🚀 Анализ производительности проекта...\n');
+/**
+ * Performance Check Script
+ * Analyzes bundle sizes, checks for potential memory leaks, and validates optimizations
+ */
 
-// Функциянения команд с обработкой ошибок
-function runCommand(command, description) {
-    console.log(`📊 ${description}...`);
-    try {
-        const output = execSync(command, { encoding: 'utf8', stdio: 'pipe' });
-        console.log(`✅ ${description} завершен`);
-        return output;
-    } catch (error) {
-        console.log(`⚠️ ${description} завершен с предупреждениями`);
-        return error.stdout || '';
+class PerformanceChecker {
+    constructor() {
+        this.results = {
+            bundleSize: {},
+            codeAnalysis: {},
+            recommendations: [],
+            score: 0
+        };
     }
-}
 
-// Анализ размера bundle
-function analyzeBundleSize() {
-    console.log('\n📦 Анализ размера bundle...');
+    async checkBundleSize() {
+        console.log('📦 Checking bundle sizes...');
 
-    try {
-        // Создаем production build
-        runCommand('npm run build', 'Production build');
-
-        // Проверяем размер .next директории
         const nextDir = path.join(process.cwd(), '.next');
-        if (fs.existsSync(nextDir)) {
-            const stats = fs.statSync(nextDir);
-            console.log(`📁 Размер .next директории: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
+        if (!fs.existsSync(nextDir)) {
+            console.log('❌ .next directory not found. Run "npm run build" first.');
+            return;
         }
 
-        // Анализируем статические файлы
         const staticDir = path.join(nextDir, 'static');
-        if (fs.existsSync(staticDir)) {
-            const files = fs.readdirSync(staticDir, { recursive: true });
-            console.log(`📄 Количество статических файлов: ${files.length}`);
+        if (!fs.existsSync(staticDir)) {
+            console.log('❌ Static directory not found.');
+            return;
         }
 
-    } catch (error) {
-        console.log('⚠️ Не удалось проанализировать bundle size');
-    }
-}
+        // Check chunk sizes
+        const chunksDir = path.join(staticDir, 'chunks');
+        if (fs.existsSync(chunksDir)) {
+            const chunks = fs.readdirSync(chunksDir);
+            let totalSize = 0;
 
-// Анализ зависимостей
-function analyzeDependencies() {
-    console.log('\n📚 Анализ зависимостей...');
+            chunks.forEach(chunk => {
+                const chunkPath = path.join(chunksDir, chunk);
+                const stats = fs.statSync(chunkPath);
+                const sizeKB = Math.round(stats.size / 1024);
+                totalSize += sizeKB;
 
-    try {
-        const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-        const deps = Object.keys(packageJson.dependencies || {});
-        const devDeps = Object.keys(packageJson.devDependencies || {});
+                if (chunk.endsWith('.js')) {
+                    this.results.bundleSize[chunk] = sizeKB;
 
-        console.log(`📦 Production зависимостей: ${deps.length}`);
-        console.log(`🔧 Dev зависимостей: ${devDeps.length}`);
+                    if (sizeKB > 500) {
+                        this.results.recommendations.push(`⚠️  Large chunk detected: ${chunk} (${sizeKB}KB)`);
+                    }
+                }
+            });
 
-        // Проверяем на устаревшие зависимости
-        console.log('\n🔍 Проверка устаревших зависимостей...');
-        try {
-            const outdated = execSync('npm outdated --json', { encoding: 'utf8', stdio: 'pipe' });
-            const outdatedPackages = JSON.parse(outdated);
-            const count = Object.keys(outdatedPackages).length;
+            this.results.bundleSize.total = totalSize;
+            console.log(`📊 Total bundle size: ${totalSize}KB`);
 
-            if (count > 0) {
-                console.log(`⚠️ Найдено ${count} устаревших пакетов`);
-                Object.keys(outdatedPackages).slice(0, 5).forEach(pkg => {
-                    const info = outdatedPackages[pkg];
-                    console.log(`  - ${pkg}: ${info.current} → ${info.latest}`);
-                });
-            } else {
-                console.log('✅ Все зависимости актуальны');
+            if (totalSize > 2000) {
+                this.results.recommendations.push('🔍 Consider code splitting for bundles over 2MB');
             }
-        } catch (error) {
-            console.log('✅ Все зависимости актуальны или проверка недоступна');
         }
-
-    } catch (error) {
-        console.log('⚠️ Не удалось проанализировать зависимости');
     }
-}
 
-// Анализ кода
-function analyzeCode() {
-    console.log('\n🔍 Анализ качества кода...');
+    async analyzeCode() {
+        console.log('🔍 Analyzing code for performance issues...');
 
-    try {
-        // Подсчет строк кода
-        const srcFiles = execSync('find src -name "*.ts" -o -name "*.tsx" | wc -l', { encoding: 'utf8' }).trim();
-        const testFiles = execSync('find tests -name "*.ts" -o -name "*.tsx" 2>/dev/null | wc -l || echo 0', { encoding: 'utf8' }).trim();
+        const srcDir = path.join(process.cwd(), 'src');
+        const issues = [];
 
-        console.log(`📄 TypeScript файлов в src: ${srcFiles}`);
-        console.log(`🧪 Тестовых файлов: ${testFiles}`);
+        // Check for potential memory leaks
+        this.checkForMemoryLeaks(srcDir, issues);
 
-        // Анализ покрытия тестами (приблизительный)
-        const testCoverage = testFiles > 0 ? Math.min((parseInt(testFiles) / parseInt(srcFiles)) * 100, 100) : 0;
-        console.log(`📊 Приблизительное покрытие тестами: ${testCoverage.toFixed(1)}%`);
+        // Check for infinite loop patterns
+        this.checkForInfiniteLoops(srcDir, issues);
 
-    } catch (error) {
-        console.log('⚠️ Не удалось проанализировать код');
-    }
-}
+        // Check for missing cleanup
+        this.checkForMissingCleanup(srcDir, issues);
 
-// Проверка производительности сборки
-function checkBuildPerformance() {
-    console.log('\n⏱️ Проверка производительности сборки...');
+        this.results.codeAnalysis = {
+            totalIssues: issues.length,
+            issues: issues
+        };
 
-    try {
-        const startTime = Date.now();
-        runCommand('npm run type-check', 'Type checking');
-        const typeCheckTime = Date.now() - startTime;
-
-        console.log(`⚡ Время проверки типов: ${(typeCheckTime / 1000).toFixed(2)}s`);
-
-        if (typeCheckTime > 30000) {
-            console.log('⚠️ Проверка типов занимает много времени (>30s)');
-            console.log('💡 Рекомендации:');
-            console.log('  - Исключить больше файлов из tsconfig.json');
-            console.log('  - Использовать incremental compilation');
-            console.log('  - Оптимизировать импорты');
+        if (issues.length > 0) {
+            console.log(`⚠️  Found ${issues.length} potential performance issues:`);
+            issues.forEach(issue => console.log(`   ${issue}`));
         } else {
-            console.log('✅ Производительность проверки типов в норме');
+            console.log('✅ No obvious performance issues detected');
+        }
+    }
+
+    checkForMemoryLeaks(dir, issues) {
+        const files = this.getJSFiles(dir);
+
+        files.forEach(file => {
+            const content = fs.readFileSync(file, 'utf8');
+
+            // Check for missing cleanup in useEffect
+            if (content.includes('useEffect') && !content.includes('return () =>')) {
+                const relativePath = path.relative(process.cwd(), file);
+                issues.push(`Potential memory leak in ${relativePath}: useEffect without cleanup`);
+            }
+
+            // Check for event listeners without removal
+            if (content.includes('addEventListener') && !content.includes('removeEventListener')) {
+                const relativePath = path.relative(process.cwd(), file);
+                issues.push(`Potential memory leak in ${relativePath}: addEventListener without cleanup`);
+            }
+
+            // Check for timers without clearing
+            if ((content.includes('setTimeout') || content.includes('setInterval')) &&
+                !content.includes('clearTimeout') && !content.includes('clearInterval')) {
+                const relativePath = path.relative(process.cwd(), file);
+                issues.push(`Potential memory leak in ${relativePath}: Timer without cleanup`);
+            }
+        });
+    }
+
+    checkForInfiniteLoops(dir, issues) {
+        const files = this.getJSFiles(dir);
+
+        files.forEach(file => {
+            const content = fs.readFileSync(file, 'utf8');
+
+            // Check for potential infinite re-renders
+            if (content.includes('useState') && content.includes('useEffect')) {
+                // Look for state updates in useEffect without proper dependencies
+                const useEffectMatches = content.match(/useEffect\s*\(\s*\(\s*\)\s*=>\s*{[^}]*}/g);
+                if (useEffectMatches) {
+                    useEffectMatches.forEach(match => {
+                        if (match.includes('set') && !match.includes('[]')) {
+                            const relativePath = path.relative(process.cwd(), file);
+                            issues.push(`Potential infinite loop in ${relativePath}: State update in useEffect`);
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    checkForMissingCleanup(dir, issues) {
+        const files = this.getJSFiles(dir);
+
+        files.forEach(file => {
+            const content = fs.readFileSync(file, 'utf8');
+
+            // Check for Firebase listeners without unsubscribe
+            if (content.includes('onSnapshot') && !content.includes('unsubscribe')) {
+                const relativePath = path.relative(process.cwd(), file);
+                issues.push(`Missing cleanup in ${relativePath}: Firebase listener without unsubscribe`);
+            }
+
+            // Check for subscription patterns without cleanup
+            if (content.includes('.subscribe(') && !content.includes('.unsubscribe(')) {
+                const relativePath = path.relative(process.cwd(), file);
+                issues.push(`Missing cleanup in ${relativePath}: Subscription without unsubscribe`);
+            }
+        });
+    }
+
+    getJSFiles(dir) {
+        const files = [];
+
+        const scan = (currentDir) => {
+            const items = fs.readdirSync(currentDir);
+
+            items.forEach(item => {
+                const fullPath = path.join(currentDir, item);
+                const stat = fs.statSync(fullPath);
+
+                if (stat.isDirectory() && !item.startsWith('.') && item !== 'node_modules') {
+                    scan(fullPath);
+                } else if (stat.isFile() && (item.endsWith('.ts') || item.endsWith('.tsx') || item.endsWith('.js') || item.endsWith('.jsx'))) {
+                    files.push(fullPath);
+                }
+            });
+        };
+
+        scan(dir);
+        return files;
+    }
+
+    calculateScore() {
+        let score = 100;
+
+        // Deduct points for large bundles
+        if (this.results.bundleSize.total > 2000) {
+            score -= 20;
+        } else if (this.results.bundleSize.total > 1000) {
+            score -= 10;
         }
 
-    } catch (error) {
-        console.log('⚠️ Не удалось проверить производительность сборки');
+        // Deduct points for code issues
+        score -= Math.min(this.results.codeAnalysis.totalIssues * 5, 50);
+
+        this.results.score = Math.max(score, 0);
+        return this.results.score;
+    }
+
+    generateReport() {
+        const score = this.calculateScore();
+
+        console.log('\n📊 PERFORMANCE REPORT');
+        console.log('='.repeat(50));
+        console.log(`Overall Score: ${score}/100`);
+
+        if (score >= 90) {
+            console.log('🎉 Excellent performance!');
+        } else if (score >= 70) {
+            console.log('✅ Good performance with room for improvement');
+        } else if (score >= 50) {
+            console.log('⚠️  Performance needs attention');
+        } else {
+            console.log('❌ Poor performance - immediate action required');
+        }
+
+        console.log('\n📦 Bundle Analysis:');
+        console.log(`Total Size: ${this.results.bundleSize.total || 0}KB`);
+
+        console.log('\n🔍 Code Analysis:');
+        console.log(`Issues Found: ${this.results.codeAnalysis.totalIssues || 0}`);
+
+        if (this.results.recommendations.length > 0) {
+            console.log('\n💡 Recommendations:');
+            this.results.recommendations.forEach(rec => console.log(`   ${rec}`));
+        }
+
+        // Save detailed report
+        const reportPath = path.join(process.cwd(), 'performance-report.json');
+        fs.writeFileSync(reportPath, JSON.stringify(this.results, null, 2));
+        console.log(`\n📄 Detailed report saved to: ${reportPath}`);
+    }
+
+    async run() {
+        console.log('🚀 Starting performance check...\n');
+
+        await this.checkBundleSize();
+        await this.analyzeCode();
+
+        this.generateReport();
     }
 }
 
-// Рекомендации по оптимизации
-function provideRecommendations() {
-    console.log('\n💡 Рекомендации по оптимизации:');
-
-    const recommendations = [
-        '🔧 Регулярно обновляйте зависимости',
-        '📦 Используйте dynamic imports для тяжелых компонентов',
-        '🎯 Настройте bundle analyzer для мониторинга размера',
-        '🧪 Поддерживайте покрытие тестами >80%',
-        '⚡ Используйте React.memo для оптимизации рендеринга',
-        '📊 Мониторьте Core Web Vitals в production',
-        '🔍 Регулярно проводите аудит безопасности (npm audit)',
-        '📝 Документируйте сложные компоненты и хуки'
-    ];
-
-    recommendations.forEach(rec => console.log(`  ${rec}`));
-}
-
-// Основная функция
-async function main() {
-    try {
-        analyzeDependencies();
-        analyzeCode();
-        checkBuildPerformance();
-        // analyzeBundleSize(); // Закомментировано, так как может быть медленным
-        provideRecommendations();
-
-        console.log('\n🎉 Анализ производительности завершен!');
-
-    } catch (error) {
-        console.error('❌ Ошибка при анализе:', error.message);
-        process.exit(1);
-    }
-}
-
-main();
+// Run the performance check
+const checker = new PerformanceChecker();
+checker.run().catch(console.error);

@@ -443,7 +443,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
             {(['basic', 'fast', 'heavy'] as const).map(type => (
               <Button
                 key={type}
-                variant={towerTypeToBuild === type ? "default" : "outline"}
+                variant={towerTypeToBuild === type ? "primary" : "outline"}
                 size="sm"
                 onClick={() => setTowerTypeToBuild(type)}
                 className="text-xs"

@@ -1,17 +1,9 @@
-
 import type { Metadata } from 'next';
-import { Toaster } from "@/components/ui/toaster"
 import './globals.css';
-// Temporary fix: using emoji instead of lucide icon
-import { FirebaseProvider } from '@/components/firebase/FirebaseProvider';
-import { BackgroundChanger } from '@/components/layout/BackgroundChanger';
-import { ErrorBoundaryWrapper } from '@/components/ErrorBoundaryWrapper';
-import { ClientLayout } from '@/components/layout/ClientLayout';
-// Script import removed as it's not used
-// import { PerformanceMonitor } from '@/components/performance/PerformanceMonitor';
+import { SafeClientLayout } from '@/components/layout/SafeClientLayout';
 
-const APP_NAME = "ЧАТ ДЛЯ НАС";
-const APP_DESCRIPTION = "A real-time chat application with collaborative features.";
+const APP_NAME = "ChatUs";
+const APP_DESCRIPTION = "Приватный чат 1 на 1 с рисованием и играми";
 
 export const viewport = {
   width: 'device-width',
@@ -19,20 +11,20 @@ export const viewport = {
   maximumScale: 1,
   userScalable: false,
   interactiveWidget: 'resizes-content',
-  themeColor: '#080808',
+  themeColor: '#2563eb',
   viewportFit: 'cover',
   height: 'device-height',
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://chatus.vercel.app'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://chatus-omega.vercel.app'),
   applicationName: APP_NAME,
   title: {
     default: APP_NAME,
     template: `%s - ${APP_NAME}`,
   },
   description: APP_DESCRIPTION,
-  keywords: ["чат", "общение", "пиксельные аватары", "мессенджер", "PWA"],
+  keywords: ["чат", "общение", "рисование", "игры", "приватный", "PWA"],
   authors: [{ name: "ChatUs Team" }],
   creator: "ChatUs",
   publisher: "ChatUs",
@@ -83,7 +75,7 @@ export const metadata: Metadata = {
       { url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
     other: [
-      { rel: "mask-icon", url: "/icons/safari-pinned-tab.svg", color: "#06b6d4" },
+      { rel: "mask-icon", url: "/icons/safari-pinned-tab.svg", color: "#2563eb" },
     ],
   },
 };
@@ -94,55 +86,40 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="ru">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#080808" />
+        <meta name="theme-color" content="#2563eb" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://firebasestorage.googleapis.com" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet" />
         <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/firebase-messaging-sw.js')
+                    .then(function(registration) {
+                      console.log('SW registered: ', registration);
+                    })
+                    .catch(function(registrationError) {
+                      console.log('SW registration failed: ', registrationError);
+                    });
+                });
+              }
+            `,
+          }}
+        />
       </head>
       <body suppressHydrationWarning>
-        {/* Temporarily disabled viewport height script to fix hydration */}
-        {/* <Script id="vh-fix" strategy="beforeInteractive">
-          {`
-            (function() {
-              function setVH() {
-                const vh = window.innerHeight * 0.01;
-                document.documentElement.style.setProperty('--vh', vh + 'px');
-              }
-              setVH();
-              window.addEventListener('resize', setVH);
-              window.addEventListener('orientationchange', setVH);
-            })();
-          `}
-        </Script> */}
-        <div className="flex flex-col w-full bg-black text-neutral-200 font-sans selection:bg-cyan-400 selection:text-black overflow-hidden h-full h-[100dvh] supports-[height:100dvh]:h-[100dvh]">
-          <header className="h-12 sm:h-14 shrink-0 border-b border-white/10 flex items-center px-3 sm:px-4 lg:px-6 bg-gradient-to-r from-neutral-950 to-black z-50 shadow-lg">
-            <a
-              href="/"
-              className="flex items-center gap-2 sm:gap-3 select-none group cursor-pointer hover:opacity-80 transition-opacity duration-200"
-              title="Вернуться на главную"
-            >
-              <div className="p-1 sm:p-1.5 bg-gradient-to-br from-cyan-400 to-blue-500 text-black rounded-lg group-hover:scale-105 transition-transform duration-200 shadow-lg flex items-center justify-center">
-                <span className="text-sm sm:text-base">💬</span>
-              </div>
-              <span className="font-mono font-bold text-sm sm:text-lg tracking-[0.1em] sm:tracking-[0.2em] text-white">
-                ЧАТ ДЛЯ НАС
-              </span>
-            </a>
-          </header>
-
-          <div className="relative z-10 flex w-full flex-1 overflow-hidden min-h-0">
-            {children}
-          </div>
-        </div>
+        <SafeClientLayout>
+          {children}
+        </SafeClientLayout>
       </body>
-    </html >
+    </html>
   );
 }

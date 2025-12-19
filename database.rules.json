@@ -2,7 +2,6 @@
   "rules": {
     ".read": false,
     ".write": false,
-    // Firebase presence system - connections tracking
     "connections": {
       "$userId": {
         ".read": "auth != null",
@@ -12,7 +11,6 @@
         }
       }
     },
-    // Typing indicators - user can write only to their own typing status
     "typing": {
       "$chatId": {
         ".read": "auth != null",
@@ -23,7 +21,6 @@
         }
       }
     },
-    // Presence status - user can write only to their own status
     "status": {
       ".read": "auth != null",
       "$userId": {
@@ -32,16 +29,14 @@
         ".validate": "newData.hasChildren(['state', 'lastChanged']) && newData.child('state').isString() && (newData.child('state').val() === 'online' || newData.child('state').val() === 'offline')"
       }
     },
-    // Legacy messages (if any)
     "messages": {
       ".read": "auth != null",
       "$messageId": {
         ".read": "auth != null",
-        ".write": "auth != null",
-        ".validate": "newData.hasChildren(['text','ts','senderId']) && newData.child('text').isString() && newData.child('text').val().length <= 1000 && newData.child('ts').isNumber() && newData.child('senderId').isString() && newData.child('senderId').val() === auth.uid"
+        ".write": "auth != null && newData.child('senderId').val() === auth.uid",
+        ".validate": "newData.hasChildren(['text','ts','senderId']) && newData.child('text').isString() && newData.child('text').val().length <= 1000 && newData.child('ts').isNumber() && newData.child('senderId').isString()"
       }
     },
-    // Test data for development
     "test": {
       ".read": "auth != null",
       ".write": "auth != null"

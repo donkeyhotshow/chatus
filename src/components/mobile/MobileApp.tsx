@@ -231,7 +231,7 @@ export function MobileApp({ onDesktopFallback }: MobileAppProps) {
             setSettings(prev => ({
                 ...prev,
                 [parentKey]: {
-                    ...prev[parentKey as keyof Settings],
+                    ...(prev[parentKey as keyof Settings] as any),
                     [childKey]: value
                 }
             }));

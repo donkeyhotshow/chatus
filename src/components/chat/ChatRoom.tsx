@@ -1,18 +1,15 @@
-
 "use client";
 
-import { useState, useEffect, lazy, Suspense, useMemo } from 'react';
+import { useState, useEffect, lazy, Suspense, useMemo, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Room } from '@/lib/types';
+import { Room, UserProfile } from '@/lib/types';
 import { ChatArea } from './ChatArea';
 import { ProfileCreationDialog } from './ProfileCreationDialog';
-// Icons removed as they are not used in this component
 import { MobileNavigation } from '../mobile/MobileNavigation';
-// MobileErrorHandler removed as it's not used in this component
-import { ResizablePanel } from '../ui/ResizablePanel';
-
-// Lazy load heavy components
-const CollaborationSpace = lazy(() => import('./CollaborationSpace').then(m => ({ default: m.CollaborationSpace })));
+import { ChatSidebar, ChatTab } from './ChatSidebar';
+import { UserList } from './UserList';
+import { ChatStats } from './ChatStats';
+import { useRouter } from 'next/navigation';
 import { useFirebase } from '../firebase/FirebaseProvider';
 import { useDoc } from '@/hooks/useDoc';
 import { doc } from 'firebase/firestore';
@@ -24,406 +21,264 @@ import { useRoomManager } from '@/hooks/useRoomManager';
 import { logger } from '@/lib/logger';
 import { isDemoMode } from '@/lib/demo-mode';
 import { getChatService } from '@/services/ChatService';
+import { cn } from '@/lib/utils';
 
-const LoadingSpinner = ({ text }: { text: string }) => {
-  const [showFallback, setShowFallback] = useState(false);
+// Lazy load heavy components
+const CollaborationSpace = lazy(() => import('./CollaborationSpace').then(m => ({ default: m.CollaborationSpace })));
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowFallback(true);
-    }, 8000); // Show fallback after 8 seconds
+// Минималистичный спиннер загрузки
+function LoadingScreen({ text }: { text: string }) {
+    const [showFallback, setShowFallback] = useState(false);
 
-    return () => clearTimeout(timer);
-  }, []);
+    useEffect(() => {
+        const timer = setTimeout(() => setShowFallback(true), 8000);
+        return () => clearTimeout(timer);
+    }, []);
 
-  if (showFallback) {
+    if (showFallback) {
+        return (
+            <div className="flex h-full w-full items-center justify-center bg-[var(--bg-primary)] p-6">
+                <div className="max-w-sm text-center space-y-4">
+                    <p className="text-[var(--text-secondary)]">
+                        Загрузка занимает больше времени, чем обычно
+                    </p>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="w-full py-3 bg-[var(--accent-primary)] text-[var(--accent-contrast)] font-medium rounded-lg hover:bg-[var(--accent-hover)] transition-colors"
+                    >
+                        Перезагрузить
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
-      <div className="flex h-full w-full items-center justify-center bg-black text-white p-8">
-        <div className="max-w-md space-y-4 text-center">
-          <h2 className="text-xl font-bold text-yellow-400">⚠️ Долгая загрузка</h2>
-          <p className="text-neutral-300">
-            Загрузка занимает больше времени, чем обычно. Возможные причины:
-          </p>
-          <ul className="list-disc list-inside text-neutral-400 space-y-1 text-sm">
-            <li>Медленное интернет-соединение</li>
-            <li>Проблемы с Firebase сервером</li>
-            <li>Блокировка браузером</li>
-          </ul>
-          <button
-            onClick={() => window.location.reload()}
-            className="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-neutral-200 transition"
-          >
-            Перезагрузить страницу
-          </button>
+        <div className="flex h-full w-full items-center justify-center bg-[var(--bg-primary)]">
+            <div className="flex flex-col items-center gap-3">
+                <div className="w-8 h-8 border-2 border-[var(--border-primary)] border-t-[var(--accent-primary)] rounded-full animate-spin" />
+                <span className="text-sm text-[var(--text-muted)]">{text}</span>
+            </div>
         </div>
-      </div>
     );
-  }
+}
 
-  return (
-    <div className="flex h-full w-full items-center justify-center bg-black">
-      <div className="animate-pulse flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-        <span className="font-mono text-white/70 tracking-widest">{text}</span>
-      </div>
-    </div>
-  );
-};
+// Экран ошибки
+function ErrorScreen({ onRetry }: { onRetry: () => void }) {
+    return (
+        <div className="flex h-full w-full items-center justify-center bg-[var(--bg-primary)] p-6">
+            <div className="max-w-sm text-center space-y-4">
+                <div className="w-12 h-12 mx-auto bg-red-100 dark:bg-red-950/30 rounded-full flex items-center justify-center">
+                    <span className="text-2xl">!</span>
+                </div>
+                <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                    Ошибка подключения
+                </h2>
+                <p className="text-sm text-[var(--text-secondary)]">
+                    Не удалось подключиться к серверу
+                </p>
+                <button
+                    onClick={onRetry}
+                    className="w-full py-3 bg-[var(--accent-primary)] text-[var(--accent-contrast)] font-medium rounded-lg hover:bg-[var(--accent-hover)] transition-colors"
+                >
+                    Попробовать снова
+                </button>
+            </div>
+        </div>
+    );
+}
 
 export function ChatRoom({ roomId }: { roomId: string }) {
-  const [isCollabSpaceVisible, setIsCollabSpaceVisible] = useState(false);
-  const [mobileActiveTab, setMobileActiveTab] = useState<'chat' | 'games' | 'canvas' | 'users'>('chat');
-  const [collabSpaceWidth, setCollabSpaceWidth] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('chatroom-collab-width');
-      return saved ? parseInt(saved, 10) : 380;
-    }
-    return 380;
-  });
+    const [activeTab, setActiveTab] = useState<ChatTab>('chat');
+    const router = useRouter();
+    const { toast } = useToast();
+    const firebaseContext = useFirebase();
+    const isMobile = useIsMobile();
 
-  const { toast } = useToast();
-  const firebaseContext = useFirebase();
-  const isMobile = useIsMobile();
+    const { user, isLoading, createProfile, error: userError } = useCurrentUser(roomId);
+    const [isCreating, setIsCreating] = useState(false);
 
-  // Use stable user identification hook
-  const { user, isLoading, createProfile, error: userError } = useCurrentUser(roomId);
-  const [isCreating, setIsCreating] = useState(false);
+    usePresence(roomId, user?.id || null);
+    const { validate } = useRoom(roomId);
+    const { joinRoom, leaveRoom } = useRoomManager(roomId);
 
-  // Use presence hook for online/offline status
-  usePresence(roomId, user?.id || null);
+    const handleTabChange = useCallback((tab: ChatTab | string) => {
+        setActiveTab(tab as ChatTab);
+    }, []);
 
-  // Use room hook for validation and room data
-  const { validate } = useRoom(roomId);
-
-  // Use RoomManager for unified room management
-  const {
-    joinRoom,
-    leaveRoom
-  } = useRoomManager(roomId);
-
-  useEffect(() => {
-    if (isMobile) {
-      // On mobile, show collaboration space only when explicitly toggled
-      setIsCollabSpaceVisible(false);
-    } else {
-      // On desktop, show collaboration space by default
-      setIsCollabSpaceVisible(true);
-    }
-  }, [isMobile]);
-
-  // Handle mobile tab changes
-  const handleMobileTabChange = (tab: 'chat' | 'games' | 'canvas' | 'users') => {
-    setMobileActiveTab(tab);
-    if (tab === 'chat') {
-      setIsCollabSpaceVisible(false);
-    } else {
-      setIsCollabSpaceVisible(true);
-    }
-  };
-
-  // Handle mobile back navigation
-  const handleMobileBack = () => {
-    if (isMobile && mobileActiveTab !== 'chat') {
-      // If not on chat tab, go back to chat
-      setMobileActiveTab('chat');
-      setIsCollabSpaceVisible(false);
-    }
-  };
-
-  // Handle collaboration space toggle
-  const handleToggleCollabSpace = () => {
-    setIsCollabSpaceVisible(prev => !prev);
-    if (isMobile && !isCollabSpaceVisible) {
-      // When opening collab space on mobile, default to games tab
-      setMobileActiveTab('games');
-    }
-  };
-
-  // Save collab space width to localStorage
-  const handleCollabSpaceResize = (width: number) => {
-    setCollabSpaceWidth(width);
-    localStorage.setItem('chatroom-collab-width', width.toString());
-  };
-
-  // Use both useDoc (for real-time updates) and useRoom (for validation)
-  const roomDocRef = useMemo(() => {
-    if (!firebaseContext || !firebaseContext.db) return null;
-    return doc(firebaseContext.db, 'rooms', roomId);
-  }, [firebaseContext, roomId]);
-
-  const { data: room, loading: roomLoading } = useDoc<Room>(roomDocRef);
-
-  // Validate room existence on mount
-  useEffect(() => {
-    if (user && !roomLoading) {
-      validate();
-    }
-  }, [user, roomLoading, validate]);
-
-  // Join room using RoomManager (unified approach)
-  useEffect(() => {
-    if (!user) {
-      return;
-    }
-
-    // In demo mode, join room directly via ChatService
-    if (isDemoMode()) {
-      // Firebase should be initialized even in demo mode (with dummy config)
-      // But we need to wait for firebaseContext to be available
-      if (!firebaseContext?.db || !firebaseContext?.auth || !firebaseContext?.storage) {
-        logger.debug('[DEMO MODE] Waiting for Firebase context', { roomId, userId: user.id });
-        return;
-      }
-      try {
-        const chatService = getChatService(
-          roomId,
-          firebaseContext.db,
-          firebaseContext.auth,
-          firebaseContext.storage
-        );
-        logger.info('[DEMO MODE] Joining room via ChatService', { roomId, userId: user.id });
-        chatService.joinRoom(user, false).catch(err => {
-          logger.error("Error joining room in demo mode", err as Error, { roomId, userId: user.id });
-        });
-      } catch (err) {
-        logger.error("Failed to get ChatService in demo mode", err as Error, { roomId, userId: user.id });
-      }
-      return;
-    }
-
-    if (!firebaseContext?.db || !firebaseContext?.auth || !firebaseContext?.storage) {
-      return;
-    }
-
-    // Join room using RoomManager
-    // validateRoom=false allows auto-creation for new rooms
-    joinRoom(user, false).catch(err => {
-      const error = err as Error;
-      const firebaseError = err as { code?: string };
-
-      // Suppress permission errors when offline
-      if (error.message?.includes('Permission denied') ||
-        error.message?.includes('client is offline') ||
-        firebaseError.code === 'permission-denied' ||
-        firebaseError.code === 'unavailable') {
-        return; // Silently ignore
-      }
-
-      logger.error("Error joining room", error, { roomId, userId: user.id });
-      toast({
-        variant: 'destructive',
-        title: 'Error joining room',
-        description: error.message
-      });
-    });
-
-    // Cleanup on unmount
-    return () => {
-      if (isDemoMode()) {
-        // In demo mode, leave room via ChatService
-        if (firebaseContext?.db && firebaseContext?.auth && firebaseContext?.storage) {
-          const chatService = getChatService(
-            roomId,
-            firebaseContext.db,
-            firebaseContext.auth,
-            firebaseContext.storage
-          );
-          chatService.leaveRoom().catch(err => {
-            logger.error("Error leaving room in demo mode", err as Error, { roomId });
-          });
+    const handleMobileBack = useCallback(() => {
+        if (isMobile && activeTab !== 'chat') {
+            setActiveTab('chat');
         }
-        return;
-      }
-      leaveRoom().catch(err => {
-        logger.error("Error leaving room", err as Error, { roomId });
-      });
-    };
-  }, [user, roomId, joinRoom, leaveRoom, firebaseContext, toast]);
+    }, [isMobile, activeTab]);
 
-  const handleProfileCreate = async (username: string, avatar: string) => {
-    try {
-      setIsCreating(true);
-      await createProfile(username, avatar);
-    } catch (err) {
-      logger.error('Could not create profile', err as Error, { username, roomId });
-      toast({ title: 'Could not create profile', description: (err as Error).message, variant: 'destructive' });
-      setIsCreating(false);
-      throw err;
-    }
-  };
+    const roomDocRef = useMemo(() => {
+        if (!firebaseContext?.db) return null;
+        return doc(firebaseContext.db, 'rooms', roomId);
+    }, [firebaseContext, roomId]);
 
-  if (!firebaseContext) {
-    return <LoadingSpinner text="INITIALIZING..." />;
-  }
+    const { data: room, loading: roomLoading } = useDoc<Room>(roomDocRef);
 
-  // Show Firebase config error if present (but not in demo mode)
-  if (!isDemoMode() && userError && userError.message?.includes('Firebase configuration is invalid')) {
-    return (
-      <div className="flex h-full w-full items-center justify-center bg-black text-white p-8">
-        <div className="max-w-2xl space-y-4">
-          <h1 className="text-2xl font-bold text-red-400">🔥 Firebase Configuration Required</h1>
-          <p className="text-neutral-300">
-            Your Firebase configuration is missing or invalid. Please set up your Firebase credentials to use this application.
-          </p>
-          <div className="bg-neutral-900 p-4 rounded-lg space-y-2 text-sm font-mono">
-            <p className="text-neutral-400">Quick fix:</p>
-            <ol className="list-decimal list-inside space-y-1 text-neutral-200">
-              <li>Open <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Firebase Console</a></li>
-              <li>Get your project configuration (Project Settings → General → Your apps → Web app)</li>
-              <li>Update <code className="bg-neutral-800 px-1 rounded">.env.local</code> file with real values</li>
-              <li>Restart the dev server</li>
-            </ol>
-          </div>
-          <div className="bg-blue-900/20 border border-blue-500/30 p-4 rounded-lg">
-            <p className="text-blue-300 text-sm font-semibold mb-2">💡 Для локального тестирования:</p>
-            <p className="text-blue-200 text-xs">
-              Добавьте <code className="bg-blue-900/50 px-1 rounded">NEXT_PUBLIC_DEMO_MODE=true</code> в <code className="bg-blue-900/50 px-1 rounded">.env.local</code> для работы без Firebase
-            </p>
-          </div>
-          <p className="text-sm text-neutral-500">
-            See <code className="bg-neutral-900 px-1 rounded">QUICK_FIX_FIREBASE.md</code> or <code className="bg-neutral-900 px-1 rounded">FIREBASE_SETUP.md</code> for detailed instructions.
-          </p>
-        </div>
-      </div>
-    );
-  }
+    useEffect(() => {
+        if (user && !roomLoading) {
+            validate();
+        }
+    }, [user, roomLoading, validate]);
 
-  if (isLoading) {
-    return <LoadingSpinner text="ЗАГРУЗКА..." />;
-  }
+    useEffect(() => {
+        if (!user) return;
 
-  // Show error if Firebase Auth failed
-  if (userError) {
-    return (
-      <div className="flex h-full w-full items-center justify-center bg-black">
-        <div className="max-w-md p-8 bg-neutral-900 rounded-xl border border-red-500/50">
-          <h2 className="text-xl font-bold text-red-500 mb-4">⚠️ Ошибка подключения</h2>
-          <p className="text-neutral-300 mb-4">
-            Не удалось подключиться к серверу. Проверьте:
-          </p>
-          <ul className="list-disc list-inside text-neutral-400 space-y-2 mb-6">
-            <li>Включен ли Anonymous Auth в Firebase Console</li>
-            <li>Добавлен ли домен в Authorized domains</li>
-            <li>Интернет-соединение</li>
-          </ul>
-          <button
-            onClick={() => window.location.reload()}
-            className="w-full py-3 bg-white text-black font-bold rounded-lg hover:bg-neutral-200 transition"
-          >
-            Попробовать снова
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <ProfileCreationDialog
-        isOpen={true}
-        onProfileCreate={handleProfileCreate}
-        roomId={roomId}
-        isCreating={isCreating}
-      />
-    );
-  }
-
-  if (roomLoading && !room) {
-    return <LoadingSpinner text="CONNECTING..." />;
-  }
-
-  const otherUser = room?.participantProfiles?.find(p => p.id !== user?.id);
-
-  return (
-    <div className="flex flex-col h-full w-full overflow-hidden mobile-viewport-fix">
-      {/* Main Content Area */}
-      <div className={`flex flex-1 overflow-hidden ${isMobile ? 'mobile-stack-layout' : ''}`}>
-        {/* Chat Area - Always visible on desktop, conditionally on mobile */}
-        {user && (
-          <div className={`
-            transition-all duration-300 ease-in-out min-w-0
-            ${isMobile
-              ? (mobileActiveTab === 'chat' ? 'flex-1 mobile-full-width' : 'mobile-hidden')
-              : (isCollabSpaceVisible ? 'flex-1' : 'w-full')
+        if (isDemoMode()) {
+            if (!firebaseContext?.db || !firebaseContext?.auth || !firebaseContext?.storage) return;
+            try {
+                const chatService = getChatService(roomId, firebaseContext.db, firebaseContext.auth, firebaseContext.storage);
+                chatService.joinRoom(user, false).catch(err => {
+                    logger.error("Error joining room in demo mode", err as Error, { roomId, userId: user.id });
+                });
+            } catch (err) {
+                logger.error("Failed to get ChatService in demo mode", err as Error, { roomId, userId: user.id });
             }
-          `}>
-            <ChatArea
-              user={user}
-              roomId={roomId}
-              isCollabSpaceVisible={isCollabSpaceVisible}
-              onToggleCollaborationSpace={handleToggleCollabSpace}
-              onMobileBack={handleMobileBack}
+            return;
+        }
+
+        if (!firebaseContext?.db || !firebaseContext?.auth || !firebaseContext?.storage) return;
+
+        joinRoom(user, false).catch(err => {
+            const error = err as Error;
+            const firebaseError = err as { code?: string };
+            if (error.message?.includes('Permission denied') ||
+                error.message?.includes('client is offline') ||
+                firebaseError.code === 'permission-denied' ||
+                firebaseError.code === 'unavailable') {
+                return;
+            }
+            logger.error("Error joining room", error, { roomId, userId: user.id });
+        });
+
+        return () => {
+            if (isDemoMode()) {
+                if (firebaseContext?.db && firebaseContext?.auth && firebaseContext?.storage) {
+                    const chatService = getChatService(roomId, firebaseContext.db, firebaseContext.auth, firebaseContext.storage);
+                    chatService.leaveRoom().catch(() => { });
+                }
+                return;
+            }
+            leaveRoom().catch(() => { });
+            import('@/services/RoomManager').then(({ disconnectRoomManager }) => {
+                disconnectRoomManager(roomId).catch(() => { });
+            });
+        };
+    }, [user, roomId, joinRoom, leaveRoom, firebaseContext]);
+
+    const handleProfileCreate = async (username: string, avatar: string) => {
+        try {
+            setIsCreating(true);
+            await createProfile(username, avatar);
+        } catch (err) {
+            logger.error('Could not create profile', err as Error, { username, roomId });
+            toast({ title: 'Ошибка', description: 'Не удалось создать профиль', variant: 'destructive' });
+            setIsCreating(false);
+            throw err;
+        }
+    };
+
+    const handleLogout = useCallback(() => {
+        localStorage.removeItem('chatUsername');
+        router.push('/');
+    }, [router]);
+
+    const handleSettings = useCallback(() => {
+        toast({ title: "Настройки", description: "В разработке" });
+    }, [toast]);
+
+    // Loading states
+    if (!firebaseContext) return <LoadingScreen text="Инициализация..." />;
+    if (isLoading) return <LoadingScreen text="Загрузка..." />;
+    if (userError) return <ErrorScreen onRetry={() => window.location.reload()} />;
+
+    if (!user) {
+        return (
+            <ProfileCreationDialog
+                isOpen={true}
+                onProfileCreate={handleProfileCreate}
+                roomId={roomId}
+                isCreating={isCreating}
             />
-          </div>
-        )}
+        );
+    }
 
-        {/* Collaboration Space - Resizable and Collapsible */}
-        {user && (
-          <>
-            {isMobile ? (
-              // Mobile: Simple toggle without resize
-              <div className={`
-                transition-all duration-300 ease-in-out
-                ${isCollabSpaceVisible && mobileActiveTab !== 'chat' ? 'flex-1 mobile-full-width' : 'mobile-hidden'}
-              `}>
-                <Suspense fallback={
-                  <div className="flex h-full items-center justify-center bg-neutral-900">
-                    <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full"></div>
-                  </div>
-                }>
-                  <CollaborationSpace
-                    isVisible={isCollabSpaceVisible}
-                    roomId={roomId}
-                    user={user}
-                    otherUser={otherUser}
-                    allUsers={room?.participantProfiles || []}
-                    mobileActiveTab={mobileActiveTab}
-                  />
-                </Suspense>
-              </div>
-            ) : (
-              // Desktop: Resizable panel
-              <ResizablePanel
-                defaultWidth={collabSpaceWidth}
-                minWidth={280}
-                maxWidth={800}
-                resizeHandle="left"
-                onResize={handleCollabSpaceResize}
-                disabled={!isCollabSpaceVisible}
-                className={`
-                  transition-all duration-300 ease-in-out
-                  ${isCollabSpaceVisible ? 'opacity-100' : 'w-0 opacity-0 overflow-hidden'}
-                `}
-              >
-                <Suspense fallback={
-                  <div className="flex h-full items-center justify-center bg-neutral-900">
-                    <div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full"></div>
-                  </div>
-                }>
-                  <CollaborationSpace
-                    isVisible={isCollabSpaceVisible}
-                    roomId={roomId}
-                    user={user}
-                    otherUser={otherUser}
-                    allUsers={room?.participantProfiles || []}
-                    mobileActiveTab={undefined}
-                  />
-                </Suspense>
-              </ResizablePanel>
+    if (roomLoading && !room) return <LoadingScreen text="Подключение..." />;
+
+    const otherUser = room?.participantProfiles?.find(p => p.id !== user?.id);
+
+    return (
+        <div className="flex h-screen-safe w-full overflow-hidden bg-[var(--bg-primary)]">
+            {/* Desktop Sidebar */}
+            {!isMobile && (
+                <ChatSidebar
+                    activeTab={activeTab}
+                    onTabChange={handleTabChange}
+                    onLogout={handleLogout}
+                    onSettings={handleSettings}
+                />
             )}
-          </>
-        )}
-      </div>
 
-      {/* Mobile Navigation */}
-      {isMobile && user && (
-        <MobileNavigation
-          activeTab={mobileActiveTab}
-          onTabChange={handleMobileTabChange}
-          isCollabSpaceVisible={isCollabSpaceVisible}
-          onToggleCollabSpace={handleToggleCollabSpace}
-        />
-      )}
-    </div>
-  );
+            {/* Main Content */}
+            <main className={cn(
+                "flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden",
+                isMobile && "pb-[var(--nav-height-mobile)]"
+            )}>
+                {activeTab === 'chat' && (
+                    <ChatArea
+                        user={user}
+                        roomId={roomId}
+                        isCollabSpaceVisible={false}
+                        onToggleCollaborationSpace={() => handleTabChange('canvas')}
+                        onMobileBack={handleMobileBack}
+                    />
+                )}
+
+                {(activeTab === 'canvas' || activeTab === 'games') && (
+                    <Suspense fallback={<LoadingScreen text="Загрузка..." />}>
+                        <CollaborationSpace
+                            isVisible={true}
+                            roomId={roomId}
+                            user={user}
+                            otherUser={otherUser}
+                            allUsers={room?.participantProfiles || []}
+                            mobileActiveTab={activeTab === 'canvas' ? 'canvas' : 'games'}
+                        />
+                    </Suspense>
+                )}
+
+                {activeTab === 'users' && (
+                    <div className="flex-1 p-4 overflow-y-auto">
+                        <UserList users={room?.participantProfiles || []} currentUserId={user.id} />
+                    </div>
+                )}
+
+                {activeTab === 'stats' && (
+                    <ChatStats
+                        messageCount={0}
+                        userCount={room?.participantProfiles?.length || 0}
+                        timeInChat="0м"
+                    />
+                )}
+            </main>
+
+            {/* Mobile Navigation */}
+            {isMobile && (
+                <MobileNavigation
+                    activeTab={activeTab === 'stats' ? 'more' : activeTab}
+                    onTabChange={(tab) => {
+                        if (tab === 'more') {
+                            handleTabChange('stats');
+                        } else {
+                            handleTabChange(tab);
+                        }
+                    }}
+                />
+            )}
+        </div>
+    );
 }

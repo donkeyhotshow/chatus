@@ -36,10 +36,11 @@ npm run build
 
 #### Крок 3: Деплой
 ```bash
-# Деплой на Firebase Hosting
-firebase deploy --only hosting
+# Деплой на Firebase Hosting (з підтримкою SSR)
+# Важливо: Увімкніть експериментальну підтримку веб-фреймворків
+firebase experiments:enable webframeworks
 
-# Або повний деплой з Firestore правилами
+# Деплой
 firebase deploy
 ```
 

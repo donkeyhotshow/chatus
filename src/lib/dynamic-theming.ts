@@ -25,7 +25,7 @@ export function extractColorsFromAvatar(imageData: string): Promise<DominantColo
         img.crossOrigin = 'anonymous';
 
         img.onload = () => {
-            const canvas = doeateElement('canvas');
+            const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
 
             if (!ctx) {

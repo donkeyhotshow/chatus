@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
     CheckCircle, AlertCircle, XCircle, Info, X
 } from 'lucide-react';
@@ -45,6 +45,13 @@ export function ToastNotificationComponent({ toast, onDismiss }: ToastNotificati
 
     const Icon = toastIcons[toast.type];
 
+    const handleDismiss = useCallback(() => {
+        setIsExiting(true);
+        setTimeout(() => {
+            onDismiss(toast.id);
+        }, 300);
+    }, [onDismiss, toast.id]);
+
     useEffect(() => {
         // Animate in
         const timer = setTimeout(() => setIsVisible(true), 50);
@@ -63,13 +70,6 @@ export function ToastNotificationComponent({ toast, onDismiss }: ToastNotificati
 
         return () => clearTimeout(timer);
     }, [toast.duration, handleDismiss]);
-
-    const handleDismiss = () => {
-        setIsExiting(true);
-        setTimeout(() => {
-            onDismiss(toast.id);
-        }, 300);
-    };
 
     const handleAction = () => {
         if (toast.action) {

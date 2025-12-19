@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, HTMLMotionProps } from "framer-motion";
 import { Eye, EyeOff, X, Check, AlertCircle } from "lucide-react";
 
-export interface EnhancedInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
+export interface EnhancedInputProps extends Omit<HTMLMotionProps<"input">, 'size'> {
     label?: string;
     error?: string;
     success?: string;

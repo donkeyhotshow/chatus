@@ -46,25 +46,28 @@ export class TypingManager {
 
     this.typingRef = ref(rtdb, `typing/${roomId}/${userId}`);
 
-    // Debounced typing indicator (300ms delay)
+    // Debounced stop typing (1.5 seconds delay)
     this.sendTypingDebounced = debounce(async () => {
       try {
-        await set(this.typingRef, true);
-        // Auto-clear typing after 1.5 seconds
-        setTimeout(() => {
-          set(this.typingRef, false).catch(() => { });
-        }, 1500);
+        await set(this.typingRef, false);
       } catch (error) {
-        logger.error('Failed to update typing status', error as Error, { userId: this.userId });
+        logger.error('Failed to clear typing status', error as Error, { userId: this.userId });
       }
-    }, 300);
+    }, 1500);
   }
 
   /**
    * Send typing indicator
    */
-  sendTyping() {
-    this.sendTypingDebounced();
+  async sendTyping() {
+    try {
+      // Set typing to true immediately
+      await set(this.typingRef, true);
+      // Schedule clearing typing status
+      this.sendTypingDebounced();
+    } catch (error) {
+      logger.error('Failed to update typing status', error as Error, { userId: this.userId });
+    }
   }
 
   /**

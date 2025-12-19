@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { PenTool, Eraser, Trash2, Brush, Tally1, Bot, Pen, Palette, Settings } from 'lucide-react';
+import { PenTool, Eraser, Trash2, Brush, Tally1, Bot, Pen, Palette, Settings, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Slider } from '../ui/slider';
 
@@ -31,6 +31,7 @@ type FloatingToolbarProps = {
     onStrokeWidthChange: (width: number) => void;
     onBrushTypeChange: (brush: BrushType) => void;
     onClearSheet: () => void;
+    onSendToChat: () => void;
 };
 
 export function FloatingToolbar({
@@ -43,7 +44,8 @@ export function FloatingToolbar({
     onColorChange,
     onStrokeWidthChange,
     onBrushTypeChange,
-    onClearSheet
+    onClearSheet,
+    onSendToChat
 }: FloatingToolbarProps) {
     const [isExpanded, setIsExpanded] = useState(false);
     const [showColorPalette, setShowColorPalette] = useState(false);
@@ -75,6 +77,14 @@ export function FloatingToolbar({
             navigator.vibrate([50, 25, 50]);
         }
         onClearSheet();
+    };
+
+    const handleSend = () => {
+        if ('vibrate' in navigator) {
+            navigator.vibrate(10);
+        }
+        onSendToChat();
+        setIsExpanded(false);
     };
 
     return (
@@ -184,6 +194,13 @@ export function FloatingToolbar({
                                         <Palette className="w-5 h-5" />
                                     </button>
                                 )}
+
+                                <button
+                                    onClick={handleSend}
+                                    className="p-3 rounded-xl transition-all duration-200 flex items-center justify-center bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 active:scale-95"
+                                >
+                                    <Send className="w-5 h-5" />
+                                </button>
 
                                 <button
                                     onClick={handleClear}

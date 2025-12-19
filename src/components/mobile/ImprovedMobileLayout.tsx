@@ -6,9 +6,8 @@ import { ArrowLeft, Search, MoreVertical } from 'lucide-react';
 import { UserProfile } from '@/lib/types';
 import { ChatArea } from '../chat/ChatArea';
 import { CollaborationSpace } from '../chat/CollaborationSpace';
-import { MobileNavigation } from './MobileNavigation';
+import { MobileNavigation, MobileTab } from './MobileNavigation';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { cn } from '@/lib/utils';
 
 interface ImprovedMobileLayoutProps {
     user: UserProfile;
@@ -25,7 +24,7 @@ export function ImprovedMobileLayout({
     allUsers,
     onBack
 }: ImprovedMobileLayoutProps) {
-    const [activeTab, setActiveTab] = useState<'chat' | 'canvas' | 'games' | 'users'>('chat');
+    const [activeTab, setActiveTab] = useState<MobileTab>('chat');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const isMobile = useIsMobile();
@@ -42,7 +41,8 @@ export function ImprovedMobileLayout({
         }
     };
 
-    const handleTabChange = (tab: 'chat' | 'canvas' | 'games' | 'users') => {
+    const handleTabChange = (tab: MobileTab) => {
+        if (tab === 'more') return; // Handle 'more' separately if needed
         triggerHaptic('light');
         setActiveTab(tab);
         setIsSearchOpen(false); // Close search when switching tabs
@@ -131,7 +131,7 @@ export function ImprovedMobileLayout({
                                     </h1>
                                     {activeTab === 'chat' && otherUser && (
                                         <p className="text-xs text-neutral-400">
-                                            с {otherUser.username}
+                                            с {otherUser.name}
                                         </p>
                                     )}
                                     {activeTab === 'users' && (

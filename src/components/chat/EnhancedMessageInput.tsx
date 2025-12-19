@@ -1,14 +1,16 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Smile, Paperclip, Mic, Image, X } from 'lucide-react';
+import { Send, Smile, Image as ImageIcon, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { Message } from '@/lib/types';
 
 interface EnhancedMessageInputProps {
-    onSend: (message: string) => void;
+    onSend: (text: string) => void;
     onTyping?: (isTyping: boolean) => void;
     onFileUpload?: (file: File) => void;
+    replyTo?: Message | null;
+    onCancelReply?: () => void;
     disabled?: boolean;
     placeholder?: string;
     className?: string;
@@ -18,296 +20,191 @@ export function EnhancedMessageInput({
     onSend,
     onTyping,
     onFileUpload,
+    replyTo,
+    onCancelReply,
     disabled = false,
-    placeholder = "Напишите сообщение...",
+    placeholder = "Сообщение...",
     className
 }: EnhancedMessageInputProps) {
     const [message, setMessage] = useState('');
     const [isTyping, setIsTyping] = useState(false);
-    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-    const [isDragOver, setIsDragOver] = useState(false);
-
-    const inputRef = useRef<HTMLInputElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout>();
 
-    // Haptic feedback
-    const triggerHaptic = useCallback((type: 'light' | 'medium' | 'heavy' = 'light') => {
-        if ('vibrate' in navigator) {
-            const patterns = { light: 10, medium: 20, heavy: 30 };
-            navigator.vibrate(patterns[type]);
+    const adjustTextareaHeight = useCallback(() => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
         }
     }, []);
 
-    // Handle input change with typing indicator
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleMessageChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
         const value = e.target.value;
         setMessage(value);
 
-        // Typing indicator logic
-        if (!isTyping && value.trim() && onTyping) {
-            setIsTyping(true);
-            onTyping(true);
-        }
-
-        // Clear previous timeout
-        if (typingTimeoutRef.current) {
-            clearTimeout(typingTimeoutRef.current);
-        }
-
-        // Set new timeout to stop typing indicator
-        if (value.trim() && onTyping) {
-            typingTimeoutRef.current = setTimeout(() => {
+        if (onTyping) {
+            if (value.trim() && !isTyping) {
+                setIsTyping(true);
+                onTyping(true);
+            } else if (!value.trim() && isTyping) {
                 setIsTyping(false);
                 onTyping(false);
-            }, 1000);
-        } else if (onTyping) {
-            setIsTyping(false);
-            onTyping(false);
-        }
-    };
+            }
 
-    // Handle send message
-    const handleSend = useCallback(() => {
-        const trimmedMessage = message.trim();
-        if (trimmedMessage && !disabled) {
-            onSend(trimmedMessage);
-            setMessage('');
-            setIsTyping(false);
-            if (onTyping) onTyping(false);
-            triggerHaptic('medium');
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
 
-            // Clear typing timeout
-            if (typingTimeoutRef.current) {
-                clearTimeout(typingTimeoutRef.current);
+            if (value.trim()) {
+                typingTimeoutRef.current = setTimeout(() => {
+                    setIsTyping(false);
+                    onTyping(false);
+                }, 2000);
             }
         }
-    }, [message, disabled, onSend, onTyping, triggerHaptic]);
 
-    // Handle keyboard shortcuts
-    const handleKeyDown = (e: React.KeyboardEvent) => {
+        setTimeout(adjustTextareaHeight, 0);
+    }, [isTyping, onTyping, adjustTextareaHeight]);
+
+    const handleSend = useCallback(() => {
+        const trimmed = message.trim();
+        if (!trimmed || disabled) return;
+
+        onSend(trimmed);
+        setMessage('');
+        setIsTyping(false);
+        onTyping?.(false);
+
+        setTimeout(() => {
+            if (textareaRef.current) textareaRef.current.style.height = 'auto';
+        }, 0);
+    }, [message, disabled, onSend, onTyping]);
+
+    const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSend();
-        } else if (e.key === 'Escape') {
-            setShowEmojiPicker(false);
         }
-    };
+    }, [handleSend]);
 
-    // Handle file selection
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file && onFileUpload) {
             onFileUpload(file);
-            triggerHaptic('light');
         }
-        // Reset file input
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-        }
-    };
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    }, [onFileUpload]);
 
-    // Handle drag and drop
-    const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragOver(true);
-    };
+    useEffect(() => {
+        if (replyTo && textareaRef.current) textareaRef.current.focus();
+    }, [replyTo]);
 
-    const handleDragLeave = (e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragOver(false);
-    };
-
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragOver(false);
-
-        const file = e.dataTransfer.files[0];
-        if (file && onFileUpload) {
-            onFileUpload(file);
-            triggerHaptic('medium');
-        }
-    };
-
-    // Cleanup on unmount
     useEffect(() => {
         return () => {
-            if (typingTimeoutRef.current) {
-                clearTimeout(typingTimeoutRef.current);
-            }
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
         };
     }, []);
 
-    // Quick emoji reactions
-    const quickEmojis = ['👍', '❤️', '😂', '😮', '😢', '😡', '👏', '🔥'];
+    const canSend = message.trim().length > 0 && !disabled;
 
     return (
-        <div className={cn("relative", className)}>
-            {/* Drag overlay */}
-            <AnimatePresence>
-                {isDragOver && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute inset-0 bg-cyan-500/20 border-2 border-dashed border-cyan-500 rounded-lg flex items-center justify-center z-10"
-                    >
-                        <div className="text-center">
-                            <Image className="w-12 h-12 mx-auto mb-2 text-cyan-400" />
-                            <p className="text-cyan-300 font-medium">Отпустите для загрузки файла</p>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+        <div className={cn("p-3 safe-bottom", className)}>
+            {/* Reply preview */}
+            {replyTo && (
+                <div className="mb-2 p-2 bg-[var(--bg-tertiary)] rounded-lg border-l-2 border-[var(--accent-primary)] flex items-center justify-between">
+                    <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-[var(--text-primary)]">
+                            Ответ для {replyTo.user?.name}
+                        </p>
+                        <p className="text-xs text-[var(--text-muted)] truncate">
+                            {replyTo.text || 'Изображение'}
+                        </p>
+                    </div>
+                    {onCancelReply && (
+                        <button onClick={onCancelReply} className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+                            <X className="w-4 h-4" />
+                        </button>
+                    )}
+                </div>
+            )}
 
-            {/* Emoji Picker */}
-            <AnimatePresence>
-                {showEmojiPicker && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute bottom-full left-0 right-0 mb-2 bg-neutral-800 border border-neutral-700 rounded-lg p-3 shadow-xl"
-                    >
-                        <div className="flex items-center justify-between mb-3">
-                            <span className="text-sm font-medium text-white">Быстрые реакции</span>
-                            <button
-                                onClick={() => setShowEmojiPicker(false)}
-                                className="p-1 hover:bg-white/10 rounded touch-target"
-                            >
-                                <X className="w-4 h-4 text-neutral-400" />
-                            </button>
-                        </div>
-                        <div className="grid grid-cols-4 gap-2">
-                            {quickEmojis.map((emoji) => (
-                                <button
-                                    key={emoji}
-                                    onClick={() => {
-                                        setMessage(prev => prev + emoji);
-                                        setShowEmojiPicker(false);
-                                        inputRef.current?.focus();
-                                        triggerHaptic('light');
-                                    }}
-                                    className="p-3 text-2xl hover:bg-white/10 rounded-lg transition-colors touch-target"
-                                >
-                                    {emoji}
-                                </button>
-                            ))}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {/* Input row */}
+            <div className="flex items-end gap-2">
+                {/* Emoji button */}
+                <button
+                    type="button"
+                    disabled={disabled}
+                    className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors touch-target disabled:opacity-50"
+                >
+                    <Smile className="w-5 h-5" />
+                </button>
 
-            {/* Main Input Area */}
-            <div
-                className={cn(
-                    "flex items-end gap-3 p-4 bg-black/95 backdrop-blur border-t border-white/10 safe-area-inset-bottom transition-colors",
-                    isDragOver && "bg-cyan-500/10"
-                )}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-            >
-                {/* Message Input */}
+                {/* Text input */}
                 <div className="flex-1 relative">
-                    <input
-                        ref={inputRef}
-                        type="text"
+                    <textarea
+                        ref={textareaRef}
                         value={message}
-                        onChange={handleInputChange}
+                        onChange={handleMessageChange}
                         onKeyDown={handleKeyDown}
                         placeholder={placeholder}
                         disabled={disabled}
+                        rows={1}
                         className={cn(
-                            "w-full bg-neutral-800 text-white placeholder-neutral-400 px-4 py-3 rounded-lg border border-neutral-700 focus:border-cyan-500 focus:outline-none transition-colors focus-visible-enhanced",
-                            "md:h-12 h-14", // Больше на мобильных
-                            "md:text-sm text-base", // 16px на мобильных (предотвращает zoom на iOS)
-                            disabled && "opacity-50 cursor-not-allowed"
+                            "w-full px-4 py-2.5 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-2xl",
+                            "text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
+                            "resize-none overflow-y-auto max-h-[120px] scrollbar-hide",
+                            "focus:outline-none focus:border-[var(--accent-primary)]",
+                            "transition-colors duration-150",
+                            "disabled:opacity-50"
                         )}
-                        style={{ fontSize: '16px' }} // Дополнительная защита от zoom на iOS
+                        style={{ fontSize: '16px', minHeight: '44px' }}
                     />
 
-                    {/* Character count for long messages */}
-                    {message.length > 100 && (
-                        <div className="absolute -top-6 right-0 text-xs text-neutral-500">
+                    {/* Character count */}
+                    {message.length > 800 && (
+                        <span className={cn(
+                            "absolute right-3 bottom-2 text-xs",
+                            message.length > 1000 ? "text-[var(--error)]" : "text-[var(--text-muted)]"
+                        )}>
                             {message.length}/1000
-                        </div>
+                        </span>
                     )}
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex items-center gap-2">
-                    {/* Emoji Picker Button */}
-                    <button
-                        onClick={() => {
-                            setShowEmojiPicker(!showEmojiPicker);
-                            triggerHaptic('light');
-                        }}
-                        disabled={disabled}
-                        className={cn(
-                            "p-3 rounded-lg transition-colors touch-target focus-visible-enhanced",
-                            showEmojiPicker
-                                ? "bg-cyan-500/20 text-cyan-400"
-                                : "hover:bg-white/10 text-neutral-400",
-                            disabled && "opacity-50 cursor-not-allowed"
-                        )}
-                    >
-                        <Smile className="w-6 h-6" />
-                    </button>
-
-                    {/* File Upload Button */}
-                    <button
-                        onClick={() => {
-                            fileInputRef.current?.click();
-                            triggerHaptic('light');
-                        }}
-                        disabled={disabled}
-                        className={cn(
-                            "p-3 hover:bg-white/10 rounded-lg transition-colors touch-target focus-visible-enhanced",
-                            "text-neutral-400",
-                            disabled && "opacity-50 cursor-not-allowed"
-                        )}
-                    >
-                        <Paperclip className="w-6 h-6" />
-                    </button>
-
-                    {/* Voice Message Button (placeholder) */}
-                    <button
-                        disabled={disabled}
-                        className={cn(
-                            "p-3 hover:bg-white/10 rounded-lg transition-colors touch-target focus-visible-enhanced",
-                            "text-neutral-400",
-                            disabled && "opacity-50 cursor-not-allowed"
-                        )}
-                    >
-                        <Mic className="w-6 h-6" />
-                    </button>
-
-                    {/* Send Button */}
-                    <motion.button
-                        onClick={handleSend}
-                        disabled={!message.trim() || disabled}
-                        whileHover={{ scale: message.trim() ? 1.05 : 1 }}
-                        whileTap={{ scale: message.trim() ? 0.95 : 1 }}
-                        className={cn(
-                            "p-3 rounded-lg transition-all touch-target focus-visible-enhanced",
-                            message.trim() && !disabled
-                                ? "bg-cyan-500 text-black hover:bg-cyan-400 shadow-lg shadow-cyan-500/25"
-                                : "bg-neutral-700 text-neutral-500 cursor-not-allowed"
-                        )}
-                    >
-                        <Send className="w-6 h-6" />
-                    </motion.button>
-                </div>
-
-                {/* Hidden file input */}
+                {/* File input */}
                 <input
-                    ref={fileInputRef}
                     type="file"
-                    onChange={handleFileSelect}
-                    accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    accept="image/*"
                     className="hidden"
                 />
+
+                {/* Image button */}
+                {onFileUpload && (
+                    <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={disabled}
+                        className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors touch-target disabled:opacity-50"
+                    >
+                        <ImageIcon className="w-5 h-5" />
+                    </button>
+                )}
+
+                {/* Send button */}
+                <button
+                    onClick={handleSend}
+                    disabled={!canSend}
+                    className={cn(
+                        "p-2.5 rounded-full transition-all duration-150 touch-target",
+                        canSend
+                            ? "bg-[var(--accent-primary)] text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)]"
+                            : "bg-[var(--bg-tertiary)] text-[var(--text-muted)] cursor-not-allowed"
+                    )}
+                >
+                    <Send className="w-5 h-5" />
+                </button>
             </div>
         </div>
     );

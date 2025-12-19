@@ -1,78 +1,74 @@
 "use client";
 
-import { motion, AnimatePresence } from 'framer-motion';
-import { UserProfile } from '@/lib/types';
+import { memo } from 'react';
 import { cn } from '@/lib/utils';
 
 interface TypingIndicatorProps {
-    typingUsers: UserProfile[];
+    users: string[];
     className?: string;
 }
 
-export function TypingIndicator({ typingUsers, className }: TypingIndicatorProps) {
-    if (typingUsers.length === 0) return null;
+export const TypingIndicator = memo(function TypingIndicator({
+    users,
+    className
+}: TypingIndicatorProps) {
+    if (!users || users.length === 0) return null;
 
     const getTypingText = () => {
-        if (typingUsers.length === 1) {
-            return `${typingUsers[0].name} набирает сообщение...`;
-        } else if (typingUsers.length === 2) {
-            return `${typingUsers[0].name} и ${typingUsers[1].name} набирают сообщения...`;
+        if (users.length === 1) {
+            return `${users[0]} печатает...`;
+        } else if (users.length === 2) {
+            return `${users[0]} и ${users[1]} печатают...`;
         } else {
-            return `${typingUsers[0].name} и еще ${typingUsers.length - 1} набирают сообщения...`;
+            return `${users[0]} и еще ${users.length - 1} печатают...`;
         }
     };
 
     return (
-        <AnimatePresence>
-            <motion.div
-                initial={{ opacity: 0, y: 10, height: 0 }}
-                animate={{ opacity: 1, y: 0, height: 'auto' }}
-                exit={{ opacity: 0, y: -10, height: 0 }}
-                transition={{ duration: 0.2 }}
-                className={cn(
-                    "flex items-center gap-3 px-4 py-3 text-sm text-neutral-400 bg-neutral-900/50 mx-4 mb-2 rounded-lg border border-neutral-800",
-                    className
-                )}
-            >
-                {/* Typing avatars */}
-                <div className="flex -space-x-2">
-                    {typingUsers.slice(0, 3).map((user, index) => (
-                        <motion.div
-                            key={user.id}
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ delay: index * 0.1 }}
-                            className="w-6 h-6 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-black text-xs font-bold border-2 border-black"
-                        >
-                            {user.name.charAt(0).toUpperCase()}
-                        </motion.div>
-                    ))}
-                </div>
+        <div className={cn(
+            "flex items-center gap-3 px-4 py-2 text-[var(--text-muted)]",
+            className
+        )}>
+            {/* Avatar placeholder */}
+            <div className="w-8 h-8 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center">
+                <div className="w-2 h-2 bg-[var(--text-muted)] rounded-full animate-pulse" />
+            </div>
 
-                {/* Typing text */}
-                <span className="flex-1 font-medium">
-                    {getTypingText()}
-                </span>
-
-                {/* Animated dots */}
-                <div className="flex items-center gap-1">
-                    {[0, 1, 2].map((index) => (
-                        <motion.div
-                            key={index}
-                            className="w-2 h-2 bg-cyan-400 rounded-full"
-                            animate={{
-                                scale: [1, 1.3, 1],
-                                opacity: [0.4, 1, 0.4]
-                            }}
-                            transition={{
-                                duration: 1.2,
-                                repeat: Infinity,
-                                delay: index * 0.15
-                            }}
-                        />
-                    ))}
+            {/* Typing text and animation */}
+            <div className="flex items-center gap-2">
+                <span className="text-sm">{getTypingText()}</span>
+                <div className="flex gap-1">
+                    <div className="w-1 h-1 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-1 h-1 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-1 h-1 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
-            </motion.div>
-        </AnimatePresence>
+            </div>
+        </div>
     );
-}
+});
+
+// Compact version for mobile
+export const CompactTypingIndicator = memo(function CompactTypingIndicator({
+    users,
+    className
+}: TypingIndicatorProps) {
+    if (!users || users.length === 0) return null;
+
+    return (
+        <div className={cn(
+            "flex items-center justify-center py-2 text-[var(--text-muted)]",
+            className
+        )}>
+            <div className="flex items-center gap-2 px-3 py-1 bg-[var(--bg-tertiary)] rounded-full">
+                <span className="text-xs">
+                    {users.length === 1 ? `${users[0]} печатает` : `${users.length} печатают`}
+                </span>
+                <div className="flex gap-0.5">
+                    <div className="w-1 h-1 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-1 h-1 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-1 h-1 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+            </div>
+        </div>
+    );
+});

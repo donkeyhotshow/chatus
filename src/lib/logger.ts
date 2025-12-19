@@ -1,4 +1,5 @@
 'use client';
+import * as Sentry from "@sentry/nextjs";
 
 type LogLevel = 'error' | 'warn' | 'info' | 'debug';
 
@@ -27,7 +28,9 @@ class Logger {
 
     // In production, log with marker and prepare for external error tracking
     if (!this.isDevelopment && typeof window !== 'undefined') {
-      // Future: Send to Sentry or other error tracking
+      // Send to Sentry
+      Sentry.captureException(error || new Error(message), { extra: context });
+
       // For now, still log to console with clear production marker
       // eslint-disable-next-line no-console
       console.error('[PROD ERROR]', formatted);
@@ -41,6 +44,8 @@ class Logger {
     if (this.isDevelopment) {
       // eslint-disable-next-line no-console
       console.warn(formatted);
+    } else if (typeof window !== 'undefined') {
+      Sentry.captureMessage(message, { level: 'warning', extra: ctx });
     }
   }
 

@@ -3,24 +3,37 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Users can only access their own user document
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Chat rooms - users can read/write if authenticated
+    // Chat rooms - users can read/write if they are participants
     match /rooms/{roomId} {
-      allow read, write: if request.auth != null;
-      allow read, write: if true; // Временно для отладки production
+      allow read: if request.auth != null && (
+        resource == null || request.auth.uid in resource.data.participants
+      );
+      allow write: if request.auth != null && (
+        // Allow creating a room (resource is null)
+        resource == null || 
+        // Allow updating if user is already a participant
+        request.auth.uid in resource.data.participants ||
+        // Allow joining if room has less than 2 participants
+        resource.data.participants.size() < 2
+      );
 
-      // Messages - users can read all messages, create their own, update/delete their own
+      // Messages - users can read all messages in their room, create their own
       match /messages/{messageId} {
-        allow read: if request.auth != null;
+        allow read: if request.auth != null && 
+          request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.participants;
         allow create: if request.auth != null &&
-          request.auth.uid == request.resource.data.senderId;
+          request.auth.uid == request.resource.data.senderId &&
+          request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.participants;
         allow update: if request.auth != null && (
           // Allow sender to update their own messages
           request.auth.uid == resource.data.senderId ||
-          // Allow updating seen/delivered status by any authenticated user
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seen', 'delivered', 'reactions'])
+          // Allow updating seen/delivered status by any participant
+          (request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.participants &&
+           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['seen', 'delivered', 'reactions']))
         );
         allow delete: if request.auth != null &&
           request.auth.uid == resource.data.senderId;
@@ -28,17 +41,21 @@ service cloud.firestore {
 
       // Canvas drawings - similar to messages
       match /drawings/{drawingId} {
-        allow read: if request.auth != null;
+        allow read: if request.auth != null &&
+          request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.participants;
         allow create: if request.auth != null &&
-          request.auth.uid == request.resource.data.userId;
+          request.auth.uid == request.resource.data.userId &&
+          request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.participants;
         allow update, delete: if request.auth != null &&
           request.auth.uid == resource.data.userId;
       }
 
       // Game states - participants can read/write
       match /games/{gameId} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null;
+        allow read: if request.auth != null &&
+          request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.participants;
+        allow write: if request.auth != null &&
+          request.auth.uid in get(/databases/$(database)/documents/rooms/$(roomId)).data.participants;
       }
     }
 

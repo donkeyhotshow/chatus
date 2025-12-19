@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { Star, Users, Clock, Play } from 'lucide-react';
 import styles from './GameCard.module.css';
 
 interface GameCardProps {
@@ -13,6 +14,9 @@ interface GameCardProps {
     isLoading?: boolean;
     onClick: () => void;
     className?: string;
+    rating?: number;
+    players?: string;
+    category?: string;
 }
 
 export const GameCard: React.FC<GameCardProps> = ({
@@ -23,35 +27,74 @@ export const GameCard: React.FC<GameCardProps> = ({
     isLoading = false,
     onClick,
     className,
+    rating = 4.5,
+    players = "1-2",
+    category = "Classic"
 }) => {
     return (
         <motion.button
-            className={cn(styles.card, isLoading && styles.loading, className)}
+            className={cn(
+                "group relative flex flex-col w-full bg-neutral-900/40 border border-white/5 rounded-3xl overflow-hidden transition-all duration-500 hover:border-cyan-500/30 hover:shadow-2xl hover:shadow-cyan-500/10",
+                isLoading && "opacity-50 cursor-wait",
+                className
+            )}
             onClick={onClick}
             disabled={isLoading}
             aria-label={`Play ${title}`}
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ y: -4 }}
             whileTap={{ scale: 0.98 }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
         >
-            <div className={styles.iconWrapper}>
-                {icon}
-            </div>
-
-            <div className={styles.content}>
-                <h3 className={styles.title}>{title}</h3>
-                <p className={styles.description}>{description}</p>
-            </div>
-
-            {isLoading && (
-                <div className={styles.loadingSpinner}>
-                    <div className={styles.spinner}></div>
+            {/* Top Visual Section */}
+            <div className="relative h-32 w-full bg-gradient-to-br from-neutral-800 to-neutral-950 flex items-center justify-center overflow-hidden">
+                <div className="absolute inset-0 bg-grid-white/5 [mask-image:radial-gradient(white,transparent)]" />
+                <div className="relative z-10 p-4 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 text-cyan-400 group-hover:scale-110 transition-transform duration-500">
+                    {icon}
                 </div>
-            )}
 
-            <div className={styles.arrow}>→</div>
+                {/* Category Tag */}
+                <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/5 text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+                    {category}
+                </div>
+
+                {/* Rating */}
+                <div className="absolute top-4 right-4 flex items-center gap-1 px-2 py-1 rounded-lg bg-yellow-500/10 text-yellow-500 text-[10px] font-bold">
+                    <Star className="w-3 h-3 fill-current" />
+                    {rating.toFixed(1)}
+                </div>
+            </div>
+
+            {/* Content Section */}
+            <div className="p-5 flex-1 flex flex-col text-left space-y-3">
+                <div className="space-y-1">
+                    <h3 className="text-lg font-bold text-white group-hover:text-cyan-400 transition-colors">{title}</h3>
+                    <p className="text-xs text-neutral-500 line-clamp-2 leading-relaxed">{description}</p>
+                </div>
+
+                <div className="pt-2 flex items-center justify-between border-t border-white/5">
+                    <div className="flex items-center gap-3 text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
+                        <div className="flex items-center gap-1">
+                            <Users className="w-3 h-3" /> {players}
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" /> 5-10m
+                        </div>
+                    </div>
+
+                    <div className="w-8 h-8 rounded-full bg-cyan-500/10 flex items-center justify-center text-cyan-400 group-hover:bg-cyan-500 group-hover:text-black transition-all">
+                        {isLoading ? (
+                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                            <Play className="w-4 h-4 fill-current" />
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Hover Glow */}
+            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
         </motion.button>
     );
 };
+
