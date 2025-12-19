@@ -180,7 +180,10 @@ export class MessageService {
     }
 
     async sendMessage(messageData: any, clientMessageId?: string) {
-        if (!this.currentUser) return;
+        if (!this.currentUser) {
+            logger.warn('Cannot send message: no current user');
+            return;
+        }
 
         const msgId = clientMessageId || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         if (this.sentMessageIds.has(msgId)) return;
@@ -201,18 +204,42 @@ export class MessageService {
             return;
         }
 
+        // Optimistic update - показуємо повідомлення одразу
+        const optimisticMessage: Message = {
+            id: msgId,
+            ...messageData,
+            senderId: this.currentUser.id,
+            createdAt: Timestamp.now(),
+            reactions: [],
+            delivered: false,
+            seen: false,
+            _pending: true,
+        } as Message & { _pending?: boolean };
+
+        this.messages = [...this.messages, optimisticMessage];
+        this.notifyCallback();
+
         try {
-            await addDoc(collection(this.firestore, 'rooms', this.roomId, 'messages'), {
-                ...messageData,
-                senderId: this.currentUser.id,
-                clientMessageId: msgId,
-                createdAt: serverTimestamp(),
-                reactions: [],
-                delivered: false,
-                seen: false,
-            });
+            // Retry logic з exponential backoff
+            await withRetryAndTimeout(
+                () => addDoc(collection(this.firestore, 'rooms', this.roomId, 'messages'), {
+                    ...messageData,
+                    senderId: this.currentUser!.id,
+                    clientMessageId: msgId,
+                    createdAt: serverTimestamp(),
+                    reactions: [],
+                    delivered: false,
+                    seen: false,
+                }),
+                { timeoutMs: 15_000, attempts: 3, backoffMs: 1000 }
+            );
         } catch (error) {
+            // Видаляємо optimistic повідомлення при помилці
+            this.messages = this.messages.filter(m => m.id !== msgId);
             this.sentMessageIds.delete(msgId);
+            this.notifyCallback();
+
+            logger.error('Failed to send message after retries', error as Error, { roomId: this.roomId });
             throw error;
         }
     }
