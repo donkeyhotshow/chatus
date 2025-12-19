@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/icons/logo';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { isTestMode } from '@/lib/mock-services';
 
 export function HomeClient() {
     const [roomCode, setRoomCode] = useState('');
@@ -28,8 +29,26 @@ export function HomeClient() {
     useEffect(() => {
         const trimmedUsername = username.trim();
         const trimmedRoomCode = roomCode.trim();
+
+        // Username validation: 2-20 characters
         const isUsernameValid = trimmedUsername.length >= 2 && trimmedUsername.length <= 20;
-        const isRoomCodeValid = trimmedRoomCode.length >= 3 && trimmedRoomCode.length <= 6 && /^[A-Z0-9]+$/.test(trimmedRoomCode);
+
+        // Room code validation: 3-6 characters, only uppercase letters and numbers
+        const isRoomCodeValid = trimmedRoomCode.length >= 3 &&
+                               trimmedRoomCode.length <= 6 &&
+                               /^[A-Z0-9]+$/.test(trimmedRoomCode);
+
+        // Debug logging in development
+        if (process.env.NODE_ENV === 'development') {
+            console.log('Form validation:', {
+                username: trimmedUsername,
+                roomCode: trimmedRoomCode,
+                isUsernameValid,
+                isRoomCodeValid,
+                isFormValid: isUsernameValid && isRoomCodeValid
+            });
+        }
+
         setIsFormValid(isUsernameValid && isRoomCodeValid);
     }, [username, roomCode]);
 
@@ -62,11 +81,22 @@ export function HomeClient() {
             result += chars.charAt(Math.floor(Math.random() * chars.length));
         }
         setRoomCode(result);
-        toast({ title: "Комната создана", description: `Код: ${result}` });
+
+        if (isTestMode()) {
+            toast({
+                title: "Демо комната создана",
+                description: `Код: ${result} (работает локально)`
+            });
+        } else {
+            toast({
+                title: "Комната создана",
+                description: `Код: ${result}`
+            });
+        }
     };
 
-    const isUsernameValid = username.trim().length >= 2;
-    const isRoomCodeValid = roomCode.trim().length >= 3 && /^[A-Z0-9]+$/.test(roomCode.trim());
+    const isUsernameValid = username.trim().length >= 2 && username.trim().length <= 20;
+    const isRoomCodeValid = roomCode.trim().length >= 3 && roomCode.trim().length <= 6 && /^[A-Z0-9]+$/.test(roomCode.trim());
 
     return (
         <div className="min-h-screen w-full bg-[var(--bg-primary)]">

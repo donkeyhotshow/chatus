@@ -11,7 +11,7 @@
 .env.test
 .env.vercel
 *.env
-ALL_API_KEYS.env
+config/
 **/secrets/
 **/credentials/
 serviceAccountKey.json
@@ -67,6 +67,7 @@ yarn-error.log*
 # TypeScript
 # =============================================================================
 *.tsbuildinfo
+tsconfig.tsbuildinfo
 next-env.d.ts
 
 # =============================================================================
