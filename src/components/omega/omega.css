@@ -1,7 +1,7 @@
 /* Omega Dark Theme CSS */
 :root {
   --omega-bg-primary: #0a0a0a;
--secondary: #1a1a1a;
+  --omega-bg-secondary: #1a1a1a;
   --omega-bg-tertiary: #2a2a2a;
   --omega-bg-quaternary: #3a3a3a;
   --chat-primary: #10b981;
