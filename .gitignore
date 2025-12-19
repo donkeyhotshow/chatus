@@ -106,3 +106,4 @@ public/firebase-messaging-sw.js
 Thumbs.db
 .DS_Store
 Desktop.ini
+.env*.local
