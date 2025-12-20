@@ -340,7 +340,12 @@ export class ChatService {
   }
 
   public async disconnect() {
-    if (this.currentUser) await this.leaveRoom();
+    try {
+      if (this.currentUser) await this.leaveRoom();
+    } catch (error) {
+      // Ignore errors during disconnect - user is leaving anyway
+      logger.warn('Error during disconnect leaveRoom', error as Error);
+    }
 
     this.messageService.disconnect();
     this.presenceService.disconnect();
@@ -353,8 +358,12 @@ export class ChatService {
     this.isJoining = false;
     this.joinPromise = null;
 
-    const mq = this._messageQueue ?? getMessageQueue();
-    mq.setSendCallback(() => Promise.reject(new Error('Disconnected')));
+    try {
+      const mq = this._messageQueue ?? getMessageQueue();
+      mq.setSendCallback(() => Promise.reject(new Error('Disconnected')));
+    } catch {
+      // Ignore message queue errors during disconnect
+    }
   }
 }
 

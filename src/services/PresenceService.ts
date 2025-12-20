@@ -144,7 +144,8 @@ export class PresenceService {
 
             this.lastActivity = Date.now();
         } catch (error) {
-            logger.error("Failed to update presence", error as Error);
+            // Don't crash the app on presence errors - just log and continue
+            logger.warn("Failed to update presence (non-critical)", error as Error);
         }
     }
 
