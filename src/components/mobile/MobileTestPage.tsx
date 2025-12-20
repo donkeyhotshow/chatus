@@ -2,10 +2,11 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileProfileCreation } from './MobileProfileCreation';
 import { MobileChatInterface } from './MobileChatInterface';
 import { MobilePixelAvatarEditor } from './MobilePixelAvatarEditor';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 export function MobileTestPage() {
     const [currentView, setCurrentView] = useState<'menu' | 'profile' | 'chat' | 'editor'>('menu');
@@ -17,23 +18,18 @@ export function MobileTestPage() {
         {
             id: '1',
             name: 'Алексей',
-            isOnline: true,
-            role: 'admin' as const,
-            isTyping: false
+            isOnline: true
         },
         {
             id: '2',
             name: 'Мария',
-            isOnline: true,
-            role: 'moderator' as const,
-            isTyping: true
+            isOnline: true
         },
         {
             id: 'current',
             name: userProfile?.name || 'Вы',
             avatar: userProfile?.avatar,
-            isOnline: true,
-            role: 'member' as const
+            isOnline: true
         }
     ];
 
@@ -92,10 +88,12 @@ export function MobileTestPage() {
     };
 
     const handleSendMessage = (text: string) => {
+        // eslint-disable-next-line no-console
         console.log('Отправка сообщения:', text);
     };
 
     const handleAvatarSave = (dataUrl: string) => {
+        // eslint-disable-next-line no-console
         console.log('Аватар сохранен:', dataUrl);
     };
 
@@ -103,7 +101,6 @@ export function MobileTestPage() {
         return (
             <MobileProfileCreation
                 onComplete={handleProfileComplete}
-                onCancel={() => setCurrentView('menu')}
             />
         );
     }
@@ -198,10 +195,13 @@ export function MobileTestPage() {
                     >
                         <h3 className="text-white font-medium mb-3">Ваш профиль:</h3>
                         <div className="flex items-center gap-3">
-                            <img
+                            <Image
                                 src={userProfile.avatar}
                                 alt="Avatar"
+                                width={48}
+                                height={48}
                                 className="w-12 h-12 rounded-xl"
+                                unoptimized
                             />
                             <div>
                                 <div className="text-white font-medium">{userProfile.name}</div>
@@ -212,8 +212,8 @@ export function MobileTestPage() {
                 )}
 
                 <div className="mt-8 text-center">
-                    <p className="text-neutral-500 text-sm">
-                        Используйте жесты: свайпы, долгие нажатия, тап-и-удержание
+                    <p className="text-neutral-500 text-xs">
+                        v0.1.0 • Mobile First Design
                     </p>
                 </div>
             </div>

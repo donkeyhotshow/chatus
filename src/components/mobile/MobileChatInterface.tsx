@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     ArrowLeft,
@@ -15,9 +16,9 @@ import {
     Trash2,
     Forward
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { SwipeGestures } from './SwipeGestures';
 import { KeyboardAwareContainer } from './KeyboardAwareInput';
-import { cn } from '@/lib/utils';
 
 interface Message {
     id: string;
@@ -67,6 +68,8 @@ export function MobileChatInterface({
     onForwardMessage
 }: MobileChatInterfaceProps) {
     const [inputText, setInputText] = useState('');
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [showSettings, setShowSettings] = useState(false);
     const [showParticipants, setShowParticipants] = useState(false);
     const [contextMenu, setContextMenu] = useState<MessageContextMenu | null>(null);
     const [isRecording, setIsRecording] = useState(false);
@@ -276,10 +279,13 @@ export function MobileChatInterface({
                             {!message.isOwn && (
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white text-xs font-bold mr-2 flex-shrink-0">
                                     {message.userAvatar ? (
-                                        <img
+                                        <Image
                                             src={message.userAvatar}
                                             alt={message.userName}
+                                            width={32}
+                                            height={32}
                                             className="w-full h-full rounded-full object-cover"
+                                            unoptimized
                                         />
                                     ) : (
                                         message.userName.charAt(0).toUpperCase()
@@ -321,10 +327,13 @@ export function MobileChatInterface({
                             {message.isOwn && (
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white text-xs font-bold ml-2 flex-shrink-0">
                                     {currentUser.avatar ? (
-                                        <img
+                                        <Image
                                             src={currentUser.avatar}
                                             alt={currentUser.name}
+                                            width={32}
+                                            height={32}
                                             className="w-full h-full rounded-full object-cover"
+                                            unoptimized
                                         />
                                     ) : (
                                         currentUser.name.charAt(0).toUpperCase()
@@ -516,10 +525,13 @@ export function MobileChatInterface({
                                         <div className="relative">
                                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white text-sm font-bold">
                                                 {user.avatar ? (
-                                                    <img
+                                                    <Image
                                                         src={user.avatar}
                                                         alt={user.name}
+                                                        width={40}
+                                                        height={40}
                                                         className="w-full h-full rounded-full object-cover"
+                                                        unoptimized
                                                     />
                                                 ) : (
                                                     user.name.charAt(0).toUpperCase()

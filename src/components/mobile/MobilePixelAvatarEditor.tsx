@@ -73,6 +73,7 @@ export function MobilePixelAvatarEditor({
             drawGrid(ctx);
             saveToHistory();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [initialAvatar]);
 
     const drawGrid = (ctx: CanvasRenderingContext2D) => {
@@ -304,7 +305,7 @@ export function MobilePixelAvatarEditor({
         if ('vibrate' in navigator) {
             navigator.vibrate([30, 10, 30]);
         }
-    }, []);
+    }, [saveToHistory]);
 
     const clearCanvas = useCallback(() => {
         const canvas = canvasRef.current;
@@ -317,7 +318,7 @@ export function MobilePixelAvatarEditor({
         ctx.fillRect(0, 0, MOBILE_CANVAS_SIZE, MOBILE_CANVAS_SIZE);
         drawGrid(ctx);
         saveToHistory();
-    }, []);
+    }, [saveToHistory]);
 
     // Expose clearCanvas for potential future use
     void clearCanvas;

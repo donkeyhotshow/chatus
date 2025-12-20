@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { mockRoomService, mockAI, isTestMode } from '@/lib/mock-services';
-import { Room } from '@/types';
+import { Room } from '@/lib/types';
 
 export function DemoMode() {
   const [username, setUsername] = useState('');

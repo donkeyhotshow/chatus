@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Search, MoreVertical } from 'lucide-react';
 import { UserProfile } from '@/lib/types';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { ChatArea } from '../chat/ChatArea';
 import { CollaborationSpace } from '../chat/CollaborationSpace';
 import { MobileNavigation, MobileTab } from './MobileNavigation';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ImprovedMobileLayoutProps {
     user: UserProfile;
@@ -175,8 +175,6 @@ export function ImprovedMobileLayout({
                             <ChatArea
                                 user={user}
                                 roomId={roomId}
-                                isCollabSpaceVisible={false}
-                                onToggleCollaborationSpace={() => { }}
                                 onMobileBack={handleBack}
                             />
                         </motion.div>

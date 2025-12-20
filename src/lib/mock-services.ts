@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // =============================================================================
 // MOCK SERVICES FOR TESTING WITHOUT EXTERNAL DEPENDENCIES
 // =============================================================================
 
-import { ChatMessage, Room, User } from '@/types';
+import { ChatMessage, Room, User } from '@/lib/types';
 
 // Mock data storage
 let mockUsersData: User[] = [];
