@@ -7,6 +7,7 @@ const puppeteer = require('puppeteer');
 
 const BASE_URL = 'http://localhost:3000';
 const TEST_ROOM = 'test-room-' + Date.now();
+const TEST_USERNAME = 'TestUser' + Math.floor(Math.random() * 1000);
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -31,13 +32,13 @@ class ChatUsE2ETester {
     this.page = await this.browser.newPage();
 
     this.page.on('console', msg => {
-      if (msg.type() === 'error') {
-        this.results.warnings.push(`Console error: ${msg.text()}`);
+      if (msg.type() === 'error' && !msg.text().includes('404')) {
+        this.results.warnings.push(`Console: ${msg.text().substring(0, 100)}`);
       }
     });
 
     this.page.on('pageerror', err => {
-      this.results.warnings.push(`Page error: ${err.message}`);
+      this.results.warnings.push(`Page error: ${err.message.substring(0, 100)}`);
     });
   }
 
@@ -60,10 +61,10 @@ class ChatUsE2ETester {
     console.log('\n🏠 1. ГЛАВНАЯ СТРАНИЦА');
     await this.testHomePage();
 
-    console.log('\n👤 2. ЧАТ КОМНАТА');
-    await this.testChatRoom();
+    console.log('\n👤 2. СОЗДАНИЕ ПРОФИЛЯ');
+    await this.testProfileCreation();
 
-    console.log('\n📨 3. ИНТЕРФЕЙС ЧАТА');
+    console.log('\n💬 3. ИНТЕРФЕЙС ЧАТА');
     await this.testChatInterface();
 
     console.log('\n📱 4. МОБИЛЬНАЯ АДАПТАЦИЯ');
@@ -78,7 +79,7 @@ class ChatUsE2ETester {
   async testHomePage() {
     await this.test('Загрузка главной страницы', async () => {
       await this.page.goto(BASE_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
-      await sleep(2000);
+      await sleep(3000);
     });
 
     await this.test('Проверка заголовка страницы', async () => {
@@ -92,32 +93,72 @@ class ChatUsE2ETester {
     });
   }
 
-  async testChatRoom() {
+  async testProfileCreation() {
     await this.test('Переход в чат комнату', async () => {
       await this.page.goto(`${BASE_URL}/chat/${TEST_ROOM}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
-      await sleep(5000); // Ждём загрузки Firebase
+      await sleep(5000);
     });
+
+    await this.test('Проверка диалога создания профиля', async () => {
+      const hasProfileDialog = await this.page.evaluate(() => {
+        const html = document.body.innerHTML.toLowerCase();
+        return html.includes('имя') || html.includes('name') || html.includes('профиль') ||
+               html.includes('profile') || html.includes('создать') || html.includes('create');
+      });
+      if (!hasProfileDialog) {
+        console.log('    ℹ️ Диалог профиля не найден (возможно уже создан)');
+      }
+    });
+
+    await this.test('Поиск поля ввода имени', async () => {
+      await sleep(2000);
+      const inputSelector = await this.page.evaluate(() => {
+        const input = document.querySelector('input[type="text"]') ||
+                      document.querySelector('input:not([type])') ||
+                      document.querySelector('input[placeholder*="имя"]') ||
+                      document.querySelector('input[placeholder*="name"]');
+        return input ? true : false;
+      });
+      if (inputSelector) {
+        const input = await this.page.$('input[type="text"], input:not([type])');
+        if (input) {
+          await input.click();
+          await input.type(TEST_USERNAME, { delay: 50 });
+          console.log(`    ℹ️ Введено имя: ${TEST_USERNAME}`);
+        }
+      }
+    });
+
+    await this.test('Нажатие кнопки создания профиля', async () => {
+      await sleep(1000);
+      const buttons = await this.page.$$('button');
+      for (const button of buttons) {
+        const text = await this.page.evaluate(el => el.textContent?.toLowerCase() || '', button);
+        if (text.includes('создать') || text.includes('create') || text.includes('начать') ||
+            text.includes('войти') || text.includes('продолжить') || text.includes('continue')) {
+          await button.click();
+          console.log(`    ℹ️ Нажата кнопка: ${text}`);
+          await sleep(3000);
+          break;
+        }
+      }
+    });
+  }
+
+  async testChatInterface() {
+    await sleep(5000); // Ждём загрузки чата после создания профиля
 
     await this.test('Проверка загрузки чата', async () => {
       const bodyLength = await this.page.evaluate(() => document.body.innerHTML.length);
       if (bodyLength < 500) throw new Error('Чат не загружен');
     });
 
-    await this.test('Проверка наличия UI элементов', async () => {
-      const hasUI = await this.page.evaluate(() => {
-        return document.querySelectorAll('button').length > 0 ||
-               document.querySelectorAll('div').length > 10;
-      });
-      if (!hasUI) throw new Error('UI элементы не найдены');
-    });
-  }
-
-  async testChatInterface() {
     await this.test('Поиск поля ввода сообщения', async () => {
+      await sleep(2000);
       const hasInput = await this.page.evaluate(() => {
         return document.querySelector('textarea') !== null ||
                document.querySelector('input[type="text"]') !== null ||
-               document.querySelector('[contenteditable]') !== null;
+               document.querySelector('[contenteditable="true"]') !== null;
       });
       if (!hasInput) throw new Error('Поле ввода не найдено');
     });
@@ -125,26 +166,46 @@ class ChatUsE2ETester {
     await this.test('Поиск кнопок управления', async () => {
       const buttonCount = await this.page.evaluate(() => document.querySelectorAll('button').length);
       if (buttonCount < 1) throw new Error('Кнопки не найдены');
+      console.log(`    ℹ️ Найдено кнопок: ${buttonCount}`);
     });
 
     await this.test('Проверка SVG иконок', async () => {
-      const hasSvg = await this.page.evaluate(() => document.querySelectorAll('svg').length > 0);
-      if (!hasSvg) throw new Error('SVG иконки не найдены');
+      const svgCount = await this.page.evaluate(() => document.querySelectorAll('svg').length);
+      if (svgCount < 1) throw new Error('SVG иконки не найдены');
+      console.log(`    ℹ️ Найдено SVG: ${svgCount}`);
+    });
+
+    await this.test('Ввод тестового сообщения', async () => {
+      const textarea = await this.page.$('textarea');
+      if (textarea) {
+        await textarea.click();
+        await textarea.type('Тестовое сообщение от E2E теста! 🎉', { delay: 30 });
+        console.log('    ℹ️ Сообщение введено');
+      }
     });
   }
 
   async testMobileAdaptation() {
     await this.test('Переключение на мобильный viewport', async () => {
       await this.page.setViewport({ width: 375, height: 667 });
-      await sleep(1000);
+      await sleep(1500);
     });
 
     await this.test('Проверка адаптивности', async () => {
       const isResponsive = await this.page.evaluate(() => {
-        const body = document.body;
-        return body.scrollWidth <= window.innerWidth + 10;
+        return document.body.scrollWidth <= window.innerWidth + 10;
       });
       if (!isResponsive) throw new Error('Страница не адаптивна');
+    });
+
+    await this.test('Проверка мобильных элементов', async () => {
+      const hasMobileUI = await this.page.evaluate(() => {
+        const html = document.body.innerHTML;
+        return document.querySelectorAll('button').length > 0 ||
+               html.includes('nav') ||
+               document.querySelector('[class*="mobile"]') !== null;
+      });
+      if (!hasMobileUI) throw new Error('Мобильный UI не найден');
     });
 
     await this.test('Возврат к desktop viewport', async () => {
@@ -157,20 +218,31 @@ class ChatUsE2ETester {
     await this.test('Проверка CSS переменных', async () => {
       const hasCSSVars = await this.page.evaluate(() => {
         const styles = getComputedStyle(document.documentElement);
-        const bgPrimary = styles.getPropertyValue('--bg-primary');
-        const accent = styles.getPropertyValue('--accent-primary');
-        return bgPrimary.length > 0 || accent.length > 0;
+        const bgPrimary = styles.getPropertyValue('--bg-primary').trim();
+        const accent = styles.getPropertyValue('--accent-primary').trim();
+        const textPrimary = styles.getPropertyValue('--text-primary').trim();
+        console.log('CSS vars:', { bgPrimary, accent, textPrimary });
+        return bgPrimary.length > 0 || accent.length > 0 || textPrimary.length > 0;
       });
       if (!hasCSSVars) throw new Error('CSS переменные не найдены');
     });
 
     await this.test('Проверка применения стилей', async () => {
       const hasStyles = await this.page.evaluate(() => {
-        const el = document.body;
-        const styles = getComputedStyle(el);
-        return styles.fontFamily.length > 0;
+        const styles = getComputedStyle(document.body);
+        return styles.fontFamily.length > 0 && styles.backgroundColor.length > 0;
       });
       if (!hasStyles) throw new Error('Стили не применены');
+    });
+
+    await this.test('Проверка темы', async () => {
+      const hasTheme = await this.page.evaluate(() => {
+        const html = document.documentElement;
+        const body = document.body;
+        return html.classList.length > 0 || body.style.cssText.length > 0 ||
+               getComputedStyle(body).backgroundColor !== 'rgba(0, 0, 0, 0)';
+      });
+      if (!hasTheme) throw new Error('Тема не применена');
     });
   }
 

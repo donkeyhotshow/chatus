@@ -12,7 +12,7 @@ export interface ErrorContext {
     userId?: string;
     roomId?: string;
     messageId?: string;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export interface ErrorHandlerOptions {
@@ -72,7 +72,7 @@ export class EnhancedErrorHandler {
     /**
      * Handle Firebase-specific errors
      */
-    handleFirebaseError(error: any, context: ErrorContext = {}): void {
+    handleFirebaseError(error: Error & { code?: string }, context: ErrorContext = {}): void {
         const errorCode = error?.code || 'unknown';
         const errorMessage = error?.message || 'Unknown Firebase error';
 
@@ -125,7 +125,7 @@ export class EnhancedErrorHandler {
     /**
      * Handle React component errors
      */
-    handleComponentError(error: Error, errorInfo: any, context: ErrorContext = {}): void {
+    handleComponentError(error: Error, errorInfo: { componentStack?: string }, context: ErrorContext = {}): void {
         logger.error('React Component Error', error, { ...context, errorInfo });
 
         toast({

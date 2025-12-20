@@ -1,27 +1,27 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, memo, useMemo } from 'react';
+import { X, MessageCircle } from 'lucide-react';
+import { doc, Timestamp } from 'firebase/firestore';
+import { useDebounce } from 'use-debounce';
+import Image from 'next/image';
 import type { Message, Room, UserProfile } from '@/lib/types';
+import { DoodlePad, MessageSearch } from '@/components/lazy/LazyComponents';
+import { useFirebase } from '@/components/firebase/FirebaseProvider';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { useChatService } from '@/hooks/useChatService';
+import { usePresence } from '@/hooks/usePresence';
+import { useToast } from '@/hooks/use-toast';
+import { useDoc } from '@/hooks/useDoc';
+import { useChatPersistence, useUserPreferences } from '@/hooks/use-chat-persistence';
+import { logger } from '@/lib/logger';
 import { MobileErrorHandler } from '../mobile/MobileErrorHandler';
 import { ChatHeader } from './ChatHeader';
 import MessageList from './MessageList';
 import { NewMessageNotification } from './NewMessageNotification';
 import { ConnectionStatus } from './ConnectionStatus';
-import { DoodlePad } from '@/components/lazy/LazyComponents';
-import { X, MessageCircle } from 'lucide-react';
-import { useChatService } from '@/hooks/useChatService';
-import { usePresence } from '@/hooks/usePresence';
-import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent } from '../ui/dialog';
-import { useDoc } from '@/hooks/useDoc';
-import { doc, Timestamp } from 'firebase/firestore';
-import { useFirebase } from '../firebase/FirebaseProvider';
-import { logger } from '@/lib/logger';
-import { useDebounce } from 'use-debounce';
-import { MessageSearch } from '@/components/lazy/LazyComponents';
 import { TypingIndicator } from './TypingIndicator';
 import { EnhancedMessageInput } from './EnhancedMessageInput';
-import { useChatPersistence, useUserPreferences } from '@/hooks/use-chat-persistence';
 
 interface ChatAreaProps {
     user: UserProfile;
@@ -47,7 +47,7 @@ export const ChatArea = memo(function ChatArea({
     const { saveMessages, loadMessages, hasHistory } = useChatPersistence(roomId);
     const { updateLastRoomId } = useUserPreferences();
 
-    const { db } = useFirebase()!;
+    const { db } = useFirebase() ?? {};
     const { toast } = useToast();
 
     const normalizedRoomId = useMemo(() => {
@@ -78,7 +78,7 @@ export const ChatArea = memo(function ChatArea({
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const lastMessageCountRef = useRef<number>(0);
-    const messageListRef = useRef<any>(null);
+    const messageListRef = useRef<{ scrollToIndex: (options: { index: number; behavior: string; align: string }) => void } | null>(null);
 
     const [debouncedMessages] = useDebounce(persistedMessages, 500);
 
@@ -392,7 +392,7 @@ export const ChatArea = memo(function ChatArea({
             {imageForView && (
                 <Dialog open={!!imageForView} onOpenChange={() => setImageForView(null)}>
                     <DialogContent className="p-0 border-0 max-w-4xl bg-transparent">
-                        <img src={imageForView} alt="Full view" className="w-full h-auto max-h-[90vh] object-contain rounded-lg" />
+                        <Image src={imageForView} alt="Full view" width={800} height={600} className="w-full h-auto max-h-[90vh] object-contain rounded-lg" unoptimized />
                     </DialogContent>
                 </Dialog>
             )}
