@@ -67,7 +67,6 @@ export class ChatService {
   private isJoining: boolean = false;
   private joinPromise: Promise<void> | null = null;
   private hasJoined: boolean = false;
-  private joinDebounceTimer: NodeJS.Timeout | null = null;
 
   private _messageQueue: ReturnType<typeof getMessageQueue> | null = null;
 
@@ -168,70 +167,60 @@ export class ChatService {
       return Promise.resolve();
     }
 
-    // Debounce rapid join calls
-    if (this.joinDebounceTimer) {
-      clearTimeout(this.joinDebounceTimer);
-    }
-
     this.isJoining = true;
 
-    this.joinPromise = new Promise((resolve, reject) => {
-      this.joinDebounceTimer = setTimeout(async () => {
-        try {
-          this.currentUser = user;
-          this.messageService.setCurrentUser(user);
-          this.presenceService.setCurrentUser(user);
+    this.joinPromise = (async () => {
+      try {
+        this.currentUser = user;
+        this.messageService.setCurrentUser(user);
+        this.presenceService.setCurrentUser(user);
 
-          if (isDemoMode()) {
-            this.hasJoined = true;
-            this.initListeners();
-            resolve();
-            return;
-          }
-
-          // Use setDoc with merge instead of transaction to avoid conflicts
-          await withRetry(async () => {
-            const roomRef = doc(this.firestore, 'rooms', this.roomId);
-            const roomDoc = await getDoc(roomRef);
-
-            if (!roomDoc.exists()) {
-              // Create new room
-              await setDoc(roomRef, {
-                id: this.roomId,
-                participants: [user.id],
-                participantProfiles: [user],
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-              });
-            } else {
-              // Update existing room - add user if not present
-              const data = roomDoc.data() as Room;
-              const participants = data.participants || [];
-              const profiles = data.participantProfiles || [];
-
-              if (!participants.includes(user.id)) {
-                await updateDoc(roomRef, {
-                  participants: [...participants, user.id],
-                  participantProfiles: [...profiles, user],
-                  updatedAt: serverTimestamp(),
-                });
-              }
-            }
-          }, 3, 300);
-
+        if (isDemoMode()) {
           this.hasJoined = true;
           this.initListeners();
-          resolve();
-        } catch (error) {
-          logger.error("Error joining room", error as Error, { roomId: this.roomId });
-          reject(error);
-        } finally {
-          this.isJoining = false;
-          this.joinPromise = null;
-          this.joinDebounceTimer = null;
+          return;
         }
-      }, 100); // 100ms debounce
-    });
+
+        // Use setDoc with merge instead of transaction to avoid conflicts
+        await withRetry(async () => {
+          const roomRef = doc(this.firestore, 'rooms', this.roomId);
+          const roomDoc = await getDoc(roomRef);
+
+          if (!roomDoc.exists()) {
+            // Create new room
+            await setDoc(roomRef, {
+              id: this.roomId,
+              participants: [user.id],
+              participantProfiles: [user],
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            });
+          } else {
+            // Update existing room - add user if not present
+            const data = roomDoc.data() as Room;
+            const participants = data.participants || [];
+            const profiles = data.participantProfiles || [];
+
+            if (!participants.includes(user.id)) {
+              await updateDoc(roomRef, {
+                participants: [...participants, user.id],
+                participantProfiles: [...profiles, user],
+                updatedAt: serverTimestamp(),
+              });
+            }
+          }
+        }, 3, 300);
+
+        this.hasJoined = true;
+        this.initListeners();
+      } catch (error) {
+        logger.error("Error joining room", error as Error, { roomId: this.roomId });
+        throw error;
+      } finally {
+        this.isJoining = false;
+        this.joinPromise = null;
+      }
+    })();
 
     return this.joinPromise;
   }
@@ -387,12 +376,6 @@ export class ChatService {
   }
 
   public async disconnect() {
-    // Clear debounce timer
-    if (this.joinDebounceTimer) {
-      clearTimeout(this.joinDebounceTimer);
-      this.joinDebounceTimer = null;
-    }
-
     try {
       if (this.currentUser && this.hasJoined) await this.leaveRoom();
     } catch (error) {
