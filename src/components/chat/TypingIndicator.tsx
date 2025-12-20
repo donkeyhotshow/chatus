@@ -1,32 +1,66 @@
 "use client";
 
-import { memo } from 'react';
+import { memo, useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
 interface TypingIndicatorProps {
     users: string[];
     className?: string;
+    hideDelay?: number; // Задержка перед скрытием (мс)
 }
 
 export const TypingIndicator = memo(function TypingIndicator({
     users,
-    className
+    className,
+    hideDelay = 3000 // 3 секунды по умолчанию
 }: TypingIndicatorProps) {
-    if (!users || users.length === 0) return null;
+    const [visibleUsers, setVisibleUsers] = useState<string[]>([]);
+    const [isVisible, setIsVisible] = useState(false);
+    const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    useEffect(() => {
+        // Очищаем предыдущий таймаут
+        if (hideTimeoutRef.current) {
+            clearTimeout(hideTimeoutRef.current);
+            hideTimeoutRef.current = null;
+        }
+
+        if (users && users.length > 0) {
+            // Есть печатающие пользователи - показываем сразу
+            setVisibleUsers(users);
+            setIsVisible(true);
+        } else if (visibleUsers.length > 0) {
+            // Пользователи перестали печатать - задержка перед скрытием
+            hideTimeoutRef.current = setTimeout(() => {
+                setIsVisible(false);
+                // Ещё небольшая задержка перед очисткой для анимации
+                setTimeout(() => setVisibleUsers([]), 300);
+            }, hideDelay);
+        }
+
+        return () => {
+            if (hideTimeoutRef.current) {
+                clearTimeout(hideTimeoutRef.current);
+            }
+        };
+    }, [users, hideDelay, visibleUsers.length]);
+
+    if (!isVisible || visibleUsers.length === 0) return null;
 
     const getTypingText = () => {
-        if (users.length === 1) {
-            return `${users[0]} печатает...`;
-        } else if (users.length === 2) {
-            return `${users[0]} и ${users[1]} печатают...`;
+        if (visibleUsers.length === 1) {
+            return `${visibleUsers[0]} печатает...`;
+        } else if (visibleUsers.length === 2) {
+            return `${visibleUsers[0]} и ${visibleUsers[1]} печатают...`;
         } else {
-            return `${users[0]} и еще ${users.length - 1} печатают...`;
+            return `${visibleUsers[0]} и еще ${visibleUsers.length - 1} печатают...`;
         }
     };
 
     return (
         <div className={cn(
-            "flex items-center gap-3 px-4 py-2 text-[var(--text-muted)]",
+            "flex items-center gap-3 px-4 py-2 text-[var(--text-muted)] transition-opacity duration-300",
+            isVisible ? "opacity-100" : "opacity-0",
             className
         )}>
             {/* Avatar placeholder */}
@@ -50,18 +84,47 @@ export const TypingIndicator = memo(function TypingIndicator({
 // Compact version for mobile
 export const CompactTypingIndicator = memo(function CompactTypingIndicator({
     users,
-    className
+    className,
+    hideDelay = 3000
 }: TypingIndicatorProps) {
-    if (!users || users.length === 0) return null;
+    const [visibleUsers, setVisibleUsers] = useState<string[]>([]);
+    const [isVisible, setIsVisible] = useState(false);
+    const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    useEffect(() => {
+        if (hideTimeoutRef.current) {
+            clearTimeout(hideTimeoutRef.current);
+            hideTimeoutRef.current = null;
+        }
+
+        if (users && users.length > 0) {
+            setVisibleUsers(users);
+            setIsVisible(true);
+        } else if (visibleUsers.length > 0) {
+            hideTimeoutRef.current = setTimeout(() => {
+                setIsVisible(false);
+                setTimeout(() => setVisibleUsers([]), 300);
+            }, hideDelay);
+        }
+
+        return () => {
+            if (hideTimeoutRef.current) {
+                clearTimeout(hideTimeoutRef.current);
+            }
+        };
+    }, [users, hideDelay, visibleUsers.length]);
+
+    if (!isVisible || visibleUsers.length === 0) return null;
 
     return (
         <div className={cn(
-            "flex items-center justify-center py-2 text-[var(--text-muted)]",
+            "flex items-center justify-center py-2 text-[var(--text-muted)] transition-opacity duration-300",
+            isVisible ? "opacity-100" : "opacity-0",
             className
         )}>
             <div className="flex items-center gap-2 px-3 py-1 bg-[var(--bg-tertiary)] rounded-full">
                 <span className="text-xs">
-                    {users.length === 1 ? `${users[0]} печатает` : `${users.length} печатают`}
+                    {visibleUsers.length === 1 ? `${visibleUsers[0]} печатает` : `${visibleUsers.length} печатают`}
                 </span>
                 <div className="flex gap-0.5">
                     <div className="w-1 h-1 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />

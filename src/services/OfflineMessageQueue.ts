@@ -13,20 +13,28 @@ export interface QueuedMessage {
   senderAvatar?: string;
   timestamp: number;
   retryCount: number;
+  status?: 'pending' | 'sending' | 'failed' | 'sent';
 }
 
 const STORAGE_KEY = 'chatus-offline-queue';
+const SENT_MESSAGES_KEY = 'chatus-sent-messages';
 const MAX_RETRIES = 5;
 const RETRY_DELAY_BASE = 1000;
+const MAX_SENT_MESSAGES_CACHE = 100;
 
 export class OfflineMessageQueue {
   private queue: QueuedMessage[] = [];
+  private sentMessageIds: Set<string> = new Set();
   private isProcessing = false;
   private listeners: Set<() => void> = new Set();
+  private sendCallback: ((msg: QueuedMessage) => Promise<void>) | null = null;
+  private connectionCheckInterval: NodeJS.Timeout | null = null;
 
   constructor() {
     this.loadFromStorage();
+    this.loadSentMessages();
     this.setupOnlineListener();
+    this.startConnectionMonitor();
   }
 
   private loadFromStorage() {
@@ -34,11 +42,26 @@ export class OfflineMessageQueue {
       const data = localStorage.getItem(STORAGE_KEY);
       if (data) {
         this.queue = JSON.parse(data);
+        // Восстанавливаем статус pending для всех сообщений при загрузке
+        this.queue = this.queue.map(msg => ({ ...msg, status: 'pending' as const }));
         logger.info(`Loaded ${this.queue.length} offline messages from storage`);
       }
     } catch (error) {
       logger.error('Failed to load offline queue', error as Error);
       this.queue = [];
+    }
+  }
+
+  private loadSentMessages() {
+    try {
+      const data = localStorage.getItem(SENT_MESSAGES_KEY);
+      if (data) {
+        const ids = JSON.parse(data);
+        this.sentMessageIds = new Set(ids);
+      }
+    } catch (error) {
+      logger.error('Failed to load sent messages cache', error as Error);
+      this.sentMessageIds = new Set();
     }
   }
 
@@ -50,6 +73,15 @@ export class OfflineMessageQueue {
     }
   }
 
+  private saveSentMessages() {
+    try {
+      const ids = Array.from(this.sentMessageIds).slice(-MAX_SENT_MESSAGES_CACHE);
+      localStorage.setItem(SENT_MESSAGES_KEY, JSON.stringify(ids));
+    } catch (error) {
+      logger.error('Failed to save sent messages cache', error as Error);
+    }
+  }
+
   private setupOnlineListener() {
     if (typeof window === 'undefined') return;
 
@@ -57,12 +89,54 @@ export class OfflineMessageQueue {
       logger.info('Connection restored, processing offline queue');
       this.processQueue();
     });
+
+    window.addEventListener('offline', () => {
+      logger.info('Connection lost, messages will be queued');
+      this.notifyListeners();
+    });
+
+    // Также слушаем visibilitychange для обработки при возврате в приложение
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && navigator.onLine) {
+        this.processQueue();
+      }
+    });
   }
 
-  add(message: Omit<QueuedMessage, 'retryCount'>) {
+  private startConnectionMonitor() {
+    // Периодически проверяем соединение и пытаемся отправить сообщения
+    this.connectionCheckInterval = setInterval(() => {
+      if (navigator.onLine && this.queue.length > 0 && !this.isProcessing) {
+        this.processQueue();
+      }
+    }, 5000); // Каждые 5 секунд
+  }
+
+  setSendCallback(callback: (msg: QueuedMessage) => Promise<void>) {
+    this.sendCallback = callback;
+    // Если есть сообщения в очереди и мы онлайн, начинаем отправку
+    if (this.queue.length > 0 && navigator.onLine) {
+      this.processQueue();
+    }
+  }
+
+  add(message: Omit<QueuedMessage, 'retryCount' | 'status'>) {
+    // Проверяем, не было ли это сообщение уже отправлено
+    if (this.sentMessageIds.has(message.id)) {
+      logger.info('Message already sent, skipping', { messageId: message.id });
+      return;
+    }
+
+    // Проверяем, нет ли уже такого сообщения в очереди
+    if (this.queue.some(m => m.id === message.id)) {
+      logger.info('Message already in queue, skipping', { messageId: message.id });
+      return;
+    }
+
     const queuedMessage: QueuedMessage = {
       ...message,
       retryCount: 0,
+      status: 'pending',
     };
 
     this.queue.push(queuedMessage);
@@ -78,62 +152,125 @@ export class OfflineMessageQueue {
   }
 
   async processQueue(sendFn?: (msg: QueuedMessage) => Promise<void>) {
+    const actualSendFn = sendFn || this.sendCallback;
+
     if (this.isProcessing || this.queue.length === 0 || !navigator.onLine) {
       return;
     }
 
-    this.isProcessing = true;
+    if (!actualSendFn) {
+      logger.warn('No send callback set, cannot process queue');
+      return;
+    }
 
-    while (this.queue.length > 0 && navigator.onLine) {
-      const message = this.queue[0];
+    this.isProcessing = true;
+    this.notifyListeners();
+
+    const messagesToProcess = [...this.queue];
+
+    for (const message of messagesToProcess) {
+      if (!navigator.onLine) {
+        break;
+      }
+
+      // Пропускаем уже отправленные
+      if (this.sentMessageIds.has(message.id)) {
+        this.queue = this.queue.filter(m => m.id !== message.id);
+        this.saveToStorage();
+        continue;
+      }
+
+      // Обновляем статус
+      message.status = 'sending';
+      this.notifyListeners();
 
       try {
-        if (sendFn) {
-          await sendFn(message);
-        }
+        await actualSendFn(message);
 
-        // Success - remove from queue
-        this.queue.shift();
+        // Success - remove from queue and mark as sent
+        this.queue = this.queue.filter(m => m.id !== message.id);
+        this.sentMessageIds.add(message.id);
         this.saveToStorage();
+        this.saveSentMessages();
         this.notifyListeners();
 
         logger.info('Offline message sent successfully', { messageId: message.id });
       } catch (error) {
         message.retryCount++;
+        message.status = 'failed';
 
         if (message.retryCount >= MAX_RETRIES) {
-          // Max retries reached - remove and log
-          this.queue.shift();
-          this.saveToStorage();
-          this.notifyListeners();
-
+          // Max retries reached - keep in queue but mark as failed
           logger.error('Failed to send offline message after max retries', error as Error, {
             messageId: message.id,
             retryCount: message.retryCount,
           });
         } else {
+          // Reset status to pending for retry
+          message.status = 'pending';
           // Wait before next retry with exponential backoff
           const delay = RETRY_DELAY_BASE * Math.pow(2, message.retryCount);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
+
+        this.saveToStorage();
+        this.notifyListeners();
       }
     }
 
     this.isProcessing = false;
+    this.notifyListeners();
   }
 
   getQueue(): QueuedMessage[] {
     return [...this.queue];
   }
 
+  getPendingMessages(roomId?: string): QueuedMessage[] {
+    const messages = this.queue.filter(m => m.status !== 'sent');
+    if (roomId) {
+      return messages.filter(m => m.roomId === roomId);
+    }
+    return messages;
+  }
+
   getQueueLength(): number {
     return this.queue.length;
+  }
+
+  isMessagePending(messageId: string): boolean {
+    return this.queue.some(m => m.id === messageId);
+  }
+
+  wasMessageSent(messageId: string): boolean {
+    return this.sentMessageIds.has(messageId);
   }
 
   clear() {
     this.queue = [];
     this.saveToStorage();
     this.notifyListeners();
+  }
+
+  clearFailed() {
+    this.queue = this.queue.filter(m => m.status !== 'failed' || m.retryCount < MAX_RETRIES);
+    this.saveToStorage();
+    this.notifyListeners();
+  }
+
+  retryFailed() {
+    this.queue = this.queue.map(m => {
+      if (m.status === 'failed') {
+        return { ...m, status: 'pending' as const, retryCount: 0 };
+      }
+      return m;
+    });
+    this.saveToStorage();
+    this.notifyListeners();
+
+    if (navigator.onLine) {
+      this.processQueue();
+    }
   }
 
   removeMessage(messageId: string) {
@@ -149,6 +286,13 @@ export class OfflineMessageQueue {
 
   private notifyListeners() {
     this.listeners.forEach(listener => listener());
+  }
+
+  destroy() {
+    if (this.connectionCheckInterval) {
+      clearInterval(this.connectionCheckInterval);
+    }
+    this.listeners.clear();
   }
 }
 

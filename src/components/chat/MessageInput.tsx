@@ -108,9 +108,18 @@ export function MessageInput({
     }, [text, isSending, onSendMessage, toast]);
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        // Обработка Enter для отправки (без Shift)
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSend();
+            return;
+        }
+
+        // Для Safari iOS также обрабатываем keyCode 13
+        if (e.keyCode === 13 && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+            return;
         }
     };
 
@@ -185,10 +194,19 @@ export function MessageInput({
                         value={text}
                         onChange={handleTextChange}
                         onKeyDown={handleKeyDown}
+                        onBeforeInput={(e: React.FormEvent<HTMLTextAreaElement>) => {
+                            // Для iOS Safari: перехватываем Enter до ввода
+                            const inputEvent = e.nativeEvent as InputEvent;
+                            if (inputEvent.inputType === 'insertLineBreak') {
+                                e.preventDefault();
+                                handleSend();
+                            }
+                        }}
                         placeholder="Сообщение..."
                         disabled={disabled}
                         rows={1}
                         maxLength={MAX_MESSAGE_LENGTH + 100}
+                        enterKeyHint="send"
                         className={cn(
                             "w-full px-4 py-2.5 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-2xl",
                             "text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",

@@ -41,17 +41,22 @@ export async function withRetryAndTimeout<T>(
 ): Promise<T> {
     let lastError: unknown;
     for (let attempt = 1; attempt <= attempts; attempt++) {
+        let timeoutId: NodeJS.Timeout | undefined;
+        let cancelFn: (() => void) | undefined;
+
         const timer = new Promise<never>((_, reject) => {
-            const id = setTimeout(() => reject(new Error(`Timeout after ${timeoutMs}ms`)), timeoutMs);
-            (timer as { cancel?: () => void }).cancel = () => clearTimeout(id);
+            timeoutId = setTimeout(() => reject(new Error(`Timeout after ${timeoutMs}ms`)), timeoutMs);
+            cancelFn = () => {
+                if (timeoutId) clearTimeout(timeoutId);
+            };
         });
 
         try {
             const result = await Promise.race([fn(), timer]);
-            (timer as { cancel?: () => void }).cancel?.();
+            cancelFn?.();
             return result as T;
         } catch (error) {
-            (timer as { cancel?: () => void }).cancel?.();
+            cancelFn?.();
             lastError = error;
             if (attempt < attempts) {
                 onRetry?.(error, attempt);

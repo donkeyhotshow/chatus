@@ -274,24 +274,58 @@ export class MessageService {
             return;
         }
 
-        const messageRef = doc(this.firestore, 'rooms', this.roomId, 'messages', messageId);
-        await runTransaction(this.firestore, async (transaction) => {
-            const messageDoc = await transaction.get(messageRef);
-            if (!messageDoc.exists()) return;
-
-            const reactions = (messageDoc.data()?.reactions || []) as any[];
-            const existingIndex = reactions.findIndex(r => r.emoji === emoji && r.userId === user.id);
-
-            if (existingIndex > -1) {
-                transaction.update(messageRef, {
-                    reactions: arrayRemove(reactions[existingIndex])
-                });
-            } else {
-                transaction.update(messageRef, {
-                    reactions: arrayUnion({ emoji, userId: user.id, username: user.name })
-                });
+        // Optimistic update для мгновенной обратной связи
+        const originalMessages = [...this.messages];
+        this.messages = this.messages.map(m => {
+            if (m.id === messageId) {
+                const reactions = m.reactions || [];
+                const existing = reactions.find(r => r.emoji === emoji && r.userId === user.id);
+                if (existing) {
+                    return { ...m, reactions: reactions.filter(r => r !== existing) };
+                } else {
+                    return { ...m, reactions: [...reactions, { emoji, userId: user.id, username: user.name }] };
+                }
             }
+            return m;
         });
+        this.notifyCallback();
+
+        const messageRef = doc(this.firestore, 'rooms', this.roomId, 'messages', messageId);
+
+        try {
+            await runTransaction(this.firestore, async (transaction) => {
+                const messageDoc = await transaction.get(messageRef);
+                if (!messageDoc.exists()) return;
+
+                const reactions = (messageDoc.data()?.reactions || []) as any[];
+                const existingIndex = reactions.findIndex(r => r.emoji === emoji && r.userId === user.id);
+
+                if (existingIndex > -1) {
+                    transaction.update(messageRef, {
+                        reactions: arrayRemove(reactions[existingIndex])
+                    });
+                } else {
+                    transaction.update(messageRef, {
+                        reactions: arrayUnion({ emoji, userId: user.id, username: user.name })
+                    });
+                }
+            });
+
+            // Уведомляем другие вкладки о реакции
+            try {
+                const { getTabSyncService } = await import('./TabSyncService');
+                const tabSync = getTabSyncService();
+                tabSync.broadcastReaction(this.roomId, messageId, emoji, user.id);
+            } catch {
+                // TabSync не критичен
+            }
+        } catch (error) {
+            // Откатываем optimistic update при ошибке
+            this.messages = originalMessages;
+            this.notifyCallback();
+            logger.error("Error toggling reaction", error as Error);
+            throw error;
+        }
     }
 
     async markMessagesAsSeen() {

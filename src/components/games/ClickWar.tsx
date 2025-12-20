@@ -7,7 +7,7 @@ import { Progress } from "../ui/progress";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { Swords, ArrowLeft } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
-import { throttle, useActionGuard, calculateTimeLeft, hapticFeedback } from "@/lib/game-utils";
+import { useActionGuard, calculateTimeLeft, hapticFeedback } from "@/lib/game-utils";
 
 type ClickWarProps = {
   onGameEnd: () => void;
@@ -28,9 +28,14 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
 
   // Оптимистичное состояние для UI
   const [optimisticScore, setOptimisticScore] = useState(myScore);
-  const [timeLeft, setTimeLeft] = useState(() => 
+  const [timeLeft, setTimeLeft] = useState(() =>
     calculateTimeLeft(startTime, GAME_DURATION)
   );
+
+  // Буфер для быстрых кликов
+  const clickBufferRef = useRef<number>(0);
+  const lastSyncRef = useRef<number>(Date.now());
+  const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const { guard } = useActionGuard();
   const animationFrameRef = useRef<number | undefined>(undefined);
@@ -70,6 +75,39 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
     setOptimisticScore(myScore);
   }, [myScore]);
 
+  // Периодическая синхронизация буфера кликов с сервером
+  useEffect(() => {
+    if (!isActive) {
+      // Очищаем буфер при завершении игры
+      if (clickBufferRef.current > 0) {
+        const finalScore = myScore + clickBufferRef.current;
+        const newScores = { ...gameState.scores, [user.id]: finalScore };
+        updateGameState({ scores: newScores });
+        clickBufferRef.current = 0;
+      }
+      return;
+    }
+
+    // Синхронизируем буфер каждые 100ms для поддержки быстрых кликов
+    syncIntervalRef.current = setInterval(() => {
+      if (clickBufferRef.current > 0) {
+        const bufferedClicks = clickBufferRef.current;
+        clickBufferRef.current = 0;
+
+        const newScore = (gameState.scores?.[user.id] || 0) + bufferedClicks;
+        const newScores = { ...gameState.scores, [user.id]: newScore };
+        updateGameState({ scores: newScores });
+        lastSyncRef.current = Date.now();
+      }
+    }, 100);
+
+    return () => {
+      if (syncIntervalRef.current) {
+        clearInterval(syncIntervalRef.current);
+      }
+    };
+  }, [isActive, gameState.scores, myScore, updateGameState, user.id]);
+
   const handleStart = guard(() => {
     // Only the host can start the game
     if (user.id !== gameState.hostId && gameState.hostId) return;
@@ -78,7 +116,7 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
     if (otherUser) {
         scores[otherUser.id] = 0;
     }
-    
+
     const now = Date.now();
     updateGameState({
       scores,
@@ -86,31 +124,26 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
       startTime: now, // Синхронизируем время начала
       hostId: user.id
     });
-    
+
     hapticFeedback('medium');
   });
 
-  // Throttle для частых кликов (максимум 10 раз в секунду)
+  // Обработчик клика без throttle - все клики учитываются
   const handleClick = useCallback(() => {
     if (!isActive || timeLeft <= 0) return;
 
-    // Оптимистичное обновление UI
+    // Оптимистичное обновление UI - мгновенно
     setOptimisticScore(prev => prev + 1);
 
-    // Обновление на сервере
-    const newScores = { ...gameState.scores, [user.id]: myScore + 1 };
-    updateGameState({ scores: newScores });
+    // Добавляем в буфер вместо немедленной отправки
+    clickBufferRef.current += 1;
 
     hapticFeedback('light');
-  }, [isActive, timeLeft, gameState.scores, myScore, updateGameState, user.id]);
+  }, [isActive, timeLeft]);
 
-  const handleClickThrottled = useCallback(
-    () => throttle(handleClick, 100)(), // 100ms = максимум 10 кликов в секунду
-    [handleClick]
-  );
-
+  // Убираем throttle для поддержки быстрых кликов
   const handleClickGuarded = guard(() => {
-    handleClickThrottled();
+    handleClick();
   });
 
   const displayScore = isActive ? optimisticScore : myScore;
@@ -124,7 +157,7 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
     if (finalOtherScore > finalMyScore) return otherUser?.name || 'Opponent';
     return null;
   }
-  
+
   const winnerName = getWinnerName();
   const resultText = isGameOver ? (winnerName ? `${winnerName} Wins!` : "It's a Draw!") : null;
 
@@ -157,23 +190,23 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
                         </Avatar>
                     </div>
                 </div>
-                <Progress 
-                  value={myProgress} 
-                  className="h-3 w-full bg-neutral-800 [&>div]:bg-gradient-to-r [&>div]:from-white [&>div]:to-cyan-400 transition-all duration-150" 
+                <Progress
+                  value={myProgress}
+                  className="h-3 w-full bg-neutral-800 [&>div]:bg-gradient-to-r [&>div]:from-white [&>div]:to-cyan-400 transition-all duration-150"
                 />
-                
+
                 {!isActive ? (
-                    <Button 
-                      onClick={handleStart} 
-                      className="w-full bg-white text-black hover:bg-neutral-200 transition-all" 
+                    <Button
+                      onClick={handleStart}
+                      className="w-full bg-white text-black hover:bg-neutral-200 transition-all"
                       disabled={!otherUser}
                     >
                         {isGameOver ? "Play Again" : "Start Game"}
                     </Button>
                 ) : (
-                    <Button 
-                      onClick={handleClickGuarded} 
-                      className="w-full h-24 text-2xl font-bold transition-transform active:scale-95" 
+                    <Button
+                      onClick={handleClickGuarded}
+                      className="w-full h-24 text-2xl font-bold transition-transform active:scale-95"
                       variant="destructive"
                     >
                         CLICK!

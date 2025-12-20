@@ -18,11 +18,42 @@ const CELL_SIZE = 40;
 const GRID_W = 15;
 const GRID_H = 11;
 
-// Mobile-responsive cell size
+// Mobile-responsive cell size with better detection
 function getCellSize() {
   if (typeof window === 'undefined') return CELL_SIZE;
-  const maxWidth = Math.min(window.innerWidth - 32, 600); // 32px padding
+
+  // Определяем мобильное устройство
+  const isMobile = window.innerWidth <= 768 ||
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+  if (isMobile) {
+    // На мобильных используем меньший размер сетки
+    const maxWidth = Math.min(window.innerWidth - 24, 400);
+    return Math.max(Math.floor(maxWidth / GRID_W), 20); // Минимум 20px
+  }
+
+  const maxWidth = Math.min(window.innerWidth - 32, 600);
   return Math.floor(maxWidth / GRID_W);
+}
+
+// Проверка поддержки WebGL/Canvas для мобильных
+function checkCanvasSupport(): { supported: boolean; error?: string } {
+  if (typeof window === 'undefined') return { supported: false, error: 'SSR' };
+
+  try {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return { supported: false, error: 'Canvas 2D not supported' };
+    }
+
+    // Проверяем базовые операции
+    ctx.fillRect(0, 0, 1, 1);
+
+    return { supported: true };
+  } catch (error) {
+    return { supported: false, error: String(error) };
+  }
 }
 
 // Улучшенные спецификации башен (из твоего кода)
@@ -62,15 +93,44 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
   const animationRef = useRef<number>();
   const lastTimeRef = useRef<number>(performance.now());
   const [cellSize, setCellSize] = useState(CELL_SIZE);
+  const [canvasError, setCanvasError] = useState<string | null>(null);
+  const [isCanvasReady, setIsCanvasReady] = useState(false);
+
+  // Check canvas support on mount
+  useEffect(() => {
+    const { supported, error } = checkCanvasSupport();
+    if (!supported) {
+      setCanvasError(error || 'Canvas not supported');
+    } else {
+      setIsCanvasReady(true);
+    }
+  }, []);
 
   // Update cell size on resize for mobile responsiveness
   useEffect(() => {
     const updateCellSize = () => {
-      setCellSize(getCellSize());
+      const newSize = getCellSize();
+      setCellSize(newSize);
+
+      // Обновляем размер canvas
+      if (canvasRef.current) {
+        const canvas = canvasRef.current;
+        canvas.width = GRID_W * newSize;
+        canvas.height = GRID_H * newSize;
+      }
     };
+
     updateCellSize();
     window.addEventListener('resize', updateCellSize);
-    return () => window.removeEventListener('resize', updateCellSize);
+    window.addEventListener('orientationchange', () => {
+      // Задержка для корректного определения размеров после поворота
+      setTimeout(updateCellSize, 100);
+    });
+
+    return () => {
+      window.removeEventListener('resize', updateCellSize);
+      window.removeEventListener('orientationchange', updateCellSize);
+    };
   }, []);
   // const _waveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -479,16 +539,67 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
           </div>
 
           {/* Игровое поле */}
-          <div className="relative bg-black/50 border-2 border-white/20 overflow-hidden">
-            <canvas
-              ref={canvasRef}
-              width={GRID_W * cellSize}
-              height={GRID_H * cellSize}
-              onClick={handleCanvasClick}
-              className="cursor-pointer touch-none"
-              style={{ maxWidth: '100%', height: 'auto' }}
-            />
-          </div>
+          {canvasError ? (
+            <div className="bg-red-900/30 border border-red-500/30 rounded-lg p-6 text-center">
+              <p className="text-red-400 mb-2">Не удалось загрузить игру</p>
+              <p className="text-sm text-neutral-400">{canvasError}</p>
+              <Button
+                onClick={() => window.location.reload()}
+                variant="outline"
+                size="sm"
+                className="mt-4"
+              >
+                Перезагрузить
+              </Button>
+            </div>
+          ) : !isCanvasReady ? (
+            <div className="bg-neutral-900/50 border border-white/10 rounded-lg p-6 text-center">
+              <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+              <p className="text-neutral-400">Загрузка игры...</p>
+            </div>
+          ) : (
+            <div className="relative bg-black/50 border-2 border-white/20 overflow-hidden rounded-lg">
+              <canvas
+                ref={canvasRef}
+                width={GRID_W * cellSize}
+                height={GRID_H * cellSize}
+                onClick={handleCanvasClick}
+                onTouchStart={(e) => {
+                  // Предотвращаем зум на мобильных
+                  e.preventDefault();
+                }}
+                onTouchEnd={(e) => {
+                  // Обрабатываем touch как click
+                  const touch = e.changedTouches[0];
+                  if (touch && canvasRef.current) {
+                    const rect = canvasRef.current.getBoundingClientRect();
+                    const x = Math.floor((touch.clientX - rect.left) / cellSize);
+                    const y = Math.floor((touch.clientY - rect.top) / cellSize);
+
+                    const tower = tdTowers.find(t =>
+                      Math.floor(t.x / cellSize) === x && Math.floor(t.y / cellSize) === y
+                    );
+
+                    if (tower) {
+                      setSelectedTowerId(tower.id);
+                      updateGameState({ tdSelectedTower: tower.id });
+                    } else {
+                      handleBuildTower(x, y);
+                      setSelectedTowerId(null);
+                      updateGameState({ tdSelectedTower: null });
+                    }
+                  }
+                }}
+                className="cursor-pointer touch-none select-none"
+                style={{
+                  maxWidth: '100%',
+                  height: 'auto',
+                  imageRendering: 'pixelated',
+                  WebkitTapHighlightColor: 'transparent'
+                }}
+              />
+            </div>
+          )}
 
           {/* Панель апгрейда башни */}
           {selectedTower && selectedSpec && (
