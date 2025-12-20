@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { PixelAvatarEditor } from '../avatar/PixelAvatarEditor';
 import { useToast } from '@/hooks/use-toast';
@@ -92,6 +92,7 @@ export function ProfileCreationDialog({ isOpen, onProfileCreate, roomId, isCreat
                 className="bg-[var(--bg-primary)] border border-[var(--border-primary)] p-0 max-w-md mx-4"
                 onInteractOutside={(e) => e.preventDefault()}
             >
+                <DialogTitle className="sr-only">Создание профиля</DialogTitle>
                 <div className="p-6">
                     {/* Header */}
                     <div className="text-center mb-6">
