@@ -2,7 +2,7 @@
 
 import {
   collection, query, addDoc,
-  serverTimestamp, where, Unsubscribe, doc, runTransaction, Firestore, writeBatch, getDocs
+  serverTimestamp, where, Unsubscribe, doc, Firestore, writeBatch, getDocs, setDoc, getDoc, updateDoc
 } from "firebase/firestore";
 import { Auth } from "firebase/auth";
 import { ref, uploadBytes, getDownloadURL, FirebaseStorage } from "firebase/storage";
@@ -17,6 +17,27 @@ import { PresenceService } from "./PresenceService";
 import { GameService } from "./GameService";
 
 type ChatServiceListener = () => void;
+
+// Retry helper with exponential backoff
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxAttempts: number = 3,
+  baseDelay: number = 500
+): Promise<T> {
+  let lastError: Error | null = null;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error as Error;
+      if (attempt < maxAttempts) {
+        const delay = baseDelay * Math.pow(2, attempt - 1);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  throw lastError;
+}
 
 export class ChatService {
   private firestore: Firestore;
@@ -45,6 +66,8 @@ export class ChatService {
   // Race condition protection
   private isJoining: boolean = false;
   private joinPromise: Promise<void> | null = null;
+  private hasJoined: boolean = false;
+  private joinDebounceTimer: NodeJS.Timeout | null = null;
 
   private _messageQueue: ReturnType<typeof getMessageQueue> | null = null;
 
@@ -137,58 +160,78 @@ export class ChatService {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async joinRoom(user: UserProfile, _isNewRoom: boolean = false): Promise<void> {
+    // Prevent multiple simultaneous joins
     if (this.isJoining) return this.joinPromise || Promise.resolve();
+
+    // Prevent re-joining if already joined with same user
+    if (this.hasJoined && this.currentUser?.id === user.id) {
+      return Promise.resolve();
+    }
+
+    // Debounce rapid join calls
+    if (this.joinDebounceTimer) {
+      clearTimeout(this.joinDebounceTimer);
+    }
+
     this.isJoining = true;
 
-    this.joinPromise = (async () => {
-      try {
-        this.currentUser = user;
-        this.messageService.setCurrentUser(user);
-        this.presenceService.setCurrentUser(user);
+    this.joinPromise = new Promise((resolve, reject) => {
+      this.joinDebounceTimer = setTimeout(async () => {
+        try {
+          this.currentUser = user;
+          this.messageService.setCurrentUser(user);
+          this.presenceService.setCurrentUser(user);
 
-        if (isDemoMode()) {
-          this.initListeners();
-          return;
-        }
+          if (isDemoMode()) {
+            this.hasJoined = true;
+            this.initListeners();
+            resolve();
+            return;
+          }
 
-        const roomRef = doc(this.firestore, 'rooms', this.roomId);
-        await runTransaction(this.firestore, async (transaction) => {
-          const roomDoc = await transaction.get(roomRef);
+          // Use setDoc with merge instead of transaction to avoid conflicts
+          await withRetry(async () => {
+            const roomRef = doc(this.firestore, 'rooms', this.roomId);
+            const roomDoc = await getDoc(roomRef);
 
-          if (!roomDoc.exists()) {
-            transaction.set(roomRef, {
-              id: this.roomId,
-              participants: [user.id],
-              participantProfiles: [user],
-              createdAt: serverTimestamp(),
-              updatedAt: serverTimestamp(),
-            });
-          } else {
-            const data = roomDoc.data() as Room;
-            const participants = data.participants || [];
-            const profiles = data.participantProfiles || [];
-
-            if (!participants.includes(user.id)) {
-              participants.push(user.id);
-              profiles.push(user);
-              transaction.update(roomRef, {
-                participants,
-                participantProfiles: profiles,
+            if (!roomDoc.exists()) {
+              // Create new room
+              await setDoc(roomRef, {
+                id: this.roomId,
+                participants: [user.id],
+                participantProfiles: [user],
+                createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
               });
-            }
-          }
-        });
+            } else {
+              // Update existing room - add user if not present
+              const data = roomDoc.data() as Room;
+              const participants = data.participants || [];
+              const profiles = data.participantProfiles || [];
 
-        this.initListeners();
-      } catch (error) {
-        logger.error("Error joining room", error as Error, { roomId: this.roomId });
-        throw error;
-      } finally {
-        this.isJoining = false;
-        this.joinPromise = null;
-      }
-    })();
+              if (!participants.includes(user.id)) {
+                await updateDoc(roomRef, {
+                  participants: [...participants, user.id],
+                  participantProfiles: [...profiles, user],
+                  updatedAt: serverTimestamp(),
+                });
+              }
+            }
+          }, 3, 300);
+
+          this.hasJoined = true;
+          this.initListeners();
+          resolve();
+        } catch (error) {
+          logger.error("Error joining room", error as Error, { roomId: this.roomId });
+          reject(error);
+        } finally {
+          this.isJoining = false;
+          this.joinPromise = null;
+          this.joinDebounceTimer = null;
+        }
+      }, 100); // 100ms debounce
+    });
 
     return this.joinPromise;
   }
@@ -197,21 +240,24 @@ export class ChatService {
     if (!this.currentUser || isDemoMode()) return;
 
     try {
-      const roomRef = doc(this.firestore, 'rooms', this.roomId);
-      await runTransaction(this.firestore, async (transaction) => {
-        const roomDoc = await transaction.get(roomRef);
+      await withRetry(async () => {
+        const roomRef = doc(this.firestore, 'rooms', this.roomId);
+        const roomDoc = await getDoc(roomRef);
+
         if (!roomDoc.exists()) return;
 
         const data = roomDoc.data() as Room;
         const participants = (data.participants || []).filter(id => id !== this.currentUser?.id);
         const profiles = (data.participantProfiles || []).filter(p => p.id !== this.currentUser?.id);
 
-        transaction.update(roomRef, {
+        await updateDoc(roomRef, {
           participants,
           participantProfiles: profiles,
           updatedAt: serverTimestamp(),
         });
-      });
+      }, 2, 200);
+
+      this.hasJoined = false;
     } catch (error) {
       // Don't crash on leave room errors - user is leaving anyway
       logger.warn("Error leaving room (non-critical)", error as Error, { roomId: this.roomId });
@@ -341,8 +387,14 @@ export class ChatService {
   }
 
   public async disconnect() {
+    // Clear debounce timer
+    if (this.joinDebounceTimer) {
+      clearTimeout(this.joinDebounceTimer);
+      this.joinDebounceTimer = null;
+    }
+
     try {
-      if (this.currentUser) await this.leaveRoom();
+      if (this.currentUser && this.hasJoined) await this.leaveRoom();
     } catch (error) {
       // Ignore errors during disconnect - user is leaving anyway
       logger.warn('Error during disconnect leaveRoom', error as Error);
@@ -358,6 +410,7 @@ export class ChatService {
     this.currentUser = null;
     this.isJoining = false;
     this.joinPromise = null;
+    this.hasJoined = false;
 
     try {
       const mq = this._messageQueue ?? getMessageQueue();
