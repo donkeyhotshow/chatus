@@ -18,6 +18,13 @@ const CELL_SIZE = 40;
 const GRID_W = 15;
 const GRID_H = 11;
 
+// Mobile-responsive cell size
+function getCellSize() {
+  if (typeof window === 'undefined') return CELL_SIZE;
+  const maxWidth = Math.min(window.innerWidth - 32, 600); // 32px padding
+  return Math.floor(maxWidth / GRID_W);
+}
+
 // Улучшенные спецификации башен (из твоего кода)
 const TOWER_SPECS = {
   basic: { cost: 25, range: 120, damage: 10, fireRate: 1, color: "#22d3ee", upgradeCost: 15 },
@@ -54,6 +61,17 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
   const lastTimeRef = useRef<number>(performance.now());
+  const [cellSize, setCellSize] = useState(CELL_SIZE);
+
+  // Update cell size on resize for mobile responsiveness
+  useEffect(() => {
+    const updateCellSize = () => {
+      setCellSize(getCellSize());
+    };
+    updateCellSize();
+    window.addEventListener('resize', updateCellSize);
+    return () => window.removeEventListener('resize', updateCellSize);
+  }, []);
   // const _waveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Локальное состояние для плавной анимации
@@ -461,13 +479,14 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
           </div>
 
           {/* Игровое поле */}
-          <div className="relative bg-black/50 border-2 border-white/20">
+          <div className="relative bg-black/50 border-2 border-white/20 overflow-hidden">
             <canvas
               ref={canvasRef}
-              width={GRID_W * CELL_SIZE}
-              height={GRID_H * CELL_SIZE}
+              width={GRID_W * cellSize}
+              height={GRID_H * cellSize}
               onClick={handleCanvasClick}
-              className="cursor-pointer"
+              className="cursor-pointer touch-none"
+              style={{ maxWidth: '100%', height: 'auto' }}
             />
           </div>
 

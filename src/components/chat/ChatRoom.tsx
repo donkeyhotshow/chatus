@@ -9,6 +9,7 @@ import { MobileNavigation } from '../mobile/MobileNavigation';
 import { ChatSidebar, ChatTab } from './ChatSidebar';
 import { UserList } from './UserList';
 import { ChatStats } from './ChatStats';
+import { ConnectionStatus } from './ConnectionStatus';
 import { useRouter } from 'next/navigation';
 import { useFirebase } from '../firebase/FirebaseProvider';
 import { useDoc } from '@/hooks/useDoc';
@@ -243,6 +244,9 @@ export function ChatRoom({ roomId }: { roomId: string }) {
 
     return (
         <div className="flex h-screen-safe w-full overflow-hidden bg-[var(--bg-primary)]">
+            {/* Connection Status Banner */}
+            <ConnectionStatus />
+
             {/* Onboarding Tour */}
             {showOnboarding && user && (
                 <OnboardingTour onComplete={completeOnboarding} />
