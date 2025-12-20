@@ -1,5 +1,9 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
+import React from 'react';
+
+// Make React available globally for JSX
+globalThis.React = React;
 
 // Mock Firebase
 vi.mock('firebase/app', () => ({
