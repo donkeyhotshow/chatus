@@ -9,26 +9,22 @@ service cloud.firestore {
 
     // Chat rooms
     match /rooms/{roomId} {
-      // Allow reading room info by anyone (needed for joining)
-      allow read: if true;
-      
-      // Allow create/update/delete by any authenticated user
-      // This fixes permission-denied errors during room operations
-      allow write: if request.auth != null;
+      // Allow public access for testing
+      allow read, write: if true;
 
-      // Messages - participants can read/write
+      // Messages
       match /messages/{messageId} {
-        allow read, write: if request.auth != null;
+        allow read, write: if true;
       }
 
       // Canvas drawings
       match /drawings/{drawingId} {
-        allow read, write: if request.auth != null;
+        allow read, write: if true;
       }
 
       // Game states
       match /games/{gameId} {
-        allow read, write: if request.auth != null;
+        allow read, write: if true;
       }
     }
 
