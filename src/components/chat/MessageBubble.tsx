@@ -25,6 +25,9 @@ export const MessageBubble = memo(function MessageBubble({
     const isOwn = message.senderId === currentUser.id;
     const timestamp = message.createdAt?.toDate?.() || new Date();
 
+    // Safe user access
+    const user = message.user || { id: 'unknown', name: 'Unknown', avatar: '' };
+
     // Generate avatar from username
     const getAvatarText = (username: string) => {
         return username.charAt(0).toUpperCase();
@@ -52,9 +55,9 @@ export const MessageBubble = memo(function MessageBubble({
             {!isOwn && (
                 <div className={cn(
                     "w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium shrink-0 mt-1",
-                    getAvatarColor(message.user.name)
+                    getAvatarColor(user.name)
                 )}>
-                    {getAvatarText(message.user.name)}
+                    {getAvatarText(user.name)}
                 </div>
             )}
 
@@ -67,7 +70,7 @@ export const MessageBubble = memo(function MessageBubble({
                 {!isOwn && (
                     <div className="flex items-center gap-2 mb-1">
                         <span className="text-sm font-medium text-[var(--text-primary)]">
-                            {message.user.name}
+                            {user.name}
                         </span>
                         <span className="text-xs text-[var(--text-muted)]">
                             {formatDistanceToNow(timestamp, { addSuffix: true, locale: ru })}

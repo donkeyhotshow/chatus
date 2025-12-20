@@ -113,7 +113,7 @@ export const ChatArea = memo(function ChatArea({
 
         if (persistedMessages.length > lastMessageCountRef.current) {
             const newMessages = persistedMessages.slice(lastMessageCountRef.current);
-            const hasNewFromOthers = newMessages.some(msg => msg.user.id !== user.id && msg.type !== 'system');
+            const hasNewFromOthers = newMessages.some(msg => msg.user?.id !== user.id && msg.type !== 'system');
 
             if (hasNewFromOthers) {
                 try {
