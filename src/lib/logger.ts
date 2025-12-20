@@ -1,5 +1,7 @@
 'use client';
-import * as Sentry from "@sentry/nextjs";
+
+// Sentry disabled for performance - uncomment when needed
+// import * as Sentry from "@sentry/nextjs";
 
 type LogLevel = 'error' | 'warn' | 'info' | 'debug';
 
@@ -20,33 +22,27 @@ class Logger {
   error(message: string, error?: Error, context?: LogContext): void {
     const formatted = this.formatMessage('error', message, error, context);
 
-    // Always log errors (in development directly, in production with marker for future tracking)
-    if (this.isDevelopment) {
-      // eslint-disable-next-line no-console
-      console.error(formatted);
-    }
+    // eslint-disable-next-line no-console
+    console.error(formatted);
 
-    // In production, log with marker and prepare for external error tracking
-    if (!this.isDevelopment && typeof window !== 'undefined') {
-      // Send to Sentry
-      Sentry.captureException(error || new Error(message), { extra: context });
-
-      // For now, still log to console with clear production marker
-      // eslint-disable-next-line no-console
-      console.error('[PROD ERROR]', formatted);
-    }
+    // Production error tracking (Sentry disabled)
+    // if (!this.isDevelopment && typeof window !== 'undefined') {
+    //   Sentry.captureException(error || new Error(message), { extra: context });
+    // }
   }
 
   warn(message: string, errorOrContext?: Error | LogContext, context?: LogContext): void {
     const error = errorOrContext instanceof Error ? errorOrContext : undefined;
     const ctx = errorOrContext instanceof Error ? context : errorOrContext;
     const formatted = this.formatMessage('warn', message, error, ctx);
-    if (this.isDevelopment) {
-      // eslint-disable-next-line no-console
-      console.warn(formatted);
-    } else if (typeof window !== 'undefined') {
-      Sentry.captureMessage(message, { level: 'warning', extra: ctx });
-    }
+
+    // eslint-disable-next-line no-console
+    console.warn(formatted);
+
+    // Production warning tracking (Sentry disabled)
+    // if (!this.isDevelopment && typeof window !== 'undefined') {
+    //   Sentry.captureMessage(message, { level: 'warning', extra: ctx });
+    // }
   }
 
   info(message: string, context?: LogContext): void {

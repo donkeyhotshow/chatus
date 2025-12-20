@@ -1,11 +1,12 @@
-import * as Sentry from "@sentry/nextjs";
+// Sentry disabled for development performance
+// Uncomment to enable error tracking in production
 
-Sentry.init({
-    dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+// import * as Sentry from "@sentry/nextjs";
 
-    // Adjust this value in production, or use tracesSampler for greater control
-    tracesSampleRate: 1,
+// Sentry.init({
+//     dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+//     tracesSampleRate: 0.1,
+//     debug: false,
+// });
 
-    // Setting this option to true will print useful information to the console while you're setting up Sentry.
-    debug: false,
-});
+export {};
