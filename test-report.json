@@ -1,0 +1,57 @@
+{
+  "testDate": "2025-12-20T20:22:44.216Z",
+  "url": "https://chatus-omega.vercel.app/chat/2",
+  "summary": {
+    "totalBugs": 1,
+    "critical": 1,
+    "major": 0,
+    "minor": 0,
+    "uxIssues": 2,
+    "consoleErrors": 7
+  },
+  "performance": {
+    "loadTime": 4070,
+    "domContentLoaded": 427.90000000596046,
+    "loadComplete": 428.5,
+    "fcp": 436,
+    "lcp": null,
+    "resourceCount": 19
+  },
+  "bugs": [
+    {
+      "where": "Chat",
+      "what": "Message textarea not found",
+      "severity": "Critical"
+    }
+  ],
+  "uxIssues": [
+    {
+      "where": "Chat",
+      "issue": "Image upload button not visible",
+      "severity": "Minor"
+    },
+    {
+      "where": "Offline",
+      "issue": "No visual offline indicator",
+      "severity": "Major",
+      "recommendation": "Add connection status indicator to inform users when offline"
+    }
+  ],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED",
+    "Failed to load resource: net::ERR_INTERNET_DISCONNECTED"
+  ],
+  "top5CriticalBugs": [
+    {
+      "where": "Chat",
+      "what": "Message textarea not found",
+      "severity": "Critical"
+    }
+  ],
+  "top5MobileUXImprovements": []
+}
