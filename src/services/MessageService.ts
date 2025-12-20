@@ -211,11 +211,15 @@ export class MessageService {
             reactions: [],
             delivered: false,
             seen: false,
-            _pending: true,
-        } as Message & { _pending?: boolean };
+        } as Message;
 
-        this.messages = [...this.messages, optimisticMessage];
-        this.notifyCallback();
+        // Validate message has required fields
+        if (!optimisticMessage.user) {
+            logger.warn('Message missing user field, skipping optimistic update');
+        } else {
+            this.messages = [...this.messages, optimisticMessage];
+            this.notifyCallback();
+        }
 
         try {
             // Retry logic з exponential backoff
