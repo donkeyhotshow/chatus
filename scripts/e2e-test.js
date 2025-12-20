@@ -5,7 +5,7 @@
 
 const puppeteer = require('puppeteer');
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = 'http://localhost:3001';
 const TEST_ROOM = 'test-room-' + Date.now();
 const TEST_USERNAME = 'TestUser' + Math.floor(Math.random() * 1000);
 
