@@ -12,6 +12,8 @@ export interface ErrorContext {
     userId?: string;
     roomId?: string;
     messageId?: string;
+    retryFunction?: () => Promise<void>;
+    forceRemount?: () => void;
     [key: string]: unknown;
 }
 
@@ -60,7 +62,7 @@ export class EnhancedErrorHandler {
 
         // Show user-friendly toast notification
         if (showToast) {
-            this.showErrorToast(error, context);
+            this.showErrorToast(error);
         }
 
         // Handle retryable errors

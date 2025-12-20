@@ -1,7 +1,13 @@
 "use client";
 
+import { useState, useEffect } from 'react';
+import { WifiOff, Wifi, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { WifiOff, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from './alert';
+
+// ============================================================================
+// ConnectionStatus - Управляемый компонент (принимает status prop)
+// ============================================================================
 
 interface ConnectionStatusProps {
     status: 'connecting' | 'connected' | 'disconnected' | 'error';
@@ -66,7 +72,10 @@ export function ConnectionStatus({ status, message, className }: ConnectionStatu
     );
 }
 
-// Компонент для отображения в header чата
+// ============================================================================
+// ChatConnectionStatus - для отображения в header чата
+// ============================================================================
+
 export function ChatConnectionStatus({
     status,
     roomCode,
@@ -93,6 +102,67 @@ export function ChatConnectionStatus({
                     <span>{userCount} в сети</span>
                 </div>
             )}
+        </div>
+    );
+}
+
+// ============================================================================
+// NetworkConnectionStatus - Автономный компонент
+// Слушает browser online/offline events и показывает уведомления
+// Консолидировано из chat/ConnectionStatus.tsx
+// ============================================================================
+
+export function NetworkConnectionStatus() {
+    const [isConnected, setIsConnected] = useState(true);
+    const [showAlert, setShowAlert] = useState(false);
+
+    useEffect(() => {
+        const handleOnline = () => {
+            setIsConnected(true);
+            setShowAlert(true);
+            // Auto-hide after 2 seconds
+            setTimeout(() => setShowAlert(false), 2000);
+        };
+
+        const handleOffline = () => {
+            setIsConnected(false);
+            setShowAlert(true);
+        };
+
+        // Check initial state
+        setIsConnected(navigator.onLine);
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, []);
+
+    if (!showAlert && isConnected) return null;
+
+    return (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4">
+            <Alert className={`border ${isConnected
+                ? 'border-green-500/50 bg-green-500/10 text-green-400'
+                : 'border-red-500/50 bg-red-500/10 text-red-400'
+                } backdrop-blur-sm animate-in slide-in-from-top-2`}>
+                <div className="flex items-center gap-2">
+                    {isConnected ? (
+                        <Wifi className="w-4 h-4" />
+                    ) : (
+                        <WifiOff className="w-4 h-4" />
+                    )}
+                    <AlertDescription className="font-medium">
+                        {isConnected
+                            ? 'Подключение восстановлено'
+                            : 'Нет подключения к интернету. Сообщения не будут отправлены.'
+                        }
+                    </AlertDescription>
+                </div>
+            </Alert>
         </div>
     );
 }

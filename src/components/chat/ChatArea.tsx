@@ -15,11 +15,11 @@ import { useToast } from '@/hooks/use-toast';
 import { useDoc } from '@/hooks/useDoc';
 import { useChatPersistence, useUserPreferences } from '@/hooks/use-chat-persistence';
 import { logger } from '@/lib/logger';
+import { NetworkConnectionStatus } from '@/components/ui/connection-status';
 import { MobileErrorHandler } from '../mobile/MobileErrorHandler';
 import { ChatHeader } from './ChatHeader';
 import MessageList from './MessageList';
 import { NewMessageNotification } from './NewMessageNotification';
-import { ConnectionStatus } from './ConnectionStatus';
 import { TypingIndicator } from './TypingIndicator';
 import { EnhancedMessageInput } from './EnhancedMessageInput';
 
@@ -78,7 +78,8 @@ export const ChatArea = memo(function ChatArea({
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const lastMessageCountRef = useRef<number>(0);
-    const messageListRef = useRef<{ scrollToIndex: (options: { index: number; behavior: string; align: string }) => void } | null>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const messageListRef = useRef<any>(null);
 
     const [debouncedMessages] = useDebounce(persistedMessages, 500);
 
@@ -304,7 +305,7 @@ export const ChatArea = memo(function ChatArea({
 
     return (
         <>
-            <ConnectionStatus />
+            <NetworkConnectionStatus />
             <MobileErrorHandler
                 isOnline={connectionState?.isOnline}
                 isConnected={connectionState?.isConnected}

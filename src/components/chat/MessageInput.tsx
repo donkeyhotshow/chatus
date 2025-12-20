@@ -57,6 +57,34 @@ export function MessageInput({
         }
     }, [text]);
 
+    // Handle virtual keyboard on mobile - scroll input into view
+    useEffect(() => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+
+        const handleFocus = () => {
+            // Small delay to wait for keyboard to appear
+            setTimeout(() => {
+                textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
+        };
+
+        // Use visualViewport API for better keyboard detection
+        const handleResize = () => {
+            if (document.activeElement === textarea) {
+                textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        };
+
+        textarea.addEventListener('focus', handleFocus);
+        window.visualViewport?.addEventListener('resize', handleResize);
+
+        return () => {
+            textarea.removeEventListener('focus', handleFocus);
+            window.visualViewport?.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
     const handleSend = useCallback(async () => {
         const trimmedText = text.trim();
         if (!trimmedText || isSending || trimmedText.length > MAX_MESSAGE_LENGTH) return;

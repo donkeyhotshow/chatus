@@ -37,7 +37,7 @@ export interface Message {
 export interface Room {
   id: string;
   participants: string[];
-  participantProfiles: UserProfile[];
+  participantProfiles?: UserProfile[];
   createdAt?: Timestamp | Date;
   lastUpdated?: Timestamp | Date;
   settings?: {
@@ -45,7 +45,25 @@ export interface Room {
     isPrivate?: boolean;
     [key: string]: unknown;
   };
+  creatorId?: string;
+  isActive?: boolean;
+  name?: string;
 }
+
+export interface User {
+  id: string;
+  uid?: string;
+  displayName: string;
+  email?: string | null;
+  isAnonymous?: boolean;
+  isOnline?: boolean;
+  lastSeen?: Date;
+  avatar: string | null;
+}
+
+export type ChatMessage = Message & {
+  roomId?: string;
+};
 
 export type BrushType = 'normal' | 'neon' | 'dashed' | 'calligraphy';
 

@@ -632,6 +632,20 @@
     min-width: var(--touch-target);
   }
 
+  /* Mobile touch targets - ensure all interactive elements are tappable */
+  @media (pointer: coarse) {
+    button:not(.btn-icon),
+    a:not(.text-link),
+    [role="button"] {
+      min-height: var(--touch-target);
+    }
+
+    /* Ensure adequate spacing for touch */
+    .touch-spacing > * + * {
+      margin-top: var(--space-2);
+    }
+  }
+
   /* Animations */
   .animate-fade-in {
     animation: fadeIn var(--transition) ease-out;
