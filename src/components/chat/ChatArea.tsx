@@ -325,7 +325,12 @@ export const ChatArea = memo(function ChatArea({
                 {/* Messages */}
                 <div className="flex-1 min-h-0 overflow-hidden relative">
                     {allMessages.length === 0 && !isInitialLoad ? (
-                        <EmptyState onSend={(text) => service?.sendMessage({ text, user, senderId: user.id })} />
+                        <EmptyState onSend={(text) => {
+                            service?.sendMessage({ text, user, senderId: user.id }).catch((error) => {
+                                logger.warn('Failed to send quick message', error as Error);
+                                toast({ title: 'Ошибка отправки', variant: 'destructive' });
+                            });
+                        }} />
                     ) : (
                         <MessageList
                             ref={messageListRef}

@@ -213,7 +213,8 @@ export class ChatService {
         });
       });
     } catch (error) {
-      logger.error("Error leaving room", error as Error, { roomId: this.roomId });
+      // Don't crash on leave room errors - user is leaving anyway
+      logger.warn("Error leaving room (non-critical)", error as Error, { roomId: this.roomId });
     }
   }
 
