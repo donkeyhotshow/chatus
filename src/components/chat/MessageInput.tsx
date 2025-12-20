@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Paperclip, Smile, Image as ImageIcon } from 'lucide-react';
+import { Send, Smile, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StickerPicker } from './StickerPicker';
 import { useDebouncedCallback } from 'use-debounce';
@@ -10,7 +10,6 @@ import { cn } from '@/lib/utils';
 interface MessageInputProps {
     onSendMessage: (text: string) => void;
     onImageSend: (file: File) => void;
-    onDoodleClick: () => void;
     onInputChange: () => void;
     onStickerSend: (stickerUrl: string) => void;
     roomId: string;
@@ -22,7 +21,6 @@ const MAX_MESSAGE_LENGTH = 1000;
 export function MessageInput({
     onSendMessage,
     onImageSend,
-    onDoodleClick,
     onInputChange,
     onStickerSend,
     roomId,
@@ -70,7 +68,7 @@ export function MessageInput({
             if (textareaRef.current) {
                 textareaRef.current.style.height = 'auto';
             }
-        } catch (error) {
+        } catch {
             toast({
                 title: "Ошибка отправки",
                 description: "Не удалось отправить сообщение",

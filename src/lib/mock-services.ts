@@ -91,7 +91,8 @@ export class MockFirebaseService {
           val: () => mockMessagesData.filter(m => m.roomId === path.split('/')[1])
         }), 100);
       },
-      push: (data: any) => ({
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      push: (_data: any) => ({
         key: `mock-msg-${Date.now()}`,
         set: async (value: any) => {
           mockMessagesData.push({ ...value, id: `mock-msg-${Date.now()}` });
@@ -104,7 +105,8 @@ export class MockFirebaseService {
 
 // Mock AI service
 export class MockAIService {
-  async generateResponse(prompt: string): Promise<string> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async generateResponse(_prompt: string): Promise<string> {
     // Simulate AI response delay
     await new Promise(resolve => setTimeout(resolve, 500));
 

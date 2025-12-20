@@ -1,17 +1,16 @@
 'use client';
 
 import {
-  collection, query, orderBy, onSnapshot, addDoc,
-  serverTimestamp, where, Unsubscribe, deleteDoc, doc, runTransaction, limit, setDoc, getDoc, Firestore, writeBatch, getDocs, DocumentReference, DocumentSnapshot, startAfter, Timestamp, arrayRemove, DocumentData
+  collection, query, addDoc,
+  serverTimestamp, where, Unsubscribe, doc, runTransaction, Firestore, writeBatch, getDocs
 } from "firebase/firestore";
 import { Auth } from "firebase/auth";
 import { ref, uploadBytes, getDownloadURL, FirebaseStorage } from "firebase/storage";
-import { errorEmitter } from "@/lib/error-emitter";
-import { FirestorePermissionError } from "@/lib/errors";
+import "@/lib/error-emitter";
+import "@/lib/errors";
 import { isDemoMode } from "@/lib/demo-mode";
 import { logger } from "@/lib/logger";
-import { Message, CanvasPath, Reaction, UserProfile, GameState, Room, FirebaseError } from "@/lib/types";
-import { withRetryAndTimeout } from "@/lib/utils";
+import { Message, CanvasPath, UserProfile, GameState, Room } from "@/lib/types";
 import { getMessageQueue } from "./MessageQueue";
 import { MessageService } from "./MessageService";
 import { PresenceService } from "./PresenceService";
@@ -136,7 +135,8 @@ export class ChatService {
     return this._messageQueue;
   }
 
-  public async joinRoom(user: UserProfile, isNewRoom: boolean = false): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public async joinRoom(user: UserProfile, _isNewRoom: boolean = false): Promise<void> {
     if (this.isJoining) return this.joinPromise || Promise.resolve();
     this.isJoining = true;
 

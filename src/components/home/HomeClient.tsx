@@ -26,7 +26,8 @@ export function HomeClient() {
         }
     }, []);
 
-    useEffect(() => {
+    // Form validation - moved to separate function for better control
+    const validateForm = () => {
         const trimmedUsername = username.trim();
         const trimmedRoomCode = roomCode.trim();
 
@@ -49,7 +50,11 @@ export function HomeClient() {
             });
         }
 
-        setIsFormValid(isUsernameValid && isRoomCodeValid);
+        return isUsernameValid && isRoomCodeValid;
+    };
+
+    useEffect(() => {
+        setIsFormValid(validateForm());
     }, [username, roomCode]);
 
     const handleJoinRoom = async (e: React.FormEvent) => {
@@ -120,29 +125,35 @@ export function HomeClient() {
 
                     {/* Mobile menu button */}
                     <button
-                        className="md:hidden p-2 text-[var(--text-secondary)] touch-target"
+                        className="md:hidden p-3 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors touch-manipulation"
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        aria-label={isMenuOpen ? "Закрыть меню" : "Открыть меню"}
                     >
-                        {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                        {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                     </button>
                 </div>
             </header>
 
             {/* Mobile menu */}
             {isMenuOpen && (
-                <div className="fixed inset-0 z-40 bg-[var(--bg-primary)] pt-14 md:hidden">
-                    <nav className="flex flex-col items-center gap-6 pt-12">
+                <div
+                    className="fixed inset-0 z-40 bg-[var(--bg-primary)] pt-14 md:hidden animate-in fade-in duration-200"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Мобильное меню"
+                >
+                    <nav className="flex flex-col items-center gap-8 pt-16 px-4">
                         <a
                             href="#features"
                             onClick={() => setIsMenuOpen(false)}
-                            className="text-lg text-[var(--text-primary)]"
+                            className="text-xl text-[var(--text-primary)] hover:text-[var(--accent-primary)] transition-colors py-2"
                         >
                             Возможности
                         </a>
                         <a
                             href="#login"
                             onClick={() => setIsMenuOpen(false)}
-                            className="text-lg text-[var(--text-primary)]"
+                            className="text-xl text-[var(--text-primary)] hover:text-[var(--accent-primary)] transition-colors py-2"
                         >
                             Войти
                         </a>
@@ -152,67 +163,82 @@ export function HomeClient() {
 
             <main className="pt-14">
                 {/* Hero */}
-                <section className="py-16 md:py-24 px-4">
+                <section className="py-12 md:py-24 px-4">
                     <div className="max-w-2xl mx-auto text-center">
-                        <div className="w-16 h-16 bg-[var(--accent-primary)] rounded-2xl flex items-center justify-center mx-auto mb-6">
-                            <Logo className="w-8 h-8 text-[var(--accent-contrast)]" />
+                        <div className="w-16 h-16 md:w-20 md:h-20 bg-[var(--accent-primary)] rounded-2xl flex items-center justify-center mx-auto mb-6 animate-in zoom-in duration-300">
+                            <Logo className="w-8 h-8 md:w-10 md:h-10 text-[var(--accent-contrast)]" />
                         </div>
-                        <h1 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-4">
+                        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-4 leading-tight">
                             Приватный чат
                         </h1>
-                        <p className="text-lg text-[var(--text-secondary)] mb-8">
+                        <p className="text-base sm:text-lg text-[var(--text-secondary)] mb-8 px-4">
                             Общайтесь, рисуйте и играйте вместе. Без регистрации.
                         </p>
                     </div>
                 </section>
 
                 {/* Login Form */}
-                <section id="login" className="py-12 px-4 bg-[var(--bg-secondary)]">
+                <section id="login" className="py-8 md:py-12 px-4 bg-[var(--bg-secondary)]">
                     <div className="max-w-md mx-auto">
-                        <div className="bg-[var(--bg-primary)] rounded-xl border border-[var(--border-primary)] p-6">
-                            <h2 className="text-xl font-semibold text-[var(--text-primary)] text-center mb-6">
+                        <div className="bg-[var(--bg-primary)] rounded-xl border border-[var(--border-primary)] p-4 md:p-6 shadow-lg">
+                            <h2 className="text-xl md:text-2xl font-semibold text-[var(--text-primary)] text-center mb-6">
                                 Войти в чат
                             </h2>
 
-                            <form onSubmit={handleJoinRoom} className="space-y-4">
+                            <form onSubmit={handleJoinRoom} className="space-y-4 md:space-y-5">
                                 {/* Username */}
-                                <div className="space-y-2">
-                                    <label className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2">
+                                <div className="space-y-3">
+                                    <label
+                                        htmlFor="username"
+                                        className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2"
+                                    >
                                         <User className="w-4 h-4" />
                                         Ваш ник
                                     </label>
                                     <div className="relative">
                                         <input
+                                            id="username"
                                             type="text"
                                             value={username}
                                             onChange={(e) => setUsername(e.target.value)}
                                             placeholder="Введите ник"
                                             maxLength={20}
+                                            autoComplete="username"
                                             className={cn(
-                                                "w-full px-4 py-3 bg-[var(--bg-secondary)] border rounded-lg",
+                                                "w-full px-4 py-4 bg-[var(--bg-secondary)] border rounded-lg text-base",
                                                 "text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
-                                                "focus:outline-none focus:border-[var(--accent-primary)]",
-                                                "transition-colors",
+                                                "focus:outline-none focus:border-[var(--accent-primary)] focus:ring-2 focus:ring-[var(--accent-primary)]/20",
+                                                "transition-all touch-manipulation",
+                                                "sm:py-3",
                                                 isUsernameValid ? "border-[var(--success)]" : "border-[var(--border-primary)]"
                                             )}
+                                            aria-describedby={isUsernameValid ? "username-valid" : undefined}
                                         />
                                         {isUsernameValid && (
-                                            <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--success)]" />
+                                            <Check
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--success)]"
+                                                aria-hidden="true"
+                                            />
                                         )}
+                                        <span id="username-valid" className="sr-only">Имя пользователя валидно</span>
                                     </div>
                                 </div>
 
                                 {/* Room Code */}
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <label className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2">
+                                        <label
+                                            htmlFor="roomCode"
+                                            className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2"
+                                        >
                                             <Key className="w-4 h-4" />
                                             Код комнаты
                                         </label>
                                         <button
                                             type="button"
                                             onClick={handleCreateRoom}
-                                            className="text-sm text-[var(--accent-primary)] hover:underline flex items-center gap-1"
+                                            className="text-sm text-[var(--accent-primary)] hover:text-[var(--accent-hover)] transition-colors flex items-center gap-1 py-1 px-2 rounded touch-manipulation"
+                                            aria-label="Создать новую комнату"
                                         >
                                             <Plus className="w-4 h-4" />
                                             Создать
@@ -220,22 +246,31 @@ export function HomeClient() {
                                     </div>
                                     <div className="relative">
                                         <input
+                                            id="roomCode"
                                             type="text"
                                             value={roomCode}
                                             onChange={(e) => setRoomCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
                                             placeholder="ABC123"
                                             maxLength={6}
+                                            autoComplete="off"
+                                            inputMode="text"
                                             className={cn(
-                                                "w-full px-4 py-3 bg-[var(--bg-secondary)] border rounded-lg text-center tracking-widest font-mono",
+                                                "w-full px-4 py-4 bg-[var(--bg-secondary)] border rounded-lg text-center tracking-widest font-mono text-base",
                                                 "text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
-                                                "focus:outline-none focus:border-[var(--accent-primary)]",
-                                                "transition-colors uppercase",
+                                                "focus:outline-none focus:border-[var(--accent-primary)] focus:ring-2 focus:ring-[var(--accent-primary)]/20",
+                                                "transition-all touch-manipulation uppercase",
+                                                "sm:py-3",
                                                 isRoomCodeValid ? "border-[var(--success)]" : "border-[var(--border-primary)]"
                                             )}
+                                            aria-describedby={isRoomCodeValid ? "roomcode-valid" : undefined}
                                         />
                                         {isRoomCodeValid && (
-                                            <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--success)]" />
+                                            <Check
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--success)]"
+                                                aria-hidden="true"
+                                            />
                                         )}
+                                        <span id="roomcode-valid" className="sr-only">Код комнаты валиден</span>
                                     </div>
                                 </div>
 
@@ -244,11 +279,11 @@ export function HomeClient() {
                                     disabled={!isFormValid || isConnecting}
                                     isLoading={isConnecting}
                                     loadingText="Подключение..."
-                                    className="w-full"
+                                    className="w-full h-12 text-base font-medium touch-manipulation"
                                     size="lg"
                                 >
                                     Войти
-                                    <ArrowRight className="w-5 h-5" />
+                                    <ArrowRight className="w-5 h-5 ml-2" />
                                 </Button>
                             </form>
                         </div>

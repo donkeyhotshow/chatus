@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, X, Smartphone, Monitor, Bell, BellOff, Wifi, WifiOff } from 'lucide-react';
+import { Download, X, Smartphone, Bell, BellOff, Wifi, WifiOff } from 'lucide-react';
 import { usePWA } from '@/hooks/use-pwa';
 import { cn } from '@/lib/utils';
 

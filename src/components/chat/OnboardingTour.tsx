@@ -43,12 +43,6 @@ export function OnboardingTour({ onComplete }: OnboardingTourProps) {
         }
     };
 
-    const handlePrev = () => {
-        if (currentStep > 0) {
-            setCurrentStep(currentStep - 1);
-        }
-    };
-
     const handleComplete = () => {
         setIsVisible(false);
         localStorage.setItem('chatusOnboardingComplete', 'true');

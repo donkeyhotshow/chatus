@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { AlertTriangle, Wifi, WifiOff, RefreshCw, X } from 'lucide-react';
+import { AlertTriangle, WifiOff, RefreshCw, X } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 

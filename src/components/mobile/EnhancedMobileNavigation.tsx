@@ -131,7 +131,7 @@ export function EnhancedMobileNavigation({
                         <div className="absolute inset-0 opacity-30 rounded-t-3xl bg-gradient-mesh" />
 
                         <div className="relative flex items-end justify-around px-3 py-3" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-                            {tabs.map((tab, index) => {
+                            {tabs.map((tab) => {
                                 const isCenter = 'isCenter' in tab && tab.isCenter;
                                 const isActive = activeTab === tab.id;
 

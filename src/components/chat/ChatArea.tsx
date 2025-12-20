@@ -2,12 +2,11 @@
 
 import { useState, useEffect, useCallback, useRef, memo, useMemo } from 'react';
 import type { Message, Room, UserProfile } from '@/lib/types';
+import { MobileErrorHandler } from '../mobile/MobileErrorHandler';
 import { ChatHeader } from './ChatHeader';
 import MessageList from './MessageList';
-import { MessageInput } from './MessageInput';
 import { NewMessageNotification } from './NewMessageNotification';
 import { ConnectionStatus } from './ConnectionStatus';
-import { MobileErrorHandler } from '../mobile/MobileErrorHandler';
 import { DoodlePad } from '@/components/lazy/LazyComponents';
 import { X, MessageCircle } from 'lucide-react';
 import { useChatService } from '@/hooks/useChatService';
@@ -19,26 +18,20 @@ import { doc, Timestamp } from 'firebase/firestore';
 import { useFirebase } from '../firebase/FirebaseProvider';
 import { logger } from '@/lib/logger';
 import { useDebounce } from 'use-debounce';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { MessageSearch } from '@/components/lazy/LazyComponents';
 import { TypingIndicator } from './TypingIndicator';
 import { EnhancedMessageInput } from './EnhancedMessageInput';
 import { useChatPersistence, useUserPreferences } from '@/hooks/use-chat-persistence';
-import { cn } from '@/lib/utils';
 
 interface ChatAreaProps {
     user: UserProfile;
     roomId: string;
-    isCollabSpaceVisible: boolean;
-    onToggleCollaborationSpace: () => void;
     onMobileBack?: () => void;
 }
 
 export const ChatArea = memo(function ChatArea({
     user,
     roomId,
-    isCollabSpaceVisible,
-    onToggleCollaborationSpace,
     onMobileBack,
 }: ChatAreaProps) {
     const [replyTo, setReplyTo] = useState<Message | null>(null);
@@ -50,7 +43,7 @@ export const ChatArea = memo(function ChatArea({
     const [newMessageCount, setNewMessageCount] = useState(0);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-    const isMobile = useIsMobile();
+
     const { saveMessages, loadMessages, hasHistory } = useChatPersistence(roomId);
     const { updateLastRoomId } = useUserPreferences();
 
@@ -207,7 +200,7 @@ export const ChatArea = memo(function ChatArea({
         try {
             await service.sendMessage({ text: '', imageUrl, user, senderId: user.id, type: 'doodle' });
             setShowDoodlePad(false);
-        } catch (error) {
+        } catch {
             toast({ title: 'Ошибка', variant: 'destructive' });
         }
     }, [service, user, toast]);
@@ -357,20 +350,6 @@ export const ChatArea = memo(function ChatArea({
 
                 {/* Input Area */}
                 <div className="shrink-0 border-t border-[var(--border-primary)] bg-[var(--bg-secondary)]">
-                    {/* Typing indicator */}
-                    {typingUsers.length > 0 && (
-                        <div className="px-4 py-2 flex items-center gap-2">
-                            <div className="flex gap-1">
-                                <span className="w-1.5 h-1.5 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                <span className="w-1.5 h-1.5 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                <span className="w-1.5 h-1.5 bg-[var(--text-muted)] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                            </div>
-                            <span className="text-xs text-[var(--text-muted)]">
-                                {typingUsers.join(", ")} печатает...
-                            </span>
-                        </div>
-                    )}
-
                     {/* Reply preview */}
                     {replyTo && (
                         <div className="flex items-center justify-between mx-3 mt-2 px-3 py-2 bg-[var(--bg-tertiary)] border-l-2 border-[var(--accent-primary)] rounded-r-lg">
@@ -403,6 +382,7 @@ export const ChatArea = memo(function ChatArea({
                         onSend={handleSend}
                         onTyping={(isTyping) => isTyping ? handleTypingStart() : handleTypingStop()}
                         onFileUpload={handleImageUpload}
+                        onStickerSend={handleSendSticker}
                         placeholder="Сообщение..."
                     />
                 </div>
@@ -427,7 +407,7 @@ export const ChatArea = memo(function ChatArea({
             />
         </>
     );
-}, (prev, next) => prev.roomId === next.roomId && prev.user.id === next.user.id && prev.isCollabSpaceVisible === next.isCollabSpaceVisible);
+}, (prev, next) => prev.roomId === next.roomId && prev.user.id === next.user.id);
 
 // Empty state component
 function EmptyState({ onSend }: { onSend: (text: string) => void }) {

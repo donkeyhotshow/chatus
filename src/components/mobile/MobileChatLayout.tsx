@@ -52,7 +52,7 @@ export function MobileChatLayout({
     }, [isMobile]);
 
     const handleTabChange = useCallback((tab: MobileTab) => {
-        if (tab === 'more') return; // Handle 'more' separately
+        if (tab === 'more') return;
         setActiveTab(tab);
 
         if (tab === 'chat') {
@@ -62,40 +62,22 @@ export function MobileChatLayout({
         }
     }, []);
 
-    const handleToggleCollabSpace = useCallback(() => {
-        setIsCollabSpaceVisible(prev => !prev);
-        if (!isCollabSpaceVisible) {
-            // Если открываем, переключаемся на соответствующую вкладку
-            if (activeTab === 'chat') {
-                setActiveTab('games');
-            }
-        } else {
-            // Если закрываем, возвращаемся к чату
-            setActiveTab('chat');
-        }
-    }, [isCollabSpaceVisible, activeTab]);
-
     const handleMobileBack = useCallback(() => {
         if (isCollabSpaceVisible) {
-            // Если открыта боковая панель, сначала закрываем её
             setIsCollabSpaceVisible(false);
             setActiveTab('chat');
         } else if (onBack) {
-            // Иначе выходим из чата
             onBack();
         }
     }, [isCollabSpaceVisible, onBack]);
 
     if (!isMobile) {
-        // На десктопе используем обычный layout
         return (
             <div className="flex h-full">
                 <div className="flex-1">
                     <ChatArea
                         user={user}
                         roomId={roomId}
-                        isCollabSpaceVisible={isCollabSpaceVisible}
-                        onToggleCollaborationSpace={handleToggleCollabSpace}
                         onMobileBack={handleMobileBack}
                     />
                 </div>
@@ -117,7 +99,6 @@ export function MobileChatLayout({
 
     return (
         <div className="flex flex-col h-full bg-black relative overflow-hidden">
-            {/* Mobile Header */}
             <motion.header
                 className="flex items-center justify-between p-4 bg-black/95 backdrop-blur-sm border-b border-white/10 z-50"
                 initial={{ y: -100 }}
@@ -164,9 +145,7 @@ export function MobileChatLayout({
                 </button>
             </motion.header>
 
-            {/* Main Content Area */}
             <div className="flex-1 relative overflow-hidden">
-                {/* Chat Area */}
                 <motion.div
                     className={cn(
                         "absolute inset-0 bg-black",
@@ -181,13 +160,10 @@ export function MobileChatLayout({
                     <ChatArea
                         user={user}
                         roomId={roomId}
-                        isCollabSpaceVisible={false} // На мобильных всегда false для ChatArea
-                        onToggleCollaborationSpace={handleToggleCollabSpace}
                         onMobileBack={handleMobileBack}
                     />
                 </motion.div>
 
-                {/* Collaboration Space Overlay */}
                 <AnimatePresence>
                     {isCollabSpaceVisible && (
                         <motion.div
@@ -209,7 +185,6 @@ export function MobileChatLayout({
                     )}
                 </AnimatePresence>
 
-                {/* Backdrop for collaboration space */}
                 <AnimatePresence>
                     {isCollabSpaceVisible && (
                         <motion.div
@@ -223,17 +198,12 @@ export function MobileChatLayout({
                 </AnimatePresence>
             </div>
 
-            {/* Mobile Navigation */}
             <MobileNavigation
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
-                isCollabSpaceVisible={isCollabSpaceVisible}
-                onToggleCollabSpace={handleToggleCollabSpace}
-                unreadCount={0} // TODO: Implement unread count
-
+                unreadCount={0}
             />
 
-            {/* Keyboard spacer */}
             {keyboardVisible && (
                 <div
                     className="flex-shrink-0 bg-black transition-all duration-300"

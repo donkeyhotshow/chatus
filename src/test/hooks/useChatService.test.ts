@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useChatService } from '@/hooks/useChatService';
-import { rProfile } from '@/lib/types';
+import { UserProfile } from '@/lib/types';
 
 // Mock Firebase context
 const mockFirebaseContext = {
@@ -26,10 +26,10 @@ vi.mock('@/hooks/useConnectionManager', () => ({
 
 // Mock ChatService
 const mockChatService = {
-    messages: [],
-    onlineUsers: [],
-    typingUsers: [],
-    gameStates: {},
+    messages: [] as any[],
+    onlineUsers: [] as any[],
+    typingUsers: [] as string[],
+    gameStates: {} as Record<string, any>,
     hasMoreMessages: true,
     isInitialLoad: true,
     subscribe: vi.fn(),
@@ -128,7 +128,7 @@ describe('useChatService', () => {
             updateCallback = callback;
         });
 
-        const { result } = renderHook(() => {
+        renderHook(() => {
             renderSpy();
             return useChatService('test-room', mockUser);
         });
@@ -166,7 +166,7 @@ describe('useChatService', () => {
     });
 
     it('handles room changes correctly', () => {
-        const { result, rerender } = renderHook(
+        const { rerender } = renderHook(
             ({ roomId }) => useChatService(roomId, mockUser),
             { initialProps: { roomId: 'room1' } }
         );

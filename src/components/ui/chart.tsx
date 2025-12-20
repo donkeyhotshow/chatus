@@ -5,7 +5,9 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 // Format: { THEME_NAME: CSS_SELECTOR }
-const THEMES = { light: "", dark: ".dark" } as const
+type ThemeKey = 'light' | 'dark';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const THEMES: Record<ThemeKey, string> = { light: "", dark: ".dark" }
 
 export type ChartConfig = {
   [k in string]: {
@@ -61,8 +63,10 @@ export const ChartContainer = React.forwardRef<
 })
 ChartContainer.displayName = "Chart"
 
-export const ChartStyle = ({ id: _id, config: _config }: { id: string; config: ChartConfig }) => {
+export const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   // Chart styles would be generated here based on id and config
+  void id;
+  void config;
   return null
 }
 

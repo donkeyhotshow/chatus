@@ -3,8 +3,8 @@
  * Provides comprehensivr handling, logging, and recovery mechanisms
  */
 
-import { logger } from './logger';
 import { toast } from '@/hooks/use-toast';
+import { logger } from './logger';
 
 export interface ErrorContext {
     component?: string;
@@ -76,30 +76,23 @@ export class EnhancedErrorHandler {
         const errorCode = error?.code || 'unknown';
         const errorMessage = error?.message || 'Unknown Firebase error';
 
-        let userMessage = 'Произошла ошибка. Попробуйте еще раз.';
         let retryable = false;
 
         switch (errorCode) {
             case 'permission-denied':
-                userMessage = 'Недостаточно прав для выполнения операции';
                 break;
             case 'unavailable':
-                userMessage = 'Сервис временно недоступен. Попробуйте позже.';
                 retryable = true;
                 break;
             case 'failed-precondition':
-                userMessage = 'Данные были изменены другим пользователем. Обновляем...';
                 retryable = true;
                 break;
             case 'deadline-exceeded':
-                userMessage = 'Превышено время ожидания. Проверьте подключение.';
                 retryable = true;
                 break;
             case 'resource-exhausted':
-                userMessage = 'Превышен лимит запросов. Попробуйте позже.';
                 break;
             case 'unauthenticated':
-                userMessage = 'Требуется повторная авторизация';
                 // Trigger re-authentication
                 this.handleReauthentication();
                 break;
@@ -167,7 +160,7 @@ export class EnhancedErrorHandler {
         }
     }
 
-    private showErrorToast(error: Error | unknown, context: ErrorContext): void {
+    private showErrorToast(error: Error | unknown): void {
         const errorMessage = error instanceof Error ? error.message : String(error);
 
         // Map common errors to user-friendly messages

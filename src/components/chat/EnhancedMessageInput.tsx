@@ -9,6 +9,7 @@ interface EnhancedMessageInputProps {
     onSend: (text: string) => void;
     onTyping?: (isTyping: boolean) => void;
     onFileUpload?: (file: File) => void;
+    onStickerSend?: (imageUrl: string) => void;
     replyTo?: Message | null;
     onCancelReply?: () => void;
     disabled?: boolean;
@@ -20,12 +21,15 @@ export function EnhancedMessageInput({
     onSend,
     onTyping,
     onFileUpload,
+    onStickerSend,
     replyTo,
     onCancelReply,
     disabled = false,
     placeholder = "Сообщение...",
     className
 }: EnhancedMessageInputProps) {
+    // onStickerSend is available for future sticker picker implementation
+    void onStickerSend;
     const [message, setMessage] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);

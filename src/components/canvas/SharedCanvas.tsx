@@ -1,4 +1,3 @@
-
 "use client";
 
 import { CanvasPath, GameState, UserProfile } from '@/lib/types';
@@ -160,20 +159,6 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
       ctx.stroke();
     }
 
-    ctx.restore();
-  }, []);
-
-  // Функция для рисования линии в реальном времени
-  const drawLine = useCallback((ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number, color: string, width: number = 2) => {
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.strokeStyle = color;
-    ctx.lineWidth = width;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.stroke();
     ctx.restore();
   }, []);
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useState } from 'react';
-import { MessageCircle, PenTool, Gamepad2, Users, BarChart3, Settings, LogOut } from 'lucide-react';
+import { MessageCircle, PenTool, Gamepad2, Settings, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Logo } from '../icons/logo';
 

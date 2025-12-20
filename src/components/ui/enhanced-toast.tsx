@@ -55,7 +55,6 @@ const toastColors = {
 };
 
 export function EnhancedToast({
-    id,
     title,
     description,
     type = 'info',
@@ -146,7 +145,7 @@ export function EnhancedToast({
         const isRight = position.includes('right');
 
         let x = 0;
-        let y = isTop ? -100 : 100;
+        const y = isTop ? -100 : 100;
 
         if (isLeft) x = -100;
         if (isRight) x = 100;

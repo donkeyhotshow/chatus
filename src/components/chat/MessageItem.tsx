@@ -5,7 +5,7 @@ import { memo, useState, useEffect } from 'react';
 import type { Message } from '@/lib/types';
 import { EmojiRain } from './EmojiRain';
 import { format } from 'date-fns';
-import { Smile, Trash2, CornerUpLeft, Clock, Check, CheckCheck } from 'lucide-react';
+import { Smile, Trash2, CornerUpLeft, Check, CheckCheck } from 'lucide-react';
 import { useMediaQuery } from '@/hooks/use-media-query';
 
 type MessageItemProps = {

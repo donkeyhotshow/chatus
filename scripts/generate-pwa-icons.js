@@ -6,6 +6,7 @@ const path = require('path');
 // Создаем базовые иконки для PWA (заглушки)
 const iconSizes = [32, 72, 96, 128, 144, 152, 192, 384, 512];
 const iconsDir = path.join(__dirname, '../public/icons');
+const publicDir = path.join(__dirname, '../public');
 
 // Создаем директорию если не существует
 if (!fs.existsSync(iconsDir)) {
@@ -28,19 +29,39 @@ const createIconSVG = (size) => `
   <path d="M ${size * 0.35} ${size * 0.6} Q ${size * 0.5} ${size * 0.7} ${size * 0.65} ${size * 0.6}" stroke="#06b6d4" stroke-width="${size * 0.02}" fill="none"/>
 </svg>`;
 
-// Генерируем иконки
+// Генерируем иконки в /public/icons/
 iconSizes.forEach(size => {
   const svg = createIconSVG(size);
-  const filename = `icon-${size}x${size}.png`;
 
-  // Для демо создаем SVG файлы (в реальном проекте нужно конвертировать в PNG)
+  // SVG в icons/
   fs.writeFileSync(
     path.join(iconsDir, `icon-${size}x${size}.svg`),
     svg.trim()
   );
 
-  console.log(`Generated ${filename}`);
+  // PNG заглушка в icons/ (SVG с расширением .png для совместимости)
+  fs.writeFileSync(
+    path.join(iconsDir, `icon-${size}x${size}.png`),
+    svg.trim()
+  );
+
+  console.log(`Generated icon-${size}x${size}.png`);
 });
+
+// Создаем иконки в корне /public/ для service worker
+const rootIcons = [72, 192, 512];
+rootIcons.forEach(size => {
+  const svg = createIconSVG(size);
+  fs.writeFileSync(
+    path.join(publicDir, `icon-${size}.png`),
+    svg.trim()
+  );
+});
+
+// Badge иконка
+const badgeSvg = createIconSVG(72);
+fs.writeFileSync(path.join(publicDir, 'badge-72.png'), badgeSvg.trim());
+fs.writeFileSync(path.join(iconsDir, 'badge-72x72.png'), badgeSvg.trim());
 
 // Создаем apple-touch-icon
 const appleTouchIcon = createIconSVG(180);
@@ -48,11 +69,15 @@ fs.writeFileSync(
   path.join(iconsDir, 'apple-touch-icon.svg'),
   appleTouchIcon.trim()
 );
+fs.writeFileSync(
+  path.join(iconsDir, 'apple-touch-icon.png'),
+  appleTouchIcon.trim()
+);
 
 // Создаем favicon
 const favicon = createIconSVG(32);
 fs.writeFileSync(
-  path.join(__dirname, '../public/favicon.svg'),
+  path.join(publicDir, 'favicon.svg'),
   favicon.trim()
 );
 

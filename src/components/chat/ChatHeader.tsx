@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from 'react';
-import { ArrowLeft, Search, MoreVertical, Users } from 'lucide-react';
+import { ArrowLeft, Search, MoreVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ChatHeaderProps {

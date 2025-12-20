@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from '@/lib/utils';
-import { Wifi, WifiOff, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { WifiOff, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface ConnectionStatusProps {
     status: 'connecting' | 'connected' | 'disconnected' | 'error';

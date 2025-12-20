@@ -26,8 +26,7 @@ export function LazyWrapper({ fallback, className, children }: LazyComponentProp
 
 // Хелпер для создания ленивых компонентов с типизацией
 export function createLazyComponent<T extends ComponentType<any>>(
-    importFn: () => Promise<{ default: T }>,
-    _fallback?: React.ReactNode
+    importFn: () => Promise<{ default: T }>
 ): LazyExoticComponent<T> {
     const LazyComponent = lazy(importFn)
 

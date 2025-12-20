@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Palette, User, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Palette, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { ValidatedInput } from '@/components/ui/ValidatedInput';
@@ -216,7 +216,7 @@ export function ProfileCreationWizard({ onComplete, onCancel }: ProfileCreationW
             await new Promise(resolve => setTimeout(resolve, 2000));
             success('Профиль успешно создан!', 'Добро пожаловать в чат!');
             onComplete(profileData);
-        } catch (err) {
+        } catch {
             error('Ошибка создания профиля', 'Попробуйте еще раз');
         } finally {
             setIsLoading(false);

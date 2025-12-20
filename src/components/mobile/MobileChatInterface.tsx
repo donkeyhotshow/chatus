@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence, PanInfo } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     ArrowLeft,
     Users,
@@ -10,7 +10,6 @@ import {
     Paperclip,
     Mic,
     Send,
-    MoreHorizontal,
     Reply,
     Copy,
     Trash2,
@@ -18,7 +17,6 @@ import {
 } from 'lucide-react';
 import { SwipeGestures } from './SwipeGestures';
 import { KeyboardAwareContainer } from './KeyboardAwareInput';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
 interface Message {
@@ -70,14 +68,12 @@ export function MobileChatInterface({
 }: MobileChatInterfaceProps) {
     const [inputText, setInputText] = useState('');
     const [showParticipants, setShowParticipants] = useState(false);
-    const [showSettings, setShowSettings] = useState(false);
     const [contextMenu, setContextMenu] = useState<MessageContextMenu | null>(null);
     const [isRecording, setIsRecording] = useState(false);
     const [recordingTime, setRecordingTime] = useState(0);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const recordingTimer = useRef<NodeJS.Timeout>();
-    const isMobile = useIsMobile();
 
     // Автопрокрутка к последнему сообщению
     useEffect(() => {

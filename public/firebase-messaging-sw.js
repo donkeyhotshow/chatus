@@ -22,7 +22,7 @@ firebase.initializeApp({
   apiKey: "AIzaSyBCbE_vyqlFa2v6mk-w3pfQ1qIgYXp0HX4",
   authDomain: "chatus-703ce.firebaseapp.com",
   projectId: "chatus-703ce",
-  storageBucket: "chatus-703ce.firebasestorage.app",
+  storageBucket: "chatus-703ce.appspot.com",
   messagingSenderId: "924028329830",
   appId: "1:924028329830:web:abfa4a0661401259cbf2a7",
 });

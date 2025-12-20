@@ -162,11 +162,12 @@ export function CollaborationSpace({
 
   const activeSheet = sheets?.find(s => s.id === activeSheetId);
 
-  const tabs = [
+  // Memoize tabs to prevent useCallback recreation on every render
+  const tabs = useMemo(() => [
     { id: 'canvas' as const, label: 'Canvas', icon: PenTool },
     { id: 'games' as const, label: 'Games', icon: Gamepad2 },
     { id: 'users' as const, label: 'Users', icon: Users },
-  ];
+  ], []);
 
   // Swipe handling for mobile tab switching - must be before conditional return
   const handleSwipeLeft = useCallback(() => {

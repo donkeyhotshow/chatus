@@ -9,7 +9,6 @@ import {
     UserPlus,
     Crown,
     Shield,
-    Volume2,
     VolumeX,
     MessageCircle,
     UserX

@@ -16,12 +16,7 @@ import {
     Circle,
     Eraser,
     Palette,
-    Download,
-    Upload,
-    RotateCcw,
-    FlipHorizontal,
-    FlipVertical,
-    Copy
+    Download
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -110,51 +105,6 @@ export function AdvancedPixelEditor({
     const canvasWidth = width * pixelSize;
     const canvasHeight = height * pixelSize;
 
-    // Инициализация
-    useEffect(() => {
-        initializeEditor();
-    }, []);
-
-    const initializeEditor = useCallback(() => {
-        const initialLayer: Layer = {
-            id: 'layer-1',
-            name: 'Слой 1',
-            visible: true,
-            opacity: 1,
-            imageData: null
-        };
-
-        setLayers([initialLayer]);
-        setActiveLayerId(initialLayer.id);
-
-        if (initialImage) {
-            loadImageToLayer(initialImage, initialLayer.id);
-        } else {
-            saveToHistory([initialLayer], initialLayer.id);
-        }
-    }, [initialImage]);
-
-    const loadImageToLayer = (imageUrl: string, layerId: string) => {
-        const img = new Image();
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = canvasWidth;
-            canvas.height = canvasHeight;
-            const ctx = canvas.getContext('2d');
-
-            if (ctx) {
-                ctx.imageSmoothingEnabled = false;
-                ctx.drawImage(img, 0, 0, canvasWidth, canvasHeight);
-                const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
-
-                setLayers(prev => prev.map(layer =>
-                    layer.id === layerId ? { ...layer, imageData } : layer
-                ));
-            }
-        };
-        img.src = imageUrl;
-    };
-
     const saveToHistory = useCallback((newLayers: Layer[], newActiveLayerId: string) => {
         const newState: HistoryState = {
             layers: newLayers.map(layer => ({
@@ -184,6 +134,51 @@ export function AdvancedPixelEditor({
 
         setHistoryIndex(prev => Math.min(prev + 1, 49));
     }, [historyIndex]);
+
+    const loadImageToLayer = useCallback((imageUrl: string, layerId: string) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+            const ctx = canvas.getContext('2d');
+
+            if (ctx) {
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(img, 0, 0, canvasWidth, canvasHeight);
+                const imageData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
+
+                setLayers(prev => prev.map(layer =>
+                    layer.id === layerId ? { ...layer, imageData } : layer
+                ));
+            }
+        };
+        img.src = imageUrl;
+    }, [canvasWidth, canvasHeight]);
+
+    const initializeEditor = useCallback(() => {
+        const initialLayer: Layer = {
+            id: 'layer-1',
+            name: 'Слой 1',
+            visible: true,
+            opacity: 1,
+            imageData: null
+        };
+
+        setLayers([initialLayer]);
+        setActiveLayerId(initialLayer.id);
+
+        if (initialImage) {
+            loadImageToLayer(initialImage, initialLayer.id);
+        } else {
+            saveToHistory([initialLayer], initialLayer.id);
+        }
+    }, [initialImage, loadImageToLayer, saveToHistory]);
+
+    // Инициализация
+    useEffect(() => {
+        initializeEditor();
+    }, [initializeEditor]);
 
     const undo = useCallback(() => {
         if (historyIndex > 0) {
@@ -221,6 +216,40 @@ export function AdvancedPixelEditor({
         }
     }, [history, historyIndex]);
 
+    const drawTransparencyGrid = useCallback((ctx: CanvasRenderingContext2D) => {
+        const gridSize = 8;
+        ctx.fillStyle = '#f0f0f0';
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+        ctx.fillStyle = '#e0e0e0';
+        for (let x = 0; x < canvasWidth; x += gridSize) {
+            for (let y = 0; y < canvasHeight; y += gridSize) {
+                if ((Math.floor(x / gridSize) + Math.floor(y / gridSize)) % 2 === 0) {
+                    ctx.fillRect(x, y, gridSize, gridSize);
+                }
+            }
+        }
+    }, [canvasWidth, canvasHeight]);
+
+    const drawGrid = useCallback((ctx: CanvasRenderingContext2D) => {
+        ctx.strokeStyle = '#00000020';
+        ctx.lineWidth = 1;
+
+        for (let x = 0; x <= width; x++) {
+            ctx.beginPath();
+            ctx.moveTo(x * pixelSize, 0);
+            ctx.lineTo(x * pixelSize, canvasHeight);
+            ctx.stroke();
+        }
+
+        for (let y = 0; y <= height; y++) {
+            ctx.beginPath();
+            ctx.moveTo(0, y * pixelSize);
+            ctx.lineTo(canvasWidth, y * pixelSize);
+            ctx.stroke();
+        }
+    }, [width, height, pixelSize, canvasWidth, canvasHeight]);
+
     // Рендеринг всех слоев
     const renderLayers = useCallback(() => {
         const canvas = canvasRef.current;
@@ -249,41 +278,7 @@ export function AdvancedPixelEditor({
         if (!previewMode) {
             drawGrid(ctx);
         }
-    }, [layers, canvasWidth, canvasHeight, previewMode]);
-
-    const drawTransparencyGrid = (ctx: CanvasRenderingContext2D) => {
-        const gridSize = 8;
-        ctx.fillStyle = '#f0f0f0';
-        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-
-        ctx.fillStyle = '#e0e0e0';
-        for (let x = 0; x < canvasWidth; x += gridSize) {
-            for (let y = 0; y < canvasHeight; y += gridSize) {
-                if ((Math.floor(x / gridSize) + Math.floor(y / gridSize)) % 2 === 0) {
-                    ctx.fillRect(x, y, gridSize, gridSize);
-                }
-            }
-        }
-    };
-
-    const drawGrid = (ctx: CanvasRenderingContext2D) => {
-        ctx.strokeStyle = '#00000020';
-        ctx.lineWidth = 1;
-
-        for (let x = 0; x <= width; x++) {
-            ctx.beginPath();
-            ctx.moveTo(x * pixelSize, 0);
-            ctx.lineTo(x * pixelSize, canvasHeight);
-            ctx.stroke();
-        }
-
-        for (let y = 0; y <= height; y++) {
-            ctx.beginPath();
-            ctx.moveTo(0, y * pixelSize);
-            ctx.lineTo(canvasWidth, y * pixelSize);
-            ctx.stroke();
-        }
-    };
+    }, [layers, canvasWidth, canvasHeight, previewMode, drawGrid, drawTransparencyGrid]);
 
     // Обновляем рендер при изменении слоев
     useEffect(() => {
@@ -704,7 +699,7 @@ export function AdvancedPixelEditor({
                                 </div>
 
                                 <div className="space-y-2 max-h-48 overflow-y-auto">
-                                    {layers.map((layer, index) => (
+                                    {layers.map((layer) => (
                                         <div
                                             key={layer.id}
                                             className={cn(

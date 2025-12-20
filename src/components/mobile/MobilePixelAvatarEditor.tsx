@@ -319,6 +319,9 @@ export function MobilePixelAvatarEditor({
         saveToHistory();
     }, []);
 
+    // Expose clearCanvas for potential future use
+    void clearCanvas;
+
     const handleSave = useCallback(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;

@@ -2,9 +2,7 @@
 
 import { useState, useCallback, useMemo, lazy, Suspense } from 'react';
 import { Gamepad, ArrowLeft, Dices, Hand, Swords } from 'lucide-react';
-import { GameCard } from './GameCard';
 import { UserProfile, GameType, GameState } from '@/lib/types';
-import { Button } from '@/components/ui/button';
 import { useChatService } from '@/hooks/useChatService';
 import { useDoc } from '@/hooks/useDoc';
 import { doc } from 'firebase/firestore';

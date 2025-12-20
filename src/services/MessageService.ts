@@ -5,10 +5,8 @@ import {
     serverTimestamp, Unsubscribe, deleteDoc, doc, limit, getDocs, DocumentSnapshot, startAfter, Timestamp, DocumentData, Firestore, runTransaction, arrayUnion, arrayRemove, writeBatch
 } from "firebase/firestore";
 import { logger } from "@/lib/logger";
-import { Message, UserProfile, FirebaseError } from "@/lib/types";
+import { Message, UserProfile } from "@/lib/types";
 import { withRetryAndTimeout } from "@/lib/utils";
-import { errorEmitter } from "@/lib/error-emitter";
-import { FirestorePermissionError } from "@/lib/errors";
 import { isDemoMode } from "@/lib/demo-mode";
 
 const MESSAGE_PAGE_SIZE = 30;

@@ -4,10 +4,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Star, Users, Clock, Play } from 'lucide-react';
-import styles from './GameCard.module.css';
 
 interface GameCardProps {
-    id: string;
     title: string;
     description: string;
     icon: React.ReactNode;
@@ -20,7 +18,6 @@ interface GameCardProps {
 }
 
 export const GameCard: React.FC<GameCardProps> = ({
-    id,
     title,
     description,
     icon,
@@ -97,4 +94,3 @@ export const GameCard: React.FC<GameCardProps> = ({
         </motion.button>
     );
 };
-

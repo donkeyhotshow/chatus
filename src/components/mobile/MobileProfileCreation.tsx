@@ -5,10 +5,9 @@ import { Button } from '@/components/ui/button';
 
 interface MobileProfileCreationProps {
     onComplete: (profile: { avatar: string; name: string }) => void;
-    onCancel?: () => void;
 }
 
-export function MobileProfileCreation({ onComplete, onCancel }: MobileProfileCreationProps) {
+export function MobileProfileCreation({ onComplete }: MobileProfileCreationProps) {
     const [name, setName] = useState('');
 
     const handleComplete = () => {

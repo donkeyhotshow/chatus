@@ -4,11 +4,7 @@ import { useState, useEffect } from 'react';
 import { Wifi, WifiOff } from 'lucide-react';
 import { Alert, AlertDescription } from '../ui/alert';
 
-interface ConnectionStatusProps {
-    isOnline?: boolean;
-}
-
-export function ConnectionStatus({ isOnline }: ConnectionStatusProps) {
+export function ConnectionStatus() {
     const [isConnected, setIsConnected] = useState(true);
     const [showOfflineAlert, setShowOfflineAlert] = useState(false);
 

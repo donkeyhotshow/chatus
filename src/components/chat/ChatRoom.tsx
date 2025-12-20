@@ -2,7 +2,7 @@
 
 import { useState, useEffect, lazy, Suspense, useMemo, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Room, UserProfile } from '@/lib/types';
+import { Room } from '@/lib/types';
 import { ChatArea } from './ChatArea';
 import { ProfileCreationDialog } from './ProfileCreationDialog';
 import { MobileNavigation } from '../mobile/MobileNavigation';
@@ -271,8 +271,6 @@ export function ChatRoom({ roomId }: { roomId: string }) {
                         <ChatArea
                             user={user}
                             roomId={roomId}
-                            isCollabSpaceVisible={false}
-                            onToggleCollaborationSpace={() => handleTabChange('canvas')}
                             onMobileBack={handleMobileBack}
                         />
                     )}

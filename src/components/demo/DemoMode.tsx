@@ -65,12 +65,8 @@ export function DemoMode() {
   };
 
   const testAI = async () => {
-    try {
-      const response = await mockAI.generateResponse('Hello, this is a test');
-      setTestMessage(response);
-    } catch (error) {
-      setTestMessage('Error testing AI service');
-    }
+    const response = await mockAI.generateResponse('Hello, this is a test');
+    setTestMessage(response);
   };
 
   if (!isTestMode()) {

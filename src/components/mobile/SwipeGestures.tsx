@@ -56,7 +56,7 @@ export function SwipeGestures({
     };
 
     // Handle pan start
-    const handlePanStart = useCallback((event: any, info: PanInfo) => {
+    const handlePanStart = useCallback((_event: any) => {
         if (disabled) return;
 
         // Start long press timer
@@ -71,8 +71,8 @@ export function SwipeGestures({
         }
 
         // Handle pinch start
-        if (enablePinch && event.touches?.length === 2) {
-            initialDistance.current = getTouchDistance(event.touches);
+        if (enablePinch && _event.touches?.length === 2) {
+            initialDistance.current = getTouchDistance(_event.touches);
         }
     }, [disabled, enableLongPress, onLongPress, longPressDuration, enablePinch]);
 

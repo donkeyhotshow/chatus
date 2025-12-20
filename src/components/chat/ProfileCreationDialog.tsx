@@ -5,7 +5,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { PixelAvatarEditor } from '../avatar/PixelAvatarEditor';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, User, ArrowRight } from 'lucide-react';
+import { User, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ProfileCreationDialogProps {

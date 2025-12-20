@@ -6,13 +6,11 @@ import { cn } from '@/lib/utils';
 
 interface ThemeToggleProps {
     variant?: 'icon' | 'full';
-    showSettings?: boolean;
     className?: string;
 }
 
 export function ThemeToggle({
     variant = 'icon',
-    showSettings = false,
     className
 }: ThemeToggleProps) {
     const [currentTheme, setCurrentTheme] = useState<'light' | 'dark' | 'system'>('dark');

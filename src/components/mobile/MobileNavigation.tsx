@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from 'react';
-import { MessageCircle, Gamepad2, PenTool, Users, MoreHorizontal } from 'lucide-react';
+import { MessageCircle, Gamepad2, PenTool } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export type MobileTab = 'chat' | 'games' | 'canvas' | 'users' | 'more' | 'stats';
@@ -86,7 +86,6 @@ export const MobileNavigation = memo(function MobileNavigation({
 export function MobileNavigationLegacy({
     activeTab,
     onTabChange,
-    isCollabSpaceVisible,
     onToggleCollabSpace
 }: {
     activeTab: 'chat' | 'games' | 'canvas' | 'users';
