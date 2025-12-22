@@ -10,6 +10,7 @@ import { ChatSidebar, ChatTab } from './ChatSidebar';
 import { UserList } from './UserList';
 import { ChatStats } from './ChatStats';
 import { ConnectionStatus } from './ConnectionStatus';
+import { SettingsPanel } from './SettingsPanel';
 import { useRouter } from 'next/navigation';
 import { useFirebase } from '../firebase/FirebaseProvider';
 import { useDoc } from '@/hooks/useDoc';
@@ -100,6 +101,7 @@ function ErrorScreen({ onRetry }: { onRetry: () => void }) {
 
 export function ChatRoom({ roomId }: { roomId: string }) {
     const [activeTab, setActiveTab] = useState<ChatTab>('chat');
+    const [showSettings, setShowSettings] = useState(false);
     const router = useRouter();
     const { toast } = useToast();
     const firebaseContext = useFirebase();
@@ -219,8 +221,8 @@ export function ChatRoom({ roomId }: { roomId: string }) {
     }, [router]);
 
     const handleSettings = useCallback(() => {
-        toast({ title: "Настройки", description: "В разработке" });
-    }, [toast]);
+        setShowSettings(true);
+    }, []);
 
     // Loading states - використовуємо skeleton для кращого UX
     if (!firebaseContext) return <LoadingScreen text="Инициализация..." showSkeleton />;
@@ -246,6 +248,12 @@ export function ChatRoom({ roomId }: { roomId: string }) {
         <div className="flex h-screen-safe w-full overflow-hidden bg-[var(--bg-primary)]">
             {/* Connection Status Banner */}
             <ConnectionStatus />
+
+            {/* Settings Panel */}
+            <SettingsPanel
+                isOpen={showSettings}
+                onClose={() => setShowSettings(false)}
+            />
 
             {/* Onboarding Tour */}
             {showOnboarding && user && (

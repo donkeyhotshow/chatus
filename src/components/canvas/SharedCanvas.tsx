@@ -572,14 +572,18 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
       const debouncedResize = debounce(resizeCanvas, 250);
       window.addEventListener('resize', debouncedResize);
 
-      // Initial resize with a small delay to ensure container is rendered
+      // Initial resize with multiple retries for lazy-loaded containers
       resizeCanvas();
-      // Retry after a short delay in case container wasn't ready
-      const retryTimeout = setTimeout(resizeCanvas, 100);
+      const retryTimeouts = [
+        setTimeout(resizeCanvas, 50),
+        setTimeout(resizeCanvas, 150),
+        setTimeout(resizeCanvas, 300),
+        setTimeout(resizeCanvas, 500),
+      ];
 
       return () => {
         window.removeEventListener('resize', debouncedResize);
-        clearTimeout(retryTimeout);
+        retryTimeouts.forEach(clearTimeout);
       };
     }
   }, [redrawCanvas]);

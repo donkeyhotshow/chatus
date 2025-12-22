@@ -87,6 +87,13 @@ export function EnhancedMessageInput({
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
+            e.stopPropagation();
+            handleSend();
+        }
+        // iOS Safari fallback
+        if (e.keyCode === 13 && !e.shiftKey) {
+            e.preventDefault();
+            e.stopPropagation();
             handleSend();
         }
     }, [handleSend]);
@@ -153,6 +160,9 @@ export function EnhancedMessageInput({
                         placeholder={placeholder}
                         disabled={disabled}
                         rows={1}
+                        enterKeyHint="send"
+                        autoComplete="off"
+                        autoCorrect="on"
                         className={cn(
                             "w-full px-4 py-2.5 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-2xl",
                             "text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
