@@ -113,7 +113,7 @@ export const ChatArea = memo(function ChatArea({
 
         if (persistedMessages.length > lastMessageCountRef.current) {
             const newMessages = persistedMessages.slice(lastMessageCountRef.current);
-            const hasNewFromOthers = newMessages.some(msg => msg.user.id !== user.id && msg.type !== 'system');
+            const hasNewFromOthers = newMessages.some(msg => msg.user?.id !== user.id && msg.type !== 'system');
 
             if (hasNewFromOthers) {
                 try {
@@ -325,7 +325,17 @@ export const ChatArea = memo(function ChatArea({
                 {/* Messages */}
                 <div className="flex-1 min-h-0 overflow-hidden relative">
                     {allMessages.length === 0 && !isInitialLoad ? (
-                        <EmptyState onSend={(text) => service?.sendMessage({ text, user, senderId: user.id })} />
+                        <EmptyState onSend={(text) => {
+                            try {
+                                service?.sendMessage({ text, user, senderId: user.id, type: 'text' }).catch((error) => {
+                                    logger.warn('Failed to send quick message', error as Error);
+                                    toast({ title: 'Ошибка отправки', variant: 'destructive' });
+                                });
+                            } catch (error) {
+                                logger.warn('Sync error sending quick message', error as Error);
+                                toast({ title: 'Ошибка отправки', variant: 'destructive' });
+                            }
+                        }} />
                     ) : (
                         <MessageList
                             ref={messageListRef}

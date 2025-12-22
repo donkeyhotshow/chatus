@@ -31,6 +31,9 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
     setRainEmoji('');
   }, [message.id]);
 
+  // Safe user access - fallback for malformed messages
+  const user = message.user || { id: 'unknown', name: 'Unknown', avatar: '' };
+
   if (message.type === 'system') {
     return (
       <div className="w-full flex justify-center my-6 opacity-50">
@@ -108,7 +111,7 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
         <div className="flex-shrink-0 mt-1">
           <div
             className="w-8 h-8 rounded-xl bg-neutral-900 border border-white/10 bg-center bg-cover"
-            style={{ backgroundImage: `url(${message.user.avatar})` }}
+            style={{ backgroundImage: `url(${user.avatar})` }}
           />
         </div>
       )}
@@ -117,7 +120,7 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
         {!isSticker && (
           <div className="mb-1 px-1 flex items-center gap-2">
             <span className={`text-[10px] font-bold uppercase tracking-wider ${isOwn ? 'text-neutral-500' : 'text-cyan-500'}`}>
-              {message.user.name}
+              {user.name}
             </span>
             <span className="text-[9px] text-neutral-600 font-mono">{formattedTime}</span>
           </div>

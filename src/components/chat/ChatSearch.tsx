@@ -42,7 +42,7 @@ export function ChatSearch({
         const searchTerm = query.toLowerCase().trim();
 
         messages.forEach(message => {
-            const user = users.find(u => u.id === message.user.id) || null;
+            const user = users.find(u => u.id === message.user?.id) || null;
             let matchType: 'content' | 'username' | 'date' = 'content';
             let highlightedText = message.text;
 

@@ -84,7 +84,7 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
         <MessageItem
           key={msg.id}
           message={msg}
-          isOwn={msg.user.id === currentUserId}
+          isOwn={msg.user?.id === currentUserId || msg.senderId === currentUserId}
           onDelete={onDeleteMessage}
           onReaction={onReaction}
           onImageClick={onImageClick}
