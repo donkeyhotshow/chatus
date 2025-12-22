@@ -3,43 +3,50 @@
     ".read": false,
     ".write": false,
     "connections": {
-      "$userId": {
-        ".read": "auth != null",
-        "$connectionId": {
-          ".write": "auth != null && auth.uid === $userId",
-          ".read": "auth != null"
-        }
+      "$odId": {
+        ".read": true,
+        ".write": true
       }
     },
     "typing": {
       "$chatId": {
-        ".read": "auth != null",
-        "$userId": {
-          ".write": "auth != null && auth.uid === $userId",
-          ".read": "auth != null",
-          ".validate": "newData.isBoolean() || newData.val() === null"
+        ".read": true,
+        "$odId": {
+          ".write": true,
+          ".read": true
         }
       }
     },
     "status": {
-      ".read": "auth != null",
-      "$userId": {
-        ".write": "auth != null && auth.uid === $userId",
-        ".read": "auth != null",
-        ".validate": "newData.hasChildren(['state', 'lastChanged']) && newData.child('state').isString() && (newData.child('state').val() === 'online' || newData.child('state').val() === 'offline')"
+      ".read": true,
+      "$odId": {
+        ".write": true,
+        ".read": true
+      }
+    },
+    "presence": {
+      ".read": true,
+      "$odId": {
+        ".write": true,
+        ".read": true
+      }
+    },
+    "rooms": {
+      "$roomId": {
+        ".read": true,
+        ".write": true
       }
     },
     "messages": {
-      ".read": "auth != null",
+      ".read": true,
       "$messageId": {
-        ".read": "auth != null",
-        ".write": "auth != null && newData.child('senderId').val() === auth.uid",
-        ".validate": "newData.hasChildren(['text','ts','senderId']) && newData.child('text').isString() && newData.child('text').val().length <= 1000 && newData.child('ts').isNumber() && newData.child('senderId').isString()"
+        ".read": true,
+        ".write": true
       }
     },
     "test": {
-      ".read": "auth != null",
-      ".write": "auth != null"
+      ".read": true,
+      ".write": true
     }
   }
 }
