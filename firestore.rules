@@ -26,9 +26,14 @@ service cloud.firestore {
       match /games/{gameId} {
         allow read, write: if true;
       }
+
+      // Presence inside room
+      match /presence/{odId} {
+        allow read, write: if true;
+      }
     }
 
-    // Presence - allow public access for anonymous users
+    // Global presence - allow public access for anonymous users
     match /presence/{odId} {
       allow read: if true;
       allow write: if true;
