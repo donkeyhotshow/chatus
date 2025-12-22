@@ -99,8 +99,6 @@ export const useChatService = (roomId: string, currentUser?: UserProfile) => {
         if (messagesChanged || onlineUsersChanged || typingUsersChanged ||
           gameStatesChanged || hasMoreMessagesChanged || isInitialLoadChanged) {
 
-          connectionManager.handleConnectionSuccess();
-
           return {
             messages: messagesChanged ? [...currentMessages] : prevState.messages,
             onlineUsers: onlineUsersChanged ? [...currentOnlineUsers] : prevState.onlineUsers,
@@ -130,7 +128,8 @@ export const useChatService = (roomId: string, currentUser?: UserProfile) => {
       // Disconnect should only be called when explicitly leaving the room
       // Calling it here causes issues with fast room switching and state loss
     };
-  }, [roomId, currentUser, firebaseContext, connectionManager]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId, currentUser, firebaseContext]);
 
   return {
     ...state,
