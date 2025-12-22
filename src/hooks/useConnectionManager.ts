@@ -32,37 +32,16 @@ export const useConnectionManager = (options: ConnectionManagerOptions = {}) => 
 
     const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const isReconnectingRef = useRef(false);
+    const stateRef = useRef(state);
 
-    // Handle online/offline events
+    // Keep stateRef in sync
     useEffect(() => {
-        const handleOnline = () => {
-            setState(prev => ({ ...prev, isOnline: true }));
-            if (state.reconnectAttempts > 0) {
-                handleReconnect();
-            }
-        };
-
-        const handleOffline = () => {
-            setState(prev => ({ ...prev, isOnline: false, isConnected: false }));
-            if (onDisconnect) {
-                onDisconnect();
-            }
-        };
-
-        window.addEventListener('online', handleOnline);
-        window.addEventListener('offline', handleOffline);
-
-        return () => {
-            window.removeEventListener('online', handleOnline);
-            window.removeEventListener('offline', handleOffline);
-            if (reconnectTimeoutRef.current) {
-                clearTimeout(reconnectTimeoutRef.current);
-            }
-        };
-    }, [state.reconnectAttempts, onDisconnect]);
+        stateRef.current = state;
+    }, [state]);
 
     const handleReconnect = useCallback(async () => {
-        if (isReconnectingRef.current || state.reconnectAttempts >= maxReconnectAttempts) {
+        const currentState = stateRef.current;
+        if (isReconnectingRef.current || currentState.reconnectAttempts >= maxReconnectAttempts) {
             return;
         }
 
@@ -89,9 +68,11 @@ export const useConnectionManager = (options: ConnectionManagerOptions = {}) => 
         } catch (error) {
             logger.error('Reconnection failed', error as Error);
 
-            if (state.reconnectAttempts < maxReconnectAttempts) {
-                const delay = reconnectDelay * Math.pow(2, state.reconnectAttempts);
+            const updatedState = stateRef.current;
+            if (updatedState.reconnectAttempts < maxReconnectAttempts) {
+                const delay = reconnectDelay * Math.pow(2, updatedState.reconnectAttempts);
                 reconnectTimeoutRef.current = setTimeout(() => {
+                    isReconnectingRef.current = false;
                     handleReconnect();
                 }, delay);
             } else {
@@ -103,18 +84,49 @@ export const useConnectionManager = (options: ConnectionManagerOptions = {}) => 
                 logger.error('Max reconnection attempts reached');
             }
         } finally {
-            isReconnectingRef.current = false;
+            if (stateRef.current.reconnectAttempts >= maxReconnectAttempts || stateRef.current.isConnected) {
+                isReconnectingRef.current = false;
+            }
         }
-    }, [state.reconnectAttempts, maxReconnectAttempts, reconnectDelay, onReconnect]);
+    }, [maxReconnectAttempts, reconnectDelay, onReconnect]);
+
+    // Handle online/offline events
+    useEffect(() => {
+        const handleOnline = () => {
+            setState(prev => ({ ...prev, isOnline: true }));
+            if (stateRef.current.reconnectAttempts > 0) {
+                handleReconnect();
+            }
+        };
+
+        const handleOffline = () => {
+            setState(prev => ({ ...prev, isOnline: false, isConnected: false }));
+            if (onDisconnect) {
+                onDisconnect();
+            }
+        };
+
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+            if (reconnectTimeoutRef.current) {
+                clearTimeout(reconnectTimeoutRef.current);
+            }
+        };
+    }, [handleReconnect, onDisconnect]);
 
     const handleConnectionError = useCallback((error: Error) => {
         logger.error('Connection error', error);
         setState(prev => ({ ...prev, isConnected: false }));
 
-        if (state.isOnline && state.reconnectAttempts < maxReconnectAttempts) {
+        const currentState = stateRef.current;
+        if (currentState.isOnline && currentState.reconnectAttempts < maxReconnectAttempts) {
             handleReconnect();
         }
-    }, [state.isOnline, state.reconnectAttempts, maxReconnectAttempts, handleReconnect]);
+    }, [maxReconnectAttempts, handleReconnect]);
 
     const handleConnectionSuccess = useCallback(() => {
         setState(prev => ({

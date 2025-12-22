@@ -35,6 +35,8 @@ export class TypingManager {
   private typingRef: DatabaseReference;
   private sendTypingDebounced: () => void;
   private unsubscribe: (() => void) | null = null;
+  private typingTimeout: NodeJS.Timeout | null = null;
+  private isTyping: boolean = false;
 
   constructor(roomId: string, userId: string) {
     this.roomId = roomId;
@@ -46,10 +48,14 @@ export class TypingManager {
 
     this.typingRef = ref(rtdb, `typing/${roomId}/${userId}`);
 
+    // Setup onDisconnect to clear typing status when user disconnects
+    onDisconnect(this.typingRef).set(false);
+
     // Debounced stop typing (1.5 seconds delay)
     this.sendTypingDebounced = debounce(async () => {
       try {
         await set(this.typingRef, false);
+        this.isTyping = false;
       } catch (error) {
         logger.error('Failed to clear typing status', error as Error, { userId: this.userId });
       }
@@ -61,10 +67,25 @@ export class TypingManager {
    */
   async sendTyping() {
     try {
+      // Clear any existing timeout
+      if (this.typingTimeout) {
+        clearTimeout(this.typingTimeout);
+      }
+
       // Set typing to true immediately
       await set(this.typingRef, true);
+      this.isTyping = true;
+
       // Schedule clearing typing status
       this.sendTypingDebounced();
+
+      // Fallback timeout to ensure typing is cleared even if debounce fails
+      this.typingTimeout = setTimeout(() => {
+        if (this.isTyping) {
+          set(this.typingRef, false).catch(() => {});
+          this.isTyping = false;
+        }
+      }, 5000); // 5 second hard timeout
     } catch (error) {
       logger.error('Failed to update typing status', error as Error, { userId: this.userId });
     }
@@ -95,6 +116,11 @@ export class TypingManager {
    * Stop typing (clear indicator)
    */
   stopTyping() {
+    if (this.typingTimeout) {
+      clearTimeout(this.typingTimeout);
+      this.typingTimeout = null;
+    }
+    this.isTyping = false;
     set(this.typingRef, false).catch(() => { });
   }
 
@@ -102,6 +128,10 @@ export class TypingManager {
    * Cleanup
    */
   disconnect() {
+    if (this.typingTimeout) {
+      clearTimeout(this.typingTimeout);
+      this.typingTimeout = null;
+    }
     if (this.unsubscribe) {
       this.unsubscribe();
       this.unsubscribe = null;

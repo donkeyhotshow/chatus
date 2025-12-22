@@ -25,6 +25,13 @@ export class PresenceService {
     private isVisible: boolean = true;
     private tabSync = getTabSyncService();
 
+    // Store bound event handlers for cleanup
+    private visibilityHandler: (() => void) | null = null;
+    private focusHandler: (() => void) | null = null;
+    private blurHandler: (() => void) | null = null;
+    private unloadHandler: (() => void) | null = null;
+    private tabSyncUnsubscribes: (() => void)[] = [];
+
     constructor(roomId: string, firestore: Firestore, notifyCallback: () => void) {
         this.roomId = roomId;
         this.firestore = firestore;
@@ -38,7 +45,7 @@ export class PresenceService {
     private setupVisibilityListener() {
         if (typeof document === 'undefined') return;
 
-        document.addEventListener('visibilitychange', () => {
+        this.visibilityHandler = () => {
             this.isVisible = document.visibilityState === 'visible';
 
             if (this.isVisible) {
@@ -49,45 +56,47 @@ export class PresenceService {
                 // Ушли с вкладки - можно замедлить heartbeat
                 this.stopHeartbeat();
             }
-        });
+        };
 
-        // Также слушаем focus/blur для более точного определения
-        window.addEventListener('focus', () => {
+        this.focusHandler = () => {
             this.updatePresence(true);
-        });
+        };
 
-        window.addEventListener('blur', () => {
+        this.blurHandler = () => {
             // При потере фокуса не сразу отмечаем offline, но обновляем lastSeen
             this.updateLastSeen();
-        });
+        };
+
+        document.addEventListener('visibilitychange', this.visibilityHandler);
+        window.addEventListener('focus', this.focusHandler);
+        window.addEventListener('blur', this.blurHandler);
     }
 
     private setupBeforeUnloadListener() {
         if (typeof window === 'undefined') return;
 
-        // Используем несколько событий для надёжности
-        const handleUnload = () => {
+        this.unloadHandler = () => {
             this.markOffline();
         };
 
-        window.addEventListener('beforeunload', handleUnload);
-        window.addEventListener('pagehide', handleUnload);
-        window.addEventListener('unload', handleUnload);
+        window.addEventListener('beforeunload', this.unloadHandler);
+        window.addEventListener('pagehide', this.unloadHandler);
+        window.addEventListener('unload', this.unloadHandler);
 
         // Для мобильных устройств
-        document.addEventListener('freeze', handleUnload);
+        document.addEventListener('freeze', this.unloadHandler);
     }
 
     private setupTabSyncListener() {
         // Слушаем события присутствия от других вкладок
-        this.tabSync.subscribe('USER_ONLINE', (event) => {
+        const unsub1 = this.tabSync.subscribe('USER_ONLINE', (event) => {
             if (event.roomId === this.roomId) {
                 // Обновляем локальный список онлайн пользователей
                 this.refreshOnlineUsers();
             }
         });
 
-        this.tabSync.subscribe('USER_OFFLINE', (event) => {
+        const unsub2 = this.tabSync.subscribe('USER_OFFLINE', (event) => {
             if (event.roomId === this.roomId) {
                 const { userId } = event.payload;
                 // Удаляем пользователя из списка
@@ -95,6 +104,8 @@ export class PresenceService {
                 this.notifyCallback();
             }
         });
+
+        this.tabSyncUnsubscribes.push(unsub1, unsub2);
     }
 
     setCurrentUser(user: UserProfile | null) {
@@ -253,6 +264,28 @@ export class PresenceService {
             this.typingManager.disconnect();
             this.typingManager = null;
         }
+
+        // Cleanup event listeners
+        if (typeof document !== 'undefined' && this.visibilityHandler) {
+            document.removeEventListener('visibilitychange', this.visibilityHandler);
+        }
+        if (typeof window !== 'undefined') {
+            if (this.focusHandler) window.removeEventListener('focus', this.focusHandler);
+            if (this.blurHandler) window.removeEventListener('blur', this.blurHandler);
+            if (this.unloadHandler) {
+                window.removeEventListener('beforeunload', this.unloadHandler);
+                window.removeEventListener('pagehide', this.unloadHandler);
+                window.removeEventListener('unload', this.unloadHandler);
+            }
+        }
+        if (typeof document !== 'undefined' && this.unloadHandler) {
+            document.removeEventListener('freeze', this.unloadHandler);
+        }
+
+        // Cleanup tab sync subscriptions
+        this.tabSyncUnsubscribes.forEach(unsub => unsub());
+        this.tabSyncUnsubscribes = [];
+
         this.onlineUsers = [];
         this.typingUsers = [];
     }
