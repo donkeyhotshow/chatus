@@ -93,12 +93,17 @@ export const ChatArea = memo(function ChatArea({
         updateLastRoomId(roomId);
     }, [roomId, updateLastRoomId]);
 
-    const cachedMessages = useMemo(() => {
-        if (isInitialLoad && hasHistory) {
-            return loadMessages();
+    // Кэшируем сообщения только один раз при первой загрузке
+    const [cachedMessages, setCachedMessages] = useState<Message[]>([]);
+
+    useEffect(() => {
+        if (isInitialLoad && hasHistory && cachedMessages.length === 0) {
+            const loaded = loadMessages();
+            if (loaded.length > 0) {
+                setCachedMessages(loaded);
+            }
         }
-        return [];
-    }, [isInitialLoad, hasHistory, loadMessages]);
+    }, [isInitialLoad, hasHistory, loadMessages, cachedMessages.length]);
 
     useEffect(() => {
         setTypingUsers(serviceTypingUsers);
