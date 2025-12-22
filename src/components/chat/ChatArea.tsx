@@ -103,7 +103,11 @@ export const ChatArea = memo(function ChatArea({
                 setCachedMessages(loaded);
             }
         }
-    }, [isInitialLoad, hasHistory, loadMessages, cachedMessages.length]);
+        // Очищаем кэш когда загрузка завершена и есть реальные сообщения
+        if (!isInitialLoad && persistedMessages.length > 0 && cachedMessages.length > 0) {
+            setCachedMessages([]);
+        }
+    }, [isInitialLoad, hasHistory, loadMessages, cachedMessages.length, persistedMessages.length]);
 
     useEffect(() => {
         setTypingUsers(serviceTypingUsers);
@@ -144,14 +148,25 @@ export const ChatArea = memo(function ChatArea({
 
     const allMessages = useMemo(() => {
         const combined = [
-            ...(isInitialLoad && cachedMessages.length > 0 ? cachedMessages : []),
+            ...cachedMessages,
             ...persistedMessages,
             ...optimisticMessages
         ];
 
         const uniqueMap = new Map<string, Message>();
         combined.forEach(msg => {
-            if (!uniqueMap.has(msg.id)) uniqueMap.set(msg.id, msg);
+            // Используем более новую версию сообщения если есть дубликат
+            const existing = uniqueMap.get(msg.id);
+            if (!existing) {
+                uniqueMap.set(msg.id, msg);
+            } else {
+                // Сравниваем timestamps и берём более новую версию
+                const existingTime = existing.createdAt?.toMillis?.() || 0;
+                const newTime = msg.createdAt?.toMillis?.() || 0;
+                if (newTime > existingTime) {
+                    uniqueMap.set(msg.id, msg);
+                }
+            }
         });
 
         return Array.from(uniqueMap.values()).sort((a, b) => {
@@ -159,7 +174,7 @@ export const ChatArea = memo(function ChatArea({
             const bTime = b.createdAt?.toMillis?.() || 0;
             return aTime - bTime;
         });
-    }, [persistedMessages, optimisticMessages, cachedMessages, isInitialLoad]);
+    }, [persistedMessages, optimisticMessages, cachedMessages]);
 
     const otherUser = useMemo(() => {
         return room?.participantProfiles?.find(p => p.id !== user?.id);
