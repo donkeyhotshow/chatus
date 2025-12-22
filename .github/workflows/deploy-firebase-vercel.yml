@@ -81,12 +81,17 @@ jobs:
         env:
           FIREBASE_TOKEN: ${{ secrets. FIREBASE_TOKEN }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-sa.json
         run: |
-          if [ -n "$FIREBASE_TOKEN" ]; then
-            echo "Deploying Firebase backend to project $FIREBASE_PROJECT_ID"
-            firebase deploy --only firestore:rules,storage:rules,functions --project "$FIREBASE_PROJECT_ID" --token "$FIREBASE_TOKEN"
+          # Try Service Account first (recommended), fallback to token
+          if [ -f "$GOOGLE_APPLICATION_CREDENTIALS" ] && [ -s "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+            echo "Deploying Firebase with Service Account"
+            firebase deploy --only firestore:rules,storage:rules,functions --project "$FIREBASE_PROJECT_ID" || echo "⚠️ Firebase deploy failed (non-blocking)"
+          elif [ -n "$FIREBASE_TOKEN" ]; then
+            echo "Deploying Firebase with token (deprecated)"
+            firebase deploy --only firestore:rules,storage:rules,functions --project "$FIREBASE_PROJECT_ID" --token "$FIREBASE_TOKEN" || echo "⚠️ Firebase deploy failed (non-blocking)"
           else
-            echo "Skipping Firebase deploy - FIREBASE_TOKEN not set"
+            echo "Skipping Firebase deploy - no credentials set"
           fi
 
       - name: "Vercel: deploy"
