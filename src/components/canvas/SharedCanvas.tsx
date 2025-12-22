@@ -68,9 +68,8 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     if (!service) return;
 
     batcherRef.current = createCanvasBatcher(async (strokes) => {
-      for (const stroke of strokes) {
-        await service.saveCanvasPath(stroke);
-      }
+      // Send all strokes in parallel for better performance
+      await Promise.all(strokes.map(stroke => service.saveCanvasPath(stroke)));
     });
 
     return () => {

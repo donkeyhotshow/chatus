@@ -17,7 +17,17 @@ service cloud.firestore {
         allow read, write: if true;
       }
 
-      // Canvas drawings
+      // Canvas paths (real-time drawing)
+      match /canvasPaths/{pathId} {
+        allow read, write: if true;
+      }
+
+      // Canvas sheets
+      match /canvasSheets/{sheetId} {
+        allow read, write: if true;
+      }
+
+      // Canvas drawings (legacy)
       match /drawings/{drawingId} {
         allow read, write: if true;
       }

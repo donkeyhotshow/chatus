@@ -59,18 +59,26 @@ class CanvasBatcher {
     this.pendingStrokes = [];
 
     try {
-      // Send all strokes in parallel
-      await Promise.all(strokes.map(stroke => this.onBatch([stroke])));
+      // Send all strokes as a batch
+      await this.onBatch(strokes);
     } catch (error) {
-      logger.error('Canvas batch flush failed', error as Error, { 
+      logger.error('Canvas batch flush failed', error as Error, {
         strokeCount: strokes.length,
-        pendingCount: this.pendingStrokes.length 
+        pendingCount: this.pendingStrokes.length
       });
-      // Re-add failed strokes for retry
-      this.pendingStrokes.push(...strokes.map(pathData => ({
-        pathData,
-        timestamp: Date.now(),
-      })));
+      // Re-add failed strokes for retry (limit to prevent infinite growth)
+      if (this.pendingStrokes.length < this.MAX_BATCH_SIZE * 3) {
+        this.pendingStrokes.push(...strokes.map(pathData => ({
+          pathData,
+          timestamp: Date.now(),
+        })));
+        // Schedule retry
+        this.batchTimeout = setTimeout(() => this.flush(), this.BATCH_DELAY * 2);
+      } else {
+        logger.warn('Canvas batch: too many pending strokes, dropping oldest', {
+          droppedCount: strokes.length
+        });
+      }
     }
   }
 
@@ -89,4 +97,3 @@ export function createCanvasBatcher(
 ): CanvasBatcher {
   return new CanvasBatcher(onBatch);
 }
-
