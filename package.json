@@ -29,7 +29,7 @@
     "pwa:build": "npm run pwa:icons && npm run build"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.24.3",
+    "@modelcontextprotocol/sdk": "^1.25.1",
     "@next/eslint-plugin-next": "^14.2.15",
     "@radix-ui/react-accordion": "^1.2.1",
     "@radix-ui/react-alert-dialog": "^1.1.2",
@@ -97,7 +97,7 @@
     "dotenv": "^17.2.3",
     "eslint": "^8.57.1",
     "eslint-config-next": "^14.2.15",
-    "globals": "^15.11.0",
+    "globals": "^16.5.0",
     "jsdom": "^25.0.1",
     "postcss": "^8.4.47",
     "puppeteer": "^24.33.0",

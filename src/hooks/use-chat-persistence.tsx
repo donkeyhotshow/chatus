@@ -52,8 +52,8 @@ export function useChatPersistence(roomId: string) {
         const expiryTime = HISTORY_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
 
         if (now - chatData.lastUpdated > expiryTime) {
-            // История истекла, очищаем
-            setChatData(null);
+            // История истекла - возвращаем пустой массив
+            // НЕ вызываем setChatData здесь чтобы избежать бесконечного цикла
             return [];
         }
 
@@ -63,7 +63,7 @@ export function useChatPersistence(roomId: string) {
         }
 
         return chatData.messages || [];
-    }, [chatData, roomId, setChatData]);
+    }, [chatData, roomId]);
 
     // Очистка истории для конкретной комнаты
     const clearHistory = useCallback(() => {
