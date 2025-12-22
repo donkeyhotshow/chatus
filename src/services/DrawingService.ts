@@ -112,6 +112,14 @@ export class DrawingService {
       this.flushInterval = null;
     }
   }
+
+  /**
+   * Full cleanup - stops drawing and clears all state
+   */
+  destroy() {
+    this.stopDrawing();
+    this.pathBuffer = [];
+  }
 }
 
 

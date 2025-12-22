@@ -29,6 +29,9 @@ export class OfflineMessageQueue {
   private listeners: Set<() => void> = new Set();
   private sendCallback: ((msg: QueuedMessage) => Promise<void>) | null = null;
   private connectionCheckInterval: NodeJS.Timeout | null = null;
+  private onlineHandler: (() => void) | null = null;
+  private offlineHandler: (() => void) | null = null;
+  private visibilityHandler: (() => void) | null = null;
 
   constructor() {
     this.loadFromStorage();
@@ -85,22 +88,25 @@ export class OfflineMessageQueue {
   private setupOnlineListener() {
     if (typeof window === 'undefined') return;
 
-    window.addEventListener('online', () => {
+    this.onlineHandler = () => {
       logger.info('Connection restored, processing offline queue');
       this.processQueue();
-    });
+    };
 
-    window.addEventListener('offline', () => {
+    this.offlineHandler = () => {
       logger.info('Connection lost, messages will be queued');
       this.notifyListeners();
-    });
+    };
 
-    // Также слушаем visibilitychange для обработки при возврате в приложение
-    document.addEventListener('visibilitychange', () => {
+    this.visibilityHandler = () => {
       if (document.visibilityState === 'visible' && navigator.onLine) {
         this.processQueue();
       }
-    });
+    };
+
+    window.addEventListener('online', this.onlineHandler);
+    window.addEventListener('offline', this.offlineHandler);
+    document.addEventListener('visibilitychange', this.visibilityHandler);
   }
 
   private startConnectionMonitor() {
@@ -289,9 +295,29 @@ export class OfflineMessageQueue {
   }
 
   destroy() {
+    // Clear interval
     if (this.connectionCheckInterval) {
       clearInterval(this.connectionCheckInterval);
+      this.connectionCheckInterval = null;
     }
+
+    // Remove event listeners
+    if (typeof window !== 'undefined') {
+      if (this.onlineHandler) {
+        window.removeEventListener('online', this.onlineHandler);
+        this.onlineHandler = null;
+      }
+      if (this.offlineHandler) {
+        window.removeEventListener('offline', this.offlineHandler);
+        this.offlineHandler = null;
+      }
+    }
+    if (typeof document !== 'undefined' && this.visibilityHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+      this.visibilityHandler = null;
+    }
+
+    // Clear listeners
     this.listeners.clear();
   }
 }
