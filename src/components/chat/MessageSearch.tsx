@@ -8,6 +8,32 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
+// Helper function to escape regex special characters
+function escapeRegex(str: string): string {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, (match) => '\\' + match);
+}
+
+// Helper function to sanitize HTML to prevent XSS
+function sanitizeHtml(str: string): string {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+// Helper to safely get date from message
+function getMessageDate(createdAt: unknown): Date {
+    if (createdAt && typeof createdAt === 'object') {
+        if ('toDate' in createdAt && typeof (createdAt as { toDate: () => Date }).toDate === 'function') {
+            return (createdAt as { toDate: () => Date }).toDate();
+        }
+        if ('seconds' in createdAt) {
+            return new Date((createdAt as { seconds: number }).seconds * 1000);
+        }
+    }
+    return new Date();
+}
+
 interface MessageSearchProps {
     messages: Message[];
     users: UserProfile[];
@@ -42,15 +68,19 @@ export function MessageSearch({
         const searchTerm = query.toLowerCase().trim();
 
         messages.forEach(message => {
-            const user = message.user; // message.user is already a UserProfile object
+            const user = message.user;
+            if (!user) return;
+
             let matchType: 'content' | 'username' | 'date' = 'content';
             let highlightedText = message.text;
 
             // Search in message content
             if (searchType === 'all' || searchType === 'content') {
                 if (message.text.toLowerCase().includes(searchTerm)) {
-                    const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                    highlightedText = message.text.replace(regex, '<mark>$1</mark>');
+                    const escapedSearchTerm = escapeRegex(searchTerm);
+                    const regex = new RegExp(`(${escapedSearchTerm})`, 'gi');
+                    const sanitizedText = sanitizeHtml(message.text);
+                    highlightedText = sanitizedText.replace(regex, '<mark>$1</mark>');
                     matchType = 'content';
                     results.push({ message, user, highlightedText, matchType });
                     return;
@@ -68,16 +98,21 @@ export function MessageSearch({
 
             // Search in date
             if (searchType === 'all' || searchType === 'date') {
-                const messageDate = format(message.createdAt.toDate(), 'dd.MM.yyyy HH:mm', { locale: ru });
-                if (messageDate.includes(searchTerm)) {
-                    matchType = 'date';
-                    results.push({ message, user, highlightedText, matchType });
+                try {
+                    const dateObj = getMessageDate(message.createdAt);
+                    const messageDate = format(dateObj, 'dd.MM.yyyy HH:mm', { locale: ru });
+                    if (messageDate.includes(searchTerm)) {
+                        matchType = 'date';
+                        results.push({ message, user, highlightedText, matchType });
+                    }
+                } catch {
+                    // Skip date search if date parsing fails
                 }
             }
         });
 
-        return results.reverse(); // Show newest first
-    }, [messages, users, query, searchType]);
+        return results.reverse();
+    }, [messages, query, searchType]);
 
     // Keyboard navigation
     const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -114,12 +149,10 @@ export function MessageSearch({
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [handleKeyDown]);
 
-    // Reset selection when results change
     useEffect(() => {
         setSelectedIndex(0);
     }, [searchResults]);
 
-    // Reset query when closing
     useEffect(() => {
         if (!isOpen) {
             setQuery('');
@@ -133,7 +166,7 @@ export function MessageSearch({
         <AnimatePresence>
             <motion.div
                 initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+    animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex flex-col safe-area-inset-top safe-area-inset-bottom"
             >
@@ -149,7 +182,7 @@ export function MessageSearch({
                                 onChange={(e) => setQuery(e.target.value)}
                                 className="w-full bg-neutral-800 text-white placeholder-neutral-400 pl-10 pr-4 py-3 rounded-lg border border-neutral-700 focus:border-cyan-500 focus:outline-none mobile-input focus-visible-enhanced"
                                 autoFocus
-                                style={{ fontSize: '16px' }} // Предотвращает zoom на iOS
+                                style={{ fontSize: '16px' }}
                             />
                         </div>
                         <button
@@ -170,7 +203,7 @@ export function MessageSearch({
                         ].map(({ key, label, icon: Icon }) => (
                             <button
                                 key={key}
-                                onClick={() => setSearchType(key as any)}
+                                onClick={() => setSearchType(key as 'all' | 'content' | 'user' | 'date')}
                                 className={cn(
                                     "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap touch-target focus-visible-enhanced",
                                     searchType === key
@@ -234,13 +267,11 @@ export function MessageSearch({
                                     )}
                                 >
                                     <div className="flex items-start gap-3">
-                                        {/* User Avatar */}
                                         <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-black text-sm font-bold">
                                             {result.user.name.charAt(0).toUpperCase() || '?'}
                                         </div>
 
                                         <div className="flex-1 min-w-0">
-                                            {/* User and Date */}
                                             <div className="flex items-center gap-2 mb-1">
                                                 <span className={cn(
                                                     "font-medium text-sm",
@@ -252,11 +283,10 @@ export function MessageSearch({
                                                     "text-xs",
                                                     result.matchType === 'date' ? "text-cyan-300" : "text-neutral-400"
                                                 )}>
-                                                    {format(result.message.createdAt.toDate(), 'dd.MM.yyyy HH:mm', { locale: ru })}
+                                                    {format(getMessageDate(result.message.createdAt), 'dd.MM.yyyy HH:mm', { locale: ru })}
                                                 </span>
                                             </div>
 
-                                            {/* Message Content */}
                                             <div
                                                 className="text-sm text-neutral-300 line-clamp-2"
                                                 dangerouslySetInnerHTML={{
@@ -267,7 +297,6 @@ export function MessageSearch({
                                                 }}
                                             />
 
-                                            {/* Match Type Badge */}
                                             <div className="flex items-center gap-2 mt-2">
                                                 <span className={cn(
                                                     "text-xs px-2 py-1 rounded-full",

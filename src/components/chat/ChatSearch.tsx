@@ -8,6 +8,32 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
+// Helper function to escape regex special characters
+function escapeRegex(str: string): string {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, (match) => '\\' + match);
+}
+
+// Helper function to sanitize HTML to prevent XSS
+function sanitizeHtml(str: string): string {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+// Helper to safely get date from message
+function getMessageDate(createdAt: unknown): Date {
+    if (createdAt && typeof createdAt === 'object') {
+        if ('toDate' in createdAt && typeof (createdAt as { toDate: () => Date }).toDate === 'function') {
+            return (createdAt as { toDate: () => Date }).toDate();
+        }
+        if ('seconds' in createdAt) {
+            return new Date((createdAt as { seconds: number }).seconds * 1000);
+        }
+    }
+    return new Date();
+}
+
 interface ChatSearchProps {
     messages: Message[];
     users: UserProfile[];
@@ -49,9 +75,10 @@ export function ChatSearch({
             // Search in message content
             if (searchType === 'all' || searchType === 'content') {
                 if (message.text.toLowerCase().includes(searchTerm)) {
-                    const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const escapedSearchTerm = escapeRegex(searchTerm);
                     const regex = new RegExp(`(${escapedSearchTerm})`, 'gi');
-                    highlightedText = message.text.replace(regex, '<mark>$1</mark>');
+                    const sanitizedText = sanitizeHtml(message.text);
+                    highlightedText = sanitizedText.replace(regex, '<mark>$1</mark>');
                     matchType = 'content';
                     results.push({ message, user, highlightedText, matchType });
                     return;
@@ -69,15 +96,20 @@ export function ChatSearch({
 
             // Search in date
             if (searchType === 'all' || searchType === 'date') {
-                const messageDate = format(message.createdAt.toDate(), 'dd.MM.yyyy HH:mm', { locale: ru });
-                if (messageDate.includes(searchTerm)) {
-                    matchType = 'date';
-                    results.push({ message, user, highlightedText, matchType });
+                try {
+                    const dateObj = getMessageDate(message.createdAt);
+                    const messageDate = format(dateObj, 'dd.MM.yyyy HH:mm', { locale: ru });
+                    if (messageDate.includes(searchTerm)) {
+                        matchType = 'date';
+                        results.push({ message, user, highlightedText, matchType });
+                    }
+                } catch {
+                    // Skip date search if date parsing fails
                 }
             }
         });
 
-        return results.reverse(); // Show newest first
+        return results.reverse();
     }, [messages, users, query, searchType]);
 
     // Keyboard navigation
@@ -115,7 +147,6 @@ export function ChatSearch({
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, searchResults, selectedIndex, onClose, onMessageSelect]);
 
-    // Reset selection when results change
     useEffect(() => {
         setSelectedIndex(0);
     }, [searchResults]);
@@ -138,10 +169,11 @@ export function ChatSearch({
                             <input
                                 type="text"
                                 placeholder="Поиск сообщений, пользователей, дат..."
-                                value={query}
+   value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                                 className="w-full bg-neutral-800 text-white placeholder-neutral-400 pl-10 pr-4 py-3 rounded-lg border border-neutral-700 focus:border-cyan-500 focus:outline-none mobile-input"
                                 autoFocus
+                                style={{ fontSize: '16px' }}
                             />
                         </div>
                         <button
@@ -162,7 +194,7 @@ export function ChatSearch({
                         ].map(({ key, label, icon: Icon }) => (
                             <button
                                 key={key}
-                                onClick={() => setSearchType(key as any)}
+                                onClick={() => setSearchType(key as 'all' | 'content' | 'user' | 'date')}
                                 className={cn(
                                     "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap touch-target",
                                     searchType === key
@@ -180,7 +212,7 @@ export function ChatSearch({
                 {/* Search Results */}
                 <div className="flex-1 overflow-y-auto">
                     {query.trim() === '' ? (
-                        <div className="flex flex-col items-center justify-center h-full text-neutral-400">
+                        <div className="flex flex-col items-center justify-center h-full text-neutral-400 p-8">
                             <Search className="w-16 h-16 mb-4 opacity-50" />
                             <p className="text-lg font-medium">Поиск по чату</p>
                             <p className="text-sm text-center max-w-sm mt-2">
@@ -188,7 +220,7 @@ export function ChatSearch({
                             </p>
                         </div>
                     ) : searchResults.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-full text-neutral-400">
+                        <div className="flex flex-col items-center justify-center h-full text-neutral-400 p-8">
                             <Search className="w-16 h-16 mb-4 opacity-50" />
                             <p className="text-lg font-medium">Ничего не найдено</p>
                             <p className="text-sm text-center max-w-sm mt-2">
@@ -226,13 +258,11 @@ export function ChatSearch({
                                     )}
                                 >
                                     <div className="flex items-start gap-3">
-                                        {/* User Avatar */}
                                         <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-black text-sm font-bold">
                                             {result.user?.name.charAt(0).toUpperCase() || '?'}
                                         </div>
 
                                         <div className="flex-1 min-w-0">
-                                            {/* User and Date */}
                                             <div className="flex items-center gap-2 mb-1">
                                                 <span className={cn(
                                                     "font-medium text-sm",
@@ -244,11 +274,10 @@ export function ChatSearch({
                                                     "text-xs",
                                                     result.matchType === 'date' ? "text-cyan-300" : "text-neutral-400"
                                                 )}>
-                                                    {format(result.message.createdAt.toDate(), 'dd.MM.yyyy HH:mm', { locale: ru })}
+                                                    {format(getMessageDate(result.message.createdAt), 'dd.MM.yyyy HH:mm', { locale: ru })}
                                                 </span>
                                             </div>
 
-                                            {/* Message Content */}
                                             <div
                                                 className="text-sm text-neutral-300 line-clamp-2"
                                                 dangerouslySetInnerHTML={{
@@ -259,7 +288,6 @@ export function ChatSearch({
                                                 }}
                                             />
 
-                                            {/* Match Type Badge */}
                                             <div className="flex items-center gap-2 mt-2">
                                                 <span className={cn(
                                                     "text-xs px-2 py-1 rounded-full",
