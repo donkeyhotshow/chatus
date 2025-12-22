@@ -12,7 +12,6 @@ import { isTestMode } from '@/lib/mock-services';
 export function HomeClient() {
     const [roomCode, setRoomCode] = useState('');
     const [username, setUsername] = useState('');
-    const [isFormValid, setIsFormValid] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -26,36 +25,12 @@ export function HomeClient() {
         }
     }, []);
 
-    // Form validation - moved to separate function for better control
-    const validateForm = () => {
-        const trimmedUsername = username.trim();
-        const trimmedRoomCode = roomCode.trim();
-
-        // Username validation: 2-20 characters
-        const isUsernameValid = trimmedUsername.length >= 2 && trimmedUsername.length <= 20;
-
-        // Room code validation: 3-6 characters, only uppercase letters and numbers
-        const isRoomCodeValid = trimmedRoomCode.length >= 3 &&
-                               trimmedRoomCode.length <= 6 &&
-                               /^[A-Z0-9]+$/.test(trimmedRoomCode);
-
-        // Debug logging in development
-        if (process.env.NODE_ENV === 'development') {
-            console.log('Form validation:', {
-                username: trimmedUsername,
-                roomCode: trimmedRoomCode,
-                isUsernameValid,
-                isRoomCodeValid,
-                isFormValid: isUsernameValid && isRoomCodeValid
-            });
-        }
-
-        return isUsernameValid && isRoomCodeValid;
-    };
-
-    useEffect(() => {
-        setIsFormValid(validateForm());
-    }, [username, roomCode]);
+    // Form validation - using useMemo for better reactivity
+    const isUsernameValid = username.trim().length >= 2 && username.trim().length <= 20;
+    const isRoomCodeValid = roomCode.trim().length >= 3 &&
+                           roomCode.trim().length <= 6 &&
+                           /^[A-Z0-9]+$/.test(roomCode.trim());
+    const isFormValid = isUsernameValid && isRoomCodeValid;
 
     const handleJoinRoom = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -99,9 +74,6 @@ export function HomeClient() {
             });
         }
     };
-
-    const isUsernameValid = username.trim().length >= 2 && username.trim().length <= 20;
-    const isRoomCodeValid = roomCode.trim().length >= 3 && roomCode.trim().length <= 6 && /^[A-Z0-9]+$/.test(roomCode.trim());
 
     return (
         <div className="min-h-screen w-full bg-[var(--bg-primary)]">

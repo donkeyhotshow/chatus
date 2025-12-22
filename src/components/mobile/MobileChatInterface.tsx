@@ -555,6 +555,76 @@ export function MobileChatInterface({
                     </>
                 )}
             </AnimatePresence>
+
+            {/* Боковая панель настроек */}
+            <AnimatePresence>
+                {showSettings && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/50 z-40"
+                            onClick={() => setShowSettings(false)}
+                        />
+                        <motion.div
+                            initial={{ x: '100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '100%' }}
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            className="fixed right-0 top-0 bottom-0 w-80 max-w-[90vw] bg-neutral-900 border-l border-white/10 z-50 flex flex-col"
+                        >
+                            <div className="flex items-center justify-between p-4 border-b border-white/10">
+                                <h2 className="text-lg font-bold text-white">Настройки</h2>
+                                <button
+                                    onClick={() => setShowSettings(false)}
+                                    className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full text-neutral-400 hover:text-white hover:bg-white/10 transition-colors touch-target"
+                                >
+                                    <Settings className="w-6 h-6" />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-4">
+                                <div className="space-y-4">
+                                    <div className="p-4 bg-neutral-800 rounded-xl">
+                                        <h3 className="text-sm font-medium text-neutral-400 mb-2">Комната</h3>
+                                        <p className="text-white font-medium">{roomName}</p>
+                                    </div>
+
+                                    <div className="p-4 bg-neutral-800 rounded-xl">
+                                        <h3 className="text-sm font-medium text-neutral-400 mb-2">Ваш профиль</h3>
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white font-bold">
+                                                {currentUser.avatar ? (
+                                                    <Image
+                                                        src={currentUser.avatar}
+                                                        alt={currentUser.name}
+                                                        width={48}
+                                                        height={48}
+                                                        className="w-full h-full rounded-full object-cover"
+                                                        unoptimized
+                                                    />
+                                                ) : (
+                                                    currentUser.name.charAt(0).toUpperCase()
+                                                )}
+                                            </div>
+                                            <div>
+                                                <p className="text-white font-medium">{currentUser.name}</p>
+                                                <p className="text-xs text-green-400">Онлайн</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-4 bg-neutral-800 rounded-xl">
+                                        <h3 className="text-sm font-medium text-neutral-400 mb-2">Участники</h3>
+                                        <p className="text-white">{users.length} участник{users.length !== 1 ? 'а' : ''}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

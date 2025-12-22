@@ -111,6 +111,7 @@ export function MessageInput({
         // Обработка Enter для отправки (без Shift)
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
+            e.stopPropagation();
             handleSend();
             return;
         }
@@ -118,6 +119,7 @@ export function MessageInput({
         // Для Safari iOS также обрабатываем keyCode 13
         if (e.keyCode === 13 && !e.shiftKey) {
             e.preventDefault();
+            e.stopPropagation();
             handleSend();
             return;
         }
