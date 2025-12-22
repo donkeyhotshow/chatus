@@ -49,7 +49,8 @@ export function ChatSearch({
             // Search in message content
             if (searchType === 'all' || searchType === 'content') {
                 if (message.text.toLowerCase().includes(searchTerm)) {
-                    const regex = new RegExp(`(${searchTerm})`, 'gi');
+                    const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const regex = new RegExp(`(${escapedSearchTerm})`, 'gi');
                     highlightedText = message.text.replace(regex, '<mark>$1</mark>');
                     matchType = 'content';
                     results.push({ message, user, highlightedText, matchType });

@@ -559,6 +559,9 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
         if (!container) return;
         const { width, height } = container.getBoundingClientRect();
 
+        // Skip if container has no size yet (lazy loading)
+        if (width === 0 || height === 0) return;
+
         if (canvas.width !== width || canvas.height !== height) {
           canvas.width = width;
           canvas.height = height;
@@ -568,9 +571,16 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
 
       const debouncedResize = debounce(resizeCanvas, 250);
       window.addEventListener('resize', debouncedResize);
-      resizeCanvas();
 
-      return () => window.removeEventListener('resize', debouncedResize);
+      // Initial resize with a small delay to ensure container is rendered
+      resizeCanvas();
+      // Retry after a short delay in case container wasn't ready
+      const retryTimeout = setTimeout(resizeCanvas, 100);
+
+      return () => {
+        window.removeEventListener('resize', debouncedResize);
+        clearTimeout(retryTimeout);
+      };
     }
   }, [redrawCanvas]);
 
@@ -722,7 +732,9 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
       </div>
       <canvas
         ref={canvasRef}
-        className="w-full h-full"
+        width={800}
+        height={600}
+        className="w-full h-full block"
         style={{
           cursor: tool === 'pen' ? 'crosshair' : 'cell',
           transform: `translate(${translateX}px, ${translateY}px) scale(${scale})`,
