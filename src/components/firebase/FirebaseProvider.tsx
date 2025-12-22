@@ -132,9 +132,17 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
   const presenceManagerRef = useRef<unknown | null>(null);
   const fcmManagerRef = useRef<unknown | null>(null); // FCMManager | null
   const [contextValue, setContextValue] = useState<FirebaseContextType | null>(null);
+  const prevUserRef = useRef<User | null>(null);
 
   useEffect(() => {
     if (!firebaseInstances) return;
+
+    // Проверяем, изменился ли пользователь
+    const userChanged = prevUserRef.current?.uid !== user?.uid;
+    prevUserRef.current = user;
+
+    // Если пользователь не изменился и контекст уже установлен - не обновляем
+    if (!userChanged && contextValue) return;
 
     // Create new context value with current user
     const newContextValue = {
