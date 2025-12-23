@@ -158,6 +158,7 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
               </div>
             )}
 
+            {/* Desktop: hover buttons */}
             <div className={`
               ${isMobile || isTouchDevice
                 ? 'hidden'
@@ -189,6 +190,63 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
                 </button>
               )}
             </div>
+
+            {/* Mobile/Touch: visible action buttons */}
+            {(isMobile || isTouchDevice) && (
+              <div className={`flex gap-1 mt-2 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                <button
+                  onClick={() => onReply(message)}
+                  className="p-2 rounded-lg bg-white/10 text-neutral-400 active:bg-white/20 active:text-white transition-all"
+                  title="Ответить"
+                >
+                  <CornerUpLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    setShowReactionPicker(!showReactionPicker);
+                    if ('vibrate' in navigator) navigator.vibrate(10);
+                  }}
+                  className={`p-2 rounded-lg transition-all ${showReactionPicker ? 'bg-cyan-500/20 text-cyan-400' : 'bg-white/10 text-neutral-400 active:bg-white/20 active:text-white'}`}
+                  title="Реакция"
+                >
+                  <Smile className="w-4 h-4" />
+                </button>
+                {isOwn && (
+                  <button
+                    onClick={() => {
+                      if ('vibrate' in navigator) navigator.vibrate(15);
+                      onDelete(message.id);
+                    }}
+                    className="p-2 rounded-lg bg-white/10 text-neutral-400 active:bg-red-500/20 active:text-red-400 transition-all"
+                    title="Удалить"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Emoji picker for mobile */}
+            {showReactionPicker && (isMobile || isTouchDevice) && (
+              <div className={`flex flex-wrap gap-1 mt-2 p-2 rounded-lg bg-neutral-800/80 border border-white/10 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                {['👍', '❤️', '😂', '😮', '😢', '🔥', '🎉', '👏'].map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => {
+                      onReaction(message.id, emoji);
+                      setShowReactionPicker(false);
+                      setRainEmoji(emoji);
+                      setShowEmojiRain(true);
+                      setTimeout(() => setShowEmojiRain(false), 2000);
+                      if ('vibrate' in navigator) navigator.vibrate(10);
+                    }}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 active:bg-white/20 transition-all text-lg"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         ) : null}
 
