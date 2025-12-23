@@ -1,55 +1,100 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { Wifi, WifiOff, RefreshCw, AlertTriangle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getConnectionManager, ConnectionState, ConnectionStatus as ConnStatus } from '@/lib/connection-manager';
 
 interface ConnectionStatusProps {
   className?: string;
 }
 
 export function ConnectionStatus({ className }: ConnectionStatusProps) {
-  const [isOnline, setIsOnline] = useState(true);
-  const [isReconnecting, setIsReconnecting] = useState(false);
+  const [connectionState, setConnectionState] = useState<ConnectionState>({
+    status: 'online',
+    isOnline: true,
+    isSlow: false,
+    lastOnlineAt: null,
+    reconnectAttempts: 0,
+    effectiveType: null,
+    downlink: null,
+    rtt: null,
+  });
   const [showBanner, setShowBanner] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    // Initial state
-    setIsOnline(navigator.onLine);
+    const manager = getConnectionManager();
+    if (!manager) return;
 
-    const handleOnline = () => {
-      setIsOnline(true);
-      setIsReconnecting(true);
-      // Show reconnecting state briefly
-      setTimeout(() => {
-        setIsReconnecting(false);
-        // Hide banner after successful reconnection
-        setTimeout(() => setShowBanner(false), 2000);
-      }, 1500);
-    };
+    const unsubscribe = manager.subscribe((state) => {
+      setConnectionState(state);
 
-    const handleOffline = () => {
-      setIsOnline(false);
-      setShowBanner(true);
-    };
+      // Show banner for non-online states
+      if (state.status !== 'online') {
+        setShowBanner(true);
+      } else if (isInitialized) {
+        // Hide banner after a delay when back online
+        setTimeout(() => setShowBanner(false), 3000);
+      }
+    });
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    // Show banner if initially offline
-    if (!navigator.onLine) {
-      setShowBanner(true);
-    }
+    setIsInitialized(true);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      unsubscribe();
     };
-  }, []);
+  }, [isInitialized]);
 
-  if (!showBanner && isOnline && !isReconnecting) {
+  // Don't show anything if online and banner is hidden
+  if (!showBanner && connectionState.status === 'online') {
     return null;
   }
+
+  const handleRetry = () => {
+    const manager = getConnectionManager();
+    manager?.forceReconnect();
+  };
+
+  const getStatusConfig = () => {
+    switch (connectionState.status) {
+      case 'offline':
+        return {
+          icon: <WifiOff className="w-4 h-4" />,
+          text: 'Нет соединения. Сообщения будут отправлены при восстановлении.',
+          bgColor: 'bg-red-500',
+          textColor: 'text-white',
+          showRetry: true,
+        };
+      case 'slow':
+        return {
+          icon: <AlertTriangle className="w-4 h-4" />,
+          text: 'Медленное соединение. Загрузка может занять больше времени.',
+          bgColor: 'bg-yellow-500',
+          textColor: 'text-yellow-950',
+          showRetry: false,
+        };
+      case 'reconnecting':
+        return {
+          icon: <RefreshCw className="w-4 h-4 animate-spin" />,
+          text: `Восстановление соединения${connectionState.reconnectAttempts > 1 ? ` (попытка ${connectionState.reconnectAttempts})` : ''}...`,
+          bgColor: 'bg-yellow-500',
+          textColor: 'text-yellow-950',
+          showRetry: false,
+        };
+      case 'online':
+      default:
+        return {
+          icon: <Wifi className="w-4 h-4" />,
+          text: 'Соединение восстановлено',
+          bgColor: 'bg-green-500',
+          textColor: 'text-white',
+          showRetry: false,
+        };
+    }
+  };
+
+  const config = getStatusConfig();
 
   return (
     <div
@@ -57,31 +102,22 @@ export function ConnectionStatus({ className }: ConnectionStatusProps) {
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
         "flex items-center justify-center gap-2 py-2 px-4",
         "text-sm font-medium text-center",
-        isReconnecting
-          ? "bg-yellow-500 text-yellow-950"
-          : isOnline
-          ? "bg-green-500 text-white"
-          : "bg-red-500 text-white",
+        config.bgColor,
+        config.textColor,
         className
       )}
       role="alert"
       aria-live="polite"
     >
-      {isReconnecting ? (
-        <>
-          <RefreshCw className="w-4 h-4 animate-spin" />
-          <span>Восстановление соединения...</span>
-        </>
-      ) : isOnline ? (
-        <>
-          <Wifi className="w-4 h-4" />
-          <span>Соединение восстановлено</span>
-        </>
-      ) : (
-        <>
-          <WifiOff className="w-4 h-4" />
-          <span>Нет соединения. Сообщения будут отправлены при восстановлении.</span>
-        </>
+      {config.icon}
+      <span>{config.text}</span>
+      {config.showRetry && (
+        <button
+          onClick={handleRetry}
+          className="ml-2 px-2 py-1 bg-white/20 hover:bg-white/30 rounded text-xs font-medium transition-colors"
+        >
+          Повторить
+        </button>
       )}
     </div>
   );

@@ -20,6 +20,8 @@ import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { usePresence } from '@/hooks/usePresence';
 import { useRoom } from '@/hooks/useRoom';
 import { useRoomManager } from '@/hooks/useRoomManager';
+import { useSessionPersistence } from '@/hooks/useSessionPersistence';
+import { useConnectionStatus } from '@/hooks/useConnectionStatus';
 import { logger } from '@/lib/logger';
 import { isDemoMode } from '@/lib/demo-mode';
 import { getChatService } from '@/services/ChatService';
@@ -29,18 +31,21 @@ import { OnboardingTour, useOnboarding } from './OnboardingTour';
 import { ChatSkeleton } from './ChatSkeleton';
 import { AnimatedTabTransition } from '../layout/AnimatedTabTransition';
 import { isSafari, safariSafeClick } from '@/lib/safari-workarounds';
+import { RoomState } from '@/lib/session-manager';
 
 // Lazy load heavy components
 const CollaborationSpace = lazy(() => import('./CollaborationSpace').then(m => ({ default: m.CollaborationSpace })));
 
 // Skeleton-based loading з fallback
-function LoadingScreen({ text, showSkeleton = false }: { text: string; showSkeleton?: boolean }) {
+function LoadingScreen({ text, showSkeleton = false, isSlow = false }: { text: string; showSkeleton?: boolean; isSlow?: boolean }) {
     const [showFallback, setShowFallback] = useState(false);
 
     useEffect(() => {
-        const timer = setTimeout(() => setShowFallback(true), 8000);
+        // Show fallback sooner if connection is slow
+        const timeout = isSlow ? 5000 : 8000;
+        const timer = setTimeout(() => setShowFallback(true), timeout);
         return () => clearTimeout(timer);
-    }, []);
+    }, [isSlow]);
 
     // Safari-safe reload handler
     const handleReload = safariSafeClick(() => {
@@ -52,7 +57,10 @@ function LoadingScreen({ text, showSkeleton = false }: { text: string; showSkele
             <div className="flex h-full w-full items-center justify-center bg-[var(--bg-primary)] p-6">
                 <div className="max-w-sm text-center space-y-4">
                     <p className="text-[var(--text-secondary)]">
-                        Загрузка занимает больше времени, чем обычно
+                        {isSlow
+                            ? 'Медленное соединение. Загрузка занимает больше времени...'
+                            : 'Загрузка занимает больше времени, чем обычно'
+                        }
                     </p>
                     <button
                         onClick={handleReload}
@@ -75,6 +83,9 @@ function LoadingScreen({ text, showSkeleton = false }: { text: string; showSkele
             <div className="flex flex-col items-center gap-3">
                 <div className="w-8 h-8 border-2 border-[var(--border-primary)] border-t-[var(--accent-primary)] rounded-full animate-spin" />
                 <span className="text-sm text-[var(--text-muted)]">{text}</span>
+                {isSlow && (
+                    <span className="text-xs text-yellow-500">Медленное соединение...</span>
+                )}
             </div>
         </div>
     );
@@ -115,6 +126,7 @@ export function ChatRoom({ roomId }: { roomId: string }) {
     const { toast } = useToast();
     const firebaseContext = useFirebase();
     const isMobile = useIsMobile();
+    const connectionState = useConnectionStatus();
 
     const { user, isLoading, createProfile, error: userError } = useCurrentUser(roomId);
     const [isCreating, setIsCreating] = useState(false);
@@ -122,13 +134,38 @@ export function ChatRoom({ roomId }: { roomId: string }) {
     // Onboarding
     const { showOnboarding, completeOnboarding } = useOnboarding();
 
+    // Session persistence - P0 fix for refresh/back navigation
+    const handleSessionRestore = useCallback((state: RoomState) => {
+        if (state.activeTab) {
+            setActiveTab(state.activeTab as ChatTab);
+        }
+        logger.info('[ChatRoom] Session restored', { activeTab: state.activeTab });
+    }, []);
+
+    const handleVisibilityChange = useCallback((isVisible: boolean) => {
+        if (isVisible && connectionState.status === 'offline') {
+            // Tab became visible while offline - show reconnection UI
+            logger.debug('[ChatRoom] Tab visible while offline');
+        }
+    }, [connectionState.status]);
+
+    const { saveCurrentState } = useSessionPersistence({
+        roomId,
+        user,
+        activeTab,
+        onRestore: handleSessionRestore,
+        onVisibilityChange: handleVisibilityChange,
+    });
+
     usePresence(roomId, user?.id || null);
     const { validate } = useRoom(roomId);
     const { joinRoom, leaveRoom } = useRoomManager(roomId);
 
     const handleTabChange = useCallback((tab: ChatTab | string) => {
         setActiveTab(tab as ChatTab);
-    }, []);
+        // Save state on tab change
+        setTimeout(saveCurrentState, 100);
+    }, [saveCurrentState]);
 
     const handleMobileBack = useCallback(() => {
         if (isMobile && activeTab !== 'chat') {
@@ -243,8 +280,9 @@ export function ChatRoom({ roomId }: { roomId: string }) {
     }, []);
 
     // Loading states - використовуємо skeleton для кращого UX
-    if (!firebaseContext) return <LoadingScreen text="Инициализация..." showSkeleton />;
-    if (isLoading) return <LoadingScreen text="Загрузка..." showSkeleton />;
+    const isSlow = connectionState.isSlow;
+    if (!firebaseContext) return <LoadingScreen text="Инициализация..." showSkeleton isSlow={isSlow} />;
+    if (isLoading) return <LoadingScreen text="Загрузка..." showSkeleton isSlow={isSlow} />;
     if (userError) return <ErrorScreen onRetry={() => window.location.reload()} />;
 
     if (!user) {
@@ -258,7 +296,7 @@ export function ChatRoom({ roomId }: { roomId: string }) {
         );
     }
 
-    if (roomLoading && !room) return <LoadingScreen text="Подключение..." showSkeleton />;
+    if (roomLoading && !room) return <LoadingScreen text="Подключение..." showSkeleton isSlow={isSlow} />;
 
     const otherUser = room?.participantProfiles?.find(p => p.id !== user?.id);
 
