@@ -1,19 +1,19 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, ArrowUp, ArrowDown, Calendar, User } from 'lucide-react';
+import { Search, X, ArrowUp, ArrowDown, Calendar, User, Loader2 } from 'lucide-react';
 import { Message, UserProfile } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import {
     sanitizeCyrillicInput,
-    escapeRegexSafe,
     normalizeUnicode,
     safeSearch,
     highlightMatches,
 } from '@/lib/safe-string';
+import { createSearchDebouncer, SEARCH_DEBOUNCE_MS } from '@/lib/search-debouncer';
 
 // Helper function to sanitize HTML to prevent XSS (kept for backward compatibility)
 function sanitizeHtml(str: string): string {
@@ -61,75 +61,130 @@ export function ChatSearch({
     const [query, setQuery] = useState('');
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [searchType, setSearchType] = useState<'all' | 'content' | 'user' | 'date'>('all');
+    const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [searchError, setSearchError] = useState<string | null>(null);
 
-    // Search results with highlighting
-    const searchResults = useMemo(() => {
-        if (!query.trim()) return [];
+    // Create debouncer ref to persist across renders
+    const debouncerRef = useRef(createSearchDebouncer<SearchResult[]>());
 
+    // Search function that processes messages
+    const performSearch = useCallback((
+        searchQuery: string,
+        signal: AbortSignal
+    ): SearchResult[] => {
         const results: SearchResult[] = [];
 
+        // Check if aborted before starting
+        if (signal.aborted) {
+            return results;
+        }
+
         // Sanitize and validate the search query using SafeStringUtils
-        const sanitizedQuery = sanitizeCyrillicInput(query);
+        const sanitizedQuery = sanitizeCyrillicInput(searchQuery);
         if (!sanitizedQuery.isValid) {
-            // Return empty results for invalid queries (graceful degradation)
-            return [];
+            return results;
         }
 
         const searchTerm = normalizeUnicode(sanitizedQuery.sanitized).toLowerCase().trim();
-        if (!searchTerm) return [];
+        if (!searchTerm) return results;
 
-        try {
-            messages.forEach(message => {
-                try {
-                    const user = users.find(u => u.id === message.user?.id) || null;
-                    let matchType: 'content' | 'username' | 'date' = 'content';
-                    let highlightedText = message.text || '';
+        for (const message of messages) {
+            // Check for abort periodically to prevent blocking
+            if (signal.aborted) {
+                return results;
+            }
 
-                    // Search in message content using safe search
-                    if (searchType === 'all' || searchType === 'content') {
-                        if (safeSearch(message.text || '', searchTerm)) {
-                            // Use safe highlighting with Cyrillic support
-                            highlightedText = highlightMatches(message.text || '', searchTerm);
-                            matchType = 'content';
-                            results.push({ message, user, highlightedText, matchType });
-                            return;
-                        }
+            try {
+                const user = users.find(u => u.id === message.user?.id) || null;
+                let matchType: 'content' | 'username' | 'date' = 'content';
+                let highlightedText = message.text || '';
+
+                // Search in message content using safe search
+                if (searchType === 'all' || searchType === 'content') {
+                    if (safeSearch(message.text || '', searchTerm)) {
+                        highlightedText = highlightMatches(message.text || '', searchTerm);
+                        matchType = 'content';
+                        results.push({ message, user, highlightedText, matchType });
+                        continue;
                     }
-
-                    // Search in username using safe search
-                    if ((searchType === 'all' || searchType === 'user') && user) {
-                        if (safeSearch(user.name || '', searchTerm)) {
-                            matchType = 'username';
-                            results.push({ message, user, highlightedText: sanitizeHtml(highlightedText), matchType });
-                            return;
-                        }
-                    }
-
-                    // Search in date
-                    if (searchType === 'all' || searchType === 'date') {
-                        try {
-                            const dateObj = getMessageDate(message.createdAt);
-                            const messageDate = format(dateObj, 'dd.MM.yyyy HH:mm', { locale: ru });
-                            if (safeSearch(messageDate, searchTerm)) {
-                                matchType = 'date';
-                                results.push({ message, user, highlightedText: sanitizeHtml(highlightedText), matchType });
-                            }
-                        } catch {
-                            // Skip date search if date parsing fails
-                        }
-                    }
-                } catch {
-                    // Skip this message if processing fails (graceful degradation)
                 }
-            });
-        } catch (error) {
-            // Log error but don't crash - return empty results
-            console.error('Ошибка поиска:', error);
-            return [];
+
+                // Search in username using safe search
+                if ((searchType === 'all' || searchType === 'user') && user) {
+                    if (safeSearch(user.name || '', searchTerm)) {
+                        matchType = 'username';
+                        results.push({ message, user, highlightedText: sanitizeHtml(highlightedText), matchType });
+                        continue;
+                    }
+                }
+
+                // Search in date
+                if (searchType === 'all' || searchType === 'date') {
+                    try {
+                        const dateObj = getMessageDate(message.createdAt);
+                        const messageDate = format(dateObj, 'dd.MM.yyyy HH:mm', { locale: ru });
+                        if (safeSearch(messageDate, searchTerm)) {
+                            matchType = 'date';
+                            results.push({ message, user, highlightedText: sanitizeHtml(highlightedText), matchType });
+                        }
+                    } catch {
+                        // Skip date search if date parsing fails
+                    }
+                }
+            } catch {
+                // Skip this message if processing fails (graceful degradation)
+            }
         }
 
         return results.reverse();
-    }, [messages, users, query, searchType]);
+    }, [messages, users, searchType]);
+
+    // Effect to trigger debounced search when query or searchType changes
+    useEffect(() => {
+        const debouncer = debouncerRef.current;
+
+        if (!query.trim()) {
+            setSearchResults([]);
+            setIsSearching(false);
+            setSearchError(null);
+            return;
+        }
+
+        setIsSearching(true);
+        setSearchError(null);
+
+        debouncer.search(
+            query,
+            performSearch,
+            (results, error) => {
+                setIsSearching(false);
+                if (error) {
+                    console.error('Ошибка поиска:', error);
+                    setSearchError('Ошибка поиска. Попробуйте другой запрос.');
+                    setSearchResults([]);
+                } else {
+                    setSearchResults(results || []);
+                    setSearchError(null);
+                }
+            }
+        );
+
+        // Cleanup: cancel pending search on unmount or query change
+        return () => {
+            debouncer.cancel();
+        };
+    }, [query, searchType, performSearch]);
+
+    // Cancel search when component closes
+    useEffect(() => {
+        if (!isOpen) {
+            debouncerRef.current.cancel();
+            setSearchResults([]);
+            setIsSearching(false);
+            setSearchError(null);
+        }
+    }, [isOpen]);
 
     // Keyboard navigation
     useEffect(() => {
@@ -236,6 +291,22 @@ export function ChatSearch({
                             <p className="text-lg font-medium">Поиск по чату</p>
                             <p className="text-sm text-center max-w-sm mt-2">
                                 Введите текст для поиска сообщений, имен пользователей или дат
+                            </p>
+                        </div>
+                    ) : isSearching ? (
+                        <div className="flex flex-col items-center justify-center h-full text-neutral-400 p-8">
+                            <Loader2 className="w-16 h-16 mb-4 opacity-50 animate-spin" />
+                            <p className="text-lg font-medium">Поиск...</p>
+                            <p className="text-sm text-center max-w-sm mt-2">
+                                Ищем совпадения в сообщениях
+                            </p>
+                        </div>
+                    ) : searchError ? (
+                        <div className="flex flex-col items-center justify-center h-full text-neutral-400 p-8">
+                            <X className="w-16 h-16 mb-4 opacity-50 text-red-400" />
+                            <p className="text-lg font-medium text-red-400">Ошибка поиска</p>
+                            <p className="text-sm text-center max-w-sm mt-2">
+                                {searchError}
                             </p>
                         </div>
                     ) : searchResults.length === 0 ? (

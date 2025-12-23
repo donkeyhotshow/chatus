@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { PixelAvatarEditor } from '../avatar/PixelAvatarEditor';
 import { useToast } from '@/hooks/use-toast';
 import { User, ArrowRight, AlertCircle } from 'lucide-react';
@@ -220,6 +221,17 @@ export function ProfileCreationDialog({ isOpen, onProfileCreate, roomId, isCreat
                                     placeholder="Введите имя"
                                     disabled={isCreating}
                                     maxLength={MAX_USERNAME_LENGTH + 5}
+                                    id="username-input"
+                                    aria-label="Имя пользователя"
+                                    aria-describedby={
+                                        showError && validationError
+                                            ? "username-error"
+                                            : lengthWarning
+                                                ? "username-length-warning"
+                                                : "username-hint"
+                                    }
+                                    aria-invalid={showError || !!lengthWarning}
+                                    aria-required="true"
                                     className={cn(
                                         "w-full px-4 py-3 bg-[var(--bg-secondary)] border rounded-lg",
                                         "text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
@@ -235,53 +247,66 @@ export function ProfileCreationDialog({ isOpen, onProfileCreate, roomId, isCreat
                                 />
 
                                 {/* Character counter - shows remaining chars (Requirements 6.3) */}
-                                <span className={cn(
-                                    "absolute right-3 top-1/2 -translate-y-1/2 text-xs",
-                                    remainingChars < 0
-                                        ? "text-[var(--error)] font-medium"
-                                        : remainingChars <= 5
-                                            ? "text-[var(--warning)]"
-                                            : "text-[var(--text-muted)]"
-                                )}>
+                                <span
+                                    className={cn(
+                                        "absolute right-3 top-1/2 -translate-y-1/2 text-xs",
+                                        remainingChars < 0
+                                            ? "text-[var(--error)] font-medium"
+                                            : remainingChars <= 5
+                                                ? "text-[var(--warning)]"
+                                                : "text-[var(--text-muted)]"
+                                    )}
+                                    aria-live="polite"
+                                    aria-atomic="true"
+                                >
                                     {remainingChars}
                                 </span>
                             </div>
 
                             {/* Error message */}
                             {showError && validationError && (
-                                <p className="text-xs text-[var(--error)] flex items-center gap-1">
-                                    <AlertCircle className="w-3 h-3" />
+                                <p id="username-error" className="text-xs text-[var(--error)] flex items-center gap-1" role="alert">
+                                    <AlertCircle className="w-3 h-3" aria-hidden="true" />
                                     {validationError}
                                 </p>
                             )}
 
                             {/* BUG-001: Length warning message (Requirements 6.1) */}
                             {lengthWarning && (
-                                <p className="text-xs text-[var(--error)] flex items-center gap-1">
-                                    <AlertCircle className="w-3 h-3" />
+                                <p id="username-length-warning" className="text-xs text-[var(--error)] flex items-center gap-1" role="alert">
+                                    <AlertCircle className="w-3 h-3" aria-hidden="true" />
                                     {lengthWarning}
                                 </p>
                             )}
 
                             {/* Hint */}
                             {!showError && username.length === 0 && (
-                                <p className="text-xs text-[var(--text-muted)]">
+                                <p id="username-hint" className="text-xs text-[var(--text-muted)]">
                                     От {MIN_USERNAME_LENGTH} до {MAX_USERNAME_LENGTH} символов
                                 </p>
                             )}
                         </div>
 
-                        <Button
-                            onClick={handleSubmit}
-                            disabled={!isButtonEnabled || isCreating}
-                            isLoading={isCreating}
-                            loadingText="Вход..."
-                            className="w-full"
-                            size="lg"
-                        >
-                            Войти в чат
-                            <ArrowRight className="w-5 h-5" />
-                        </Button>
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        onClick={handleSubmit}
+                                        disabled={!isButtonEnabled || isCreating}
+                                        isLoading={isCreating}
+                                        loadingText="Вход..."
+                                        className="w-full"
+                                        size="lg"
+                                    >
+                                        Присоединиться
+                                        <ArrowRight className="w-5 h-5" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Войти в комнату с выбранным именем и аватаром</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                     </div>
                 </div>
             </DialogContent>

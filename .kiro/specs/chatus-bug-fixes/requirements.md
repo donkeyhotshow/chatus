@@ -219,3 +219,104 @@ tory:** Как пользователь Safari, я хочу
 1. WHEN content exceeds viewport height THEN the ChatUs system SHALL enable vertical scrolling
 2. WHEN a user swipes vertically on iOS THEN the ChatUs system SHALL provide smooth momentum scrolling
 3. WHEN scrolling on mobile THEN the ChatUs system SHALL use -webkit-overflow-scrolling: touch for native feel
+
+---
+
+### Requirement 18: Исправление мобильного ввода на iOS (P1-MOBILE-001) — CRITICAL
+
+**User Story:** Как пользователь iOS, я хочу видеть поле ввода и кнопку отправки при открытой клавиатуре, чтобы комфортно писать сообщения.
+
+#### Acceptance Criteria
+
+1. WHEN the virtual keyboard opens on iOS THEN the ChatUs system SHALL use Visual Viewport API to adjust layout
+2. WHEN the user focuses on the input field on iOS THEN the ChatUs system SHALL ensure the send button remains visible above the keyboard
+3. WHEN the keyboard closes on iOS THEN the ChatUs system SHALL restore the original viewport layout without page reload
+
+---
+
+### Requirement 19: Стабилизация Canvas (P1-CANVAS-001) — CRITICAL
+
+**User Story:** Как пользователь, я хочу рисовать плавные линии без разрывов и задержек, чтобы создавать качественные рисунки.
+
+#### Acceptance Criteria
+
+1. WHEN a user draws on the canvas THEN the ChatUs system SHALL render lines without visible breaks or gaps
+2. WHEN multiple drawing events occur rapidly THEN the ChatUs system SHALL use requestAnimationFrame for smooth rendering
+3. WHEN a user clicks "Send to Chat" THEN the ChatUs system SHALL capture and send the complete canvas image without data loss
+4. WHEN the canvas component unmounts THEN the ChatUs system SHALL clean up all memory resources and event listeners
+
+---
+
+### Requirement 20: Исправление навигации назад (P1-NAV-001) — CRITICAL
+
+**User Story:** Как пользователь, я хочу использовать кнопку "Назад" браузера для предсказуемой навигации, чтобы не терять состояние приложения.
+
+#### Acceptance Criteria
+
+1. WHEN a user clicks the browser back button THEN the ChatUs system SHALL navigate to the previous state without full page reload
+2. WHEN navigating back from a chat room THEN the ChatUs system SHALL preserve the room list state
+3. WHEN navigating back from a game or canvas THEN the ChatUs system SHALL return to the chat room without data loss
+4. WHEN the History API state changes THEN the ChatUs system SHALL update the UI to reflect the correct state
+
+---
+
+### Requirement 21: Исправление зависания при поиске (P1-SEARCH-001) — CRITICAL
+
+**User Story:** Как пользователь, я хочу использовать поиск одновременно с чатом без зависаний, чтобы быстро находить нужные сообщения.
+
+#### Acceptance Criteria
+
+1. WHEN a user types in the search field THEN the ChatUs system SHALL debounce input with minimum 300ms delay
+2. WHEN search is processing THEN the ChatUs system SHALL not block the main thread or chat functionality
+3. WHEN multiple search requests occur THEN the ChatUs system SHALL cancel previous pending requests
+4. IF search causes an error THEN the ChatUs system SHALL recover gracefully without freezing the application
+
+---
+
+### Requirement 22: Переименование кнопки "Войти" (P2-UX-001) — MINOR
+
+**User Story:** Как пользователь, я хочу видеть понятную кнопку "Присоединиться" вместо "Войти", чтобы понимать что это не авторизация в систему.
+
+#### Acceptance Criteria
+
+1. WHEN the login dialog is displayed THEN the ChatUs system SHALL show button text "Присоединиться" instead of "Войти"
+2. WHEN the button is hovered THEN the ChatUs system SHALL display tooltip explaining the action
+
+---
+
+### Requirement 23: Валидация имени с поддержкой кириллицы (P2-VALIDATION-001) — MAJOR
+
+**User Story:** Как русскоязычный пользователь, я хочу использовать кириллические имена, чтобы представляться на родном языке.
+
+#### Acceptance Criteria
+
+1. WHEN a user enters a Cyrillic username THEN the ChatUs system SHALL accept the input as valid
+2. WHEN displaying validation rules THEN the ChatUs system SHALL show explicit requirements (2-20 characters, Latin or Cyrillic)
+3. WHEN the username is invalid THEN the ChatUs system SHALL display a specific error message explaining the issue
+4. WHEN the username contains mixed scripts THEN the ChatUs system SHALL accept the input as valid
+
+---
+
+### Requirement 24: Индикация текущего контекста (P2-CONTEXT-001) — MAJOR
+
+**User Story:** Как пользователь, я хочу всегда видеть где я нахожусь (комната, игра, холст), чтобы ориентироваться в приложении.
+
+#### Acceptance Criteria
+
+1. WHEN a user is in a chat room THEN the ChatUs system SHALL display the room name in the header
+2. WHEN a user opens a game THEN the ChatUs system SHALL display a breadcrumb showing "Room > Game Name"
+3. WHEN a user opens the canvas THEN the ChatUs system SHALL display a breadcrumb showing "Room > Canvas"
+4. WHEN the context changes THEN the ChatUs system SHALL update the header immediately
+
+---
+
+### Requirement 25: Явный выход из состояний (P2-EXIT-001) — MAJOR
+
+**User Story:** Как пользователь, я хочу иметь явную кнопку выхода из игр, холста и комнат, чтобы легко возвращаться к предыдущему экрану.
+
+#### Acceptance Criteria
+
+1. WHEN a user is in a game THEN the ChatUs system SHALL display a visible "Exit" button
+2. WHEN a user is in the canvas THEN the ChatUs system SHALL display a visible "Exit" button
+3. WHEN a user clicks the exit button THEN the ChatUs system SHALL show a confirmation dialog if there are unsaved changes
+4. WHEN exit is confirmed THEN the ChatUs system SHALL return to the previous state and clean up resources

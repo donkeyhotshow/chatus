@@ -22,6 +22,7 @@ import { useRoom } from '@/hooks/useRoom';
 import { useRoomManager } from '@/hooks/useRoomManager';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
 import { useConnectionStatus } from '@/hooks/useConnectionStatus';
+import { useNavigationState } from '@/hooks/useNavigationState';
 import { logger } from '@/lib/logger';
 import { isDemoMode } from '@/lib/demo-mode';
 import { getChatService } from '@/services/ChatService';
@@ -32,6 +33,7 @@ import { ChatSkeleton } from './ChatSkeleton';
 import { AnimatedTabTransition } from '../layout/AnimatedTabTransition';
 import { isSafari, safariSafeClick } from '@/lib/safari-workarounds';
 import { RoomState } from '@/lib/session-manager';
+import { NavigationState, NavigationView } from '@/lib/navigation-state';
 
 // Lazy load heavy components
 const CollaborationSpace = lazy(() => import('./CollaborationSpace').then(m => ({ default: m.CollaborationSpace })));

@@ -99,9 +99,52 @@
     color: var(--accent-contrast);
   }
 
+  /* ===== FOCUS VISIBLE STYLES (Requirements 12.3) ===== */
+  /* Visible focus indicators for keyboard navigation */
   :focus-visible {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
+  }
+
+  /* Enhanced focus styles for interactive elements */
+  button:focus-visible,
+  [role="button"]:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1);
+  }
+
+  /* Focus ring for dark backgrounds */
+  .focus-ring:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.15);
+  }
+
+  /* Focus styles for cards and containers */
+  .card:focus-visible,
+  [role="listitem"]:focus-visible,
+  [role="option"]:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: -2px;
+  }
+
+  /* Remove default focus outline for mouse users */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* High contrast focus for accessibility */
+  @media (prefers-contrast: high) {
+    :focus-visible {
+      outline: 3px solid var(--accent-primary);
+      outline-offset: 3px;
+    }
   }
 
   /* Scrollbar */
@@ -957,5 +1000,241 @@
     min-height: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+  }
+
+  /* ===== iOS KEYBOARD HANDLING (Requirements 18.1, 18.2, 18.3) ===== */
+  /* Styles for iOS keyboard visibility management */
+
+  /* Container styles when iOS keyboard is visible */
+  .ios-keyboard-visible {
+    position: sticky;
+    bottom: 0;
+    z-index: 100;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-primary);
+    /* Ensure the container is above the keyboard */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+  }
+
+  /* iOS-specific input container adjustments */
+  @supports (-webkit-touch-callout: none) {
+    /* iOS Safari specific styles */
+    .chat-input-container {
+      /* Use Visual Viewport API compatible positioning */
+      position: sticky;
+      bottom: 0;
+      /* Prevent iOS bounce effect from hiding input */
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* When keyboard is visible, ensure input stays above it */
+    .ios-keyboard-visible .chat-input-wrapper {
+      /* Add safe area padding for home indicator */
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    /* Ensure send button is always visible */
+    .ios-keyboard-visible .send-button {
+      /* Prevent button from being hidden by keyboard */
+      position: relative;
+      z-index: 101;
+    }
+
+    /* Input field adjustments for iOS */
+    .ios-keyboard-visible textarea,
+    .ios-keyboard-visible input[type="text"] {
+      /* Prevent zoom on focus */
+      font-size: 16px !important;
+      /* Ensure proper rendering */
+      -webkit-appearance: none;
+      appearance: none;
+    }
+  }
+
+  /* iOS keyboard animation smoothing */
+  @media (max-width: 767px) {
+    .ios-keyboard-visible {
+      transition: transform 0.25s ease-out, padding-bottom 0.25s ease-out;
+    }
+
+    /* Prevent content jump when keyboard appears */
+    .ios-keyboard-visible ~ * {
+      transition: transform 0.25s ease-out;
+    }
+  }
+
+  /* Safe area handling for iOS devices with notch/home indicator */
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .ios-keyboard-visible {
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    /* Additional padding when keyboard is hidden to account for home indicator */
+    .safe-bottom {
+      padding-bottom: max(var(--space-3), env(safe-area-inset-bottom, 0px));
+    }
+  }
+
+  /* Prevent iOS rubber-banding from hiding input */
+  .ios-input-container {
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: auto;
+  }
+
+  /* iOS keyboard focus state */
+  .ios-keyboard-visible input:focus,
+  .ios-keyboard-visible textarea:focus {
+    /* Ensure focused input is visible */
+    scroll-margin-bottom: 100px;
+  }
+
+  /* ===== ACCESSIBILITY IMPROVEMENTS (Requirements 12.1, 12.2, 12.3) ===== */
+
+  /* Visually hidden but accessible to screen readers */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Skip to main content link */
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--accent-primary);
+    color: var(--accent-contrast);
+    padding: var(--space-2) var(--space-4);
+    z-index: 10000;
+    transition: top var(--transition-fast);
+  }
+
+  .skip-link:focus {
+    top: 0;
+  }
+
+  /* High contrast text (Requirements 12.2 - minimum 4.5:1 ratio) */
+  .text-high-contrast {
+    color: var(--text-primary); /* #ffffff on #000000 = 21:1 ratio */
+  }
+
+  .text-medium-contrast {
+    color: #b3b3b3; /* ~7:1 ratio on black background */
+  }
+
+  /* Ensure muted text meets minimum contrast */
+  .text-accessible-muted {
+    color: #767676; /* 4.54:1 ratio - meets WCAG AA */
+  }
+
+  /* ARIA live region styles */
+  [aria-live="polite"],
+  [aria-live="assertive"] {
+    /* Ensure live regions are not visually hidden but can be off-screen */
+  }
+
+  /* Disabled state with proper contrast */
+  [aria-disabled="true"],
+  [disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  /* Required field indicator */
+  [aria-required="true"]::after {
+    content: " *";
+    color: var(--error);
+  }
+
+  /* Error state styling */
+  [aria-invalid="true"] {
+    border-color: var(--error) !important;
+    box-shadow: 0 0 0 1px var(--error);
+  }
+
+  /* Expanded/collapsed state indicators */
+  [aria-expanded="true"] .expand-icon {
+    transform: rotate(180deg);
+  }
+
+  [aria-expanded="false"] .expand-icon {
+    transform: rotate(0deg);
+  }
+
+  /* Selected state */
+  [aria-selected="true"] {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  /* Current page indicator */
+  [aria-current="page"] {
+    font-weight: 600;
+    color: var(--accent-primary);
+  }
+
+  /* Busy/loading state */
+  [aria-busy="true"] {
+    cursor: wait;
+  }
+
+  /* Form validation messages */
+  .form-error {
+    color: var(--error);
+    font-size: 12px;
+    margin-top: var(--space-1);
+  }
+
+  .form-hint {
+    color: var(--text-secondary);
+    font-size: 12px;
+    margin-top: var(--space-1);
+  }
+
+  /* Ensure links are distinguishable */
+  a:not(.btn):not(.card):not([role="button"]) {
+    text-decoration: underline;
+    text-decoration-color: var(--text-muted);
+    text-underline-offset: 2px;
+  }
+
+  a:not(.btn):not(.card):not([role="button"]):hover {
+    text-decoration-color: var(--text-primary);
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    :root {
+      --text-secondary: #cccccc;
+      --text-muted: #999999;
+      --border-primary: #444444;
+    }
+
+    .card,
+    .modal,
+    .input,
+    button {
+      border-width: 2px;
+    }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }

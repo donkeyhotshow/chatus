@@ -3,6 +3,9 @@
 import { memo } from 'react';
 import { ArrowLeft, Search, MoreVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Breadcrumb, BreadcrumbCompact } from '@/components/ui/Breadcrumb';
+import { NavigationState } from '@/lib/navigation-state';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ChatHeaderProps {
     roomId: string;
@@ -14,6 +17,12 @@ interface ChatHeaderProps {
     onSearchOpen?: () => void;
     onSettings?: () => void;
     className?: string;
+    /** Navigation state for breadcrumb display */
+    navigationState?: NavigationState | null;
+    /** Callback when breadcrumb item is clicked */
+    onBreadcrumbNavigate?: (path: string) => void;
+    /** Whether to show breadcrumb */
+    showBreadcrumb?: boolean;
 }
 
 export const ChatHeader = memo(function ChatHeader({
@@ -23,8 +32,14 @@ export const ChatHeader = memo(function ChatHeader({
     onBack,
     onSearchOpen,
     onSettings,
-    className
+    className,
+    navigationState,
+    onBreadcrumbNavigate,
+    showBreadcrumb = false
 }: ChatHeaderProps) {
+    const isMobile = useIsMobile();
+    const roomName = otherUser?.name || `Комната ${roomId}`;
+
     return (
         <header className={cn(
             "flex items-center justify-between h-14 px-4 bg-[var(--bg-secondary)] border-b border-[var(--border-primary)] safe-top shrink-0",
@@ -36,23 +51,45 @@ export const ChatHeader = memo(function ChatHeader({
                     <button
                         onClick={onBack}
                         className="p-2 -ml-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors touch-target"
+                        aria-label="Назад"
                     >
                         <ArrowLeft className="w-5 h-5" />
                     </button>
                 )}
 
                 <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                        <h1 className="text-base font-semibold text-[var(--text-primary)] truncate">
-                            {otherUser?.name || `Комната ${roomId}`}
-                        </h1>
-                        {isOnline && (
-                            <span className="w-2 h-2 bg-[var(--success)] rounded-full shrink-0" />
-                        )}
-                    </div>
-                    <p className="text-xs text-[var(--text-muted)] truncate">
-                        {isOnline ? 'В сети' : 'Не в сети'}
-                    </p>
+                    {/* Show breadcrumb when in nested view (game/canvas) */}
+                    {showBreadcrumb && navigationState && (navigationState.currentView === 'game' || navigationState.currentView === 'canvas') ? (
+                        isMobile ? (
+                            <BreadcrumbCompact
+                                navigationState={navigationState}
+                                roomName={roomName}
+                                onNavigate={onBreadcrumbNavigate}
+                            />
+                        ) : (
+                            <Breadcrumb
+                                navigationState={navigationState}
+                                roomName={roomName}
+                                onNavigate={onBreadcrumbNavigate}
+                                showIcons={true}
+                                maxItems={4}
+                            />
+                        )
+                    ) : (
+                        <>
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-base font-semibold text-[var(--text-primary)] truncate">
+                                    {roomName}
+                                </h1>
+                                {isOnline && (
+                                    <span className="w-2 h-2 bg-[var(--success)] rounded-full shrink-0" aria-label="В сети" />
+                                )}
+                            </div>
+                            <p className="text-xs text-[var(--text-muted)] truncate">
+                                {isOnline ? 'В сети' : 'Не в сети'}
+                            </p>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -62,6 +99,7 @@ export const ChatHeader = memo(function ChatHeader({
                     <button
                         onClick={onSearchOpen}
                         className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors touch-target"
+                        aria-label="Поиск"
                     >
                         <Search className="w-5 h-5" />
                     </button>
@@ -71,6 +109,7 @@ export const ChatHeader = memo(function ChatHeader({
                     <button
                         onClick={onSettings}
                         className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors touch-target"
+                        aria-label="Настройки"
                     >
                         <MoreVertical className="w-5 h-5" />
                     </button>

@@ -217,6 +217,110 @@ export function shouldLazyLoad(componentName: string): boolean;
 export function getOptimizedImageFormat(originalFormat: string): string;
 ```
 
+### 12. iOSViewportManager (P1-MOBILE-001)
+
+```typescript
+// src/lib/ios-viewport-manager.ts
+export interface iOSViewportState {
+  visualViewportHeight: number;
+  layoutViewportHeight: number;
+  keyboardHeight: number;
+  isKeyboardVisible: boolean;
+}
+
+export function setupVisualViewportListener(): () => void;
+export function adjustLayoutForKeyboard(state: iOSViewportState): void;
+export function ensureSendButtonVisible(inputElement: HTMLElement): void;
+export function restoreLayoutOnKeyboardClose(): void;
+```
+
+### 13. CanvasStabilizer (P1-CANVAS-001)
+
+```typescript
+// src/lib/canvas-stabilizer.ts
+export interface CanvasDrawState {
+  isDrawing: boolean;
+  lastPoint: { x: number; y: number } | null;
+  pendingPoints: Array<{ x: number; y: number }>;
+  animationFrameId: number | null;
+}
+
+export function initCanvasStabilizer(canvas: HTMLCanvasElement): CanvasDrawState;
+export function processDrawEvent(state: CanvasDrawState, point: { x: number; y: number }): void;
+export function flushPendingPoints(state: CanvasDrawState, ctx: CanvasRenderingContext2D): void;
+export function captureCanvasImage(canvas: HTMLCanvasElement): Promise<Blob>;
+export function cleanupCanvasResources(state: CanvasDrawState): void;
+```
+
+### 14. NavigationStateManager (P1-NAV-001)
+
+```typescript
+// src/lib/navigation-state.ts
+export interface NavigationState {
+  currentView: 'rooms' | 'chat' | 'game' | 'canvas';
+  roomId?: string;
+  gameType?: string;
+  previousState?: NavigationState;
+}
+
+export function pushNavigationState(state: NavigationState): void;
+export function handlePopState(event: PopStateEvent): NavigationState | null;
+export function restoreStateFromHistory(): NavigationState;
+export function setupHistoryListener(onStateChange: (state: NavigationState) => void): () => void;
+```
+
+### 15. SearchDebouncer (P1-SEARCH-001)
+
+```typescript
+// src/lib/search-debouncer.ts
+export interface SearchState {
+  query: string;
+  isSearching: boolean;
+  abortController: AbortController | null;
+  lastRequestId: number;
+}
+
+export const SEARCH_DEBOUNCE_MS = 300;
+
+export function createSearchDebouncer(): {
+  search: (query: string, callback: (results: unknown[]) => void) => void;
+  cancel: () => void;
+};
+export function cancelPendingSearch(state: SearchState): void;
+export function isSearchStale(requestId: number, currentId: number): boolean;
+```
+
+### 16. ContextIndicator (P2-CONTEXT-001)
+
+```typescript
+// src/lib/context-indicator.ts
+export interface BreadcrumbItem {
+  label: string;
+  path: string;
+  icon?: string;
+}
+
+export function buildBreadcrumb(state: NavigationState): BreadcrumbItem[];
+export function getContextTitle(state: NavigationState): string;
+export function getContextIcon(view: NavigationState['currentView']): string;
+```
+
+### 17. ExitConfirmationManager (P2-EXIT-001)
+
+```typescript
+// src/lib/exit-confirmation.ts
+export interface ExitContext {
+  hasUnsavedChanges: boolean;
+  currentView: 'game' | 'canvas' | 'room';
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+export function shouldShowExitConfirmation(context: ExitContext): boolean;
+export function getExitConfirmationMessage(view: ExitContext['currentView']): string;
+export function handleExitRequest(context: ExitContext): void;
+```
+
 ## Data Models
 
 ### Message with Safe Keys
