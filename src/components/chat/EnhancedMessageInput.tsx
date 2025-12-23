@@ -4,6 +4,11 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { Send, Smile, Image as ImageIcon, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Message } from '@/lib/types';
+import {
+    isIOS,
+    createIOSViewportManager,
+    ensureSendButtonVisible,
+} from '@/lib/ios-viewport-manager';
 
 interface EnhancedMessageInputProps {
     onSend: (text: string) => void;
@@ -32,9 +37,13 @@ export function EnhancedMessageInput({
     void onStickerSend;
     const [message, setMessage] = useState('');
     const [isTyping, setIsTyping] = useState(false);
+    const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const sendButtonRef = useRef<HTMLButtonElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout>();
+    const iosViewportManagerRef = useRef<ReturnType<typeof createIOSViewportManager> | null>(null);
 
     const adjustTextareaHeight = useCallback(() => {
         const textarea = textareaRef.current;
@@ -110,6 +119,47 @@ export function EnhancedMessageInput({
         if (replyTo && textareaRef.current) textareaRef.current.focus();
     }, [replyTo]);
 
+    // iOS Viewport Manager setup
+    // **Feature: chatus-bug-fixes, P1-MOBILE-001**
+    // **Validates: Requirements 18.1, 18.2, 18.3**
+    useEffect(() => {
+        // Only initialize on iOS devices
+        if (!isIOS()) return;
+
+        const manager = createIOSViewportManager({
+            scrollOffset: 20,
+            smoothScroll: true,
+        });
+
+        manager.init({
+            container: containerRef.current,
+            input: textareaRef.current,
+            sendButton: sendButtonRef.current,
+        });
+
+        iosViewportManagerRef.current = manager;
+
+        return () => {
+            manager.destroy();
+            iosViewportManagerRef.current = null;
+        };
+    }, []);
+
+    // Handle iOS keyboard focus/blur
+    const handleFocus = useCallback(() => {
+        if (isIOS() && iosViewportManagerRef.current) {
+            iosViewportManagerRef.current.handleFocus();
+            setIsKeyboardVisible(true);
+        }
+    }, []);
+
+    const handleBlur = useCallback(() => {
+        if (isIOS() && iosViewportManagerRef.current) {
+            iosViewportManagerRef.current.handleBlur();
+            setIsKeyboardVisible(false);
+        }
+    }, []);
+
     useEffect(() => {
         return () => {
             if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
@@ -119,7 +169,23 @@ export function EnhancedMessageInput({
     const canSend = message.trim().length > 0 && !disabled;
 
     return (
-        <div className={cn("p-3 safe-bottom", className)}>
+        <div
+            ref={containerRef}
+            className={cn(
+                "p-3 safe-bottom",
+                // iOS keyboard visible styles
+                isKeyboardVisible && isIOS() && "ios-keyboard-visible",
+                className
+            )}
+            style={{
+                // Ensure the container stays above the keyboard on iOS
+                ...(isKeyboardVisible && isIOS() ? {
+                    position: 'sticky' as const,
+                    bottom: 0,
+                    zIndex: 100,
+                } : {})
+            }}
+        >
             {/* Reply preview */}
             {replyTo && (
                 <div className="mb-2 p-2 bg-[var(--bg-tertiary)] rounded-lg border-l-2 border-[var(--accent-primary)] flex items-center justify-between">
@@ -157,6 +223,8 @@ export function EnhancedMessageInput({
                         value={message}
                         onChange={handleMessageChange}
                         onKeyDown={handleKeyDown}
+                        onFocus={handleFocus}
+                        onBlur={handleBlur}
                         placeholder={placeholder}
                         disabled={disabled}
                         rows={1}
@@ -206,8 +274,9 @@ export function EnhancedMessageInput({
                     </button>
                 )}
 
-                {/* Send button */}
+                {/* Send button - ref added for iOS viewport management */}
                 <button
+                    ref={sendButtonRef}
                     onClick={handleSend}
                     disabled={!canSend}
                     className={cn(

@@ -19,6 +19,19 @@ import {
   deserializeStyle,
   createStyleMetadata,
 } from '@/lib/canvas-style';
+import {
+  CanvasDrawState,
+  Point,
+  initCanvasStabilizer,
+  processDrawEvent,
+  startDrawing,
+  stopDrawing,
+  getPointsArray,
+  clearPendingPoints,
+  captureCanvasImage,
+  cleanupCanvasResources,
+  createThrottledDrawHandler,
+} from '@/lib/canvas-stabilizer';
 
 const NEON_COLORS = [
   '#FFFFFF', '#EF4444', '#F97316', '#F59E0B',
@@ -47,9 +60,12 @@ const MAZE_CELL_SIZE = 40;
 export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanvasProps) {
   const { service } = useChatService(roomId, user || undefined);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const isDrawing = useRef(false);
-  const currentPath = useRef<number[]>([]);
   const batcherRef = useRef<ReturnType<typeof createCanvasBatcher> | null>(null);
+
+  // Canvas stabilizer state for smooth drawing
+  const stabilizerStateRef = useRef<CanvasDrawState | null>(null);
+  const throttledDrawRef = useRef<((point: Point) => void) | null>(null);
+  const rafIdRef = useRef<number | null>(null);
 
   const [selectedTool, setSelectedTool] = useState<'pen' | 'eraser'>('pen');
   const [selectedColor, setSelectedColor] = useState('#3B82F6');
@@ -84,6 +100,32 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
       }
     };
   }, [service]);
+
+  // Initialize canvas stabilizer for smooth drawing
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    // Initialize stabilizer state
+    stabilizerStateRef.current = initCanvasStabilizer(canvas);
+
+    // Create throttled draw handler for rAF-based rendering
+    throttledDrawRef.current = createThrottledDrawHandler((point: Point) => {
+      if (!stabilizerStateRef.current) return;
+      stabilizerStateRef.current = processDrawEvent(stabilizerStateRef.current, point);
+    });
+
+    return () => {
+      // Cleanup stabilizer resources on unmount
+      if (stabilizerStateRef.current) {
+        stabilizerStateRef.current = cleanupCanvasResources(stabilizerStateRef.current);
+      }
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
+    };
+  }, []);
 
   // Subscribe to game state for maze
   const gameDocRef = useMemo(() => (isMazeActive && db) ? doc(db, 'rooms', roomId, 'games', 'maze') : null, [db, roomId, isMazeActive]);
@@ -347,22 +389,22 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!user || !canvasRef.current) return;
-    isDrawing.current = true;
+    if (!user || !canvasRef.current || !stabilizerStateRef.current) return;
+
     const pos = getMousePos(e);
-    currentPath.current = [pos.x, pos.y];
+    stabilizerStateRef.current = startDrawing(stabilizerStateRef.current, { x: pos.x, y: pos.y });
     redrawCanvas(); // Redraw to clear any previous temporary path from other users
   };
 
-  // Throttle mouse move to reduce CPU load (~60 FPS)
+  // Throttle mouse move using rAF for smooth rendering
   const lastMouseMoveTime = useRef<number>(0);
   const MOUSE_MOVE_THROTTLE = 16; // ms (~60 FPS)
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing.current || !user || !canvasRef.current) return;
+    if (!stabilizerStateRef.current?.isDrawing || !user || !canvasRef.current) return;
 
-    // Throttle mouse move events
-    const now = Date.now();
+    // Throttle mouse move events using rAF timing
+    const now = performance.now();
     if (now - lastMouseMoveTime.current < MOUSE_MOVE_THROTTLE) {
       return; // Skip if too frequent
     }
@@ -374,37 +416,59 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
 
     if (isMazeActive && checkMazeCollision(pos.x, pos.y)) {
       toast({ title: 'Oops!', description: 'You hit a wall. Your path was reset.', variant: 'destructive' });
-      isDrawing.current = false;
-      currentPath.current = [];
+      stabilizerStateRef.current = stopDrawing(stabilizerStateRef.current);
+      stabilizerStateRef.current = clearPendingPoints(stabilizerStateRef.current);
       redrawCanvas();
       return;
     }
 
-    currentPath.current.push(pos.x, pos.y);
+    // Process draw event through stabilizer
+    stabilizerStateRef.current = processDrawEvent(stabilizerStateRef.current, { x: pos.x, y: pos.y });
 
-    // START: Optimized drawing - redraw canvas and draw current path on top
-    redrawCanvas();
-    const tempPath: CanvasPath = {
-      id: 'temp',
-      sheetId: sheetId,
-      points: currentPath.current,
-      color: color,
-      strokeWidth: stroke,
-      tool: tool,
-      brush: currentBrush,
-      createdAt: new Date(),
-      user: user
-    };
-    drawPath(ctx, tempPath);
-    // END: Optimized drawing
+    // Use rAF for smooth rendering
+    if (rafIdRef.current !== null) {
+      cancelAnimationFrame(rafIdRef.current);
+    }
+
+    rafIdRef.current = requestAnimationFrame(() => {
+      rafIdRef.current = null;
+      if (!stabilizerStateRef.current) return;
+
+      // Redraw canvas and draw current path on top
+      redrawCanvas();
+      const points = getPointsArray(stabilizerStateRef.current);
+      if (points.length >= 2) {
+        const tempPath: CanvasPath = {
+          id: 'temp',
+          sheetId: sheetId,
+          points: points,
+          color: color,
+          strokeWidth: stroke,
+          tool: tool,
+          brush: currentBrush,
+          createdAt: new Date(),
+          user: user
+        };
+        drawPath(ctx, tempPath);
+      }
+    });
   };
 
   const handleMouseUp = async () => {
-    if (!isDrawing.current || currentPath.current.length < 2 || !user) {
-      isDrawing.current = false;
+    if (!stabilizerStateRef.current?.isDrawing || !user) {
+      if (stabilizerStateRef.current) {
+        stabilizerStateRef.current = stopDrawing(stabilizerStateRef.current);
+      }
       return;
     }
-    isDrawing.current = false;
+
+    const points = getPointsArray(stabilizerStateRef.current);
+    stabilizerStateRef.current = stopDrawing(stabilizerStateRef.current);
+
+    if (points.length < 4) { // Need at least 2 points (4 values: x1,y1,x2,y2)
+      stabilizerStateRef.current = clearPendingPoints(stabilizerStateRef.current);
+      return;
+    }
 
     // Generate unique client stroke ID for deduplication
     const clientStrokeId = `stroke_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -416,7 +480,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     const finalPathData: Omit<CanvasPath, 'id' | 'createdAt'> = {
       sheetId: sheetId,
       user: user,
-      points: [...currentPath.current], // Create a copy
+      points: points,
       color: color,
       strokeWidth: stroke,
       tool: tool,
@@ -425,7 +489,8 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
       styleMetadata: serializedStyle.success ? serializedStyle.data : undefined, // Include serialized style
     };
 
-    currentPath.current = [];
+    // Clear pending points after capturing
+    stabilizerStateRef.current = clearPendingPoints(stabilizerStateRef.current);
 
     try {
       // Use batcher for optimized sending
@@ -439,7 +504,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
       logger.error('Failed to save canvas path', error as Error, {
         sheetId,
         user: user?.id,
-        pathLength: currentPath.current.length
+        pathLength: points.length
       });
       toast({ title: 'Could not save drawing', variant: 'destructive' });
     }
@@ -461,10 +526,9 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
 
     if (e.touches.length === 1 && !isPinching.current) {
       // Single finger - start drawing
-      if (!user || !canvasRef.current) return;
-      isDrawing.current = true;
+      if (!user || !canvasRef.current || !stabilizerStateRef.current) return;
       const pos = getTouchPos(e.touches[0]);
-      currentPath.current = [pos.x, pos.y];
+      stabilizerStateRef.current = startDrawing(stabilizerStateRef.current, { x: pos.x, y: pos.y });
       redrawCanvas();
     }
   };
@@ -499,11 +563,11 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
       return;
     }
 
-    if (e.touches.length === 1 && isDrawing.current && !isPinching.current) {
+    if (e.touches.length === 1 && stabilizerStateRef.current?.isDrawing && !isPinching.current) {
       // Single finger - continue drawing
       if (!user || !canvasRef.current) return;
 
-      const now = Date.now();
+      const now = performance.now();
       if (now - lastMouseMoveTime.current < MOUSE_MOVE_THROTTLE) {
         return;
       }
@@ -515,27 +579,41 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
 
       if (isMazeActive && checkMazeCollision(pos.x, pos.y)) {
         toast({ title: 'Oops!', description: 'You hit a wall. Your path was reset.', variant: 'destructive' });
-        isDrawing.current = false;
-        currentPath.current = [];
+        stabilizerStateRef.current = stopDrawing(stabilizerStateRef.current);
+        stabilizerStateRef.current = clearPendingPoints(stabilizerStateRef.current);
         redrawCanvas();
         return;
       }
 
-      currentPath.current.push(pos.x, pos.y);
+      // Process draw event through stabilizer
+      stabilizerStateRef.current = processDrawEvent(stabilizerStateRef.current, { x: pos.x, y: pos.y });
 
-      redrawCanvas();
-      const tempPath: CanvasPath = {
-        id: 'temp',
-        sheetId: sheetId,
-        points: currentPath.current,
-        color: color,
-        strokeWidth: stroke,
-        tool: tool,
-        brush: currentBrush,
-        createdAt: new Date(),
-        user: user
-      };
-      drawPath(ctx, tempPath);
+      // Use rAF for smooth rendering
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+
+      rafIdRef.current = requestAnimationFrame(() => {
+        rafIdRef.current = null;
+        if (!stabilizerStateRef.current) return;
+
+        redrawCanvas();
+        const points = getPointsArray(stabilizerStateRef.current);
+        if (points.length >= 2) {
+          const tempPath: CanvasPath = {
+            id: 'temp',
+            sheetId: sheetId,
+            points: points,
+            color: color,
+            strokeWidth: stroke,
+            tool: tool,
+            brush: currentBrush,
+            createdAt: new Date(),
+            user: user
+          };
+          drawPath(ctx, tempPath);
+        }
+      });
     }
   };
 
@@ -547,7 +625,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
       isPinching.current = false;
       lastTouchDistance.current = 0;
 
-      if (isDrawing.current) {
+      if (stabilizerStateRef.current?.isDrawing) {
         handleMouseUp(); // Reuse mouse up logic
       }
     } else if (e.touches.length === 1 && isPinching.current) {
@@ -633,23 +711,8 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     try {
       toast({ title: "Отправка в чат...", description: "Создаем изображение..." });
 
-      // Create a temporary canvas to capture the drawing with a background
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = canvas.width;
-      tempCanvas.height = canvas.height;
-      const tempCtx = tempCanvas.getContext('2d');
-      if (!tempCtx) return;
-
-      // Fill background
-      tempCtx.fillStyle = '#0d0d0d';
-      tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-
-      // Draw the main canvas onto the temp canvas
-      tempCtx.drawImage(canvas, 0, 0);
-
-      // Convert to blob
-      const blob = await new Promise<Blob | null>(resolve => tempCanvas.toBlob(resolve, 'image/png'));
-      if (!blob) throw new Error('Failed to create blob');
+      // Use stabilizer's reliable capture function
+      const blob = await captureCanvasImage(canvas, '#0d0d0d');
 
       // Create a file from blob
       const file = new File([blob], `drawing-${Date.now()}.png`, { type: 'image/png' });

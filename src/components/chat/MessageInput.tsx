@@ -6,6 +6,12 @@ import { useToast } from '@/hooks/use-toast';
 import { StickerPicker } from './StickerPicker';
 import { useDebouncedCallback } from 'use-debounce';
 import { cn } from '@/lib/utils';
+import {
+    isIOS,
+    createIOSViewportManager,
+    ensureSendButtonVisible,
+    type iOSViewportState,
+} from '@/lib/ios-viewport-manager';
 
 interface MessageInputProps {
     onSendMessage: (text: string) => void;
@@ -18,6 +24,12 @@ interface MessageInputProps {
 
 const MAX_MESSAGE_LENGTH = 1000;
 
+/**
+ * MessageInput component with iOS keyboard handling
+ *
+ * **Feature: chatus-bug-fixes, P1-MOBILE-001**
+ * **Validates: Requirements 18.1, 18.2, 18.3**
+ */
 export function MessageInput({
     onSendMessage,
     onImageSend,
@@ -30,10 +42,14 @@ export function MessageInput({
     const [showStickerPicker, setShowStickerPicker] = useState(false);
     const [isSending, setIsSending] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
+    const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
     const draftKey = `chat-draft-${roomId}`;
     const fileInputRef = useRef<HTMLInputElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const sendButtonRef = useRef<HTMLButtonElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const iosViewportManagerRef = useRef<ReturnType<typeof createIOSViewportManager> | null>(null);
     const { toast } = useToast();
 
     // Load draft
@@ -57,30 +73,78 @@ export function MessageInput({
         }
     }, [text]);
 
+
+    // iOS Viewport Manager setup
+    // **Validates: Requirements 18.1, 18.2, 18.3**
+    useEffect(() => {
+        // Only initialize on iOS devices
+        if (!isIOS()) return;
+
+        const manager = createIOSViewportManager({
+            scrollOffset: 20,
+            smoothScroll: true,
+        });
+
+        manager.init({
+            container: containerRef.current,
+            input: textareaRef.current,
+            sendButton: sendButtonRef.current,
+        });
+
+        iosViewportManagerRef.current = manager;
+
+        return () => {
+            manager.destroy();
+            iosViewportManagerRef.current = null;
+        };
+    }, []);
+
     // Handle virtual keyboard on mobile - scroll input into view
+    // Uses Visual Viewport API for iOS (Requirements 18.1)
     useEffect(() => {
         const textarea = textareaRef.current;
         if (!textarea) return;
 
         const handleFocus = () => {
-            // Small delay to wait for keyboard to appear
-            setTimeout(() => {
-                textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 300);
+            // For iOS, use the iOS viewport manager
+            if (isIOS() && iosViewportManagerRef.current) {
+                iosViewportManagerRef.current.handleFocus();
+                setIsKeyboardVisible(true);
+            } else {
+                // Small delay to wait for keyboard to appear
+                setTimeout(() => {
+                    textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
+            }
+        };
+
+        const handleBlur = () => {
+            // For iOS, use the iOS viewport manager
+            if (isIOS() && iosViewportManagerRef.current) {
+                iosViewportManagerRef.current.handleBlur();
+                setIsKeyboardVisible(false);
+            }
         };
 
         // Use visualViewport API for better keyboard detection
         const handleResize = () => {
             if (document.activeElement === textarea) {
-                textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (isIOS()) {
+                    // iOS uses Visual Viewport API through the manager
+                    ensureSendButtonVisible(textarea, sendButtonRef.current);
+                } else {
+                    textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
             }
         };
 
         textarea.addEventListener('focus', handleFocus);
+        textarea.addEventListener('blur', handleBlur);
         window.visualViewport?.addEventListener('resize', handleResize);
 
         return () => {
             textarea.removeEventListener('focus', handleFocus);
+            textarea.removeEventListener('blur', handleBlur);
             window.visualViewport?.removeEventListener('resize', handleResize);
         };
     }, []);
@@ -166,8 +230,24 @@ export function MessageInput({
 
     const canSend = text.trim().length > 0 && text.length <= MAX_MESSAGE_LENGTH && !isSending && !disabled;
 
+
     return (
-        <div className="relative bg-[var(--bg-secondary)] border-t border-[var(--border-primary)] safe-bottom">
+        <div
+            ref={containerRef}
+            className={cn(
+                "relative bg-[var(--bg-secondary)] border-t border-[var(--border-primary)] safe-bottom",
+ // iOS keyboard visible styles
+                isKeyboardVisible && isIOS() && "ios-keyboard-visible"
+            )}
+            style={{
+                // Ensure the container stays above the keyboard on iOS
+                ...(isKeyboardVisible && isIOS() ? {
+                    position: 'sticky' as const,
+                    bottom: 0,
+                    zIndex: 100,
+                } : {})
+            }}
+        >
             {/* Sticker Picker */}
             {showStickerPicker && (
                 <StickerPicker
@@ -185,8 +265,10 @@ export function MessageInput({
                     onClick={() => setShowStickerPicker(p => !p)}
                     disabled={disabled}
                     className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors touch-target disabled:opacity-50"
+                    aria-label="Открыть стикеры"
+                    aria-expanded={showStickerPicker}
                 >
-                    <Smile className="w-5 h-5" />
+                    <Smile className="w-5 h-5" aria-hidden="true" />
                 </button>
 
                 {/* Input container */}
@@ -209,6 +291,9 @@ export function MessageInput({
                         rows={1}
                         maxLength={MAX_MESSAGE_LENGTH + 100}
                         enterKeyHint="send"
+                        aria-label="Введите сообщение"
+                        aria-describedby={text.length > MAX_MESSAGE_LENGTH * 0.8 ? "message-char-count" : undefined}
+                        aria-invalid={text.length > MAX_MESSAGE_LENGTH}
                         className={cn(
                             "w-full px-4 py-2.5 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-2xl",
                             "text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
@@ -222,10 +307,14 @@ export function MessageInput({
 
                     {/* Character count */}
                     {text.length > MAX_MESSAGE_LENGTH * 0.8 && (
-                        <span className={cn(
-                            "absolute right-3 bottom-2 text-xs",
-                            text.length > MAX_MESSAGE_LENGTH ? "text-[var(--error)]" : "text-[var(--text-muted)]"
-                        )}>
+                        <span
+                            id="message-char-count"
+                            className={cn(
+                                "absolute right-3 bottom-2 text-xs",
+                                text.length > MAX_MESSAGE_LENGTH ? "text-[var(--error)]" : "text-[var(--text-muted)]"
+                            )}
+                            aria-live="polite"
+                        >
                             {text.length}/{MAX_MESSAGE_LENGTH}
                         </span>
                     )}
@@ -251,16 +340,19 @@ export function MessageInput({
                             : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]",
                         "disabled:opacity-50"
                     )}
+                    aria-label={isUploading ? "Загрузка изображения..." : "Прикрепить изображение"}
+                    aria-busy={isUploading}
                 >
                     {isUploading ? (
-                        <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" aria-hidden="true" />
                     ) : (
-                        <ImageIcon className="w-5 h-5" />
+                        <ImageIcon className="w-5 h-5" aria-hidden="true" />
                     )}
                 </button>
 
-                {/* Send button */}
+                {/* Send button - ref added for iOS viewport management */}
                 <button
+                    ref={sendButtonRef}
                     onClick={handleSend}
                     disabled={!canSend}
                     className={cn(
@@ -270,11 +362,13 @@ export function MessageInput({
                             : "bg-[var(--bg-tertiary)] text-[var(--text-muted)]",
                         "disabled:cursor-not-allowed"
                     )}
+                    aria-label={isSending ? "Отправка..." : "Отправить сообщение"}
+                    aria-busy={isSending}
                 >
                     {isSending ? (
-                        <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" aria-hidden="true" />
                     ) : (
-                        <Send className="w-5 h-5" />
+                        <Send className="w-5 h-5" aria-hidden="true" />
                     )}
                 </button>
             </div>
