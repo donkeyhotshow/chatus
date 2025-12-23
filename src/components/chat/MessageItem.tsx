@@ -6,7 +6,6 @@ import type { Message } from '@/lib/types';
 import { EmojiRain } from './EmojiRain';
 import { format } from 'date-fns';
 import { Smile, Trash2, CornerUpLeft, Check, CheckCheck } from 'lucide-react';
-import { useMediaQuery } from '@/hooks/use-media-query';
 
 type MessageItemProps = {
   message: Message;
@@ -22,9 +21,6 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
   const [showEmojiRain, setShowEmojiRain] = useState(false);
   const [rainEmoji, setRainEmoji] = useState('');
   const [showReactionPicker, setShowReactionPicker] = useState(false);
-
-  const isMobile = useMediaQuery('(max-width: 768px)');
-  const isTouchDevice = useMediaQuery('(hover: none)');
 
   useEffect(() => {
     setShowEmojiRain(false);
@@ -158,32 +154,32 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
               </div>
             )}
 
-            {/* Desktop: hover buttons */}
-            <div className={`
-              ${isMobile || isTouchDevice
-                ? 'hidden'
-                : `absolute top-0 ${isOwn ? 'right-full mr-2' : 'left-full ml-2'} opacity-0 group-hover:opacity-100`
-              }
-              transition-all duration-200 flex flex-col gap-1
-            `}>
+            {/* Action buttons - always visible */}
+            <div className={`flex gap-1 mt-2 ${isOwn ? 'justify-end' : 'justify-start'}`}>
               <button
                 onClick={() => onReply(message)}
-                className="p-2 rounded-lg bg-white/5 text-neutral-500 hover:text-white hover:bg-white/10 transition-all"
+                className="p-2 rounded-lg bg-white/10 text-neutral-400 hover:bg-white/20 hover:text-white active:bg-white/20 active:text-white transition-all"
                 title="Ответить"
               >
                 <CornerUpLeft className="w-4 h-4" />
               </button>
               <button
-                onClick={() => setShowReactionPicker(!showReactionPicker)}
-                className="p-2 rounded-lg bg-white/5 text-neutral-500 hover:text-white hover:bg-white/10 transition-all"
+                onClick={() => {
+                  setShowReactionPicker(!showReactionPicker);
+                  if ('vibrate' in navigator) navigator.vibrate(10);
+                }}
+                className={`p-2 rounded-lg transition-all ${showReactionPicker ? 'bg-cyan-500/20 text-cyan-400' : 'bg-white/10 text-neutral-400 hover:bg-white/20 hover:text-white active:bg-white/20 active:text-white'}`}
                 title="Реакция"
               >
                 <Smile className="w-4 h-4" />
               </button>
               {isOwn && (
                 <button
-                  onClick={() => onDelete(message.id)}
-                  className="p-2 rounded-lg bg-white/5 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                  onClick={() => {
+                    if ('vibrate' in navigator) navigator.vibrate(15);
+                    onDelete(message.id);
+                  }}
+                  className="p-2 rounded-lg bg-white/10 text-neutral-400 hover:bg-red-500/20 hover:text-red-400 active:bg-red-500/20 active:text-red-400 transition-all"
                   title="Удалить"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -191,43 +187,8 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
               )}
             </div>
 
-            {/* Mobile/Touch: visible action buttons */}
-            {(isMobile || isTouchDevice) && (
-              <div className={`flex gap-1 mt-2 ${isOwn ? 'justify-end' : 'justify-start'}`}>
-                <button
-                  onClick={() => onReply(message)}
-                  className="p-2 rounded-lg bg-white/10 text-neutral-400 active:bg-white/20 active:text-white transition-all"
-                  title="Ответить"
-                >
-                  <CornerUpLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => {
-                    setShowReactionPicker(!showReactionPicker);
-                    if ('vibrate' in navigator) navigator.vibrate(10);
-                  }}
-                  className={`p-2 rounded-lg transition-all ${showReactionPicker ? 'bg-cyan-500/20 text-cyan-400' : 'bg-white/10 text-neutral-400 active:bg-white/20 active:text-white'}`}
-                  title="Реакция"
-                >
-                  <Smile className="w-4 h-4" />
-                </button>
-                {isOwn && (
-                  <button
-                    onClick={() => {
-                      if ('vibrate' in navigator) navigator.vibrate(15);
-                      onDelete(message.id);
-                    }}
-                    className="p-2 rounded-lg bg-white/10 text-neutral-400 active:bg-red-500/20 active:text-red-400 transition-all"
-                    title="Удалить"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* Emoji picker for mobile */}
-            {showReactionPicker && (isMobile || isTouchDevice) && (
+            {/* Emoji picker - works on all devices */}
+            {showReactionPicker && (
               <div className={`flex flex-wrap gap-1 mt-2 p-2 rounded-lg bg-neutral-800/80 border border-white/10 ${isOwn ? 'justify-end' : 'justify-start'}`}>
                 {['👍', '❤️', '😂', '😮', '😢', '🔥', '🎉', '👏'].map((emoji) => (
                   <button
