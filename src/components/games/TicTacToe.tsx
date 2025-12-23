@@ -121,11 +121,11 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
     }
 
     const getStatus = () => {
-        if (winner) return `Winner: ${getPlayerName(winner)}`;
-        if (isDraw) return "It's a Draw!";
-        if (!otherUser) return "Waiting for opponent...";
-        if (!currentPlayer) return "Game is ready, host can start.";
-        return `Turn: ${getPlayerName(currentPlayer)} (${playerSymbols[currentPlayer]}) - ${myTurn ? "Your turn" : "Waiting"}`;
+        if (winner) return `Победитель: ${getPlayerName(winner)}`;
+        if (isDraw) return "Ничья!";
+        if (!otherUser) return "Ожидание соперника...";
+        if (!currentPlayer) return "Игра готова, хост может начать.";
+        return `Ход: ${getPlayerName(currentPlayer)} (${playerSymbols[currentPlayer]}) - ${myTurn ? "Ваш ход" : "Ожидание"}`;
     }
 
     return (
@@ -146,11 +146,11 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
                         variant="ghost"
                         size="sm"
                         className="absolute top-4 left-4 text-neutral-400 hover:text-white z-10"
-                        title="Back to Lobby"
+                        title="Вернуться в лобби"
                     >
                         <ArrowLeft className="h-4 w-4" />
                     </Button>
-                    <CardTitle className="font-headline text-2xl">Tic-Tac-Toe</CardTitle>
+                    <CardTitle className="font-headline text-2xl">Крестики-нолики</CardTitle>
                     <CardTitle className="text-sm font-medium text-neutral-400 pt-2">{getStatus()}</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-4">
@@ -178,12 +178,12 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
                             onClick={handleReset}
                             className="w-full bg-white text-black hover:bg-neutral-200 transition-all"
                         >
-                            Play Again
+                            Играть снова
                         </Button>
                     )}
                     <Button onClick={onGameEnd} variant="ghost" size="sm" className="w-full text-neutral-400 hover:text-white">
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Lobby
+                        Вернуться в лобби
                     </Button>
                 </CardFooter>
             </Card>

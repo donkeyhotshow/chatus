@@ -35,6 +35,16 @@ module.exports = {
         '@typescript-eslint/no-explicit-any': 'off',
         'no-console': 'off'
       }
+    },
+    {
+      // Game files are standalone modules with intentionally exported global functions
+      files: ['src/lib/games/**/*.js'],
+      rules: {
+        '@typescript-eslint/no-unused-vars': 'off',
+        'no-unused-vars': 'off',
+        'prefer-const': 'off',
+        'no-console': 'off'
+      }
     }
   ]
 };

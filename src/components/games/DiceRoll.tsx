@@ -72,22 +72,22 @@ export function DiceRoll({ onGameEnd, updateGameState, gameState, user, otherUse
     });
 
     const bothHaveRolled = myRoll && otherRoll;
-    let resultText = "Roll the dice!";
+    let resultText = "Бросьте кости!";
 
     if (!otherUser) {
-        resultText = "Waiting for an opponent...";
+        resultText = "Ожидание соперника...";
     } else if (bothHaveRolled) {
         if (myRoll! > otherRoll!) {
-            resultText = `${user.name} wins with a ${myRoll}!`;
+            resultText = `${user.name} выиграл с ${myRoll}!`;
         } else if (otherRoll! > myRoll!) {
-            resultText = `${otherUser?.name} wins with a ${otherRoll}!`;
+            resultText = `${otherUser?.name} выиграл с ${otherRoll}!`;
         } else {
-            resultText = `It's a draw with a ${myRoll}!`;
+            resultText = `Ничья: ${myRoll}!`;
         }
     } else if (myRoll) {
-        resultText = `You rolled a ${myRoll}. Waiting for opponent...`;
+        resultText = `Вы выбросили ${myRoll}. Ожидание соперника...`;
     } else if (otherRoll) {
-        resultText = `${otherUser?.name} has made their move. Your turn!`;
+        resultText = `${otherUser?.name} сделал ход. Ваша очередь!`;
     }
 
     const displayValue = isRolling && rollingValue ? rollingValue : myRoll;
@@ -96,7 +96,7 @@ export function DiceRoll({ onGameEnd, updateGameState, gameState, user, otherUse
         <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-4">
             <Card className="bg-neutral-950/80 border-white/10 backdrop-blur-sm w-full max-w-sm">
                 <CardHeader>
-                    <CardTitle className="font-headline text-2xl flex items-center justify-center gap-2"><Dices />Dice Roll</CardTitle>
+                    <CardTitle className="font-headline text-2xl flex items-center justify-center gap-2"><Dices />Кости</CardTitle>
                     <CardDescription className="text-neutral-400">{resultText}</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-6">
@@ -154,14 +154,14 @@ export function DiceRoll({ onGameEnd, updateGameState, gameState, user, otherUse
                             onClick={handleReset}
                             className="w-full bg-white text-black hover:bg-neutral-200 transition-all"
                         >
-                            Play Again
+                            Играть снова
                         </Button>
                     )}
                 </CardContent>
                 <CardFooter className="p-4 pt-0">
                     <Button onClick={onGameEnd} variant="ghost" size="sm" className="w-full text-neutral-400 hover:text-white">
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Lobby
+                        Вернуться в лобби
                     </Button>
                 </CardFooter>
             </Card>

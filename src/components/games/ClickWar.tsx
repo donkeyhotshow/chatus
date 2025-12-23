@@ -159,18 +159,18 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
   }
 
   const winnerName = getWinnerName();
-  const resultText = isGameOver ? (winnerName ? `${winnerName} Wins!` : "It's a Draw!") : null;
+  const resultText = isGameOver ? (winnerName ? `${winnerName} победил!` : "Ничья!") : null;
 
-  let description = `Click as fast as you can for ${GAME_DURATION} seconds!`;
-  if(isActive) description = `Time left: ${Math.ceil(timeLeft)}s`;
-  if(resultText) description = `Result: ${resultText}`;
-  if(!otherUser) description = "Waiting for an opponent to join...";
+  let description = `Кликайте как можно быстрее ${GAME_DURATION} секунд!`;
+  if(isActive) description = `Осталось: ${Math.ceil(timeLeft)} сек`;
+  if(resultText) description = `Результат: ${resultText}`;
+  if(!otherUser) description = "Ожидание соперника...";
 
   return (
     <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-4">
         <Card className="bg-neutral-950/80 border-white/10 backdrop-blur-sm w-full max-w-sm">
             <CardHeader>
-                <CardTitle className="font-headline text-2xl flex items-center justify-center gap-2"><Swords />Click War</CardTitle>
+                <CardTitle className="font-headline text-2xl flex items-center justify-center gap-2"><Swords />Кликер</CardTitle>
                 <CardDescription className="text-neutral-400">{description}</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-4">
@@ -216,7 +216,7 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
             <CardFooter className="p-4">
                  <Button onClick={onGameEnd} variant="ghost" size="sm" className="w-full text-neutral-400 hover:text-white">
                     <ArrowLeft className="mr-2 h-4 w-4" />
-                    Back to Lobby
+                    Вернуться в лобби
                 </Button>
             </CardFooter>
         </Card>

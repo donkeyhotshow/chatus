@@ -105,6 +105,7 @@ export class MessageService {
 
             snapshot.docs.forEach((docSnapshot) => {
                 const data = docSnapshot.data();
+                const clientMsgId = (data as any)?.clientMessageId;
                 const msg: Message = {
                     id: docSnapshot.id,
                     ...data,
@@ -114,9 +115,11 @@ export class MessageService {
                     seen: (data as any)?.seen ?? false,
                 } as Message;
 
-                const dedupeKey = msg.id || (msg as any).clientMessageId;
-                if (dedupeKey && this.receivedMessageIds.has(dedupeKey)) return;
-                if (dedupeKey) this.receivedMessageIds.add(dedupeKey);
+                // Пропускаем если уже получили это сообщение по doc id
+                if (this.receivedMessageIds.has(msg.id)) return;
+
+                // Добавляем doc id в полученные
+                this.receivedMessageIds.add(msg.id);
 
                 this.pendingNewMessages.push(msg);
             });
@@ -132,9 +135,41 @@ export class MessageService {
         this.newMessagesProcessingScheduled = false;
         if (this.pendingNewMessages.length === 0) return;
 
+        // Создаём Map с дедупликацией по id и clientMessageId
         const messageMap = new Map<string, Message>();
-        this.messages.forEach(m => messageMap.set(m.id, m));
-        this.pendingNewMessages.forEach(m => messageMap.set(m.id, m));
+        const clientIdToMsgId = new Map<string, string>();
+
+        // Сначала обрабатываем существующие сообщения
+        this.messages.forEach(m => {
+            const clientMsgId = (m as any).clientMessageId;
+            messageMap.set(m.id, m);
+            // Для optimistic сообщений id === clientMessageId
+            if (clientMsgId) {
+                clientIdToMsgId.set(clientMsgId, m.id);
+            }
+        });
+
+        // Обрабатываем новые сообщения с проверкой дубликатов
+        this.pendingNewMessages.forEach(m => {
+            const clientMsgId = (m as any).clientMessageId;
+
+            // Проверяем, есть ли optimistic сообщение с таким clientMessageId
+            if (clientMsgId && clientIdToMsgId.has(clientMsgId)) {
+                const optimisticId = clientIdToMsgId.get(clientMsgId)!;
+                // Удаляем optimistic сообщение (его id === clientMsgId)
+                if (messageMap.has(optimisticId)) {
+                    messageMap.delete(optimisticId);
+                }
+                // Обновляем маппинг на новый реальный id
+                clientIdToMsgId.set(clientMsgId, m.id);
+            }
+
+            // Добавляем реальное сообщение из Firestore
+            messageMap.set(m.id, m);
+            if (clientMsgId) {
+                clientIdToMsgId.set(clientMsgId, m.id);
+            }
+        });
 
         this.messages = Array.from(messageMap.values()).sort((a, b) =>
             (a.createdAt?.toMillis?.() ?? 0) - (b.createdAt?.toMillis?.() ?? 0)
@@ -205,6 +240,7 @@ export class MessageService {
         // Optimistic update - показуємо повідомлення одразу
         const optimisticMessage: Message = {
             id: msgId,
+            clientMessageId: msgId, // Добавляем clientMessageId для дедупликации
             ...messageData,
             senderId: this.currentUser.id,
             createdAt: Timestamp.now(),
@@ -212,6 +248,9 @@ export class MessageService {
             delivered: false,
             seen: false,
         } as Message;
+
+        // Добавляем в receivedMessageIds для предотвращения дублирования
+        this.receivedMessageIds.add(msgId);
 
         // Validate message has required fields
         if (!optimisticMessage.user) {
