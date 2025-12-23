@@ -8,7 +8,7 @@ import Image from 'next/image';
 import type { Message, Room, UserProfile } from '@/lib/types';
 import { DoodlePad, MessageSearch } from '@/components/lazy/LazyComponents';
 import { useFirebase } from '@/components/firebase/FirebaseProvider';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useChatService } from '@/hooks/useChatService';
 import { usePresence } from '@/hooks/usePresence';
 import { useToast } from '@/hooks/use-toast';
@@ -423,6 +423,8 @@ export const ChatArea = memo(function ChatArea({
             {imageForView && (
                 <Dialog open={!!imageForView} onOpenChange={() => setImageForView(null)}>
                     <DialogContent className="p-0 border-0 max-w-4xl bg-transparent">
+                        <DialogTitle className="sr-only">Просмотр изображения</DialogTitle>
+                        <DialogDescription className="sr-only">Полноразмерное изображение</DialogDescription>
                         <Image src={imageForView} alt="Full view" width={800} height={600} className="w-full h-auto max-h-[90vh] object-contain rounded-lg" unoptimized />
                     </DialogContent>
                 </Dialog>

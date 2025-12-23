@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { PixelAvatarEditor } from '../avatar/PixelAvatarEditor';
 import { useToast } from '@/hooks/use-toast';
@@ -156,6 +156,7 @@ export function ProfileCreationDialog({ isOpen, onProfileCreate, roomId, isCreat
                 onInteractOutside={(e) => e.preventDefault()}
             >
                 <DialogTitle className="sr-only">Создание профиля</DialogTitle>
+                <DialogDescription className="sr-only">Введите имя и создайте аватар для входа в чат</DialogDescription>
                 <div className="p-6">
                     {/* Header */}
                     <div className="text-center mb-6">
