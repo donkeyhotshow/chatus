@@ -52,21 +52,22 @@ export function useCurrentUser(roomId: string) {
       const initialStoredUser = getUserFromStorage();
       if (initialStoredUser && isMounted) {
         setUser(initialStoredUser);
-        // We still keep isLoading=true to verify with server, 
+        // We still keep isLoading=true to verify with server,
         // but the UI can already show the user profile.
       }
 
-      // Set timeout for loading (5 seconds max)
+      // Set timeout for loading (10 seconds max for slow connections)
       timeoutId = setTimeout(() => {
         if (!isMounted) return;
 
-        logger.warn('[useCurrentUser] User loading timed out, using localStorage fallback');
+        // Only log debug, not warn - this is expected behavior for slow/offline connections
+        logger.debug('[useCurrentUser] User loading timed out, using localStorage fallback');
         const storedUser = getUserFromStorage();
         if (storedUser) {
           setUser(storedUser);
         }
         setIsLoading(false);
-      }, 5000);
+      }, 10000);
 
       // Helper: promise timeout
       const withTimeout = <T>(p: Promise<T>, ms = 7000): Promise<T> => {
