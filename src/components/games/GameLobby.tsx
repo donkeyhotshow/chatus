@@ -23,12 +23,12 @@ type GameDefinition = {
   color: string;
 };
 
-// Мінімальний список ігор - тільки швидкі для двох
+// Список игр для двоих
 const gamesList: GameDefinition[] = [
-  { id: 'tic-tac-toe', name: 'Хрестики-нулики', description: 'Класична гра', icon: Gamepad, color: 'var(--game-primary)' },
-  { id: 'rock-paper-scissors', name: 'Камінь-ножиці-папір', description: 'Хто переможе?', icon: Hand, color: 'var(--game-primary)' },
-  { id: 'dice-roll', name: 'Кості', description: 'Киньте кості', icon: Dices, color: 'var(--game-primary)' },
-  { id: 'click-war', name: 'Клікер', description: 'Хто швидший?', icon: Swords, color: 'var(--game-primary)' },
+  { id: 'tic-tac-toe', name: 'Крестики-нолики', description: 'Классическая игра', icon: Gamepad, color: 'var(--game-primary)' },
+  { id: 'rock-paper-scissors', name: 'Камень-ножницы-бумага', description: 'Кто победит?', icon: Hand, color: 'var(--game-primary)' },
+  { id: 'dice-roll', name: 'Кости', description: 'Бросьте кости', icon: Dices, color: 'var(--game-primary)' },
+  { id: 'click-war', name: 'Кликер', description: 'Кто быстрее?', icon: Swords, color: 'var(--game-primary)' },
 ];
 
 type GameLobbyProps = {
@@ -37,13 +37,13 @@ type GameLobbyProps = {
   otherUser?: UserProfile;
 };
 
-// Мінімалістичний loading
+// Минималистичный loading
 function GameLoading() {
   return (
     <div className="h-full w-full flex items-center justify-center bg-[var(--bg-primary)]">
       <div className="flex flex-col items-center gap-3">
         <div className="w-8 h-8 border-2 border-[var(--border-primary)] border-t-[var(--game-primary)] rounded-full animate-spin" />
-        <span className="text-sm text-[var(--text-muted)]">Завантаження...</span>
+        <span className="text-sm text-[var(--text-muted)]">Загрузка...</span>
       </div>
     </div>
   );
@@ -149,8 +149,8 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
             <Gamepad className="w-5 h-5" style={{ color: 'var(--game-primary)' }} />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Ігри</h2>
-            <p className="text-xs text-[var(--text-muted)]">Виберіть гру для двох</p>
+            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Игры</h2>
+            <p className="text-xs text-[var(--text-muted)]">Выберите игру для двоих</p>
           </div>
         </div>
       </div>
@@ -197,7 +197,7 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
         {/* Hint */}
         <div className="mt-6 p-3 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-primary)]">
           <p className="text-xs text-[var(--text-muted)] text-center">
-            💡 Ігри синхронізуються в реальному часі з вашим співрозмовником
+            💡 Игры синхронизируются в реальном времени с вашим собеседником
           </p>
         </div>
       </div>

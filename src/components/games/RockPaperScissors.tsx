@@ -80,15 +80,15 @@ export function RockPaperScissors({ onGameEnd, updateGameState, gameState, user,
         hapticFeedback('light');
     });
 
-    let description = 'Choose your weapon!';
+    let description = 'Выберите оружие!';
     if (!otherUser) {
-        description = "Waiting for opponent to join...";
+        description = "Ожидание соперника...";
     } else if (gameState.result) {
-        description = `Result: ${gameState.result}`;
+        description = `Результат: ${gameState.result}`;
     } else if (myMove && !otherMove) {
-        description = 'Waiting for opponent...';
+        description = 'Ожидание хода соперника...';
     } else if (!myMove && otherMove) {
-        description = `${otherUser.name} has made a move!`;
+        description = `${otherUser.name} сделал ход!`;
     }
 
     const displayMyMove = selectedChoice || myMove;
@@ -97,7 +97,7 @@ export function RockPaperScissors({ onGameEnd, updateGameState, gameState, user,
         <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-4">
             <Card className="bg-neutral-950/80 border-white/10 backdrop-blur-sm w-full max-w-md">
                 <CardHeader>
-                    <CardTitle className="font-headline text-2xl">Rock, Paper, Scissors</CardTitle>
+                    <CardTitle className="font-headline text-2xl">Камень, ножницы, бумага</CardTitle>
                     <CardDescription className="text-neutral-400">{description}</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-6">
@@ -162,12 +162,12 @@ export function RockPaperScissors({ onGameEnd, updateGameState, gameState, user,
                             onClick={handleReset}
                             className="w-full bg-white text-black hover:bg-neutral-200 transition-all"
                         >
-                            Play Again
+                            Играть снова
                         </Button>
                     )}
                     <Button onClick={onGameEnd} variant="ghost" size="sm" className="w-full text-neutral-400 hover:text-white">
                         <ArrowLeft className="mr-2 h-4 w-4" />
-                        Back to Lobby
+                        Вернуться в лобби
                     </Button>
                 </CardFooter>
             </Card>
