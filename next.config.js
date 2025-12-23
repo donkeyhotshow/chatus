@@ -24,10 +24,6 @@ const nextConfig = {
     minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
-    // Enable lazy loading by default
-    loader: 'default',
-    // Optimize quality for performance
-    quality: 80,
   },
 
   // Headers for security and performance
