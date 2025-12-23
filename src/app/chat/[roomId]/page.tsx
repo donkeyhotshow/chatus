@@ -1,6 +1,10 @@
 
 import { ChatRoom } from '@/components/chat/ChatRoom';
 
+// Force dynamic rendering for chat pages
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
+
 type ChatPageProps = {
   params: Promise<{
     roomId: string;

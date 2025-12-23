@@ -71,9 +71,6 @@ const nextConfig = {
     ]
   },
 
-  // Force dynamic rendering to avoid static generation issues
-  output: 'standalone',
-
   // Disable static generation for problematic pages
   trailingSlash: false,
   generateBuildId: async () => {
