@@ -30,7 +30,7 @@ export function SettingsPanel({ isOpen, onClose, onClearChat }: SettingsPanelPro
                     </Button>
                 </div>
 
-                <div className="p-4 space-y-6">
+                <div className="p-4 space-y-6 overflow-y-auto mobile-scroll-y settings-content max-h-[70vh]">
                     {/* Тема */}
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">

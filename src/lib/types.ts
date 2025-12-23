@@ -79,6 +79,7 @@ export interface CanvasPath {
   velocities?: number[];
   createdAt: Timestamp | Date; // Can be Date for local, or Timestamp for Firestore
   clientStrokeId?: string; // For deduplication on reconnect
+  styleMetadata?: string; // Serialized CanvasStyleMetadata for style preservation
 }
 
 

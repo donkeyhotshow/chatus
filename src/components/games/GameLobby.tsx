@@ -156,7 +156,7 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
       </div>
 
       {/* Games list */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto mobile-scroll-y game-lobby-content p-4">
         <div className="grid grid-cols-2 gap-3">
           {gamesList.map((game) => {
             const isLoading = loadingGameId === game.id;

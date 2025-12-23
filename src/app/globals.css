@@ -632,6 +632,121 @@
     min-width: var(--touch-target);
   }
 
+  /* ===== MOBILE TOUCH TARGETS (Requirements 15.1, 15.2, 15.3) ===== */
+  /* Ensure minimum 44x44px touch targets on mobile viewports */
+  @media (max-width: 767px) {
+    /* All interactive elements must meet minimum touch target size */
+    button,
+    [role="button"],
+    a,
+    input[type="submit"],
+    input[type="button"],
+    input[type="reset"],
+    input[type="checkbox"],
+    input[type="radio"],
+    select,
+    .clickable,
+    .interactive {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    /* Touch target class for explicit sizing */
+    .touch-target {
+      min-width: 44px;
+      min-height: 44px;
+      padding: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Icon buttons need explicit sizing */
+    .btn-icon,
+    .icon-button,
+    [aria-label]:not(input):not(textarea) {
+      min-width: 44px;
+      min-height: 44px;
+    }
+
+    /* Form controls */
+    input,
+    textarea,
+    select {
+      min-height: 44px;
+    }
+
+    /* List items that are clickable */
+    .sidebar-item,
+    .list-item,
+    .menu-item,
+    [role="listitem"][tabindex],
+    [role="option"],
+    [role="menuitem"] {
+      min-height: 44px;
+    }
+
+    /* Navigation elements */
+    nav a,
+    nav button,
+    .nav-item,
+    .tab,
+    [role="tab"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    /* Ensure adequate spacing between touch targets */
+    .touch-spacing {
+      gap: 8px;
+    }
+
+    .touch-spacing > * + * {
+      margin-top: 8px;
+    }
+
+    /* Small buttons get padding to meet minimum size */
+    .btn-sm,
+    .button-small {
+      min-height: 44px;
+      padding-left: 12px;
+      padding-right: 12px;
+    }
+
+    /* Checkbox and radio labels */
+    label:has(input[type="checkbox"]),
+    label:has(input[type="radio"]) {
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      padding: 8px;
+    }
+
+    /* Close buttons and dismiss actions */
+    .close-button,
+    .dismiss,
+    [aria-label="Close"],
+    [aria-label="Dismiss"] {
+      min-width: 44px;
+      min-height: 44px;
+    }
+
+    /* Reaction buttons and emoji pickers */
+    .reaction-button,
+    .emoji-button,
+    .sticker-button {
+      min-width: 44px;
+      min-height: 44px;
+    }
+
+    /* Message actions */
+    .message-action,
+    .message-menu-item {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+
   /* Mobile touch targets - ensure all interactive elements are tappable */
   @media (pointer: coarse) {
     button:not(.btn-icon),
@@ -683,6 +798,104 @@
     .desktop-only { display: none; }
   }
 
+  /* ===== MOBILE VERTICAL SCROLL (Requirements 17.1, 17.2, 17.3) ===== */
+  /* Enable vertical scrolling on mobile devices with smooth momentum */
+  @media (max-width: 767px) {
+    /* Main content containers that need vertical scroll */
+    .mobile-scroll,
+    .scroll-container,
+    .content-scroll {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch; /* iOS smooth momentum scrolling */
+      overscroll-behavior-y: contain; /* Prevent scroll chaining */
+      max-height: 100%;
+    }
+
+    /* Chat message list container */
+    .message-list-container,
+    [data-virtuoso-scroller] {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+    }
+
+    /* Sidebar and navigation scrollable areas */
+    .sidebar-scroll,
+    nav.overflow-y-auto,
+    aside .overflow-y-auto {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+    }
+
+    /* Modal and dialog content */
+    .modal-body,
+    .dialog-content,
+    [role="dialog"] .overflow-y-auto {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      max-height: calc(100vh - 200px);
+      max-height: calc(100dvh - 200px);
+    }
+
+    /* Collaboration space tabs content */
+    .collab-content,
+    .tab-content {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+    }
+
+    /* User list and participants panel */
+    .user-list,
+    .participants-panel {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      max-height: calc(100vh - 120px);
+      max-height: calc(100dvh - 120px);
+    }
+
+    /* Game lobby scrollable content */
+    .game-lobby-content,
+    .game-list {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+    }
+
+    /* Settings panel */
+    .settings-content,
+    .settings-panel {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      max-height: calc(100vh - 100px);
+      max-height: calc(100dvh - 100px);
+    }
+
+    /* Ensure flex containers with overflow work correctly */
+    .flex-1.overflow-y-auto,
+    .flex-1.overflow-auto {
+      min-height: 0; /* Required for flex children to scroll */
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Full height scrollable sections */
+    .h-full.overflow-y-auto,
+    .h-screen.overflow-y-auto {
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+    }
+  }
+
+  /* iOS-specific scroll optimizations */
+  @supports (-webkit-touch-callout: none) {
+    .mobile-scroll,
+    .scroll-container,
+    [data-virtuoso-scroller] {
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
@@ -705,5 +918,44 @@
     background: rgba(10, 10, 10, 0.8);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
+  }
+
+  /* ===== MOBILE SCROLL UTILITY CLASSES ===== */
+  /* Utility class for enabling mobile-optimized vertical scroll */
+  .mobile-scroll-y {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+
+  /* Prevent body scroll when modal is open on mobile */
+  .body-scroll-lock {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Scrollable container with constrained height */
+  .scroll-constrained {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    max-height: 100%;
+  }
+
+  /* Full viewport height scrollable container */
+  .scroll-viewport {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  /* Flex child that can scroll */
+  .flex-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }

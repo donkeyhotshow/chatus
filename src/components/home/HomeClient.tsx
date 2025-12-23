@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Plus, Menu, X, MessageCircle, PenTool, Gamepad2, User, Key, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,12 +8,18 @@ import { Logo } from '@/components/icons/logo';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { isTestMode } from '@/lib/mock-services';
+import { isSafari, safariSafeClick, forceSafariButtonState } from '@/lib/safari-workarounds';
+import { logger } from '@/lib/logger';
 
 export function HomeClient() {
     const [roomCode, setRoomCode] = useState('');
     const [username, setUsername] = useState('');
     const [isConnecting, setIsConnecting] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    // Refs for Safari button state management
+    const createRoomButtonRef = useRef<HTMLButtonElement>(null);
+    const submitButtonRef = useRef<HTMLButtonElement>(null);
 
     const router = useRouter();
     const { toast } = useToast();
@@ -42,38 +48,72 @@ export function HomeClient() {
         setIsConnecting(true);
         localStorage.setItem('chatUsername', trimmedUsername);
 
-        try {
-            router.push(`/chat/${trimmedRoomCode}`);
-        } catch {
-            setIsConnecting(false);
-            toast({
-                title: "Ошибка",
-                description: "Не удалось подключиться",
-                variant: "destructive"
-            });
-        }
-    };
+        // Safari workaround: use setTimeout to ensure state is updated
+        const navigateToRoom = () => {
+            try {
+                router.push(`/chat/${trimmedRoomCode}`);
+            } catch (error) {
+                setIsConnecting(false);
+                logger.error('Failed to navigate to room', error as Error, { roomCode: trimmedRoomCode });
+                toast({
+                    title: "Ошибка",
+                    description: "Не удалось подключиться",
+                    variant: "destructive"
+                });
+            }
+        };
 
-    const handleCreateRoom = () => {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        let result = '';
-        for (let i = 0; i < 6; i++) {
-            result += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        setRoomCode(result);
-
-        if (isTestMode()) {
-            toast({
-                title: "Демо комната создана",
-                description: `Код: ${result} (работает локально)`
-            });
+        if (isSafari()) {
+            setTimeout(navigateToRoom, 10);
         } else {
-            toast({
-                title: "Комната создана",
-                description: `Код: ${result}`
-            });
+            navigateToRoom();
         }
     };
+
+    // Safari-safe create room handler with fallback
+    const handleCreateRoom = useCallback(() => {
+        const createRoom = () => {
+            try {
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+                let result = '';
+                for (let i = 0; i < 6; i++) {
+                    result += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                setRoomCode(result);
+
+                if (isTestMode()) {
+                    toast({
+                        title: "Демо комната создана",
+                        description: `Код: ${result} (работает локально)`
+                    });
+                } else {
+                    toast({
+                        title: "Комната создана",
+                        description: `Код: ${result}`
+                    });
+                }
+            } catch (error) {
+                // Fallback: generate simpler room code if crypto fails
+                logger.warn('Room code generation failed, using fallback', { error });
+                const fallbackCode = Date.now().toString(36).toUpperCase().slice(-6);
+                setRoomCode(fallbackCode);
+                toast({
+                    title: "Комната создана",
+                    description: `Код: ${fallbackCode}`
+                });
+            }
+        };
+
+        // Use Safari-safe click wrapper
+        safariSafeClick(createRoom)();
+    }, [toast]);
+
+    // Safari button state fix effect
+    useEffect(() => {
+        if (isSafari() && submitButtonRef.current) {
+            forceSafariButtonState(submitButtonRef, isFormValid && !isConnecting);
+        }
+    }, [isFormValid, isConnecting]);
 
     return (
         <div className="min-h-screen w-full bg-[var(--bg-primary)]">
@@ -208,6 +248,7 @@ export function HomeClient() {
                                         </label>
                                         <button
                                             type="button"
+                                            ref={createRoomButtonRef}
                                             onClick={handleCreateRoom}
                                             className="text-sm text-[var(--accent-primary)] hover:text-[var(--accent-hover)] transition-colors flex items-center gap-1 py-1 px-2 rounded touch-manipulation"
                                             aria-label="Создать новую комнату"
@@ -247,6 +288,7 @@ export function HomeClient() {
                                 </div>
 
                                 <Button
+                                    ref={submitButtonRef}
                                     type="submit"
                                     disabled={!isFormValid || isConnecting}
                                     isLoading={isConnecting}

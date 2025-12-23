@@ -247,7 +247,7 @@ export function MobileParticipantsPanel({
                         )}
 
                         {/* Список участников */}
-                        <div className="flex-1 overflow-y-auto">
+                        <div className="flex-1 overflow-y-auto mobile-scroll-y participants-panel">
                             {/* Онлайн пользователи */}
                             {onlineUsers.length > 0 && (
                                 <div className="p-4">

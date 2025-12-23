@@ -233,7 +233,7 @@ export function CollaborationSpace({
         </nav>
       )}
 
-      <div className="flex-1 flex flex-col overflow-y-auto">
+      <div className="flex-1 flex flex-col overflow-y-auto mobile-scroll-y">
 
         {/* CANVAS TAB */}
         <div className={`flex-1 flex flex-col h-full ${activeTab === 'canvas' ? 'flex' : 'hidden'}`}>

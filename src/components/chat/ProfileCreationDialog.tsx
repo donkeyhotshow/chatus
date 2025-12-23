@@ -1,12 +1,24 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { PixelAvatarEditor } from '../avatar/PixelAvatarEditor';
 import { useToast } from '@/hooks/use-toast';
 import { User, ArrowRight, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+    validateLoginInput,
+    shouldEnableLoginButton,
+    handleLoginValidationError,
+    MIN_USERNAME_LENGTH,
+    MAX_USERNAME_LENGTH,
+} from '@/lib/login-validator';
+import {
+    validateUsername as validateUsernameLength,
+    getRemainingChars,
+    MAX_USERNAME_LENGTH as USERNAME_MAX_LENGTH,
+} from '@/lib/username-validator';
 
 interface ProfileCreationDialogProps {
     isOpen: boolean;
@@ -15,38 +27,13 @@ interface ProfileCreationDialogProps {
     isCreating: boolean;
 }
 
-const MIN_USERNAME_LENGTH = 2;
-const MAX_USERNAME_LENGTH = 20;
-
-// Валидация имени пользователя
+// Legacy validation wrapper for backward compatibility
 function validateUsername(name: string): { valid: boolean; error?: string } {
-    const trimmed = name.trim();
-
-    if (!trimmed) {
-        return { valid: false, error: 'Введите имя' };
-    }
-
-    if (trimmed.length < MIN_USERNAME_LENGTH) {
-        return { valid: false, error: `Минимум ${MIN_USERNAME_LENGTH} символа` };
-    }
-
-    if (trimmed.length > MAX_USERNAME_LENGTH) {
-        return { valid: false, error: `Максимум ${MAX_USERNAME_LENGTH} символов` };
-    }
-
-    // Проверка на недопустимые символы
-    const invalidChars = /[<>{}[\]\\\/]/;
-    if (invalidChars.test(trimmed)) {
-        return { valid: false, error: 'Недопустимые символы в имени' };
-    }
-
-    // Проверка на только пробелы или спецсимволы
-    const hasLettersOrNumbers = /[a-zA-Zа-яА-ЯёЁ0-9]/;
-    if (!hasLettersOrNumbers.test(trimmed)) {
-        return { valid: false, error: 'Имя должно содержать буквы или цифры' };
-    }
-
-    return { valid: true };
+    const result = validateLoginInput(name);
+    return {
+        valid: result.isValid,
+        error: result.errorMessage,
+    };
 }
 
 export function ProfileCreationDialog({ isOpen, onProfileCreate, roomId, isCreating }: ProfileCreationDialogProps) {
@@ -66,6 +53,17 @@ export function ProfileCreationDialog({ isOpen, onProfileCreate, roomId, isCreat
 
     const [validationError, setValidationError] = useState<string | null>(null);
     const [touched, setTouched] = useState(false);
+    // NEW: Separate state for button enabled - updated immediately on input change
+    const [isButtonEnabled, setIsButtonEnabled] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const savedUsername = localStorage.getItem('chatUsername') || '';
+            return shouldEnableLoginButton(savedUsername);
+        }
+        return false;
+    });
+    // NEW: State for username length warning (BUG-001)
+    const [lengthWarning, setLengthWarning] = useState<string | null>(null);
+    const [remainingChars, setRemainingChars] = useState(USERNAME_MAX_LENGTH);
 
     const { toast } = useToast();
 
@@ -89,13 +87,37 @@ export function ProfileCreationDialog({ isOpen, onProfileCreate, roomId, isCreat
         }
     }, [avatarDataUrl]);
 
-    const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // NEW: Immediate validation on username change with fallback
+    const handleUsernameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         // Ограничиваем длину на уровне ввода
         if (value.length <= MAX_USERNAME_LENGTH + 5) {
             setUsername(value);
+
+            // BUG-001: Update remaining chars counter (Requirements 6.3)
+            const remaining = getRemainingChars(value);
+            setRemainingChars(remaining);
+
+            // BUG-001: Check username length validation (Requirements 6.1, 6.2)
+            const lengthValidation = validateUsernameLength(value);
+            if (lengthValidation.showWarning) {
+                setLengthWarning(lengthValidation.message || null);
+            } else {
+                setLengthWarning(null);
+            }
+
+            // Immediate button state update (Requirements 14.2)
+            // Also block submission if username exceeds length limit (Requirements 6.2)
+            try {
+                const enabled = shouldEnableLoginButton(value) && lengthValidation.isValid;
+                setIsButtonEnabled(enabled);
+            } catch (error) {
+                // Fallback validation on error (Requirements 14.4)
+                const fallbackEnabled = handleLoginValidationError(error, value) && lengthValidation.isValid;
+                setIsButtonEnabled(fallbackEnabled);
+            }
         }
-    };
+    }, []);
 
     const handleBlur = () => {
         setTouched(true);
@@ -103,6 +125,14 @@ export function ProfileCreationDialog({ isOpen, onProfileCreate, roomId, isCreat
 
     const handleSubmit = async () => {
         setTouched(true);
+
+        // BUG-001: Check username length validation first (Requirements 6.2)
+        const lengthValidation = validateUsernameLength(username);
+        if (!lengthValidation.isValid) {
+            setLengthWarning(lengthValidation.message || null);
+            toast({ title: lengthValidation.message || 'Имя слишком длинное', variant: 'destructive' });
+            return;
+        }
 
         const validation = validateUsername(username);
         if (!validation.valid) {
@@ -186,7 +216,7 @@ export function ProfileCreationDialog({ isOpen, onProfileCreate, roomId, isCreat
                                     value={username}
                                     onChange={handleUsernameChange}
                                     onBlur={handleBlur}
-                                    onKeyDown={(e) => e.key === 'Enter' && isValid && handleSubmit()}
+                                    onKeyDown={(e) => e.key === 'Enter' && isButtonEnabled && handleSubmit()}
                                     placeholder="Введите имя"
                                     disabled={isCreating}
                                     maxLength={MAX_USERNAME_LENGTH + 5}
@@ -197,21 +227,23 @@ export function ProfileCreationDialog({ isOpen, onProfileCreate, roomId, isCreat
                                         "transition-colors disabled:opacity-50",
                                         showError
                                             ? "border-[var(--error)] focus:border-[var(--error)]"
-                                            : isValid && touched
+                                            : isButtonEnabled && touched
                                                 ? "border-[var(--success)]"
                                                 : "border-[var(--border-primary)]"
                                     )}
                                     style={{ fontSize: '16px' }}
                                 />
 
-                                {/* Character counter */}
+                                {/* Character counter - shows remaining chars (Requirements 6.3) */}
                                 <span className={cn(
                                     "absolute right-3 top-1/2 -translate-y-1/2 text-xs",
-                                    username.length > MAX_USERNAME_LENGTH
-                                        ? "text-[var(--error)]"
-                                        : "text-[var(--text-muted)]"
+                                    remainingChars < 0
+                                        ? "text-[var(--error)] font-medium"
+                                        : remainingChars <= 5
+                                            ? "text-[var(--warning)]"
+                                            : "text-[var(--text-muted)]"
                                 )}>
-                                    {username.trim().length}/{MAX_USERNAME_LENGTH}
+                                    {remainingChars}
                                 </span>
                             </div>
 
@@ -220,6 +252,14 @@ export function ProfileCreationDialog({ isOpen, onProfileCreate, roomId, isCreat
                                 <p className="text-xs text-[var(--error)] flex items-center gap-1">
                                     <AlertCircle className="w-3 h-3" />
                                     {validationError}
+                                </p>
+                            )}
+
+                            {/* BUG-001: Length warning message (Requirements 6.1) */}
+                            {lengthWarning && (
+                                <p className="text-xs text-[var(--error)] flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3" />
+                                    {lengthWarning}
                                 </p>
                             )}
 
@@ -233,7 +273,7 @@ export function ProfileCreationDialog({ isOpen, onProfileCreate, roomId, isCreat
 
                         <Button
                             onClick={handleSubmit}
-                            disabled={!isValid || isCreating}
+                            disabled={!isButtonEnabled || isCreating}
                             isLoading={isCreating}
                             loadingText="Вход..."
                             className="w-full"

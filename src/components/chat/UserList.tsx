@@ -37,7 +37,7 @@ export function UserList({ users, currentUserId }: UserListProps) {
             </div>
 
             {/* User list */}
-            <div className="flex-1 space-y-1 overflow-y-auto">
+            <div className="flex-1 space-y-1 overflow-y-auto mobile-scroll-y user-list">
                 {users.length > 0 ? (
                     users.map((user) => {
                         const isCurrentUser = user.id === currentUserId;

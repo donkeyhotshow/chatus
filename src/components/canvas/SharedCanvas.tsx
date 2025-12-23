@@ -14,6 +14,11 @@ import { useCollection, useDoc } from '@/hooks/useCollection';
 import { doc } from 'firebase/firestore';
 import { logger } from '@/lib/logger';
 import { FloatingToolbar } from './FloatingToolbar';
+import {
+  serializeStyle,
+  deserializeStyle,
+  createStyleMetadata,
+} from '@/lib/canvas-style';
 
 const NEON_COLORS = [
   '#FFFFFF', '#EF4444', '#F97316', '#F59E0B',
@@ -106,22 +111,38 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
 
     const isErasingPath = path.tool === 'eraser';
     ctx.globalCompositeOperation = isErasingPath ? 'destination-out' : 'source-over';
-    ctx.strokeStyle = isErasingPath ? '#000000' : path.color;
-    ctx.lineWidth = path.strokeWidth;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
+    // Try to restore style from metadata if available
+    let effectiveBrush = path.brush;
+    let effectiveColor = path.color;
+    let effectiveStrokeWidth = path.strokeWidth;
+
+    if (path.styleMetadata) {
+      const deserializeResult = deserializeStyle(path.styleMetadata);
+      if (deserializeResult.success && deserializeResult.style) {
+        const restoredStyle = deserializeResult.style;
+        effectiveBrush = restoredStyle.brushType;
+        effectiveColor = restoredStyle.color;
+        effectiveStrokeWidth = restoredStyle.strokeWidth;
+      }
+    }
+
+    ctx.strokeStyle = isErasingPath ? '#000000' : effectiveColor;
+    ctx.lineWidth = effectiveStrokeWidth;
+
     // Настройка стиля линии
-    if (path.brush === 'dashed') {
-      ctx.setLineDash([path.strokeWidth * 2, path.strokeWidth * 3]);
+    if (effectiveBrush === 'dashed') {
+      ctx.setLineDash([effectiveStrokeWidth * 2, effectiveStrokeWidth * 3]);
     } else {
       ctx.setLineDash([]);
     }
 
     // Неоновый эффект
-    if (!isErasingPath && path.brush === 'neon') {
-      ctx.shadowColor = path.color;
-      ctx.shadowBlur = path.strokeWidth * 1.5;
+    if (!isErasingPath && effectiveBrush === 'neon') {
+      ctx.shadowColor = effectiveColor;
+      ctx.shadowBlur = effectiveStrokeWidth * 1.5;
       ctx.globalAlpha = 0.8;
     } else {
       ctx.shadowColor = 'transparent';
@@ -388,6 +409,10 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     // Generate unique client stroke ID for deduplication
     const clientStrokeId = `stroke_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+    // Create and serialize style metadata for preservation
+    const styleMetadata = createStyleMetadata(currentBrush, stroke, color);
+    const serializedStyle = serializeStyle(styleMetadata);
+
     const finalPathData: Omit<CanvasPath, 'id' | 'createdAt'> = {
       sheetId: sheetId,
       user: user,
@@ -397,6 +422,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
       tool: tool,
       brush: currentBrush,
       clientStrokeId: clientStrokeId, // For deduplication on reconnect
+      styleMetadata: serializedStyle.success ? serializedStyle.data : undefined, // Include serialized style
     };
 
     currentPath.current = [];

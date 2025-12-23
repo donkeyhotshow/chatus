@@ -1,13 +1,18 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Search, MoreVertical } from 'lucide-react';
 import { UserProfile } from '@/lib/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ChatArea } from '../chat/ChatArea';
-import { CollaborationSpace } from '../chat/CollaborationSpace';
 import { MobileNavigation, MobileTab } from './MobileNavigation';
+import { LoadingSpinner } from '@/components/ui/LoadingStates';
+
+// Lazy load heavy CollaborationSpace component (Requirements: 16.3)
+const CollaborationSpace = lazy(() =>
+  import('../chat/CollaborationSpace').then(m => ({ default: m.CollaborationSpace }))
+);
 
 interface ImprovedMobileLayoutProps {
     user: UserProfile;
@@ -189,14 +194,23 @@ export function ImprovedMobileLayout({
                             transition={{ duration: 0.2 }}
                             className="absolute inset-0"
                         >
-                            <CollaborationSpace
-                                isVisible={true}
-                                roomId={roomId}
-                                user={user}
-                                otherUser={otherUser}
-                                allUsers={allUsers}
-                                mobileActiveTab={activeTab}
-                            />
+                            <Suspense fallback={
+                                <div className="flex items-center justify-center h-full">
+                                    <div className="text-center space-y-3">
+                                        <LoadingSpinner size="lg" />
+                                        <p className="text-sm text-neutral-400">Загрузка...</p>
+                                    </div>
+                                </div>
+                            }>
+                                <CollaborationSpace
+                                    isVisible={true}
+                                    roomId={roomId}
+                                    user={user}
+                                    otherUser={otherUser}
+                                    allUsers={allUsers}
+                                    mobileActiveTab={activeTab}
+                                />
+                            </Suspense>
                         </motion.div>
                     )}
                 </AnimatePresence>

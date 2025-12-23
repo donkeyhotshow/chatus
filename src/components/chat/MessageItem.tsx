@@ -42,6 +42,13 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
 
   const handleDoubleClick = () => {
     if (message.id.startsWith('temp_')) return;
+
+    // Double-click reactions are only allowed on own messages (Requirements 3.1, 3.2)
+    if (!isOwn) {
+      // Ignore double-click on other users' messages
+      return;
+    }
+
     const emoji = '🤍';
     onReaction(message.id, emoji);
     setRainEmoji(emoji);

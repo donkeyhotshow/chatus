@@ -1,13 +1,13 @@
 
 "use client";
 
-import { memo, useEffect, useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
+import { memo, useEffect, useRef, forwardRef, useImperativeHandle, useCallback, useMemo } from 'react';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 import MessageItem from './MessageItem';
 import type { Message } from '@/lib/types';
 
 type MessageListProps = {
-  messages: Message[];
+  messages?: Message[] | null;
   isLoading: boolean;
   currentUserId: string;
   onDeleteMessage: (id: string) => void;
@@ -19,6 +19,51 @@ type MessageListProps = {
   onScroll?: (isAtBottom: boolean) => void;
 };
 
+/**
+ * Ensures messages array is always a valid array, handling null/undefined cases.
+ * Generates stable unique keys for messages that lack IDs.
+ *
+ * **Feature: chatus-bug-fixes, Property 10: Null-Safe Message Handling**
+ * **Validates: Requirements 10.1, 10.2, 10.3**
+ */
+export function ensureSafeMessages(messages: Message[] | null | undefined): Message[] {
+  // Handle null/undefined case - return empty array
+  if (messages == null) {
+    return [];
+  }
+
+  // Handle non-array case (defensive)
+  if (!Array.isArray(messages)) {
+    return [];
+  }
+
+  // Filter out any null/undefined items in the array
+  return messages.filter((msg): msg is Message => msg != null);
+}
+
+/**
+ * Generates a stable unique key for a message.
+ * Uses message.id if available, otherwise generates a stable key from message content.
+ *
+ * **Feature: chatus-bug-fixes, Property 11: Unique Key Generation**
+ * **Validates: Requirements 11.1, 11.2, 11.3**
+ */
+export function getMessageKey(message: Message, index: number): string {
+  // Prefer message.id if available
+  if (message?.id) {
+    return message.id;
+  }
+
+  // Generate stable key from message content
+  const timestamp = message?.createdAt && 'seconds' in message.createdAt
+    ? message.createdAt.seconds
+    : Date.now();
+  const senderId = message?.senderId || message?.user?.id || 'unknown';
+  const textHash = message?.text?.slice(0, 10) || '';
+
+  return `msg_${timestamp}_${senderId}_${index}_${textHash}`;
+}
+
 const LoadingSpinner = () => (
   <div className="flex-1 flex flex-col items-center justify-center">
     <div className="animate-pulse flex flex-col items-center gap-4">
@@ -29,7 +74,7 @@ const LoadingSpinner = () => (
 );
 
 const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
-  messages,
+  messages: rawMessages,
   isLoading,
   currentUserId,
   onDeleteMessage,
@@ -41,6 +86,11 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
   onScroll,
 }, ref) => {
   const virtuosoRef = useRef<VirtuosoHandle>(null);
+
+  // Ensure messages is always a valid array (null-safety)
+  // **Feature: chatus-bug-fixes, Property 10: Null-Safe Message Handling**
+  // **Validates: Requirements 10.1, 10.2, 10.3**
+  const messages = useMemo(() => ensureSafeMessages(rawMessages), [rawMessages]);
 
   useImperativeHandle(ref, () => virtuosoRef.current!, []);
 
@@ -59,16 +109,26 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
 
   // Must be before conditional returns to follow React hooks rules
   const renderItem = useCallback((index: number, msg: Message) => {
-    const prevMsg = messages[index - 1];
+    // Null-safety check for message
+    if (!msg) {
+      return null;
+    }
+
+    const prevMsg = messages?.[index - 1];
     const isNewDay = !prevMsg || (() => {
       const currentDate = msg.createdAt && 'seconds' in msg.createdAt
         ? new Date(msg.createdAt.seconds * 1000)
         : new Date();
-      const prevDate = prevMsg.createdAt && 'seconds' in prevMsg.createdAt
+      const prevDate = prevMsg?.createdAt && 'seconds' in prevMsg.createdAt
         ? new Date(prevMsg.createdAt.seconds * 1000)
         : new Date();
       return currentDate.toDateString() !== prevDate.toDateString();
     })();
+
+    // Generate stable unique key for the message
+    // **Feature: chatus-bug-fixes, Property 11: Unique Key Generation**
+    // **Validates: Requirements 11.1, 11.2, 11.3**
+    const messageKey = getMessageKey(msg, index);
 
     return (
       <div className="px-3 sm:px-4 py-1">
@@ -82,7 +142,7 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
           </div>
         )}
         <MessageItem
-          key={msg.id}
+          key={messageKey}
           message={msg}
           isOwn={msg.user?.id === currentUserId || msg.senderId === currentUserId}
           onDelete={onDeleteMessage}
@@ -131,6 +191,7 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
           onScroll?.(atBottom);
         }}
         itemContent={renderItem}
+        computeItemKey={(index, msg) => getMessageKey(msg, index)}
         style={{ height: '100%' }}
         components={{
           Header: hasMoreMessages ? () => (

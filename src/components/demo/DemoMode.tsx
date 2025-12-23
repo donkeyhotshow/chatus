@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, AlertCircle, CheckCircle, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { mockRoomService, mockAI, isTestMode } from '@/lib/mock-services';
 import { Room } from '@/lib/types';
+import { isSafari, safariSafeClick, forceSafariButtonState } from '@/lib/safari-workarounds';
+import { logger } from '@/lib/logger';
 
 export function DemoMode() {
   const [username, setUsername] = useState('');
@@ -17,6 +19,10 @@ export function DemoMode() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [demoRooms, setDemoRooms] = useState<Room[]>([]);
   const [testMessage, setTestMessage] = useState('');
+
+  // Refs for Safari button state management
+  const createRoomButtonRef = useRef<HTMLButtonElement>(null);
+  const submitButtonRef = useRef<HTMLButtonElement>(null);
 
   const router = useRouter();
 
@@ -33,16 +39,36 @@ export function DemoMode() {
     setIsFormValid(isUsernameValid && isRoomCodeValid);
   }, [username, roomCode]);
 
-  const handleCreateRoom = async () => {
+  // Safari button state fix effect
+  useEffect(() => {
+    if (isSafari() && submitButtonRef.current) {
+      forceSafariButtonState(submitButtonRef, isFormValid && !isConnecting);
+    }
+  }, [isFormValid, isConnecting]);
+
+  // Safari-safe create room handler with fallback
+  const handleCreateRoom = useCallback(async () => {
     if (isConnecting) return;
 
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '';
-    for (let i = 0; i < 6; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setRoomCode(result);
-  };
+    const createRoom = () => {
+      try {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let result = '';
+        for (let i = 0; i < 6; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        setRoomCode(result);
+      } catch (error) {
+        // Fallback: generate simpler room code if something fails
+        logger.warn('Room code generation failed, using fallback', { error });
+        const fallbackCode = Date.now().toString(36).toUpperCase().slice(-6);
+        setRoomCode(fallbackCode);
+      }
+    };
+
+    // Use Safari-safe click wrapper
+    safariSafeClick(createRoom)();
+  }, [isConnecting]);
 
   const handleJoinRoom = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,12 +81,22 @@ export function DemoMode() {
     localStorage.setItem('chatUsername', trimmedUsername);
     localStorage.setItem('demoMode', 'true');
 
-    try {
-      // Simulate room creation/joining
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      router.push(`/chat/${trimmedRoomCode}`);
-    } catch {
-      setIsConnecting(false);
+    // Safari workaround: use setTimeout to ensure state is updated
+    const navigateToRoom = async () => {
+      try {
+        // Simulate room creation/joining
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        router.push(`/chat/${trimmedRoomCode}`);
+      } catch (error) {
+        logger.error('Failed to navigate to room', error as Error, { roomCode: trimmedRoomCode });
+        setIsConnecting(false);
+      }
+    };
+
+    if (isSafari()) {
+      setTimeout(navigateToRoom, 10);
+    } else {
+      navigateToRoom();
     }
   };
 
@@ -176,6 +212,7 @@ export function DemoMode() {
                   </label>
                   <button
                     type="button"
+                    ref={createRoomButtonRef}
                     onClick={handleCreateRoom}
                     className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
                   >
@@ -194,6 +231,7 @@ export function DemoMode() {
               </div>
 
               <Button
+                ref={submitButtonRef}
                 type="submit"
                 disabled={!isFormValid || isConnecting}
                 className="w-full"

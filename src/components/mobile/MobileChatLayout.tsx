@@ -1,14 +1,19 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, X, Menu } from 'lucide-react';
 import { UserProfile } from '@/lib/types';
 import { ChatArea } from '../chat/ChatArea';
-import { CollaborationSpace } from '../chat/CollaborationSpace';
 import { MobileNavigation, MobileTab } from './MobileNavigation';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { LoadingSpinner } from '@/components/ui/LoadingStates';
+
+// Lazy load heavy CollaborationSpace component (Requirements: 16.3)
+const CollaborationSpace = lazy(() =>
+  import('../chat/CollaborationSpace').then(m => ({ default: m.CollaborationSpace }))
+);
 
 interface MobileChatLayoutProps {
     user: UserProfile;
@@ -83,14 +88,23 @@ export function MobileChatLayout({
                 </div>
                 {isCollabSpaceVisible && (
                     <div className="w-96">
-                        <CollaborationSpace
-                            isVisible={isCollabSpaceVisible}
-                            roomId={roomId}
-                            user={user}
-                            otherUser={otherUser}
-                            allUsers={allUsers}
-                            mobileActiveTab={activeTab === 'more' ? 'chat' : activeTab}
-                        />
+                        <Suspense fallback={
+                            <div className="flex items-center justify-center h-full">
+                                <div className="text-center space-y-3">
+                                    <LoadingSpinner size="lg" />
+                                    <p className="text-sm text-neutral-400">Загрузка...</p>
+                                </div>
+                            </div>
+                        }>
+                            <CollaborationSpace
+                                isVisible={isCollabSpaceVisible}
+                                roomId={roomId}
+                                user={user}
+                                otherUser={otherUser}
+                                allUsers={allUsers}
+                                mobileActiveTab={activeTab === 'more' ? 'chat' : activeTab}
+                            />
+                        </Suspense>
                     </div>
                 )}
             </div>
@@ -148,7 +162,7 @@ export function MobileChatLayout({
             <div className="flex-1 relative overflow-hidden">
                 <motion.div
                     className={cn(
-                        "absolute inset-0 bg-black",
+                        "absolute inset-0 bg-black overflow-y-auto mobile-scroll-y",
                         activeTab === 'chat' ? 'z-20' : 'z-10'
                     )}
                     animate={{
@@ -167,20 +181,29 @@ export function MobileChatLayout({
                 <AnimatePresence>
                     {isCollabSpaceVisible && (
                         <motion.div
-                            className="absolute inset-0 z-30 bg-black"
+                            className="absolute inset-0 z-30 bg-black overflow-y-auto mobile-scroll-y"
                             initial={{ x: '100%' }}
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
                             transition={{ type: "spring", stiffness: 300, damping: 30 }}
                         >
-                            <CollaborationSpace
-                                isVisible={true}
-                                roomId={roomId}
-                                user={user}
-                                otherUser={otherUser}
-                                allUsers={allUsers}
-                                mobileActiveTab={activeTab === 'more' ? 'chat' : activeTab}
-                            />
+                            <Suspense fallback={
+                                <div className="flex items-center justify-center h-full">
+                                    <div className="text-center space-y-3">
+                                        <LoadingSpinner size="lg" />
+                                        <p className="text-sm text-neutral-400">Загрузка...</p>
+                                    </div>
+                                </div>
+                            }>
+                                <CollaborationSpace
+                                    isVisible={true}
+                                    roomId={roomId}
+                                    user={user}
+                                    otherUser={otherUser}
+                                    allUsers={allUsers}
+                                    mobileActiveTab={activeTab === 'more' ? 'chat' : activeTab}
+                                />
+                            </Suspense>
                         </motion.div>
                     )}
                 </AnimatePresence>

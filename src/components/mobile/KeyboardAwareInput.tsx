@@ -2,6 +2,18 @@
 
 import { useEffect, useRef, useState, forwardRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
+import {
+    type ViewportState,
+    createInitialViewportState,
+    updateViewportState,
+    calculateViewportAdjustment,
+    scrollInputIntoView,
+    restoreViewport,
+    getDeviceOrientation,
+    isAndroid,
+    DEFAULT_KEYBOARD_THRESHOLD_PORTRAIT,
+    DEFAULT_KEYBOARD_THRESHOLD_LANDSCAPE,
+} from '@/lib/viewport-manager';
 
 interface KeyboardAwareInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     onKeyboardShow?: () => void;
@@ -9,17 +21,9 @@ interface KeyboardAwareInputProps extends React.InputHTMLAttributes<HTMLInputEle
     stickyOnKeyboard?: boolean;
 }
 
-// Определяем ориентацию экрана
+// Определяем ориентацию экрана (using viewport-manager)
 function getOrientation(): 'portrait' | 'landscape' {
-    if (typeof window === 'undefined') return 'portrait';
-
-    // Используем screen.orientation если доступен
-    if (screen.orientation) {
-        return screen.orientation.type.includes('landscape') ? 'landscape' : 'portrait';
-    }
-
-    // Fallback на сравнение размеров
-    return window.innerWidth > window.innerHeight ? 'landscape' : 'portrait';
+    return getDeviceOrientation();
 }
 
 export const KeyboardAwareInput = forwardRef<HTMLInputElement, KeyboardAwareInputProps>(
@@ -27,12 +31,12 @@ export const KeyboardAwareInput = forwardRef<HTMLInputElement, KeyboardAwareInpu
         const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
         const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
         const inputRef = useRef<HTMLInputElement | null>(null);
-        const initialHeightRef = useRef<number>(0);
+        const viewportStateRef = useRef<ViewportState>(createInitialViewportState());
         const containerRef = useRef<HTMLDivElement | null>(null);
 
         // Обновляем начальную высоту при изменении ориентации
         const updateInitialHeight = useCallback(() => {
-            initialHeightRef.current = window.visualViewport?.height || window.innerHeight;
+            viewportStateRef.current = createInitialViewportState();
             setOrientation(getOrientation());
         }, []);
 
@@ -40,40 +44,36 @@ export const KeyboardAwareInput = forwardRef<HTMLInputElement, KeyboardAwareInpu
             updateInitialHeight();
 
             const handleViewportChange = () => {
-                const currentHeight = window.visualViewport?.height || window.innerHeight;
-                const heightDifference = initialHeightRef.current - currentHeight;
+                const previousState = viewportStateRef.current;
                 const currentOrientation = getOrientation();
 
                 // В ландшафтном режиме порог меньше, т.к. клавиатура занимает больше места
-                const threshold = currentOrientation === 'landscape' ? 100 : 150;
-                const keyboardVisible = heightDifference > threshold;
+                const threshold = currentOrientation === 'landscape'
+                    ? DEFAULT_KEYBOARD_THRESHOLD_LANDSCAPE
+                    : DEFAULT_KEYBOARD_THRESHOLD_PORTRAIT;
 
-                if (keyboardVisible !== isKeyboardVisible) {
-                    setIsKeyboardVisible(keyboardVisible);
+                // Update viewport state using ViewportManager
+                const newState = updateViewportState(previousState, { keyboardThreshold: threshold });
+                viewportStateRef.current = newState;
 
-                    if (keyboardVisible) {
+                if (newState.isKeyboardVisible !== isKeyboardVisible) {
+                    setIsKeyboardVisible(newState.isKeyboardVisible);
+
+                    if (newState.isKeyboardVisible) {
                         onKeyboardShow?.();
 
-                        // В ландшафтном режиме особая обработка
+                        // Use ViewportManager's scrollInputIntoView for Android
                         if (stickyOnKeyboard && inputRef.current) {
-                            setTimeout(() => {
-                                if (currentOrientation === 'landscape') {
-                                    // В ландшафте скроллим к верху input
-                                    inputRef.current?.scrollIntoView({
-                                        behavior: 'smooth',
-                                        block: 'start',
-                                        inline: 'nearest'
-                                    });
-                                } else {
-                                    inputRef.current?.scrollIntoView({
-                                        behavior: 'smooth',
-                                        block: 'center'
-                                    });
-                                }
-                            }, 100);
+                            scrollInputIntoView(
+                                inputRef.current,
+                                newState.keyboardHeight,
+                                { smoothScroll: true }
+                            );
                         }
                     } else {
                         onKeyboardHide?.();
+                        // Restore viewport state
+                        viewportStateRef.current = restoreViewport(newState);
                     }
                 }
 
@@ -83,6 +83,7 @@ export const KeyboardAwareInput = forwardRef<HTMLInputElement, KeyboardAwareInpu
             const handleOrientationChange = () => {
                 // При смене ориентации сбрасываем состояние клавиатуры
                 setIsKeyboardVisible(false);
+                viewportStateRef.current = restoreViewport(viewportStateRef.current);
                 // Даём время на перерисовку
                 setTimeout(updateInitialHeight, 300);
             };
@@ -114,9 +115,20 @@ export const KeyboardAwareInput = forwardRef<HTMLInputElement, KeyboardAwareInpu
             };
         }, [isKeyboardVisible, onKeyboardShow, onKeyboardHide, stickyOnKeyboard, updateInitialHeight]);
 
-        // Обработка фокуса для ландшафтного режима
+        // Обработка фокуса для Android и ландшафтного режима
         const handleFocus = useCallback(() => {
-            if (orientation === 'landscape' && inputRef.current) {
+            const currentState = viewportStateRef.current;
+
+            // Android-specific: scroll input into view on focus
+            if (isAndroid() && inputRef.current) {
+                setTimeout(() => {
+                    scrollInputIntoView(
+                        inputRef.current,
+                        currentState.keyboardHeight,
+                        { smoothScroll: true }
+                    );
+                }, 300);
+            } else if (orientation === 'landscape' && inputRef.current) {
                 // В ландшафте при фокусе сразу скроллим
                 setTimeout(() => {
                     inputRef.current?.scrollIntoView({
@@ -180,36 +192,41 @@ export function useKeyboardAware() {
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
     const [keyboardHeight, setKeyboardHeight] = useState(0);
     const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
-    const initialHeightRef = useRef<number>(
+    const viewportStateRef = useRef<ViewportState>(
         typeof window !== 'undefined'
-            ? (window.visualViewport?.height || window.innerHeight)
-            : 0
+            ? createInitialViewportState()
+            : { originalHeight: 0, currentHeight: 0, keyboardHeight: 0, isKeyboardVisible: false }
     );
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
         const updateInitialHeight = () => {
-            initialHeightRef.current = window.visualViewport?.height || window.innerHeight;
+            viewportStateRef.current = createInitialViewportState();
             setOrientation(getOrientation());
         };
 
         const handleViewportChange = () => {
-            const currentHeight = window.visualViewport?.height || window.innerHeight;
-            const heightDifference = initialHeightRef.current - currentHeight;
             const currentOrientation = getOrientation();
 
             // Адаптивный порог в зависимости от ориентации
-            const threshold = currentOrientation === 'landscape' ? 80 : 150;
+            const threshold = currentOrientation === 'landscape'
+                ? DEFAULT_KEYBOARD_THRESHOLD_LANDSCAPE
+                : DEFAULT_KEYBOARD_THRESHOLD_PORTRAIT;
 
-            setKeyboardHeight(Math.max(0, heightDifference));
-            setIsKeyboardVisible(heightDifference > threshold);
+            // Update viewport state using ViewportManager
+            const newState = updateViewportState(viewportStateRef.current, { keyboardThreshold: threshold });
+            viewportStateRef.current = newState;
+
+            setKeyboardHeight(newState.keyboardHeight);
+            setIsKeyboardVisible(newState.isKeyboardVisible);
             setOrientation(currentOrientation);
         };
 
         const handleOrientationChange = () => {
             setIsKeyboardVisible(false);
             setKeyboardHeight(0);
+            viewportStateRef.current = restoreViewport(viewportStateRef.current);
             setTimeout(updateInitialHeight, 300);
         };
 
@@ -233,7 +250,11 @@ export function useKeyboardAware() {
         keyboardHeight,
         orientation,
         isLandscape: orientation === 'landscape',
-        initialViewportHeight: initialHeightRef.current,
+        initialViewportHeight: viewportStateRef.current.originalHeight,
+        // Expose ViewportManager functions for advanced usage
+        calculateAdjustment: () => calculateViewportAdjustment(viewportStateRef.current),
+        scrollInputIntoView: (element: HTMLElement | null) =>
+            scrollInputIntoView(element, viewportStateRef.current.keyboardHeight),
     };
 }
 
@@ -249,7 +270,10 @@ export function KeyboardAwareContainer({
     adjustmentOffset?: number;
     stickToBottom?: boolean;
 }) {
-    const { isKeyboardVisible, keyboardHeight, isLandscape } = useKeyboardAware();
+    const { isKeyboardVisible, keyboardHeight, isLandscape, calculateAdjustment } = useKeyboardAware();
+
+    // Calculate viewport adjustment using ViewportManager
+    const viewportAdjustment = calculateAdjustment();
 
     // В ландшафтном режиме используем другую стратегию
     const landscapeStyles = isKeyboardVisible && isLandscape ? {
@@ -265,8 +289,9 @@ export function KeyboardAwareContainer({
         overflowY: 'auto' as const,
     } : {};
 
+    // Use ViewportManager's calculated adjustment for portrait mode
     const portraitStyles = isKeyboardVisible && !isLandscape ? {
-        transform: `translateY(-${Math.max(0, keyboardHeight - adjustmentOffset)}px)`,
+        transform: `translateY(-${Math.max(0, viewportAdjustment - adjustmentOffset)}px)`,
     } : {};
 
     return (

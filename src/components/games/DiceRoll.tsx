@@ -1,12 +1,14 @@
 "use client";
 
 import { GameState, UserProfile } from "@/lib/types";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "../ui/button";
 import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Dices, ArrowLeft } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useActionGuard, hapticFeedback } from "@/lib/game-utils";
+import { AnimationQueue, createAnimationQueue } from "@/lib/animation-queue";
+import { logger } from "@/lib/logger";
 
 type DiceRollProps = {
     onGameEnd: () => void;
@@ -28,43 +30,94 @@ const diceIcons = [
 export function DiceRoll({ onGameEnd, updateGameState, gameState, user, otherUser }: DiceRollProps) {
     const [isRolling, setIsRolling] = useState(false);
     const [rollingValue, setRollingValue] = useState<number | null>(null);
+    const animationQueueRef = useRef<AnimationQueue | null>(null);
+    const rollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     const myRoll = gameState.diceRoll?.[user.id];
     const otherRoll = otherUser ? gameState.diceRoll?.[otherUser.id] : undefined;
     const { guard } = useActionGuard();
 
-    // Animation effect
+    // Initialize animation queue
     useEffect(() => {
-        if (!isRolling) return;
+        animationQueueRef.current = createAnimationQueue({ maxTimeout: 2000 });
+        return () => {
+            animationQueueRef.current?.clear();
+            if (rollingIntervalRef.current) {
+                clearInterval(rollingIntervalRef.current);
+            }
+        };
+    }, []);
 
-        const interval = setInterval(() => {
+    // Animation effect for rolling dice visual
+    useEffect(() => {
+        if (!isRolling) {
+            if (rollingIntervalRef.current) {
+                clearInterval(rollingIntervalRef.current);
+                rollingIntervalRef.current = null;
+            }
+            return;
+        }
+
+        rollingIntervalRef.current = setInterval(() => {
             setRollingValue(Math.floor(Math.random() * 6) + 1);
         }, 100);
 
-        return () => clearInterval(interval);
+        return () => {
+            if (rollingIntervalRef.current) {
+                clearInterval(rollingIntervalRef.current);
+                rollingIntervalRef.current = null;
+            }
+        };
     }, [isRolling]);
 
     const handleRoll = guard(() => {
         if (!otherUser || myRoll || isRolling) return;
 
+        const animationQueue = animationQueueRef.current;
+        if (!animationQueue) {
+            logger.error('Animation queue not initialized');
+            return;
+        }
+
         setIsRolling(true);
         hapticFeedback('medium');
 
-        // Animation 800ms
-        setTimeout(() => {
-            const result = Math.floor(Math.random() * 6) + 1;
+        // Generate result upfront for graceful degradation
+        const result = Math.floor(Math.random() * 6) + 1;
+
+        const completeRoll = () => {
             const newRolls = {
                 ...gameState.diceRoll,
                 [user.id]: result
-            }
+            };
             updateGameState({ diceRoll: newRolls });
             setIsRolling(false);
             setRollingValue(null);
             hapticFeedback('heavy');
-        }, 800);
+        };
+
+        // Use AnimationQueue with timeout guarantee (max 2000ms)
+        const enqueued = animationQueue.enqueue({
+            id: `dice-roll-${user.id}`,
+            duration: 800,
+            onComplete: completeRoll,
+            onError: (error) => {
+                // Graceful degradation: show result directly on error
+                logger.warn('Dice animation failed, showing result directly', { error: error.message });
+                completeRoll();
+            }
+        });
+
+        // Fallback if enqueue fails
+        if (!enqueued) {
+            logger.warn('Failed to enqueue dice animation, completing immediately');
+            completeRoll();
+        }
     });
 
     const handleReset = guard(() => {
+        // Cancel any pending animations
+        animationQueueRef.current?.cancel(`dice-roll-${user.id}`);
         updateGameState({ diceRoll: {} });
         setIsRolling(false);
         setRollingValue(null);

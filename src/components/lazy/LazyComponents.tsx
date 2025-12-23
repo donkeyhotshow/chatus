@@ -1,5 +1,5 @@
 /**
- * Lazy-loaded components for bundle optimization
+ * Lazy-loaded components for bundle optimization (Requirements: 16.3)
  * These components are loaded only when needed to reduce initial bundle size
  */
 
@@ -15,6 +15,12 @@ export const LazyRockPaperScissors = lazy(() => import('@/components/games/RockP
 export const LazyCollaborationSpace = lazy(() => import('@/components/chat/CollaborationSpace').then(m => ({ default: m.CollaborationSpace })));
 export const LazySharedCanvas = lazy(() => import('@/components/canvas/SharedCanvas').then(m => ({ default: m.SharedCanvas })));
 export const LazyMessageSearch = lazy(() => import('@/components/chat/MessageSearch').then(m => ({ default: m.MessageSearch })));
+
+// Additional game components for lazy loading
+export const LazyClickWar = lazy(() => import('@/components/games/ClickWar').then(m => ({ default: m.ClickWar })));
+export const LazyDiceRoll = lazy(() => import('@/components/games/DiceRoll').then(m => ({ default: m.DiceRoll })));
+export const LazyPhysicsWorld = lazy(() => import('@/components/games/PhysicsWorld').then(m => ({ default: m.PhysicsWorld })));
+export const LazyTowerDefense = lazy(() => import('@/components/games/TowerDefense').then(m => ({ default: m.TowerDefense })));
 
 // Wrapper components with loading states
 interface LazyWrapperProps {

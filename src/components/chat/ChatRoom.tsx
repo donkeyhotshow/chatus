@@ -28,6 +28,7 @@ import { useSwipe } from '@/hooks/use-swipe';
 import { OnboardingTour, useOnboarding } from './OnboardingTour';
 import { ChatSkeleton } from './ChatSkeleton';
 import { AnimatedTabTransition } from '../layout/AnimatedTabTransition';
+import { isSafari, safariSafeClick } from '@/lib/safari-workarounds';
 
 // Lazy load heavy components
 const CollaborationSpace = lazy(() => import('./CollaborationSpace').then(m => ({ default: m.CollaborationSpace })));
@@ -41,6 +42,11 @@ function LoadingScreen({ text, showSkeleton = false }: { text: string; showSkele
         return () => clearTimeout(timer);
     }, []);
 
+    // Safari-safe reload handler
+    const handleReload = safariSafeClick(() => {
+        window.location.reload();
+    }, 10);
+
     if (showFallback) {
         return (
             <div className="flex h-full w-full items-center justify-center bg-[var(--bg-primary)] p-6">
@@ -49,8 +55,8 @@ function LoadingScreen({ text, showSkeleton = false }: { text: string; showSkele
                         Загрузка занимает больше времени, чем обычно
                     </p>
                     <button
-                        onClick={() => window.location.reload()}
-                        className="w-full py-3 bg-[var(--accent-primary)] text-[var(--accent-contrast)] font-medium rounded-lg hover:bg-[var(--accent-hover)] transition-colors"
+                        onClick={handleReload}
+                        className="w-full py-3 bg-[var(--accent-primary)] text-[var(--accent-contrast)] font-medium rounded-lg hover:bg-[var(--accent-hover)] transition-colors touch-manipulation"
                     >
                         Перезагрузить
                     </button>
@@ -76,6 +82,9 @@ function LoadingScreen({ text, showSkeleton = false }: { text: string; showSkele
 
 // Экран ошибки
 function ErrorScreen({ onRetry }: { onRetry: () => void }) {
+    // Safari-safe retry handler
+    const handleRetry = safariSafeClick(onRetry, 10);
+
     return (
         <div className="flex h-full w-full items-center justify-center bg-[var(--bg-primary)] p-6">
             <div className="max-w-sm text-center space-y-4">
@@ -89,8 +98,8 @@ function ErrorScreen({ onRetry }: { onRetry: () => void }) {
                     Не удалось подключиться к серверу
                 </p>
                 <button
-                    onClick={onRetry}
-                    className="w-full py-3 bg-[var(--accent-primary)] text-[var(--accent-contrast)] font-medium rounded-lg hover:bg-[var(--accent-hover)] transition-colors"
+                    onClick={handleRetry}
+                    className="w-full py-3 bg-[var(--accent-primary)] text-[var(--accent-contrast)] font-medium rounded-lg hover:bg-[var(--accent-hover)] transition-colors touch-manipulation"
                 >
                     Попробовать снова
                 </button>
@@ -216,8 +225,17 @@ export function ChatRoom({ roomId }: { roomId: string }) {
     };
 
     const handleLogout = useCallback(() => {
-        localStorage.removeItem('chatUsername');
-        router.push('/');
+        const performLogout = () => {
+            localStorage.removeItem('chatUsername');
+            router.push('/');
+        };
+
+        // Safari workaround: use setTimeout to ensure state is updated
+        if (isSafari()) {
+            setTimeout(performLogout, 10);
+        } else {
+            performLogout();
+        }
     }, [router]);
 
     const handleSettings = useCallback(() => {

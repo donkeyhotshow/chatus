@@ -183,7 +183,7 @@ export function MobileSettingsPanel({
                         </div>
 
                         {/* Содержимое */}
-                        <div className="flex-1 overflow-y-auto">
+                        <div className="flex-1 overflow-y-auto mobile-scroll-y settings-panel">
                             {/* Уведомления */}
                             <div className="p-4 border-b border-white/10">
                                 <h3 className="text-sm font-medium text-neutral-400 mb-4 uppercase tracking-wide">

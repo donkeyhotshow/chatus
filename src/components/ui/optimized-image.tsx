@@ -16,10 +16,15 @@ interface OptimizedImageProps {
     sizes?: string
     fill?: boolean
     quality?: number
+    loading?: 'lazy' | 'eager'
     onLoad?: () => void
     onError?: () => void
 }
 
+/**
+ * OptimizedImage component with lazy loading by default (Requirements: 16.4)
+ * Uses Next.js Image component with AVIF/WebP optimization
+ */
 export function OptimizedImage({
     src,
     alt,
@@ -31,7 +36,8 @@ export function OptimizedImage({
     blurDataURL,
     sizes = '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw',
     fill = false,
-    quality = 85,
+    quality = 80, // Optimized quality for performance
+    loading = 'lazy', // Lazy loading by default
     onLoad,
     onError,
 }: OptimizedImageProps) {
@@ -82,6 +88,7 @@ export function OptimizedImage({
                 blurDataURL={blurDataURL}
                 sizes={sizes}
                 quality={quality}
+                loading={priority ? 'eager' : loading}
                 onLoad={handleLoad}
                 onError={handleError}
                 className={cn(

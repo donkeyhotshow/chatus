@@ -12,11 +12,9 @@
     "type-check": "tsc --noEmit",
     "preview": "next build && next start",
     "test": "vitest run",
-
     "test:unit": "vitest run --reporter=verbose",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
-
     "test:clean": "vitest run --no-coverage --reporter=basic",
     "analyze": "cross-env ANALYZE=true next build",
     "analyze:server": "cross-env BUNDLE_ANALYZE=server next build",
@@ -97,6 +95,7 @@
     "dotenv": "^17.2.3",
     "eslint": "^8.57.1",
     "eslint-config-next": "^14.2.15",
+    "fast-check": "^4.5.2",
     "globals": "^16.5.0",
     "jsdom": "^25.0.1",
     "postcss": "^8.4.47",

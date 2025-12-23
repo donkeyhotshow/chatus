@@ -7,13 +7,15 @@ import { Message, UserProfile } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import {
+    sanitizeCyrillicInput,
+    escapeRegexSafe,
+    normalizeUnicode,
+    safeSearch,
+    highlightMatches,
+} from '@/lib/safe-string';
 
-// Helper function to escape regex special characters
-function escapeRegex(str: string): string {
-    return str.replace(/[.*+?^${}()|[\]\\]/g, (match) => '\\' + match);
-}
-
-// Helper function to sanitize HTML to prevent XSS
+// Helper function to sanitize HTML to prevent XSS (kept for backward compatibility)
 function sanitizeHtml(str: string): string {
     return str
         .replace(/&/g, '&amp;')
@@ -65,49 +67,66 @@ export function ChatSearch({
         if (!query.trim()) return [];
 
         const results: SearchResult[] = [];
-        const searchTerm = query.toLowerCase().trim();
 
-        messages.forEach(message => {
-            const user = users.find(u => u.id === message.user?.id) || null;
-            let matchType: 'content' | 'username' | 'date' = 'content';
-            let highlightedText = message.text;
+        // Sanitize and validate the search query using SafeStringUtils
+        const sanitizedQuery = sanitizeCyrillicInput(query);
+        if (!sanitizedQuery.isValid) {
+            // Return empty results for invalid queries (graceful degradation)
+            return [];
+        }
 
-            // Search in message content
-            if (searchType === 'all' || searchType === 'content') {
-                if (message.text.toLowerCase().includes(searchTerm)) {
-                    const escapedSearchTerm = escapeRegex(searchTerm);
-                    const regex = new RegExp(`(${escapedSearchTerm})`, 'gi');
-                    const sanitizedText = sanitizeHtml(message.text);
-                    highlightedText = sanitizedText.replace(regex, '<mark>$1</mark>');
-                    matchType = 'content';
-                    results.push({ message, user, highlightedText, matchType });
-                    return;
-                }
-            }
+        const searchTerm = normalizeUnicode(sanitizedQuery.sanitized).toLowerCase().trim();
+        if (!searchTerm) return [];
 
-            // Search in username
-            if ((searchType === 'all' || searchType === 'user') && user) {
-                if (user.name.toLowerCase().includes(searchTerm)) {
-                    matchType = 'username';
-                    results.push({ message, user, highlightedText, matchType });
-                    return;
-                }
-            }
-
-            // Search in date
-            if (searchType === 'all' || searchType === 'date') {
+        try {
+            messages.forEach(message => {
                 try {
-                    const dateObj = getMessageDate(message.createdAt);
-                    const messageDate = format(dateObj, 'dd.MM.yyyy HH:mm', { locale: ru });
-                    if (messageDate.includes(searchTerm)) {
-                        matchType = 'date';
-                        results.push({ message, user, highlightedText, matchType });
+                    const user = users.find(u => u.id === message.user?.id) || null;
+                    let matchType: 'content' | 'username' | 'date' = 'content';
+                    let highlightedText = message.text || '';
+
+                    // Search in message content using safe search
+                    if (searchType === 'all' || searchType === 'content') {
+                        if (safeSearch(message.text || '', searchTerm)) {
+                            // Use safe highlighting with Cyrillic support
+                            highlightedText = highlightMatches(message.text || '', searchTerm);
+                            matchType = 'content';
+                            results.push({ message, user, highlightedText, matchType });
+                            return;
+                        }
+                    }
+
+                    // Search in username using safe search
+                    if ((searchType === 'all' || searchType === 'user') && user) {
+                        if (safeSearch(user.name || '', searchTerm)) {
+                            matchType = 'username';
+                            results.push({ message, user, highlightedText: sanitizeHtml(highlightedText), matchType });
+                            return;
+                        }
+                    }
+
+                    // Search in date
+                    if (searchType === 'all' || searchType === 'date') {
+                        try {
+                            const dateObj = getMessageDate(message.createdAt);
+                            const messageDate = format(dateObj, 'dd.MM.yyyy HH:mm', { locale: ru });
+                            if (safeSearch(messageDate, searchTerm)) {
+                                matchType = 'date';
+                                results.push({ message, user, highlightedText: sanitizeHtml(highlightedText), matchType });
+                            }
+                        } catch {
+                            // Skip date search if date parsing fails
+                        }
                     }
                 } catch {
-                    // Skip date search if date parsing fails
+                    // Skip this message if processing fails (graceful degradation)
                 }
-            }
-        });
+            });
+        } catch (error) {
+            // Log error but don't crash - return empty results
+            console.error('Ошибка поиска:', error);
+            return [];
+        }
 
         return results.reverse();
     }, [messages, users, query, searchType]);
