@@ -1,5 +1,3 @@
-import { ChatRoomWrapper } from './ChatRoomWrapper';
-
 export const dynamic = 'force-dynamic';
 
 export default async function ChatPage({
@@ -9,5 +7,5 @@ export default async function ChatPage({
 }) {
   const { room } = await params;
 
-  return <ChatRoomWrapper roomId={room} />;
+  return <div>Chat room: {room}</div>;
 }
