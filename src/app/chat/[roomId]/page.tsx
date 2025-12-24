@@ -1,14 +1,9 @@
 import { ChatRoomWrapper } from './ChatRoomWrapper';
 import { notFound } from 'next/navigation';
 
+// Force dynamic rendering - no static generation
 export const dynamic = 'force-dynamic';
 export const dynamicParams = true;
-export const runtime = 'nodejs';
-
-// Allow any roomId at runtime
-export async function generateStaticParams() {
-  return [];
-}
 
 interface PageProps {
   params: Promise<{ roomId: string }>;

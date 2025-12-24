@@ -26,16 +26,6 @@ const nextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
-  // Rewrites for dynamic routes
-  async rewrites() {
-    return [
-      {
-        source: '/chat/:roomId',
-        destination: '/chat/:roomId',
-      },
-    ];
-  },
-
   // Headers for security and performance
   async headers() {
     return [
