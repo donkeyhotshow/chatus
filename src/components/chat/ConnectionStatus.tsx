@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { Wifi, WifiOff, RefreshCw, AlertTriangle, Loader2 } from 'lucide-react';
+import { Wifi, WifiOff, RefreshCw, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getConnectionManager, ConnectionState, ConnectionStatus as ConnStatus } from '@/lib/connection-manager';
+import { getConnectionManager, ConnectionState } from '@/lib/connection-manager';
 
 interface ConnectionStatusProps {
   className?: string;
@@ -22,20 +22,29 @@ export function ConnectionStatus({ className }: ConnectionStatusProps) {
   });
   const [showBanner, setShowBanner] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [showSuccessBanner, setShowSuccessBanner] = useState(false);
 
   useEffect(() => {
     const manager = getConnectionManager();
     if (!manager) return;
 
     const unsubscribe = manager.subscribe((state) => {
+      const wasOffline = connectionState.status !== 'online';
       setConnectionState(state);
 
       // Show banner for non-online states
       if (state.status !== 'online') {
         setShowBanner(true);
-      } else if (isInitialized) {
-        // Hide banner after a delay when back online
-        setTimeout(() => setShowBanner(false), 3000);
+        setShowSuccessBanner(false);
+      } else if (isInitialized && wasOffline) {
+        // Show success banner when reconnected
+        setShowSuccessBanner(true);
+        setShowBanner(true);
+        // Hide banner after showing success message
+        setTimeout(() => {
+          setShowBanner(false);
+          setShowSuccessBanner(false);
+        }, 3000);
       }
     });
 
@@ -44,7 +53,7 @@ export function ConnectionStatus({ className }: ConnectionStatusProps) {
     return () => {
       unsubscribe();
     };
-  }, [isInitialized]);
+  }, [isInitialized, connectionState.status]);
 
   // Don't show anything if online and banner is hidden
   if (!showBanner && connectionState.status === 'online') {
@@ -57,6 +66,16 @@ export function ConnectionStatus({ className }: ConnectionStatusProps) {
   };
 
   const getStatusConfig = () => {
+    if (showSuccessBanner) {
+      return {
+        icon: <CheckCircle2 className="w-4 h-4" />,
+        text: 'Соединение восстановлено',
+        bgColor: 'bg-green-500',
+        textColor: 'text-white',
+        showRetry: false,
+      };
+    }
+
     switch (connectionState.status) {
       case 'offline':
         return {

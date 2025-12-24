@@ -3,7 +3,7 @@
 import { memo } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { Reply, MoreHorizontal } from 'lucide-react';
+import { Reply, MoreHorizontal, Check, CheckCheck, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Message, UserProfile } from '@/lib/types';
 
@@ -13,6 +13,42 @@ interface MessageBubbleProps {
     onReply?: (message: Message) => void;
     onEdit?: (message: Message) => void;
     className?: string;
+}
+
+// Message delivery status component
+function DeliveryStatus({ status }: { status?: 'sending' | 'sent' | 'delivered' | 'read' }) {
+    switch (status) {
+        case 'sending':
+            return (
+                <span className="inline-flex items-center" title="Отправка...">
+                    <Clock className="w-3 h-3 text-white/50" />
+                </span>
+            );
+        case 'sent':
+            return (
+                <span className="inline-flex items-center" title="Отправлено">
+                    <Check className="w-3 h-3 text-white/70" />
+                </span>
+            );
+        case 'delivered':
+            return (
+                <span className="inline-flex items-center" title="Доставлено">
+                    <CheckCheck className="w-3 h-3 text-white/70" />
+                </span>
+            );
+        case 'read':
+            return (
+                <span className="inline-flex items-center" title="Прочитано">
+                    <CheckCheck className="w-3 h-3 text-blue-300" />
+                </span>
+            );
+        default:
+            return (
+                <span className="inline-flex items-center" title="Отправлено">
+                    <Check className="w-3 h-3 text-white/70" />
+                </span>
+            );
+    }
 }
 
 export const MessageBubble = memo(function MessageBubble({
@@ -101,10 +137,11 @@ export const MessageBubble = memo(function MessageBubble({
                         {message.text}
                     </div>
 
-                    {/* Own message timestamp */}
+                    {/* Own message timestamp with delivery status */}
                     {isOwn && (
-                        <div className="text-xs text-white/70 mt-1 text-right">
-                            {formatDistanceToNow(timestamp, { addSuffix: true, locale: ru })}
+                        <div className="flex items-center justify-end gap-1 text-xs text-white/70 mt-1">
+                            <span>{formatDistanceToNow(timestamp, { addSuffix: true, locale: ru })}</span>
+                            <DeliveryStatus status={(message as Message & { status?: string }).status as 'sending' | 'sent' | 'delivered' | 'read' | undefined} />
                         </div>
                     )}
                 </div>
