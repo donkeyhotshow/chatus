@@ -6,6 +6,7 @@ import type { Message } from '@/lib/types';
 import { EmojiRain } from './EmojiRain';
 import { format } from 'date-fns';
 import { Smile, Trash2, CornerUpLeft, Check, CheckCheck } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 type MessageItemProps = {
   message: Message;
@@ -21,6 +22,7 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
   const [showEmojiRain, setShowEmojiRain] = useState(false);
   const [rainEmoji, setRainEmoji] = useState('');
   const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const [showActions, setShowActions] = useState(false);
 
   useEffect(() => {
     setShowEmojiRain(false);
@@ -130,12 +132,15 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
         )}
 
         {hasContent ? (
-          <div className={`relative p-3.5 rounded-2xl transition-all duration-300
+          <div 
+            onClick={() => setShowActions(!showActions)}
+            className={`relative p-3.5 rounded-2xl transition-all duration-300 cursor-pointer
             ${isOwn
               ? `${isSticker ? 'bg-transparent' : 'bg-white text-black rounded-tr-sm'}`
               : `${isSticker ? 'bg-transparent' : 'bg-white/5 text-white border border-white/5 rounded-tl-sm'}`
             }
             ${message.id.startsWith('temp_') ? 'opacity-50' : ''}
+            ${showActions ? 'ring-2 ring-[var(--accent-primary)]/30' : ''}
           `}>
             {message.replyTo && (
               <div className={`mb-3 p-2 rounded-lg text-[11px] border-l-2 ${isOwn ? 'bg-black/5 border-black/20 text-black/60' : 'bg-white/5 border-white/20 text-white/60'}`}>
@@ -161,38 +166,46 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
               </div>
             )}
 
-            {/* Action buttons - always visible */}
-            <div className={`flex gap-2 mt-2 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+            {/* Action buttons - subtle floating bar */}
+            <div className={cn(
+              "absolute -top-8 flex gap-1 p-1 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-full shadow-xl transition-all duration-200 z-10",
+              isOwn ? "right-0" : "left-0",
+              "opacity-0 scale-90 pointer-events-none group-hover:opacity-100 group-hover:scale-100 group-hover:pointer-events-auto",
+              showActions && "opacity-100 scale-100 pointer-events-auto"
+            )}>
               <button
-                onClick={() => onReply(message)}
-                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-white/10 text-neutral-400 hover:bg-white/20 hover:text-white active:bg-white/20 active:text-white transition-all touch-target"
+                onClick={(e) => { e.stopPropagation(); onReply(message); setShowActions(false); }}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                 title="Ответить"
-                aria-label="Ответить"
               >
-                <CornerUpLeft className="w-5 h-5" />
+                <CornerUpLeft className="w-4 h-4" />
               </button>
               <button
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   setShowReactionPicker(!showReactionPicker);
                   if ('vibrate' in navigator) navigator.vibrate(10);
                 }}
-                className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-all touch-target ${showReactionPicker ? 'bg-cyan-500/20 text-cyan-400' : 'bg-white/10 text-neutral-400 hover:bg-white/20 hover:text-white active:bg-white/20 active:text-white'}`}
+                className={cn(
+                  "w-8 h-8 flex items-center justify-center rounded-full transition-colors",
+                  showReactionPicker ? "bg-[var(--accent-primary)] text-white" : "hover:bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                )}
                 title="Реакция"
-                aria-label="Добавить реакцию"
               >
-                <Smile className="w-5 h-5" />
+                <Smile className="w-4 h-4" />
               </button>
               {isOwn && (
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     if ('vibrate' in navigator) navigator.vibrate(15);
                     onDelete(message.id);
+                    setShowActions(false);
                   }}
-                  className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-white/10 text-neutral-400 hover:bg-red-500/20 hover:text-red-400 active:bg-red-500/20 active:text-red-400 transition-all touch-target"
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-500/20 text-[var(--text-muted)] hover:text-red-400 transition-colors"
                   title="Удалить"
-                  aria-label="Удалить сообщение"
                 >
-                  <Trash2 className="w-5 h-5" />
+                  <Trash2 className="w-4 h-4" />
                 </button>
               )}
             </div>

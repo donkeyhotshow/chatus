@@ -513,6 +513,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
   // Touch event handlers
   const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
+    e.stopPropagation();
 
     if (e.touches.length === 2) {
       // Two fingers - start pinch zoom
@@ -535,6 +536,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
 
   const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
+    e.stopPropagation();
 
     if (e.touches.length === 2 && isPinching.current) {
       // Two fingers - handle pinch zoom
@@ -619,6 +621,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
 
   const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.preventDefault();
+    e.stopPropagation();
 
     if (e.touches.length === 0) {
       // All fingers lifted

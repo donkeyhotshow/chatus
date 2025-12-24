@@ -261,6 +261,7 @@ export function ChatRoom({ roomId }: { roomId: string }) {
             setIsCreating(true);
             await createProfile(username, avatar);
         } catch (err) {
+            console.error('Profile creation failed:', err);
             logger.error('Could not create profile', err as Error, { username, roomId });
             toast({ title: 'Ошибка', description: 'Не удалось создать профиль', variant: 'destructive' });
             setIsCreating(false);
@@ -282,8 +283,12 @@ export function ChatRoom({ roomId }: { roomId: string }) {
 
     // Loading states - використовуємо skeleton для кращого UX
     const isSlow = connectionState.isSlow;
+    
     if (!firebaseContext) return <LoadingScreen text="Инициализация..." showSkeleton isSlow={isSlow} />;
-    if (isLoading) return <LoadingScreen text="Загрузка..." showSkeleton isSlow={isSlow} />;
+    
+    // P0 FIX: Optimistic UI - show chat if we have user data, even if still verifying
+    if (isLoading && !user) return <LoadingScreen text="Загрузка..." showSkeleton isSlow={isSlow} />;
+    
     if (userError) return <ErrorScreen onRetry={() => window.location.reload()} />;
 
     if (!user) {
@@ -297,6 +302,7 @@ export function ChatRoom({ roomId }: { roomId: string }) {
         );
     }
 
+    // Show loading only if we don't have room data yet
     if (roomLoading && !room) return <LoadingScreen text="Подключение..." showSkeleton isSlow={isSlow} />;
 
     const otherUser = room?.participantProfiles?.find(p => p.id !== user?.id);

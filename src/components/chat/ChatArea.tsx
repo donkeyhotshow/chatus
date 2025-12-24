@@ -184,8 +184,45 @@ export const ChatArea = memo(function ChatArea({
     const handleReply = useCallback((message: Message) => setReplyTo(message), []);
     const handleImageClick = useCallback((url: string) => setImageForView(url), []);
 
+    // Sticker Import Logic
+    const handleStickerImport = useCallback(async (url: string) => {
+        try {
+            toast({ title: 'Импорт стикеров', description: 'Загружаем стикерпак...' });
+            const response = await fetch('/api/stickers/import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+            });
+            const data = await response.json();
+            
+            if (data.success) {
+                toast({ 
+                    title: 'Успех!', 
+                    description: `Стикерпак "${data.pack.title}" добавлен. (${data.pack.stickerCount} стикеров)` 
+                });
+                // Here you would typically update the sticker picker state
+            } else {
+                throw new Error(data.error || 'Unknown error');
+            }
+        } catch (error) {
+            console.error('Sticker import failed:', error);
+            toast({ 
+                title: 'Ошибка', 
+                description: 'Не удалось импортировать стикеры. Проверьте ссылку.', 
+                variant: 'destructive' 
+            });
+        }
+    }, [toast]);
+
     const handleSend = useCallback(async (text: string) => {
-        if (!service) return;
+        if (!service || !text.trim()) return;
+
+        // Check for Telegram sticker pack links
+        const stickerRegex = /https?:\/\/(?:t\.me|telegram\.me)\/addstickers\/([a-zA-Z0-9_]+)/;
+        if (stickerRegex.test(text)) {
+            handleStickerImport(text.trim());
+            return; // Don't send the link as a message if it's an import command
+        }
 
         try {
             await service.sendMessage({
@@ -200,7 +237,7 @@ export const ChatArea = memo(function ChatArea({
             logger.error('Failed to send message', error as Error, { roomId });
             toast({ title: 'Ошибка отправки', variant: 'destructive' });
         }
-    }, [service, user, replyTo, roomId, toast]);
+    }, [service, user, replyTo, roomId, toast, handleStickerImport]);
 
     const handleSearchOpen = useCallback(() => setIsSearchOpen(true), []);
     const handleSearchClose = useCallback(() => setIsSearchOpen(false), []);

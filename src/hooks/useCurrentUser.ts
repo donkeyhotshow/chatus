@@ -230,7 +230,27 @@ export function useCurrentUser(roomId: string) {
     }
 
     const service = getChatService(roomId, firebaseContext.db, firebaseContext.auth, firebaseContext.storage);
-    const uid = await service.signInAnonymouslyIfNeeded();
+    
+    // Add timeout for sign in
+    let uid: string;
+    try {
+        uid = await Promise.race([
+            service.signInAnonymouslyIfNeeded(),
+            new Promise<string>((_, reject) => setTimeout(() => reject(new Error('Sign in timeout')), 5000))
+        ]);
+    } catch (err) {
+        console.warn('Sign in failed, falling back to offline mode', err);
+        // Fallback to offline user
+        const offlineId = `offline_${Date.now()}`;
+        const newUser: UserProfile = {
+            id: offlineId,
+            name: name.trim(),
+            avatar: avatar,
+        };
+        setUser(newUser);
+        saveUserToStorage(newUser);
+        return newUser;
+    }
 
     // Step 1: Check if user with same UID already exists
     const userDocRef = doc(firebaseContext.db, 'users', uid);

@@ -94,6 +94,7 @@ export default function DoodlePad({ onClose, onSend }: DoodlePadProps) {
 
   const startDraw = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDrawing(true);
     const { x, y } = getCoordinates(e);
 
@@ -106,6 +107,7 @@ export default function DoodlePad({ onClose, onSend }: DoodlePadProps) {
 
   const draw = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     if (!isDrawing) return;
 
     const { x, y } = getCoordinates(e);

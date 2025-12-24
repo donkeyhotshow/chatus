@@ -10,6 +10,8 @@ import {
     ensureSendButtonVisible,
 } from '@/lib/ios-viewport-manager';
 
+import { StickerPicker } from './StickerPicker';
+
 // Common emoji list for quick picker
 const QUICK_EMOJIS = ['😀', '😂', '❤️', '👍', '👎', '🎉', '🔥', '😢', '😮', '🤔', '👋', '🙏'];
 
@@ -42,8 +44,6 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
     placeholder = "Сообщение...",
     className
 }, ref) => {
-    // onStickerSend is available for future sticker picker implementation
-    void onStickerSend;
     const [message, setMessage] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
@@ -275,6 +275,11 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                         </div>
                     )}
                 </div>
+
+                {/* Sticker Picker */}
+                {onStickerSend && (
+                    <StickerPicker onSelect={onStickerSend} />
+                )}
 
                 {/* Text input */}
                 <div className="flex-1 relative">

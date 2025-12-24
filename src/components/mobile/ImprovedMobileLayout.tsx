@@ -32,7 +32,18 @@ export function ImprovedMobileLayout({
     const [activeTab, setActiveTab] = useState<MobileTab>('chat');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
     const isMobile = useIsMobile();
+
+    useEffect(() => {
+        if (typeof window === 'undefined' || !window.visualViewport) return;
+        const handleResize = () => {
+            const isKeyboard = window.visualViewport!.height < window.innerHeight * 0.85;
+            setIsKeyboardOpen(isKeyboard);
+        };
+        window.visualViewport.addEventListener('resize', handleResize);
+        return () => window.visualViewport?.removeEventListener('resize', handleResize);
+    }, []);
 
     // Haptic feedback for iOS
     const triggerHaptic = (type: 'light' | 'medium' | 'heavy' = 'light') => {
@@ -217,12 +228,14 @@ export function ImprovedMobileLayout({
             </div>
 
             {/* Bottom Navigation */}
-            <MobileNavigation
-                activeTab={activeTab}
-                onTabChange={handleTabChange}
-                isCollabSpaceVisible={activeTab !== 'chat'}
-                onToggleCollabSpace={() => { }}
-            />
+            {!isKeyboardOpen && (
+                <MobileNavigation
+                    activeTab={activeTab}
+                    onTabChange={handleTabChange}
+                    isCollabSpaceVisible={activeTab !== 'chat'}
+                    onToggleCollabSpace={() => { }}
+                />
+            )}
 
             {/* Search Results Overlay */}
             <AnimatePresence>
