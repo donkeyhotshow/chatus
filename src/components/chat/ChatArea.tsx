@@ -205,7 +205,7 @@ export const ChatArea = memo(function ChatArea({
                 throw new Error(data.error || 'Unknown error');
             }
         } catch (error) {
-            console.error('Sticker import failed:', error);
+            logger.error('Sticker import failed', error as Error);
             toast({ 
                 title: 'Ошибка', 
                 description: 'Не удалось импортировать стикеры. Проверьте ссылку.', 

@@ -168,7 +168,7 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
 
             {/* Action buttons - subtle floating bar */}
             <div className={cn(
-              "absolute -top-8 flex gap-1 p-1 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-full shadow-xl transition-all duration-200 z-10",
+              "absolute -top-8 flex gap-1 p-1 bg-[var(--bg-secondary)]/80 backdrop-blur-md border border-[var(--border-primary)] rounded-full shadow-xl transition-all duration-200 z-10",
               isOwn ? "right-0" : "left-0",
               "opacity-0 scale-90 pointer-events-none group-hover:opacity-100 group-hover:scale-100 group-hover:pointer-events-auto",
               showActions && "opacity-100 scale-100 pointer-events-auto"
