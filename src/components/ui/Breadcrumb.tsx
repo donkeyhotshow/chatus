@@ -145,13 +145,11 @@ export function Breadcrumb({
     return buildBreadcrumb(navigationState, roomName);
   }, [navigationState, roomName]);
 
-  // Handle empty state
-  if (items.length === 0) {
-    return null;
-  }
-
-  // Collapse items if exceeding maxItems
+  // Collapse items if exceeding maxItems (must be before conditional return)
   const displayItems = useMemo(() => {
+    if (items.length === 0) {
+      return [];
+    }
     if (items.length <= maxItems) {
       return items;
     }
@@ -166,6 +164,11 @@ export function Breadcrumb({
       ...lastItems,
     ];
   }, [items, maxItems]);
+
+  // Handle empty state
+  if (displayItems.length === 0) {
+    return null;
+  }
 
   return (
     <nav
