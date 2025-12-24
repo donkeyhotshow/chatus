@@ -103,17 +103,24 @@ export function MobileChatInterface({
         };
     }, [isRecording]);
 
-    const handleSendMessage = useCallback(() => {
-        if (inputText.trim()) {
-            onSendMessage(inputText.trim());
-            setInputText('');
+    const [isSending, setIsSending] = useState(false);
 
-            // Возвращаем фокус на поле ввода
-            setTimeout(() => {
-                inputRef.current?.focus();
-            }, 100);
+    const handleSendMessage = useCallback(async () => {
+        if (inputText.trim() && !isSending) {
+            setIsSending(true);
+            try {
+                await onSendMessage(inputText.trim());
+                setInputText('');
+
+                // Возвращаем фокус на поле ввода
+                setTimeout(() => {
+                    inputRef.current?.focus();
+                }, 100);
+            } finally {
+                setIsSending(false);
+            }
         }
-    }, [inputText, onSendMessage]);
+    }, [inputText, onSendMessage, isSending]);
 
     const handleKeyPress = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -193,7 +200,7 @@ export function MobileChatInterface({
     const onlineUsersCount = users.filter(u => u.isOnline).length;
 
     return (
-        <div className="flex flex-col h-full bg-black relative">
+        <div className="flex flex-col h-[100dvh] bg-black relative">
             {/* Шапка */}
             <motion.header
                 className="flex items-center justify-between p-4 bg-black/95 backdrop-blur-sm border-b border-white/10 z-50"
@@ -373,6 +380,7 @@ export function MobileChatInterface({
                             onChange={(e) => setInputText(e.target.value)}
                             onKeyPress={handleKeyPress}
                             placeholder="Введите сообщение..."
+                            autoFocus
                             className="w-full min-h-[44px] max-h-32 px-4 py-3 bg-neutral-800 border border-neutral-600 rounded-2xl text-white placeholder-neutral-400 resize-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all duration-200"
                             rows={1}
                             style={{
@@ -391,10 +399,15 @@ export function MobileChatInterface({
                     {inputText.trim() ? (
                         <button
                             onClick={handleSendMessage}
-                            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:from-cyan-600 hover:to-blue-600 transition-all duration-200 touch-target"
-                            aria-label="Отправить"
+                            disabled={isSending}
+                            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:from-cyan-600 hover:to-blue-600 transition-all duration-200 touch-target disabled:opacity-50 disabled:cursor-not-allowed"
+                            aria-label={isSending ? "Отправка..." : "Отправить"}
                         >
-                            <Send className="w-5 h-5" />
+                            {isSending ? (
+                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            ) : (
+                                <Send className="w-5 h-5" />
+                            )}
                         </button>
                     ) : (
                         <button

@@ -28,12 +28,12 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
   }, [message.id]);
 
   // Safe user access - fallback for malformed messages
-  const user = message.user || { id: 'unknown', name: 'Unknown', avatar: '' };
+  const user = message.user || { id: 'unknown', name: 'Неизвестный', avatar: '' };
 
   if (message.type === 'system') {
     return (
       <div className="w-full flex justify-center my-6 opacity-50">
-        <div className="bg-white/5 border border-white/5 rounded-full px-4 py-1 text-[9px] font-bold text-neutral-400 uppercase tracking-widest">
+        <div className="bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-full px-4 py-1 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">
           {message.text}
         </div>
       </div>
@@ -89,7 +89,7 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
       return (
         <div className="flex flex-col">
           {contentNode}
-          <p className="leading-relaxed whitespace-pre-wrap text-sm sm:text-[15px] font-medium break-words">
+          <p className="leading-relaxed whitespace-pre-wrap text-sm sm:text-[15px] font-medium break-words break-anywhere">
             {message.text}
           </p>
         </div>
@@ -113,7 +113,7 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
       {!isSticker && (
         <div className="flex-shrink-0 mt-1">
           <div
-            className="w-8 h-8 rounded-xl bg-neutral-900 border border-white/10 bg-center bg-cover"
+            className="w-8 h-8 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-primary)] bg-center bg-cover"
             style={{ backgroundImage: `url(${user.avatar})` }}
           />
         </div>
@@ -122,10 +122,10 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
       <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} min-w-0 flex-1`}>
         {!isSticker && (
           <div className="mb-1 px-1 flex items-center gap-2">
-            <span className={`text-[10px] font-bold uppercase tracking-wider ${isOwn ? 'text-neutral-500' : 'text-cyan-500'}`}>
+            <span className={`text-[11px] font-bold uppercase tracking-wider ${isOwn ? 'text-[var(--text-secondary)]' : 'text-[var(--accent-primary)]'}`}>
               {user.name}
             </span>
-            <span className="text-[9px] text-neutral-600 font-mono">{formattedTime}</span>
+            <span className="text-[10px] text-[var(--text-muted)] font-mono">{formattedTime}</span>
           </div>
         )}
 
@@ -162,23 +162,25 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
             )}
 
             {/* Action buttons - always visible */}
-            <div className={`flex gap-1 mt-2 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+            <div className={`flex gap-2 mt-2 ${isOwn ? 'justify-end' : 'justify-start'}`}>
               <button
                 onClick={() => onReply(message)}
-                className="p-2 rounded-lg bg-white/10 text-neutral-400 hover:bg-white/20 hover:text-white active:bg-white/20 active:text-white transition-all"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-white/10 text-neutral-400 hover:bg-white/20 hover:text-white active:bg-white/20 active:text-white transition-all touch-target"
                 title="Ответить"
+                aria-label="Ответить"
               >
-                <CornerUpLeft className="w-4 h-4" />
+                <CornerUpLeft className="w-5 h-5" />
               </button>
               <button
                 onClick={() => {
                   setShowReactionPicker(!showReactionPicker);
                   if ('vibrate' in navigator) navigator.vibrate(10);
                 }}
-                className={`p-2 rounded-lg transition-all ${showReactionPicker ? 'bg-cyan-500/20 text-cyan-400' : 'bg-white/10 text-neutral-400 hover:bg-white/20 hover:text-white active:bg-white/20 active:text-white'}`}
+                className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-all touch-target ${showReactionPicker ? 'bg-cyan-500/20 text-cyan-400' : 'bg-white/10 text-neutral-400 hover:bg-white/20 hover:text-white active:bg-white/20 active:text-white'}`}
                 title="Реакция"
+                aria-label="Добавить реакцию"
               >
-                <Smile className="w-4 h-4" />
+                <Smile className="w-5 h-5" />
               </button>
               {isOwn && (
                 <button
@@ -186,10 +188,11 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
                     if ('vibrate' in navigator) navigator.vibrate(15);
                     onDelete(message.id);
                   }}
-                  className="p-2 rounded-lg bg-white/10 text-neutral-400 hover:bg-red-500/20 hover:text-red-400 active:bg-red-500/20 active:text-red-400 transition-all"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-white/10 text-neutral-400 hover:bg-red-500/20 hover:text-red-400 active:bg-red-500/20 active:text-red-400 transition-all touch-target"
                   title="Удалить"
+                  aria-label="Удалить сообщение"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-5 h-5" />
                 </button>
               )}
             </div>

@@ -80,6 +80,7 @@ export const ChatArea = memo(function ChatArea({
     const lastMessageCountRef = useRef<number>(0);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const messageListRef = useRef<any>(null);
+    const inputRef = useRef<{ focus: () => void }>(null);
 
     const [debouncedMessages] = useDebounce(persistedMessages, 500);
 
@@ -267,9 +268,16 @@ export const ChatArea = memo(function ChatArea({
 
     const handleDeleteMessage = useCallback(async (messageId: string) => {
         if (!service) return;
+
+        // Confirmation dialog
+        const confirmed = window.confirm('Удалить это сообщение?');
+        if (!confirmed) return;
+
         try {
             await service.deleteMessage(messageId);
-        } catch {
+            toast({ title: 'Сообщение удалено' });
+        } catch (error) {
+            logger.error('Failed to delete message', error as Error, { messageId });
             toast({ title: 'Ошибка удаления', variant: 'destructive' });
         }
     }, [service, toast]);
@@ -323,6 +331,13 @@ export const ChatArea = memo(function ChatArea({
         }
     }, [persistedMessages, isUserScrolledUp, user.id]);
 
+    const handleBackgroundClick = useCallback((e: React.MouseEvent) => {
+        // Only focus if clicking the background, not interactive elements
+        if (e.target === e.currentTarget) {
+            inputRef.current?.focus();
+        }
+    }, []);
+
     return (
         <>
             <NetworkConnectionStatus />
@@ -343,7 +358,10 @@ export const ChatArea = memo(function ChatArea({
                 />
 
                 {/* Messages */}
-                <div className="flex-1 min-h-0 overflow-hidden relative">
+                <div 
+                    className="flex-1 min-h-0 overflow-hidden relative w-full max-w-[var(--max-chat-width)] mx-auto"
+                    onClick={handleBackgroundClick}
+                >
                     {allMessages.length === 0 && !isInitialLoad ? (
                         <EmptyState onSend={(text) => {
                             try {
@@ -410,6 +428,7 @@ export const ChatArea = memo(function ChatArea({
                     />
 
                     <EnhancedMessageInput
+                        ref={inputRef}
                         onSend={handleSend}
                         onTyping={(isTyping) => isTyping ? handleTypingStart() : handleTypingStop()}
                         onFileUpload={handleImageUpload}

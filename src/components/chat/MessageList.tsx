@@ -67,8 +67,8 @@ export function getMessageKey(message: Message, index: number): string {
 const LoadingSpinner = () => (
   <div className="flex-1 flex flex-col items-center justify-center">
     <div className="animate-pulse flex flex-col items-center gap-4">
-      <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-      <span className="font-mono text-white/70 tracking-widest">LOADING CHAT...</span>
+      <div className="w-12 h-12 border-4 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin"></div>
+      <span className="font-medium text-[var(--text-secondary)] tracking-wide">ЗАГРУЗКА ЧАТА...</span>
     </div>
   </div>
 );
@@ -88,8 +88,6 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
   const virtuosoRef = useRef<VirtuosoHandle>(null);
 
   // Ensure messages is always a valid array (null-safety)
-  // **Feature: chatus-bug-fixes, Property 10: Null-Safe Message Handling**
-  // **Validates: Requirements 10.1, 10.2, 10.3**
   const messages = useMemo(() => ensureSafeMessages(rawMessages), [rawMessages]);
 
   useImperativeHandle(ref, () => virtuosoRef.current!, []);
@@ -126,17 +124,15 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
     })();
 
     // Generate stable unique key for the message
-    // **Feature: chatus-bug-fixes, Property 11: Unique Key Generation**
-    // **Validates: Requirements 11.1, 11.2, 11.3**
     const messageKey = getMessageKey(msg, index);
 
     return (
       <div className="px-3 sm:px-4 py-1">
         {isNewDay && (
-          <div className="flex justify-center my-6">
-            <span className="bg-black/40 text-neutral-400 text-[10px] font-medium px-3 py-1 rounded-full border border-white/5 backdrop-blur-sm uppercase tracking-widest">
+          <div className="flex justify-center my-6 sticky top-2 z-10">
+            <span className="bg-[var(--bg-tertiary)] text-[var(--text-secondary)] text-[11px] font-medium px-4 py-1.5 rounded-full border border-[var(--border-primary)] shadow-sm backdrop-blur-md uppercase tracking-wider">
               {msg.createdAt && 'seconds' in msg.createdAt
-                ? new Date(msg.createdAt.seconds * 1000).toLocaleDateString('ru-RU', { weekday: 'short', month: 'short', day: 'numeric' })
+                ? new Date(msg.createdAt.seconds * 1000).toLocaleDateString('ru-RU', { weekday: 'short', month: 'long', day: 'numeric' })
                 : 'Сегодня'}
             </span>
           </div>
@@ -164,12 +160,12 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
         <div className="flex flex-col items-center gap-6 text-center max-w-sm">
           <div className="text-7xl opacity-50 mb-2 animate-pulse">💬</div>
           <div className="space-y-2">
-            <h2 className="text-xl sm:text-2xl font-bold text-white">Начните общение</h2>
-            <p className="text-sm sm:text-base text-neutral-400 leading-relaxed">
+            <h2 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">Начните общение</h2>
+            <p className="text-sm sm:text-base text-[var(--text-secondary)] leading-relaxed">
               Напишите первое сообщение, чтобы начать диалог
             </p>
           </div>
-          <div className="w-16 h-1 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full opacity-60"></div>
+          <div className="w-16 h-1 bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-hover)] rounded-full opacity-60"></div>
         </div>
       </div>
     );
@@ -195,8 +191,8 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
         style={{ height: '100%' }}
         components={{
           Header: hasMoreMessages ? () => (
-            <div className="flex justify-center py-2">
-              <span className="text-xs text-neutral-500">Loading older messages...</span>
+            <div className="flex justify-center py-4">
+              <div className="w-6 h-6 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
             </div>
           ) : undefined,
         }}

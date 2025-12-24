@@ -29,6 +29,19 @@ export function HomeClient() {
         if (savedUsername?.trim()) {
             setUsername(savedUsername.trim());
         }
+
+        // BUG-003 fix: Restore last room code from user preferences
+        try {
+            const prefsStr = localStorage.getItem('user-preferences');
+            if (prefsStr) {
+                const prefs = JSON.parse(prefsStr);
+                if (prefs.lastRoomId?.trim()) {
+                    setRoomCode(prefs.lastRoomId.trim().toUpperCase());
+                }
+            }
+        } catch {
+            // Ignore parse errors
+        }
     }, []);
 
     // Form validation - using useMemo for better reactivity

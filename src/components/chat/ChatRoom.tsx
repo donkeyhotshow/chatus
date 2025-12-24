@@ -22,7 +22,6 @@ import { useRoom } from '@/hooks/useRoom';
 import { useRoomManager } from '@/hooks/useRoomManager';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
 import { useConnectionStatus } from '@/hooks/useConnectionStatus';
-import { useNavigationState } from '@/hooks/useNavigationState';
 import { logger } from '@/lib/logger';
 import { isDemoMode } from '@/lib/demo-mode';
 import { getChatService } from '@/services/ChatService';
@@ -33,7 +32,6 @@ import { ChatSkeleton } from './ChatSkeleton';
 import { AnimatedTabTransition } from '../layout/AnimatedTabTransition';
 import { isSafari, safariSafeClick } from '@/lib/safari-workarounds';
 import { RoomState } from '@/lib/session-manager';
-import { NavigationState, NavigationView } from '@/lib/navigation-state';
 
 // Lazy load heavy components
 const CollaborationSpace = lazy(() => import('./CollaborationSpace').then(m => ({ default: m.CollaborationSpace })));
@@ -44,7 +42,7 @@ function LoadingScreen({ text, showSkeleton = false, isSlow = false }: { text: s
 
     useEffect(() => {
         // Show fallback sooner if connection is slow
-        const timeout = isSlow ? 5000 : 8000;
+        const timeout = isSlow ? 10000 : 15000;
         const timer = setTimeout(() => setShowFallback(true), timeout);
         return () => clearTimeout(timer);
     }, [isSlow]);
@@ -171,9 +169,16 @@ export function ChatRoom({ roomId }: { roomId: string }) {
 
     const handleMobileBack = useCallback(() => {
         if (isMobile && activeTab !== 'chat') {
+            // If on mobile and not on chat tab, go back to chat tab first
             setActiveTab('chat');
+        } else {
+            // On desktop or on chat tab - go back to home page
+            // Use setTimeout to ensure navigation happens after React event handling
+            setTimeout(() => {
+                router.push('/');
+            }, 0);
         }
-    }, [isMobile, activeTab]);
+    }, [isMobile, activeTab, router]);
 
     // Swipe gestures for mobile navigation
     const swipeHandlers = useSwipe({
@@ -264,17 +269,11 @@ export function ChatRoom({ roomId }: { roomId: string }) {
     };
 
     const handleLogout = useCallback(() => {
-        const performLogout = () => {
-            localStorage.removeItem('chatUsername');
+        localStorage.removeItem('chatUsername');
+        // Use setTimeout to ensure navigation happens after React event handling
+        setTimeout(() => {
             router.push('/');
-        };
-
-        // Safari workaround: use setTimeout to ensure state is updated
-        if (isSafari()) {
-            setTimeout(performLogout, 10);
-        } else {
-            performLogout();
-        }
+        }, 0);
     }, [router]);
 
     const handleSettings = useCallback(() => {

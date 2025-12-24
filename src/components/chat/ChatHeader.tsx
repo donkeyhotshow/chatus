@@ -42,7 +42,7 @@ export const ChatHeader = memo(function ChatHeader({
 
     return (
         <header className={cn(
-            "flex items-center justify-between h-14 px-4 bg-[var(--bg-secondary)] border-b border-[var(--border-primary)] safe-top shrink-0",
+            "flex items-center justify-between h-14 px-4 bg-[var(--bg-secondary)] border-b border-[var(--border-primary)] safe-top shrink-0 relative z-40",
             className
         )}>
             {/* Left section */}
@@ -50,8 +50,9 @@ export const ChatHeader = memo(function ChatHeader({
                 {onBack && (
                     <button
                         onClick={onBack}
-                        className="p-2 -ml-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors touch-target"
+                        className="p-2 -ml-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors touch-target relative z-50"
                         aria-label="Назад"
+                        style={{ pointerEvents: 'auto' }}
                     >
                         <ArrowLeft className="w-5 h-5" />
                     </button>

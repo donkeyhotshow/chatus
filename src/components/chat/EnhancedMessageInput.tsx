@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Send, Smile, Image as ImageIcon, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Message } from '@/lib/types';
@@ -10,6 +10,13 @@ import {
     ensureSendButtonVisible,
 } from '@/lib/ios-viewport-manager';
 
+// Common emoji list for quick picker
+const QUICK_EMOJIS = ['😀', '😂', '❤️', '👍', '👎', '🎉', '🔥', '😢', '😮', '🤔', '👋', '🙏'];
+
+export interface EnhancedMessageInputRef {
+    focus: () => void;
+}
+
 interface EnhancedMessageInputProps {
     onSend: (text: string) => void;
     onTyping?: (isTyping: boolean) => void;
@@ -18,11 +25,12 @@ interface EnhancedMessageInputProps {
     replyTo?: Message | null;
     onCancelReply?: () => void;
     disabled?: boolean;
+    isSending?: boolean;
     placeholder?: string;
     className?: string;
 }
 
-export function EnhancedMessageInput({
+export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, EnhancedMessageInputProps>(({
     onSend,
     onTyping,
     onFileUpload,
@@ -30,20 +38,29 @@ export function EnhancedMessageInput({
     replyTo,
     onCancelReply,
     disabled = false,
+    isSending = false,
     placeholder = "Сообщение...",
     className
-}: EnhancedMessageInputProps) {
+}, ref) => {
     // onStickerSend is available for future sticker picker implementation
     void onStickerSend;
     const [message, setMessage] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const sendButtonRef = useRef<HTMLButtonElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const emojiPickerRef = useRef<HTMLDivElement>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout>();
     const iosViewportManagerRef = useRef<ReturnType<typeof createIOSViewportManager> | null>(null);
+
+    useImperativeHandle(ref, () => ({
+        focus: () => {
+            textareaRef.current?.focus();
+        }
+    }));
 
     const adjustTextareaHeight = useCallback(() => {
         const textarea = textareaRef.current;
@@ -94,13 +111,10 @@ export function EnhancedMessageInput({
     }, [message, disabled, onSend, onTyping]);
 
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            e.stopPropagation();
-            handleSend();
-        }
-        // iOS Safari fallback
-        if (e.keyCode === 13 && !e.shiftKey) {
+        // Check for Enter key (both modern and legacy)
+        const isEnterKey = e.key === 'Enter' || e.keyCode === 13;
+
+        if (isEnterKey && !e.shiftKey) {
             e.preventDefault();
             e.stopPropagation();
             handleSend();
@@ -114,6 +128,23 @@ export function EnhancedMessageInput({
         }
         if (fileInputRef.current) fileInputRef.current.value = '';
     }, [onFileUpload]);
+
+    const handleEmojiSelect = useCallback((emoji: string) => {
+        setMessage(prev => prev + emoji);
+        setShowEmojiPicker(false);
+        textareaRef.current?.focus();
+    }, []);
+
+    // Close emoji picker when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (showEmojiPicker && emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
+                setShowEmojiPicker(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showEmojiPicker]);
 
     useEffect(() => {
         if (replyTo && textareaRef.current) textareaRef.current.focus();
@@ -207,15 +238,43 @@ export function EnhancedMessageInput({
 
             {/* Input row - P1-001 FIX: Added ARIA labels */}
             <div className="flex items-end gap-2" role="group" aria-label="Ввод сообщения">
-                {/* Emoji button */}
-                <button
-                    type="button"
-                    disabled={disabled}
-                    aria-label="Открыть эмодзи"
-                    className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors touch-target disabled:opacity-50 min-w-[44px] min-h-[44px]"
-                >
-                    <Smile className="w-5 h-5" aria-hidden="true" />
-                </button>
+                {/* Emoji button and picker */}
+                <div className="relative" ref={emojiPickerRef}>
+                    <button
+                        type="button"
+                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                        disabled={disabled}
+                        aria-label="Открыть эмодзи"
+                        aria-expanded={showEmojiPicker}
+                        className={cn(
+                            "p-2 rounded-lg transition-colors touch-target disabled:opacity-50 min-w-[44px] min-h-[44px]",
+                            showEmojiPicker
+                                ? "text-[var(--accent-primary)] bg-[var(--bg-tertiary)]"
+                                : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
+                        )}
+                    >
+                        <Smile className="w-5 h-5" aria-hidden="true" />
+                    </button>
+
+                    {/* Emoji picker dropdown */}
+                    {showEmojiPicker && (
+                        <div className="absolute bottom-full left-0 mb-2 p-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg shadow-lg z-50">
+                            <div className="grid grid-cols-6 gap-1">
+                                {QUICK_EMOJIS.map((emoji) => (
+                                    <button
+                                        key={emoji}
+                                        type="button"
+                                        onClick={() => handleEmojiSelect(emoji)}
+                                        className="p-2 text-xl hover:bg-[var(--bg-tertiary)] rounded transition-colors"
+                                        aria-label={`Вставить ${emoji}`}
+                                    >
+                                        {emoji}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
 
                 {/* Text input */}
                 <div className="flex-1 relative">
@@ -287,18 +346,24 @@ export function EnhancedMessageInput({
                 <button
                     ref={sendButtonRef}
                     onClick={handleSend}
-                    disabled={!canSend}
-                    aria-label={canSend ? "Отправить сообщение" : "Введите сообщение для отправки"}
+                    disabled={!canSend || isSending}
+                    aria-label={isSending ? "Отправка..." : (canSend ? "Отправить сообщение" : "Введите сообщение для отправки")}
                     className={cn(
-                        "p-2.5 rounded-full transition-all duration-150 touch-target min-w-[44px] min-h-[44px]",
-                        canSend
+                        "p-2.5 rounded-full transition-all duration-150 touch-target min-w-[44px] min-h-[44px] flex items-center justify-center",
+                        canSend && !isSending
                             ? "bg-[var(--accent-primary)] text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)]"
                             : "bg-[var(--bg-tertiary)] text-[var(--text-muted)] cursor-not-allowed"
                     )}
                 >
-                    <Send className="w-5 h-5" aria-hidden="true" />
+                    {isSending ? (
+                        <div className="w-5 h-5 border-2 border-[var(--text-muted)] border-t-[var(--accent-contrast)] rounded-full animate-spin" />
+                    ) : (
+                        <Send className="w-5 h-5" aria-hidden="true" />
+                    )}
                 </button>
             </div>
         </div>
     );
-}
+});
+
+EnhancedMessageInput.displayName = 'EnhancedMessageInput';
