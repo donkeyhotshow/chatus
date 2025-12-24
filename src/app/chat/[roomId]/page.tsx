@@ -3,6 +3,12 @@ import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 export const dynamicParams = true;
+export const runtime = 'nodejs';
+
+// Allow any roomId at runtime
+export async function generateStaticParams() {
+  return [];
+}
 
 interface PageProps {
   params: Promise<{ roomId: string }>;
