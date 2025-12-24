@@ -19,7 +19,7 @@ export const LazyMessageSearch = lazy(() => import('@/components/chat/MessageSea
 // Additional game components for lazy loading
 export const LazyClickWar = lazy(() => import('@/components/games/ClickWar').then(m => ({ default: m.ClickWar })));
 export const LazyDiceRoll = lazy(() => import('@/components/games/DiceRoll').then(m => ({ default: m.DiceRoll })));
-export const LazyPhysicsWorld = lazy(() => import('@/components/games/PhysicsWorld').then(m => ({ default: m.PhysicsWorld })));
+export const LazyPhysicsWorld = lazy(() => import('@/components/games/PhysicsWorld'));
 export const LazyTowerDefense = lazy(() => import('@/components/games/TowerDefense').then(m => ({ default: m.TowerDefense })));
 
 // Wrapper components with loading states

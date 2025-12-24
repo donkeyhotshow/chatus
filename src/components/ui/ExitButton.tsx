@@ -81,24 +81,24 @@ function ConfirmDialog({
       <div className="relative bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-primary)] p-6 max-w-sm w-full mx-4 shadow-xl animate-in fade-in zoom-in-95 duration-200">
         <h2
           id="exit-dialog-title"
-        className="text-lg font-semibold text-[var(--text-primary)] mb-2"
+          className="text-lg font-semibold text-[var(--text-primary)] mb-2"
         >
           {title}
         </h2>
-        <p className="text-sm text-[var(--text-secondary)] mb-6
-        {message}
+        <p className="text-sm text-[var(--text-secondary)] mb-6">
+          {message}
         </p>
 
         <div className="flex gap-3">
           <Button
-            var="secondary"
- onClick={onCancel}
-            cllex-1"
+            variant="secondary"
+            onClick={onCancel}
+            className="flex-1"
           >
             {cancelText}
           </Button>
           <Button
-t="destructive"
+            variant="destructive"
             onClick={onConfirm}
             className="flex-1"
           >

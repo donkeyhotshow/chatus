@@ -98,6 +98,7 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
 
   // Активна гра
   if (activeGameId) {
+    const currentGame = gamesList.find(g => g.id === activeGameId);
     const commonProps = {
       onGameEnd: handleEndGame,
       updateGameState: handleUpdateGameState,
@@ -108,15 +109,22 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
 
     return (
       <div className="flex flex-col h-full bg-[var(--bg-primary)]">
-        {/* Back button */}
-        <div className="p-3 border-b border-[var(--border-primary)]">
+        {/* Back button with game title */}
+        <div className="p-3 border-b border-[var(--border-primary)] flex items-center justify-between">
           <button
             onClick={handleEndGame}
             className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors"
+            aria-label="Вернуться к списку игр"
           >
             <ArrowLeft className="w-4 h-4" />
-            Назад
+            <span>Назад</span>
           </button>
+          {currentGame && (
+            <div className="flex items-center gap-2 text-sm text-[var(--text-primary)]">
+              <currentGame.icon className="w-4 h-4" style={{ color: 'var(--game-primary)' }} />
+              <span className="font-medium">{currentGame.name}</span>
+            </div>
+          )}
         </div>
 
         {/* Game content */}
