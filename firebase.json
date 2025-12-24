@@ -19,7 +19,10 @@
       "**/.*",
       "**/node_modules/**"
     ],
-    "cleanUrls": true
+    "cleanUrls": true,
+    "frameworksBackend": {
+      "region": "us-central1"
+    }
   },
   "emulators": {
     "firestore": {
