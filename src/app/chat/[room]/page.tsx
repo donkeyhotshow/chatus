@@ -1,19 +1,17 @@
-import { ChatRoomWrapper } from './ChatRoomWrapper';
-import { notFound } from 'next/navigation';
-
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-interface PageProps {
+export default async function ChatPage({
+  params,
+}: {
   params: Promise<{ room: string }>;
-}
-
-export default async function ChatPage({ params }: PageProps) {
+}) {
   const { room } = await params;
 
-  if (!room) {
-    notFound();
-  }
-
-  return <ChatRoomWrapper roomId={room} />;
+  return (
+    <div style={{ padding: '20px', color: 'white', background: 'black' }}>
+      <h1>Chat Room</h1>
+      <p>Room ID: {room}</p>
+    </div>
+  );
 }
