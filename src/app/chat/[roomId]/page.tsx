@@ -1,18 +1,12 @@
+'use client';
 
 import { ChatRoom } from '@/components/chat/ChatRoom';
+import { useParams } from 'next/navigation';
 
-// Force dynamic rendering for chat pages
-export const dynamic = 'force-dynamic';
-export const dynamicParams = true;
+export default function ChatPage() {
+  const params = useParams();
+  const roomId = params?.roomId as string || '';
 
-type ChatPageProps = {
-  params: Promise<{
-    roomId: string;
-  }>;
-};
-
-export default async function ChatPage({ params }: ChatPageProps) {
-  const { roomId } = await params;
   // Decode and sanitize roomId to avoid URL-encoded or CR/LF issues
   let decodedRoomId = roomId;
   try {
