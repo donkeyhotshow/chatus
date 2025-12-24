@@ -2,16 +2,14 @@ import { ChatRoomWrapper } from './ChatRoomWrapper';
 import { notFound } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
 
-export default async function ChatPage({
-  params,
-}: {
-  params: Promise<{ slug?: string[] }>;
-}) {
-  const { slug } = await params;
+interface PageProps {
+  params: Promise<{ roomId: string }>;
+}
 
-  // Get roomId from slug array
-  const roomId = slug?.[0];
+export default async function ChatPage({ params }: PageProps) {
+  const { roomId } = await params;
 
   if (!roomId) {
     notFound();
