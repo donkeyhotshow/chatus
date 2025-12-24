@@ -5,5 +5,11 @@
   "framework": "nextjs",
   "regions": [
     "iad1"
+  ],
+  "rewrites": [
+    {
+      "source": "/chat/:roomId",
+      "destination": "/chat/:roomId"
+    }
   ]
 }
