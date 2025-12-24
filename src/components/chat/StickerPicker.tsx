@@ -6,14 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Smile, Loader2 } from 'lucide-react';
 import { StickerPack } from '@/lib/telegram/types';
 import Image from 'next/image';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface StickerPickerProps {
   onSelect: (imageUrl: string) => void;
+  onClose?: () => void;
 }
 
-export function StickerPicker({ onSelect }: StickerPickerProps) {
+export function StickerPicker({ onSelect, onClose }: StickerPickerProps) {
   const [packs, setPacks] = useState<StickerPack[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -78,6 +79,7 @@ export function StickerPicker({ onSelect }: StickerPickerProps) {
                         onClick={() => {
                           onSelect(sticker.localPath);
                           setIsOpen(false);
+                          onClose?.();
                         }}
                         className="relative aspect-square hover:bg-[var(--bg-tertiary)] rounded-lg transition-colors p-1"
                       >
@@ -96,7 +98,7 @@ export function StickerPicker({ onSelect }: StickerPickerProps) {
             </ScrollArea>
             
             <div className="border-t border-[var(--border-primary)] p-1 bg-[var(--bg-tertiary)]">
-              <ScrollArea className="w-full" orientation="horizontal">
+              <ScrollArea className="w-full">
                 <TabsList className="bg-transparent h-10 justify-start">
                   {packs.map(pack => (
                     <TabsTrigger 
@@ -116,6 +118,7 @@ export function StickerPicker({ onSelect }: StickerPickerProps) {
                     </TabsTrigger>
                   ))}
                 </TabsList>
+                <ScrollBar orientation="horizontal" />
               </ScrollArea>
             </div>
           </Tabs>

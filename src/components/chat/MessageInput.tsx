@@ -255,7 +255,6 @@ export function MessageInput({
                         onStickerSend(url);
                         setShowStickerPicker(false);
                     }}
-                    onClose={() => setShowStickerPicker(false)}
                 />
             )}
 
