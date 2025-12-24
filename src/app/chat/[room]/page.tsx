@@ -1,21 +1,19 @@
 import { ChatRoomWrapper } from './ChatRoomWrapper';
 import { notFound } from 'next/navigation';
 
-// Force Node.js runtime and dynamic rendering
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const dynamicParams = true;
 
 interface PageProps {
-  params: Promise<{ roomId: string }>;
+  params: Promise<{ room: string }>;
 }
 
 export default async function ChatPage({ params }: PageProps) {
-  const { roomId } = await params;
+  const { room } = await params;
 
-  if (!roomId) {
+  if (!room) {
     notFound();
   }
 
-  return <ChatRoomWrapper roomId={roomId} />;
+  return <ChatRoomWrapper roomId={room} />;
 }
