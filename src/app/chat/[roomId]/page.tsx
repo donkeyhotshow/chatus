@@ -3,6 +3,11 @@
 import { ChatRoom } from '@/components/chat/ChatRoom';
 import { useParams } from 'next/navigation';
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
+export const revalidate = 0;
+
 export default function ChatPage() {
   const params = useParams();
   const roomId = params?.roomId as string || '';

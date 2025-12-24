@@ -8,6 +8,7 @@ import { logger } from "@/lib/logger";
 import { Message, UserProfile } from "@/lib/types";
 import { withRetryAndTimeout } from "@/lib/utils";
 import { isDemoMode } from "@/lib/demo-mode";
+import { getOfflineQueue, QueuedMessage } from "./OfflineMessageQueue";
 
 const MESSAGE_PAGE_SIZE = 30;
 
@@ -29,12 +30,51 @@ export class MessageService {
     private receivedMessageIds = new Set<string>();
     private sentMessageIds = new Set<string>();
 
+    // P0-002 FIX: Offline queue integration
+    private offlineQueue = getOfflineQueue();
+    private offlineQueueUnsubscribe: (() => void) | null = null;
+
     private notifyCallback: () => void;
 
     constructor(roomId: string, firestore: Firestore, notifyCallback: () => void) {
         this.roomId = roomId;
         this.firestore = firestore;
         this.notifyCallback = notifyCallback;
+
+        // P0-002 FIX: Setup offline queue send callback
+        this.setupOfflineQueueCallback();
+    }
+
+    // P0-002 FIX: Setup offline queue to send messages when back online
+    private setupOfflineQueueCallback() {
+        this.offlineQueue.setSendCallback(async (queuedMsg: QueuedMessage) => {
+            if (queuedMsg.roomId !== this.roomId) {
+                throw new Error('Message belongs to different room');
+            }
+
+            // Send the queued message
+            await addDoc(collection(this.firestore, 'rooms', this.roomId, 'messages'), {
+                text: queuedMsg.text || '',
+                imageUrl: queuedMsg.imageUrl || null,
+                user: {
+                    id: queuedMsg.senderId,
+                    name: queuedMsg.senderName,
+                    avatar: queuedMsg.senderAvatar || '',
+                },
+                senderId: queuedMsg.senderId,
+                clientMessageId: queuedMsg.id,
+                createdAt: serverTimestamp(),
+                reactions: [],
+                delivered: false,
+                seen: false,
+                type: queuedMsg.imageUrl ? 'image' : 'text',
+            });
+        });
+
+        // Subscribe to queue changes to update UI
+        this.offlineQueueUnsubscribe = this.offlineQueue.subscribe(() => {
+            this.notifyCallback();
+        });
     }
 
     setCurrentUser(user: UserProfile | null) {
@@ -260,6 +300,27 @@ export class MessageService {
             this.notifyCallback();
         }
 
+        // P0-002 FIX: Check if offline - queue message instead of sending
+        if (!navigator.onLine) {
+            logger.info('[MessageService] Offline - queueing message', { msgId });
+            this.offlineQueue.add({
+                id: msgId,
+                roomId: this.roomId,
+                text: messageData.text,
+                imageUrl: messageData.imageUrl,
+                senderId: this.currentUser.id,
+                senderName: this.currentUser.name,
+                senderAvatar: this.currentUser.avatar,
+                timestamp: Date.now(),
+            });
+            // Mark as pending in UI
+            this.messages = this.messages.map(m =>
+                m.id === msgId ? { ...m, pending: true } as Message : m
+            );
+            this.notifyCallback();
+            return;
+        }
+
         try {
             // Retry logic з exponential backoff
             await withRetryAndTimeout(
@@ -275,13 +336,31 @@ export class MessageService {
                 { timeoutMs: 15_000, attempts: 3, backoffMs: 1000 }
             );
         } catch (error) {
-            // Видаляємо optimistic повідомлення при помилці
-            this.messages = this.messages.filter(m => m.id !== msgId);
-            this.sentMessageIds.delete(msgId);
+            // P0-002 FIX: On failure, queue message for retry instead of removing
+            logger.warn('[MessageService] Send failed, queueing for retry', { msgId });
+
+            // Check if we should queue (not already queued)
+            if (!this.offlineQueue.isMessagePending(msgId)) {
+                this.offlineQueue.add({
+                    id: msgId,
+                    roomId: this.roomId,
+                    text: messageData.text,
+                    imageUrl: messageData.imageUrl,
+                    senderId: this.currentUser!.id,
+                    senderName: this.currentUser!.name,
+                    senderAvatar: this.currentUser!.avatar,
+                    timestamp: Date.now(),
+                });
+            }
+
+            // Mark as pending instead of removing
+            this.messages = this.messages.map(m =>
+                m.id === msgId ? { ...m, pending: true } as Message : m
+            );
             this.notifyCallback();
 
-            logger.error('Failed to send message after retries', error as Error, { roomId: this.roomId });
-            throw error;
+            logger.error('Failed to send message, queued for retry', error as Error, { roomId: this.roomId });
+            // Don't throw - message is queued for retry
         }
     }
 
@@ -422,8 +501,23 @@ export class MessageService {
             this.newestMessageListenerUnsub();
             this.newestMessageListenerUnsub = null;
         }
+        // P0-002 FIX: Cleanup offline queue subscription
+        if (this.offlineQueueUnsubscribe) {
+            this.offlineQueueUnsubscribe();
+            this.offlineQueueUnsubscribe = null;
+        }
         this.messages = [];
         this.receivedMessageIds.clear();
         this.sentMessageIds.clear();
+    }
+
+    // P0-002 FIX: Get pending offline messages for this room
+    getPendingMessages(): QueuedMessage[] {
+        return this.offlineQueue.getPendingMessages(this.roomId);
+    }
+
+    // P0-002 FIX: Check if there are pending messages
+    hasPendingMessages(): boolean {
+        return this.offlineQueue.getPendingMessages(this.roomId).length > 0;
     }
 }

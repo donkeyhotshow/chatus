@@ -232,7 +232,10 @@ export function HomeClient() {
                                                 aria-hidden="true"
                                             />
                                         )}
-                                        <span id="username-valid" className="sr-only">Имя пользователя валидно</span>
+                                        {/* P3-002 FIX: Removed noisy validation message, using sr-only for screen readers */}
+                                        <span id="username-valid" className="sr-only">
+                                            {isUsernameValid ? "Имя пользователя валидно" : "Введите имя от 2 до 20 символов"}
+                                        </span>
                                     </div>
                                 </div>
 
@@ -283,7 +286,10 @@ export function HomeClient() {
                                                 aria-hidden="true"
                                             />
                                         )}
-                                        <span id="roomcode-valid" className="sr-only">Код комнаты валиден</span>
+                                        {/* P3-002 FIX: Removed noisy validation message, using sr-only for screen readers */}
+                                        <span id="roomcode-valid" className="sr-only">
+                                            {isRoomCodeValid ? "Код комнаты валиден" : "Введите код от 3 до 6 символов"}
+                                        </span>
                                     </div>
                                 </div>
 

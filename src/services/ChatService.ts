@@ -63,10 +63,12 @@ export class ChatService {
   private listeners: ChatServiceListener[] = [];
   private unsubscribes: Unsubscribe[] = [];
 
-  // Race condition protection
+  // Race condition protection - P0-001 fix
   private isJoining: boolean = false;
   private joinPromise: Promise<void> | null = null;
   private hasJoined: boolean = false;
+  private lastJoinAttempt: number = 0;
+  private readonly JOIN_DEBOUNCE_MS = 2000; // Debounce join attempts
 
   private _messageQueue: ReturnType<typeof getMessageQueue> | null = null;
 
@@ -159,6 +161,15 @@ export class ChatService {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async joinRoom(user: UserProfile, _isNewRoom: boolean = false): Promise<void> {
+    const now = Date.now();
+
+    // P0-001 FIX: Debounce join attempts to prevent transaction conflicts
+    if (now - this.lastJoinAttempt < this.JOIN_DEBOUNCE_MS) {
+      logger.debug('[ChatService] Join debounced', { roomId: this.roomId, timeSinceLastAttempt: now - this.lastJoinAttempt });
+      if (this.joinPromise) return this.joinPromise;
+      return Promise.resolve();
+    }
+
     // Prevent multiple simultaneous joins
     if (this.isJoining) return this.joinPromise || Promise.resolve();
 
@@ -168,6 +179,7 @@ export class ChatService {
     }
 
     this.isJoining = true;
+    this.lastJoinAttempt = now;
 
     this.joinPromise = (async () => {
       try {
@@ -181,13 +193,13 @@ export class ChatService {
           return;
         }
 
-        // Use setDoc with merge instead of transaction to avoid conflicts
+        // P0-001 FIX: Use setDoc with merge to avoid transaction conflicts
         await withRetry(async () => {
           const roomRef = doc(this.firestore, 'rooms', this.roomId);
           const roomDoc = await getDoc(roomRef);
 
           if (!roomDoc.exists()) {
-            // Create new room
+            // Create new room with setDoc (no transaction needed)
             await setDoc(roomRef, {
               id: this.roomId,
               participants: [user.id],
@@ -196,20 +208,31 @@ export class ChatService {
               updatedAt: serverTimestamp(),
             });
           } else {
-            // Update existing room - add user if not present
+            // P0-001 FIX: Use setDoc with merge instead of updateDoc to avoid conflicts
             const data = roomDoc.data() as Room;
             const participants = data.participants || [];
             const profiles = data.participantProfiles || [];
 
             if (!participants.includes(user.id)) {
-              await updateDoc(roomRef, {
+              // Use merge to safely add user without overwriting other fields
+              await setDoc(roomRef, {
                 participants: [...participants, user.id],
-                participantProfiles: [...profiles, user],
+                participantProfiles: [...profiles.filter(p => p.id !== user.id), user],
                 updatedAt: serverTimestamp(),
-              });
+              }, { merge: true });
+            } else {
+              // User already in room, just update their profile
+              const updatedProfiles = profiles.map(p => p.id === user.id ? user : p);
+              if (!profiles.some(p => p.id === user.id)) {
+                updatedProfiles.push(user);
+              }
+              await setDoc(roomRef, {
+                participantProfiles: updatedProfiles,
+                updatedAt: serverTimestamp(),
+              }, { merge: true });
             }
           }
-        }, 3, 300);
+        }, 3, 500); // Increased backoff for stability
 
         this.hasJoined = true;
         this.initListeners();

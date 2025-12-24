@@ -29,11 +29,16 @@ export const MobileNavigation = memo(function MobileNavigation({
     className
 }: MobileNavigationProps) {
     return (
-        <nav className={cn(
-            "fixed bottom-0 left-0 right-0 z-50 bg-[var(--bg-secondary)]/95 backdrop-blur-lg border-t border-[var(--border-primary)] safe-bottom",
-            className
-        )}>
-            <div className="flex items-center justify-around h-[var(--nav-height-mobile)] px-2">
+        <nav
+            className={cn(
+                "fixed bottom-0 left-0 right-0 z-50 bg-[var(--bg-secondary)]/95 backdrop-blur-lg border-t border-[var(--border-primary)] safe-bottom",
+                className
+            )}
+            role="navigation"
+            aria-label="Основная навигация"
+        >
+            {/* P0-002 FIX: Ensure min-height 72px for proper touch targets */}
+            <div className="flex items-center justify-around min-h-[72px] px-2">
                 {tabs.map((tab) => {
                     const isActive = activeTab === tab.id;
                     const showBadge = tab.id === 'chat' && unreadCount > 0;
@@ -47,19 +52,31 @@ export const MobileNavigation = memo(function MobileNavigation({
                                 }
                                 onTabChange(tab.id);
                             }}
+                            aria-label={tab.label}
+                            aria-current={isActive ? 'page' : undefined}
                             className={cn(
-                                "relative flex flex-col items-center justify-center gap-1.5 flex-1 py-3 transition-all duration-200 touch-target min-h-[64px]",
+                                // P0-002 FIX: Explicit 48x48px minimum touch target (>44px requirement)
+                                "relative flex flex-col items-center justify-center gap-1.5 flex-1",
+                                "min-w-[48px] min-h-[48px] py-3",
+                                "transition-all duration-200 touch-target",
+                                "focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-primary)] focus-visible:ring-offset-2",
                                 isActive ? "opacity-100" : "text-[var(--text-muted)] opacity-50"
                             )}
                             style={isActive ? { color: tab.color } : undefined}
                         >
                             <div className="relative">
-                                <tab.icon className={cn(
-                                    "w-6 h-6 transition-all duration-200",
-                                    isActive && "scale-110"
-                                )} />
+                                <tab.icon
+                                    className={cn(
+                                        "w-6 h-6 transition-all duration-200",
+                                        isActive && "scale-110"
+                                    )}
+                                    aria-hidden="true"
+                                />
                                 {showBadge && (
-                                    <span className="absolute -top-2 -right-2 min-w-[20px] h-[20px] px-1 bg-[var(--error)] text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg">
+                                    <span
+                                        className="absolute -top-2 -right-2 min-w-[20px] h-[20px] px-1 bg-[var(--error)] text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg"
+                                        aria-label={`${unreadCount} непрочитанных сообщений`}
+                                    >
                                         {unreadCount > 99 ? '99+' : unreadCount}
                                     </span>
                                 )}
@@ -72,6 +89,7 @@ export const MobileNavigation = memo(function MobileNavigation({
                                 <div
                                     className="absolute bottom-2 w-10 h-1 rounded-full shadow-sm"
                                     style={{ backgroundColor: tab.color }}
+                                    aria-hidden="true"
                                 />
                             )}
                         </button>

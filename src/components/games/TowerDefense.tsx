@@ -18,22 +18,35 @@ const CELL_SIZE = 40;
 const GRID_W = 15;
 const GRID_H = 11;
 
-// Mobile-responsive cell size with better detection
-function getCellSize() {
+// P1-001 FIX: Mobile-responsive cell size with better detection
+function getCellSize(): number {
   if (typeof window === 'undefined') return CELL_SIZE;
 
   // Определяем мобильное устройство
   const isMobile = window.innerWidth <= 768 ||
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
+  // Get available width accounting for padding
+  const containerPadding = 32; // 16px on each side
+  const availableWidth = window.innerWidth - containerPadding;
+
   if (isMobile) {
-    // На мобильных используем меньший размер сетки
-    const maxWidth = Math.min(window.innerWidth - 24, 400);
-    return Math.max(Math.floor(maxWidth / GRID_W), 20); // Минимум 20px
+    // На мобильных используем адаптивный размер сетки
+    const maxWidth = Math.min(availableWidth, 400);
+    const calculatedSize = Math.floor(maxWidth / GRID_W);
+    return Math.max(calculatedSize, 18); // Минимум 18px для touch targets
   }
 
-  const maxWidth = Math.min(window.innerWidth - 32, 600);
-  return Math.floor(maxWidth / GRID_W);
+  const maxWidth = Math.min(availableWidth, 600);
+  return Math.min(Math.floor(maxWidth / GRID_W), CELL_SIZE);
+}
+
+// P1-001 FIX: Get grid dimensions based on cell size
+function getGridDimensions(cellSize: number): { width: number; height: number } {
+  return {
+    width: GRID_W * cellSize,
+    height: GRID_H * cellSize
+  };
 }
 
 // Проверка поддержки WebGL/Canvas для мобильных

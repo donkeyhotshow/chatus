@@ -205,15 +205,16 @@ export function EnhancedMessageInput({
                 </div>
             )}
 
-            {/* Input row */}
-            <div className="flex items-end gap-2">
+            {/* Input row - P1-001 FIX: Added ARIA labels */}
+            <div className="flex items-end gap-2" role="group" aria-label="Ввод сообщения">
                 {/* Emoji button */}
                 <button
                     type="button"
                     disabled={disabled}
-                    className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors touch-target disabled:opacity-50"
+                    aria-label="Открыть эмодзи"
+                    className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors touch-target disabled:opacity-50 min-w-[44px] min-h-[44px]"
                 >
-                    <Smile className="w-5 h-5" />
+                    <Smile className="w-5 h-5" aria-hidden="true" />
                 </button>
 
                 {/* Text input */}
@@ -231,6 +232,8 @@ export function EnhancedMessageInput({
                         enterKeyHint="send"
                         autoComplete="off"
                         autoCorrect="on"
+                        aria-label="Введите сообщение"
+                        aria-describedby={message.length > 800 ? "char-count" : undefined}
                         className={cn(
                             "w-full px-4 py-2.5 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-2xl",
                             "text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
@@ -244,10 +247,14 @@ export function EnhancedMessageInput({
 
                     {/* Character count */}
                     {message.length > 800 && (
-                        <span className={cn(
-                            "absolute right-3 bottom-2 text-xs",
-                            message.length > 1000 ? "text-[var(--error)]" : "text-[var(--text-muted)]"
-                        )}>
+                        <span
+                            id="char-count"
+                            className={cn(
+                                "absolute right-3 bottom-2 text-xs",
+                                message.length > 1000 ? "text-[var(--error)]" : "text-[var(--text-muted)]"
+                            )}
+                            aria-live="polite"
+                        >
                             {message.length}/1000
                         </span>
                     )}
@@ -260,6 +267,7 @@ export function EnhancedMessageInput({
                     onChange={handleFileChange}
                     accept="image/*"
                     className="hidden"
+                    aria-label="Выбрать изображение"
                 />
 
                 {/* Image button */}
@@ -268,9 +276,10 @@ export function EnhancedMessageInput({
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={disabled}
-                        className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors touch-target disabled:opacity-50"
+                        aria-label="Прикрепить изображение"
+                        className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors touch-target disabled:opacity-50 min-w-[44px] min-h-[44px]"
                     >
-                        <ImageIcon className="w-5 h-5" />
+                        <ImageIcon className="w-5 h-5" aria-hidden="true" />
                     </button>
                 )}
 
@@ -279,14 +288,15 @@ export function EnhancedMessageInput({
                     ref={sendButtonRef}
                     onClick={handleSend}
                     disabled={!canSend}
+                    aria-label={canSend ? "Отправить сообщение" : "Введите сообщение для отправки"}
                     className={cn(
-                        "p-2.5 rounded-full transition-all duration-150 touch-target",
+                        "p-2.5 rounded-full transition-all duration-150 touch-target min-w-[44px] min-h-[44px]",
                         canSend
                             ? "bg-[var(--accent-primary)] text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)]"
                             : "bg-[var(--bg-tertiary)] text-[var(--text-muted)] cursor-not-allowed"
                     )}
                 >
-                    <Send className="w-5 h-5" />
+                    <Send className="w-5 h-5" aria-hidden="true" />
                 </button>
             </div>
         </div>
