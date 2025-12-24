@@ -1,6 +1,14 @@
 'use client';
 
-import { ChatRoom } from '@/components/chat/ChatRoom';
+import dynamic from 'next/dynamic';
+
+const ChatRoom = dynamic(
+  () => import('@/components/chat/ChatRoom').then(m => ({ default: m.ChatRoom })),
+  {
+    ssr: false,
+    loading: () => <div className="h-full w-full flex items-center justify-center">Loading...</div>
+  }
+);
 
 interface ChatRoomWrapperProps {
   roomId: string;
