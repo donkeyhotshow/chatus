@@ -96,11 +96,12 @@ class ConnectionManager {
         this.state.rtt = connection.rtt || null;
 
         // Detect slow connection
-        const isSlow =
+        const isSlow = Boolean(
           connection.effectiveType === 'slow-2g' ||
           connection.effectiveType === '2g' ||
           (connection.rtt && connection.rtt > 500) ||
-          (connection.downlink && connection.downlink < 0.5);
+          (connection.downlink && connection.downlink < 0.5)
+        );
 
         if (isSlow !== this.state.isSlow) {
           this.state.isSlow = isSlow;
