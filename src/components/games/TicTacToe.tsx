@@ -1,11 +1,11 @@
 "use client";
 
 import { GameState, UserProfile } from "@/lib/types";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "../ui/button";
 import Confetti from 'react-confetti';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "../ui/card";
-import { ArrowLeft, Circle, X } from "lucide-react";
+import { ArrowLeft, Circle, X, Bot } from "lucide-react";
 import { useActionGuard, hapticFeedback } from "@/lib/game-utils";
 
 type TicTacToeProps = {
@@ -32,24 +32,85 @@ function calculateWinner(board: (string | null)[]) {
     return null;
 }
 
+// AI Logic - Minimax algorithm for unbeatable AI
+function getAIMove(board: (string | null)[], aiSymbol: 'X' | 'O'): number {
+    const playerSymbol = aiSymbol === 'X' ? 'O' : 'X';
+
+    // Check for winning move
+    for (let i = 0; i < 9; i++) {
+        if (board[i] === null) {
+            const testBoard = [...board];
+            testBoard[i] = aiSymbol;
+            if (calculateWinner(testBoard) === aiSymbol) {
+                return i;
+            }
+        }
+    }
+
+    // Block player's winning move
+    for (let i = 0; i < 9; i++) {
+        if (board[i] === null) {
+            const testBoard = [...board];
+            testBoard[i] = playerSymbol;
+            if (calculateWinner(testBoard) === playerSymbol) {
+                return i;
+            }
+        }
+    }
+
+    // Take center if available
+    if (board[4] === null) return 4;
+
+    // Take corners
+    const corners = [0, 2, 6, 8];
+    const availableCorners = corners.filter(i => board[i] === null);
+    if (availableCorners.length > 0) {
+        return availableCorners[Math.floor(Math.random() * availableCorners.length)];
+    }
+
+    // Take any available edge
+    const edges = [1, 3, 5, 7];
+    const availableEdges = edges.filter(i => board[i] === null);
+    if (availableEdges.length > 0) {
+        return availableEdges[Math.floor(Math.random() * availableEdges.length)];
+    }
+
+    return -1;
+}
+
 const XIcon = () => <X className="w-10 h-10 text-white animate-in fade-in zoom-in-50 duration-300" />;
 const OIcon = () => <Circle className="w-10 h-10 text-cyan-400 animate-in fade-in zoom-in-50 duration-300" />;
+
+// AI player constant
+const AI_PLAYER_ID = '__AI__';
+const AI_PLAYER: UserProfile = {
+    id: AI_PLAYER_ID,
+    name: 'AI Bot',
+    avatar: '',
+};
 
 export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUser }: TicTacToeProps) {
     const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
     const [optimisticBoard, setOptimisticBoard] = useState<(string | null)[] | null>(null);
     const [lastMoveIndex, setLastMoveIndex] = useState<number | null>(null);
+    const [isAIThinking, setIsAIThinking] = useState(false);
+    const aiMoveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     const { board, currentPlayer, winner, hostId } = gameState;
     const isDraw = !winner && board?.every(cell => cell !== null);
 
+    // Use AI if no other user
+    const isVsAI = !otherUser;
+    const opponent = otherUser || AI_PLAYER;
+
     const playerSymbols: { [key: string]: 'X' | 'O' } = hostId ? {
         [hostId]: 'X',
-        ...(otherUser && otherUser.id !== hostId && { [otherUser.id]: 'O' }),
+        [opponent.id]: 'O',
         ...(user.id !== hostId && { [user.id]: 'O' })
     } : {};
 
     const myTurn = currentPlayer === user.id;
+    const isAITurn = isVsAI && currentPlayer === AI_PLAYER_ID;
     const displayBoard = optimisticBoard || board;
 
     useEffect(() => {
@@ -69,11 +130,55 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
         }
     }, [board]);
 
+    // AI Move Logic - BUG-001 FIX
+    const makeAIMove = useCallback(() => {
+        if (!board || winner || !isVsAI) return;
+
+        const aiSymbol = playerSymbols[AI_PLAYER_ID];
+        if (!aiSymbol) return;
+
+        const moveIndex = getAIMove(board, aiSymbol);
+        if (moveIndex === -1) return;
+
+        setIsAIThinking(true);
+
+        // Add delay for better UX
+        aiMoveTimeoutRef.current = setTimeout(() => {
+            const newBoard = board.slice();
+            newBoard[moveIndex] = aiSymbol;
+
+            const newWinner = calculateWinner(newBoard);
+
+            updateGameState({
+                board: newBoard,
+                currentPlayer: user.id,
+                winner: newWinner ? AI_PLAYER_ID : null,
+            });
+
+            setLastMoveIndex(moveIndex);
+            setIsAIThinking(false);
+            hapticFeedback('light');
+        }, 500 + Math.random() * 500); // 500-1000ms delay
+    }, [board, winner, isVsAI, playerSymbols, updateGameState, user.id]);
+
+    // Trigger AI move when it's AI's turn
+    useEffect(() => {
+        if (isAITurn && !winner && !isDraw && board) {
+            makeAIMove();
+        }
+
+        return () => {
+            if (aiMoveTimeoutRef.current) {
+                clearTimeout(aiMoveTimeoutRef.current);
+            }
+        };
+    }, [isAITurn, winner, isDraw, board, makeAIMove]);
+
     const { guard } = useActionGuard();
 
     const handleClick = guard((...args: unknown[]) => {
         const i = args[0] as number;
-        if (winner || displayBoard?.[i] || !myTurn || !otherUser) return;
+        if (winner || displayBoard?.[i] || !myTurn || isAIThinking) return;
 
         // Оптимистичное обновление
         const newOptimisticBoard = displayBoard!.slice();
@@ -86,9 +191,12 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
 
         const newWinner = calculateWinner(newBoard);
 
+        // Set next player - AI or other user
+        const nextPlayer = isVsAI ? AI_PLAYER_ID : opponent.id;
+
         updateGameState({
             board: newBoard,
-            currentPlayer: otherUser.id,
+            currentPlayer: nextPlayer,
             winner: newWinner ? user.id : null,
         });
 
@@ -97,13 +205,18 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
 
     const handleReset = guard(() => {
         let newStarterId = hostId;
-        if (otherUser) {
-            const playerIds = [user.id, otherUser.id];
+        if (opponent) {
+            const playerIds = [user.id, opponent.id];
             newStarterId = playerIds.find(id => id !== gameState.currentPlayer) ?? hostId;
         }
 
         setOptimisticBoard(null);
         setLastMoveIndex(null);
+        setIsAIThinking(false);
+
+        if (aiMoveTimeoutRef.current) {
+            clearTimeout(aiMoveTimeoutRef.current);
+        }
 
         updateGameState({
             board: Array(9).fill(null),
@@ -116,6 +229,7 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
 
     const getPlayerName = (playerId: string) => {
         if (playerId === user.id) return user.name;
+        if (playerId === AI_PLAYER_ID) return 'AI Bot';
         if (playerId === otherUser?.id) return otherUser.name;
         return "Player";
     }
@@ -123,7 +237,8 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
     const getStatus = () => {
         if (winner) return `Победитель: ${getPlayerName(winner)}`;
         if (isDraw) return "Ничья!";
-        if (!otherUser) return "Ожидание соперника...";
+        if (!otherUser && !isVsAI) return "Ожидание соперника...";
+        if (isAIThinking) return "AI думает...";
         if (!currentPlayer) return "Игра готова, хост может начать.";
         return `Ход: ${getPlayerName(currentPlayer)} (${playerSymbols[currentPlayer]}) - ${myTurn ? "Ваш ход" : "Ожидание"}`;
     }
@@ -154,6 +269,13 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
                     <CardTitle className="text-sm font-medium text-neutral-400 pt-2">{getStatus()}</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-4">
+                    {/* VS AI indicator */}
+                    {isVsAI && (
+                        <div className="flex items-center gap-2 text-sm text-cyan-400 bg-cyan-400/10 px-3 py-1 rounded-full">
+                            <Bot className="w-4 h-4" />
+                            <span>Игра против AI</span>
+                        </div>
+                    )}
                     <div className="grid grid-cols-3 gap-2 p-2 bg-black/30 rounded-lg">
                         {displayBoard?.map((cell, i) => (
                             <button
@@ -163,9 +285,9 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
                                     h-20 w-20 bg-neutral-900 rounded-lg flex items-center justify-center text-4xl font-bold
                                     transition-all duration-200 hover:bg-neutral-800 disabled:cursor-not-allowed
                                     ${lastMoveIndex === i ? 'ring-2 ring-cyan-400 ring-offset-2 ring-offset-neutral-950' : ''}
-                                    ${!cell && myTurn && !winner ? 'hover:scale-105' : ''}
+                                    ${!cell && myTurn && !winner && !isAIThinking ? 'hover:scale-105' : ''}
                                 `}
-                                disabled={!!winner || !!displayBoard[i] || !myTurn || !otherUser}
+                                disabled={!!winner || !!displayBoard[i] || !myTurn || isAIThinking}
                             >
                                 {cell === 'X' ? <XIcon /> : cell === 'O' ? <OIcon /> : null}
                             </button>

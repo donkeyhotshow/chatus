@@ -4,34 +4,61 @@
 
 @layer base {
   :root {
-    /* Strict Black Theme - единый для desktop и mobile */
-    --bg-primary: #000000;
-    --bg-secondary: #0a0a0a;
-    --bg-tertiary: #161616; /* Slightly lighter for better separation */
-    --bg-elevated: #1c1c1c;
-    --bg-hover: #262626;
+    /* ═══════════════════════════════════════════════════════════════
+       CHATSU V4.0 — DARK MINIMALISM THEME
+       ═══════════════════════════════════════════════════════════════ */
 
-    --text-primary: #ffffff;
-    --text-secondary: #b0b0b0; /* Increased contrast from #a0a0a0 */
-    --text-muted: #808080; /* Increased contrast from #707070 */
+    /* Background Colors - Deep Dark */
+    --bg-primary: #0F172A;
+    --bg-secondary: #1E293B;
+    --bg-tertiary: #334155;
+    --bg-elevated: #1E293B;
+    --bg-hover: #334155;
+    --bg-card: #1E293B;
 
-    --border-primary: #262626; /* Slightly more visible */
-    --border-secondary: #1f1f1f;
-    --border-hover: #404040;
+    /* Glass Effect */
+    --glass-bg: rgba(30, 41, 59, 0.72);
+    --glass-border: rgba(148, 163, 184, 0.12);
 
-    /* Accent - белый на чёрном, но с возможностью цвета */
-    --accent-primary: #3b82f6; /* Blue accent for better visibility/branding */
-    --accent-hover: #2563eb;
-    --accent-muted: #1d4ed8;
+    /* Text Colors - High Contrast */
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+    --text-muted: #64748B;
+
+    /* Border Colors */
+    --border-primary: rgba(148, 163, 184, 0.12);
+    --border-secondary: rgba(148, 163, 184, 0.08);
+    --border-hover: rgba(99, 102, 241, 0.5);
+
+    /* Primary Accent - Indigo Gradient */
+    --primary: #6366F1;
+    --primary-light: #818CF8;
+    --primary-dark: #4F46E5;
+    --accent-primary: #6366F1;
+    --accent-hover: #4F46E5;
+    --accent-muted: #4338CA;
     --accent-contrast: #ffffff;
-    --accent-light: rgba(59, 130, 246, 0.1);
+    --accent-light: rgba(99, 102, 241, 0.15);
 
-    /* Status colors */
-    --success: #10b981;
-    --warning: #f59e0b;
-    --error: #ef4444;
-    --info: #3b82f6;
-    --online: #10b981;
+    /* Status Colors */
+    --success: #10B981;
+    --success-light: #34D399;
+    --warning: #F59E0B;
+    --warning-light: #FBBF24;
+    --error: #EF4444;
+    --error-light: #F87171;
+    --info: #3B82F6;
+    --online: #10B981;
+
+    /* Glow Effects */
+    --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.3);
+    --shadow-glow-success: 0 0 20px rgba(16, 185, 129, 0.3);
+    --shadow-glow-error: 0 0 20px rgba(239, 68, 68, 0.3);
+
+    /* Functional Colors for Features */
+    --chat-primary: #6366F1;
+    --draw-primary: #10B981;
+    --game-primary: #F59E0B;
 
     /* Spacing */
     --space-1: 4px;
@@ -42,17 +69,18 @@
     --space-6: 24px;
     --space-8: 32px;
 
-    /* Radius */
-    --radius-sm: 6px;
-    --radius-md: 12px; /* Modern rounded look */
+    /* Radius - Modern Rounded */
+    --radius-sm: 8px;
+    --radius-md: 12px;
     --radius-lg: 16px;
     --radius-xl: 24px;
     --radius-full: 9999px;
 
     /* Shadows */
-    --shm: 0 2px 8px rgba(0, 0, 0, 0.4);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
-    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 12px 48px rgba(0, 0, 0, 0.6);
 
     /* Transitions */
     --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -60,13 +88,13 @@
     --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
 
     /* Layout */
-    --header-height: 60px; /* Slightly taller for better touch targets */
-    --sidebar-width: 64px; /* Collapsed sidebar width */
-    --sidebar-width-expanded: 200px; /* Expanded sidebar width */
-    --input-height: 52px; /* Taller input */
-    --touch-target: 44px;
-    --max-chat-width: 900px; /* Limit chat width on desktop */
-    --nav-height-mobile: 72px; /* Mobile bottom navigation height */
+    --header-height: 64px;
+    --sidebar-width: 72px;
+    --sidebar-width-expanded: 240px;
+    --input-height: 52px;
+    --touch-target: 48px;
+    --max-chat-width: 900px;
+    --nav-height-mobile: 72px;
 
     /* Safe areas */
     --safe-top: env(safe-area-inset-top, 0px);
@@ -192,50 +220,110 @@
       font-size: 16px !important;
     }
   }
+
+  /* ===== BUG-018 FIX: iOS Safari Orientation Change ===== */
+  /* Prevent incorrect scaling when rotating device */
+  @media screen and (orientation: landscape) {
+    html {
+      /* Prevent text size adjustment on orientation change */
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+
+    /* Ensure proper viewport on iOS Safari landscape */
+    body {
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+    }
+  }
+
+  /* Handle orientation change smoothly */
+  @media (orientation: portrait) {
+    :root {
+      --viewport-height: 100vh;
+    }
+  }
+
+  @media (orientation: landscape) {
+    :root {
+      --viewport-height: 100vh;
+      --viewport-height: 100dvh;
+    }
+  }
+
+  /* ===== BUG-019 FIX: Safe Area for iPhone with Notch ===== */
+  /* Ensure navigation doesn't stick to edges on notched devices */
+  @supports (padding: env(safe-area-inset-bottom)) {
+    .mobile-nav,
+    nav[role="navigation"] {
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      padding-left: env(safe-area-inset-left, 0px);
+      padding-right: env(safe-area-inset-right, 0px);
+    }
+
+    /* Bottom navigation safe area */
+    .bottom-nav {
+      padding-bottom: max(8px, env(safe-area-inset-bottom, 8px));
+    }
+
+    /* Header safe area for notch */
+    .mobile-header {
+      padding-top: env(safe-area-inset-top, 0px);
+    }
+  }
 }
 
 @layer components {
+  /* ═══════════════════════════════════════════════════════════════
+     CHATSU V4.0 — COMPONENT STYLES
+     ═══════════════════════════════════════════════════════════════ */
+
   /* ===== BUTTONS ===== */
   .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: var(--space-2);
-    height: var(--input-height);
-    padding: 0 var(--space-5);
-    font-size: 14px;
-    font-weight: 500;
+    min-height: 48px;
+    padding: 0 var(--space-6);
+    font-size: 15px;
+    font-weight: 600;
     letter-spacing: -0.01em;
     border-radius: var(--radius-md);
     border: none;
     cursor: pointer;
-    transition: all var(--transition-fast);
+    transition: all var(--transition);
     white-space: nowrap;
   }
 
   .btn-primary {
-    background: var(--accent-primary);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
     color: var(--accent-contrast);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
   }
 
   .btn-primary:hover {
-    background: var(--accent-hover);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35),
+                var(--shadow-glow);
   }
 
   .btn-primary:active {
     transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
   }
 
   .btn-secondary {
-    background: var(--bg-tertiary);
+    background: var(--glass-bg);
     color: var(--text-primary);
-    border: 1px solid var(--border-primary);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
   }
 
   .btn-secondary:hover {
-    background: var(--bg-hover);
+    background: var(--bg-tertiary);
     border-color: var(--border-hover);
+    transform: translateY(-1px);
   }
 
   .btn-ghost {
@@ -244,13 +332,15 @@
   }
 
   .btn-ghost:hover {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
+    background: var(--accent-light);
+    color: var(--primary-light);
   }
 
   .btn-icon {
     width: var(--touch-target);
     height: var(--touch-target);
+    min-width: var(--touch-target);
+    min-height: var(--touch-target);
     padding: 0;
     border-radius: var(--radius-md);
     background: transparent;
@@ -261,26 +351,28 @@
   }
 
   .btn-icon:hover {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
+    background: var(--accent-light);
+    color: var(--primary-light);
+    transform: scale(1.05);
   }
 
   /* ===== INPUTS ===== */
   .input {
     width: 100%;
-    height: var(--input-height);
-    padding: 0 var(--space-4);
-    font-size: 15px;
+    min-height: var(--input-height);
+    padding: 14px 16px;
+    font-size: 16px;
     color: var(--text-primary);
     background: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
+    border: 2px solid var(--glass-border);
     border-radius: var(--radius-md);
-    transition: all var(--transition-fast);
+    transition: all var(--transition);
   }
 
   .input:focus {
     outline: none;
-    border-color: var(--accent-primary);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px var(--accent-light);
     background: var(--bg-tertiary);
   }
 
@@ -296,15 +388,51 @@
 
   /* ===== CARDS ===== */
   .card {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
     overflow: hidden;
+    transition: all var(--transition);
   }
 
   .card-hover:hover {
-    background: var(--bg-tertiary);
-    border-color: var(--border-hover);
+    transform: translateY(-4px);
+    border-color: var(--primary);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4),
+                var(--shadow-glow);
+  }
+
+  /* Feature Cards */
+  .feature-card {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    transition: all var(--transition);
+  }
+
+  .feature-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--primary);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4),
+                var(--shadow-glow);
+  }
+
+  .feature-card .icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    transition: all var(--transition);
+  }
+
+  .feature-card:hover .icon-wrapper {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: var(--shadow-glow);
   }
 
   /* ===== MESSAGES ===== */
@@ -319,12 +447,12 @@
     padding: var(--space-3) var(--space-4);
     border-radius: var(--radius-lg);
     font-size: 15px;
-    line-height: 1.4;
+    line-height: 1.5;
     word-wrap: break-word;
   }
 
   .message-sent {
-    background: var(--accent-primary);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
     color: var(--accent-contrast);
     border-bottom-right-radius: var(--radius-sm);
     margin-left: auto;
@@ -853,12 +981,38 @@
     animation: scaleIn var(--transition) ease-out;
   }
 
+  /* ═══════════════════════════════════════════════════════════════
+     CHATSU V4.0 — ANIMATIONS
+     ═══════════════════════════════════════════════════════════════ */
+
   @keyframes fadeIn {
     from {
       opacity: 0;
     }
     to {
       opacity: 1;
+    }
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeInDown {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
   }
 
@@ -881,6 +1035,89 @@
     to {
       opacity: 1;
       transform: scale(1);
+    }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 40px rgba(99, 102, 241, 0.5);
+    }
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  /* Animation Classes */
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+
+  .animate-fade-in-up-delay-1 {
+    animation: fadeInUp 0.6s 0.1s ease-out forwards;
+    opacity: 0;
+  }
+
+  .animate-fade-in-up-delay-2 {
+    animation: fadeInUp 0.6s 0.2s ease-out forwards;
+    opacity: 0;
+  }
+
+  .animate-fade-in-up-delay-3 {
+    animation: fadeInUp 0.6s 0.3s ease-out forwards;
+    opacity: 0;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  /* Hover Effects */
+  .hover-lift {
+    transition: transform var(--transition), box-shadow var(--transition);
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .hover-glow {
+    transition: box-shadow var(--transition);
+  }
+
+  .hover-glow:hover {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .hover-scale {
+    transition: transform var(--transition);
+  }
+
+  .hover-scale:hover {
+    transform: scale(1.05);
+  }
+
+  /* Reduced Motion Support */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
     }
   }
 
@@ -1151,6 +1388,40 @@
   .ios-keyboard-visible textarea:focus {
     /* Ensure focused input is visible */
     scroll-margin-bottom: 100px;
+  }
+
+  /* ===== BUG-011 FIX: Android Landscape Keyboard Styles ===== */
+  /* Styles for Android devices in landscape mode with keyboard visible */
+  .android-landscape-keyboard {
+    position: sticky;
+    bottom: 0;
+    z-index: 100;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-primary);
+    padding: 4px 8px !important;
+    max-height: 60px;
+  }
+
+  .android-landscape-keyboard textarea,
+  .android-landscape-keyboard input[type="text"] {
+    font-size: 16px !important;
+    max-height: 40px !important;
+    padding: 8px 12px !important;
+  }
+
+  .android-landscape-keyboard .send-button,
+  .android-landscape-keyboard button {
+    min-width: 40px !important;
+    min-height: 40px !important;
+    padding: 8px !important;
+  }
+
+  /* Hide non-essential buttons in Android landscape to save space */
+  @media (max-height: 400px) and (orientation: landscape) {
+    .android-landscape-keyboard .emoji-button,
+    .android-landscape-keyboard .sticker-button {
+      display: none;
+    }
   }
 
   /* ===== ACCESSIBILITY IMPROVEMENTS (Requirements 12.1, 12.2, 12.3) ===== */

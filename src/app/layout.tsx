@@ -118,6 +118,32 @@ export default function RootLayout({
         />
       </head>
       <body suppressHydrationWarning>
+        {/* BUG-014 FIX: Fallback for disabled JavaScript */}
+        <noscript>
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#0a0a0a',
+            color: '#ffffff',
+            padding: '2rem',
+            textAlign: 'center',
+            fontFamily: 'system-ui, sans-serif',
+            zIndex: 9999
+          }}>
+            <div>
+              <h1 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>JavaScript Required</h1>
+              <p style={{ color: '#888', marginBottom: '1rem' }}>
+                ChatUs требует JavaScript для работы. Пожалуйста, включите JavaScript в настройках браузера.
+              </p>
+              <p style={{ color: '#666', fontSize: '0.875rem' }}>
+                ChatUs requires JavaScript to function. Please enable JavaScript in your browser settings.
+              </p>
+            </div>
+          </div>
+        </noscript>
         <SafeClientLayout>
           {children}
         </SafeClientLayout>
