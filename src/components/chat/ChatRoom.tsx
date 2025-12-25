@@ -308,7 +308,10 @@ export function ChatRoom({ roomId }: { roomId: string }) {
     const otherUser = room?.participantProfiles?.find(p => p.id !== user?.id);
 
     return (
-        <div className="flex h-screen-safe w-full overflow-hidden bg-[var(--bg-primary)]">
+        <div className={cn(
+            "h-screen-safe w-full overflow-hidden bg-[var(--bg-primary)]",
+            isMobile ? "flex flex-col" : "flex flex-row"
+        )}>
             {/* Connection Status Banner */}
             <ConnectionStatus />
 
