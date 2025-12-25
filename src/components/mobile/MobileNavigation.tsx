@@ -31,7 +31,7 @@ export const MobileNavigation = memo(function MobileNavigation({
     return (
         <nav
             className={cn(
-                "shrink-0 z-50 bg-[var(--bg-secondary)]/95 backdrop-blur-lg border-t border-[var(--border-primary)]",
+                "fixed bottom-0 left-0 right-0 z-50 bg-[var(--bg-secondary)]/95 backdrop-blur-lg border-t border-[var(--border-primary)]",
                 className
             )}
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}

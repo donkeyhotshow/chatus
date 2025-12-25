@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useCallback, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, X, Menu } from 'lucide-react';
 import { UserProfile } from '@/lib/types';
@@ -32,29 +32,9 @@ export function MobileChatLayout({
 }: MobileChatLayoutProps) {
     const [activeTab, setActiveTab] = useState<MobileTab>('chat');
     const [isCollabSpaceVisible, setIsCollabSpaceVisible] = useState(false);
-    const [keyboardVisible, setKeyboardVisible] = useState(false);
     const isMobile = useIsMobile();
 
-    // Keyboard detection for mobile
-    useEffect(() => {
-        if (!isMobile) return;
-
-        const handleResize = () => {
-            const viewportHeight = window.visualViewport?.height || window.innerHeight;
-            const windowHeight = window.innerHeight;
-            const keyboardHeight = windowHeight - viewportHeight;
-
-            setKeyboardVisible(keyboardHeight > 150);
-        };
-
-        if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', handleResize);
-            return () => window.visualViewport?.removeEventListener('resize', handleResize);
-        } else {
-            window.addEventListener('resize', handleResize);
-            return () => window.removeEventListener('resize', handleResize);
-        }
-    }, [isMobile]);
+    // Keyboard detection removed - handled by CSS safe-area
 
     const handleTabChange = useCallback((tab: MobileTab) => {
         if (tab === 'more') return;
@@ -159,7 +139,8 @@ export function MobileChatLayout({
                 </button>
             </motion.header>
 
-            <div className="flex-1 relative overflow-hidden">
+            {/* Main content with bottom padding for navigation */}
+            <div className="flex-1 relative overflow-hidden pb-[calc(72px+env(safe-area-inset-bottom,0px))]">
                 <motion.div
                     className={cn(
                         "absolute inset-0 bg-black overflow-y-auto mobile-scroll-y",
@@ -226,13 +207,6 @@ export function MobileChatLayout({
                 onTabChange={handleTabChange}
                 unreadCount={0}
             />
-
-            {keyboardVisible && (
-                <div
-                    className="flex-shrink-0 bg-black transition-all duration-300"
-                    style={{ height: 'env(keyboard-inset-height, 0px)' }}
-                />
-            )}
         </div>
     );
 }

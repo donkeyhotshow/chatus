@@ -435,7 +435,7 @@ export const ChatArea = memo(function ChatArea({
                 </div>
 
                 {/* Input Area */}
-                <div className="shrink-0 border-t border-[var(--border-primary)] bg-[var(--bg-secondary)] pb-[var(--safe-bottom)]">
+                <div className="shrink-0 border-t border-[var(--border-primary)] bg-[var(--bg-secondary)]">
                     {/* Reply preview */}
                     {replyTo && (
                         <div className="flex items-center justify-between mx-3 mt-2 px-3 py-2 bg-[var(--bg-tertiary)] border-l-2 border-[var(--accent-primary)] rounded-r-lg">

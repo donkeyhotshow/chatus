@@ -176,8 +176,8 @@ export function ImprovedMobileLayout({
                 </AnimatePresence>
             </header>
 
-            {/* Main Content Area - Full Screen Panels */}
-            <div className="flex-1 overflow-hidden relative">
+            {/* Main Content Area - Full Screen Panels with bottom padding for nav */}
+            <div className="flex-1 overflow-hidden relative pb-[calc(72px+env(safe-area-inset-bottom,0px))]">
                 <AnimatePresence mode="wait">
                     {activeTab === 'chat' && (
                         <motion.div

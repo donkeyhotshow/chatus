@@ -104,7 +104,7 @@ export class AnimationQueue {
    * Clear all animations from the queue
    */
   clear(): void {
-    for (const [id, animation] of this.queue) {
+    for (const [, animation] of this.queue) {
       if (animation.timeoutId) {
         clearTimeout(animation.timeoutId);
       }
@@ -173,8 +173,6 @@ export class AnimationQueue {
     if (animation.status !== 'running') {
       return;
     }
-
-    const elapsed = Date.now() - animation.startTime;
 
     try {
       animation.task.onComplete();

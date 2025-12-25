@@ -7,7 +7,6 @@ import type { Message } from '@/lib/types';
 import {
     isIOS,
     createIOSViewportManager,
-    ensureSendButtonVisible,
 } from '@/lib/ios-viewport-manager';
 
 import { StickerPicker } from './StickerPicker';

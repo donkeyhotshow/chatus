@@ -1,4 +1,4 @@
-import { GameId, GameSession, PlayerState } from './types/game';
+import { GameId, GameSession } from './types/game';
 import { v4 as uuidv4 } from 'uuid';
 
 export class GameLauncherService {
@@ -9,11 +9,11 @@ export class GameLauncherService {
    */
   public async launchGame(gameId: GameId, roomId: string, players: string[]): Promise<GameSession> {
     const sessionId = uuidv4();
-    
+
     // In a real microservice architecture, this would call the specific game service
     // to initialize a room and get the endpoint.
     // For now, we simulate the response.
-    
+
     const session: GameSession = {
       sessionId,
       gameId,

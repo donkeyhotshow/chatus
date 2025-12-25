@@ -199,7 +199,7 @@ export class WebSocketRetryController {
           resolve(socket);
         };
 
-        socket.onerror = (event) => {
+        socket.onerror = () => {
           clearTimeout(timeoutId);
           reject(new Error('WebSocket connection failed'));
         };

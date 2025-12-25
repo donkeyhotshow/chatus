@@ -54,7 +54,8 @@ export function UnifiedLayout({
             {/* Main Content */}
             <main className={cn(
                 "flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden",
-                isMobile && showNav && "pb-[var(--nav-height-mobile)]"
+                // Отступ снизу для мобильной навигации (72px + safe-area)
+                isMobile && showNav && "pb-[calc(72px+env(safe-area-inset-bottom,0px))]"
             )}>
                 {children}
             </main>

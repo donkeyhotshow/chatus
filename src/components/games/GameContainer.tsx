@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { X, Maximize2, Minimize2, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { PlayerState } from '@/lib/games/types/game';
@@ -32,19 +32,19 @@ export function GameContainer({ gameId, roomId, iframeSrc, players, onClose }: G
         </div>
 
         <div className="flex items-center gap-1">
-          <button 
+          <button
             onClick={() => { setIsLoading(true); }}
             className="p-2 hover:bg-white/10 rounded-lg text-neutral-400 hover:text-white transition-colors"
           >
             <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
           </button>
-          <button 
+          <button
             onClick={() => setIsFullscreen(!isFullscreen)}
             className="p-2 hover:bg-white/10 rounded-lg text-neutral-400 hover:text-white transition-colors"
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
-          <button 
+          <button
             onClick={onClose}
             className="p-2 hover:bg-red-500/20 rounded-lg text-neutral-400 hover:text-red-400 transition-colors"
           >
