@@ -65,6 +65,7 @@
     --input-height: 52px; /* Taller input */
     --touch-target: 44px;
     --max-chat-width: 900px; /* Limit chat width on desktop */
+    --nav-height-mobile: 72px; /* Mobile bottom navigation height */
 
     /* Safe areas */
     --safe-top: env(safe-area-inset-top, 0px);

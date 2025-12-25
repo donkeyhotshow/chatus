@@ -194,11 +194,11 @@ export const ChatArea = memo(function ChatArea({
                 body: JSON.stringify({ url })
             });
             const data = await response.json();
-            
+
             if (data.success) {
-                toast({ 
-                    title: 'Успех!', 
-                    description: `Стикерпак "${data.pack.title}" добавлен. (${data.pack.stickerCount} стикеров)` 
+                toast({
+                    title: 'Успех!',
+                    description: `Стикерпак "${data.pack.title}" добавлен. (${data.pack.stickerCount} стикеров)`
                 });
                 // Here you would typically update the sticker picker state
             } else {
@@ -206,10 +206,10 @@ export const ChatArea = memo(function ChatArea({
             }
         } catch (error) {
             logger.error('Sticker import failed', error as Error);
-            toast({ 
-                title: 'Ошибка', 
-                description: 'Не удалось импортировать стикеры. Проверьте ссылку.', 
-                variant: 'destructive' 
+            toast({
+                title: 'Ошибка',
+                description: 'Не удалось импортировать стикеры. Проверьте ссылку.',
+                variant: 'destructive'
             });
         }
     }, [toast]);
@@ -385,7 +385,7 @@ export const ChatArea = memo(function ChatArea({
                 onRetry={() => window.location.reload()}
             />
 
-            <section className="flex-1 flex flex-col h-full min-h-0 bg-[var(--bg-primary)]">
+            <section className="flex-1 flex flex-col min-h-0 bg-[var(--bg-primary)]">
                 <ChatHeader
                     roomId={roomId}
                     otherUser={otherUser}
@@ -395,7 +395,7 @@ export const ChatArea = memo(function ChatArea({
                 />
 
                 {/* Messages */}
-                <div 
+                <div
                     className="flex-1 min-h-0 overflow-hidden relative w-full max-w-[var(--max-chat-width)] mx-auto"
                     onClick={handleBackgroundClick}
                 >
@@ -435,7 +435,7 @@ export const ChatArea = memo(function ChatArea({
                 </div>
 
                 {/* Input Area */}
-                <div className="shrink-0 border-t border-[var(--border-primary)] bg-[var(--bg-secondary)]">
+                <div className="shrink-0 border-t border-[var(--border-primary)] bg-[var(--bg-secondary)] pb-[var(--safe-bottom)]">
                     {/* Reply preview */}
                     {replyTo && (
                         <div className="flex items-center justify-between mx-3 mt-2 px-3 py-2 bg-[var(--bg-tertiary)] border-l-2 border-[var(--accent-primary)] rounded-r-lg">
