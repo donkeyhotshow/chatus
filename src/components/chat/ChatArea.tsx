@@ -27,12 +27,14 @@ interface ChatAreaProps {
     user: UserProfile;
     roomId: string;
     onMobileBack?: () => void;
+    hideSearch?: boolean;
 }
 
 export const ChatArea = memo(function ChatArea({
     user,
     roomId,
     onMobileBack,
+    hideSearch = false,
 }: ChatAreaProps) {
     const [replyTo, setReplyTo] = useState<Message | null>(null);
     const [showDoodlePad, setShowDoodlePad] = useState(false);
@@ -389,7 +391,7 @@ export const ChatArea = memo(function ChatArea({
                     otherUser={otherUser}
                     isOnline={isOnline}
                     onBack={onMobileBack}
-                    onSearchOpen={handleSearchOpen}
+                    onSearchOpen={hideSearch ? undefined : handleSearchOpen}
                 />
 
                 {/* Messages */}

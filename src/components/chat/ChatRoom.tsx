@@ -336,13 +336,17 @@ export function ChatRoom({ roomId }: { roomId: string }) {
                 />
             )}
 
+            {/* Mobile Navigation - вверху под header */}
+            {isMobile && (
+                <MobileNavigation
+                    activeTab={activeTab}
+                    onTabChange={(tab) => handleTabChange(tab)}
+                />
+            )}
+
             {/* Main Content with swipe support and animations */}
             <main
-                className={cn(
-                    "flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden",
-                    // Отступ снизу для мобильной навигации (72px + safe-area)
-                    isMobile && "pb-[calc(72px+env(safe-area-inset-bottom,0px))]"
-                )}
+                className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden"
                 {...(isMobile ? swipeHandlers : {})}
             >
                 <AnimatedTabTransition activeTab={activeTab} className="flex-1 flex flex-col min-h-0">
@@ -351,6 +355,7 @@ export function ChatRoom({ roomId }: { roomId: string }) {
                             user={user}
                             roomId={roomId}
                             onMobileBack={handleMobileBack}
+                            hideSearch={isMobile}
                         />
                     )}
 
@@ -382,14 +387,6 @@ export function ChatRoom({ roomId }: { roomId: string }) {
                     )}
                 </AnimatedTabTransition>
             </main>
-
-            {/* Mobile Navigation - упрощенная */}
-            {isMobile && (
-                <MobileNavigation
-                    activeTab={activeTab}
-                    onTabChange={(tab) => handleTabChange(tab)}
-                />
-            )}
         </div>
     );
 }

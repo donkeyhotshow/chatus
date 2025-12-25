@@ -31,15 +31,14 @@ export const MobileNavigation = memo(function MobileNavigation({
     return (
         <nav
             className={cn(
-                "fixed bottom-0 left-0 right-0 z-50 bg-[var(--bg-secondary)]/95 backdrop-blur-lg border-t border-[var(--border-primary)]",
+                "shrink-0 bg-[var(--bg-secondary)] border-b border-[var(--border-primary)]",
                 className
             )}
-            style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
             role="navigation"
             aria-label="Основная навигация"
         >
-            {/* P0-002 FIX: Ensure min-height 72px for proper touch targets */}
-            <div className="flex items-center justify-around min-h-[72px] px-2">
+            {/* P0-002 FIX: Ensure min-height 56px for proper touch targets */}
+            <div className="flex items-center justify-around min-h-[56px] px-2">
                 {tabs.map((tab) => {
                     const isActive = activeTab === tab.id;
                     const showBadge = tab.id === 'chat' && unreadCount > 0;
@@ -85,10 +84,10 @@ export const MobileNavigation = memo(function MobileNavigation({
                             <span className="text-[11px] font-semibold tracking-tight">
                                 {tab.label}
                             </span>
-                            {/* Active indicator - pill style */}
+                            {/* Active indicator - pill style сверху */}
                             {isActive && (
                                 <div
-                                    className="absolute bottom-2 w-10 h-1 rounded-full shadow-sm"
+                                    className="absolute top-1 w-10 h-1 rounded-full shadow-sm"
                                     style={{ backgroundColor: tab.color }}
                                     aria-hidden="true"
                                 />
