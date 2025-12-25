@@ -13,7 +13,7 @@ import {
     safeSearch,
     highlightMatches,
 } from '@/lib/safe-string';
-import { createSearchDebouncer, SEARCH_DEBOUNCE_MS } from '@/lib/search-debouncer';
+import { createSearchDebouncer } from '@/lib/search-debouncer';
 
 // Helper function to sanitize HTML to prevent XSS (kept for backward compatibility)
 function sanitizeHtml(str: string): string {

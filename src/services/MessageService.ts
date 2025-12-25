@@ -145,7 +145,6 @@ export class MessageService {
 
             snapshot.docs.forEach((docSnapshot) => {
                 const data = docSnapshot.data();
-                const clientMsgId = (data as any)?.clientMessageId;
                 const msg: Message = {
                     id: docSnapshot.id,
                     ...data,

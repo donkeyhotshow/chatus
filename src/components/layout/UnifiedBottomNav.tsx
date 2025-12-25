@@ -25,11 +25,16 @@ export const UnifiedBottomNav = memo(function UnifiedBottomNav({
     className
 }: UnifiedBottomNavProps) {
     return (
-        <nav className={cn(
-            "fixed bottom-0 left-0 right-0 z-50 bg-[var(--bg-secondary)] border-t border-[var(--border-primary)] safe-bottom",
-            className
-        )}>
-            <div className="flex items-center justify-around h-[var(--nav-height-mobile)] px-1">
+        <nav
+            className={cn(
+                "fixed bottom-0 left-0 right-0 z-50 bg-[var(--bg-secondary)] border-t border-[var(--border-primary)]",
+                className
+            )}
+            style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+            role="navigation"
+            aria-label="Основная навигация"
+        >
+            <div className="flex items-center justify-around min-h-[72px] px-1">
                 {navItems.map((item) => {
                     const isActive = activeTab === item.id;
                     return (
@@ -41,8 +46,11 @@ export const UnifiedBottomNav = memo(function UnifiedBottomNav({
                                 }
                                 onTabChange(item.id);
                             }}
+                            aria-label={item.label}
+                            aria-current={isActive ? 'page' : undefined}
                             className={cn(
                                 "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-all duration-150 touch-target",
+                                "min-w-[48px] min-h-[48px]",
                                 isActive
                                     ? "opacity-100"
                                     : "text-[var(--text-muted)] opacity-60"

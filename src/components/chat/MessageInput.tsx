@@ -10,7 +10,6 @@ import {
     isIOS,
     createIOSViewportManager,
     ensureSendButtonVisible,
-    type iOSViewportState,
 } from '@/lib/ios-viewport-manager';
 
 interface MessageInputProps {

@@ -204,7 +204,7 @@ export function CollaborationSpace({
         isFullscreen
           ? 'fixed inset-0 w-screen h-screen z-50'
           : isMobile
-            ? `fixed inset-0 z-40 ${isVisible ? 'translate-x-0' : 'translate-x-full'}`
+            ? "flex-1 h-full"
             : 'relative h-full w-full border-l border-[var(--border-primary)] z-40'
       )}
     >

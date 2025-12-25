@@ -51,6 +51,7 @@ interface SearchResult {
 
 export function MessageSearch({
     messages,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     users,
     isOpen,
     onClose,

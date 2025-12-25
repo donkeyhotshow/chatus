@@ -142,9 +142,6 @@ export function scrollInputIntoView(
   const elementBottom = rect.bottom + scrollOffset;
 
   if (elementBottom > visibleAreaBottom) {
-    // Calculate how much we need to scroll
-    const scrollAmount = elementBottom - visibleAreaBottom;
-
     // Use scrollIntoView with block: 'center' for better UX on Android
     if (isAndroid()) {
       // Android-specific: use setTimeout to wait for keyboard animation

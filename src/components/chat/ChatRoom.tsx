@@ -30,7 +30,7 @@ import { useSwipe } from '@/hooks/use-swipe';
 import { OnboardingTour, useOnboarding } from './OnboardingTour';
 import { ChatSkeleton } from './ChatSkeleton';
 import { AnimatedTabTransition } from '../layout/AnimatedTabTransition';
-import { isSafari, safariSafeClick } from '@/lib/safari-workarounds';
+import { safariSafeClick } from '@/lib/safari-workarounds';
 import { RoomState } from '@/lib/session-manager';
 
 // Lazy load heavy components
@@ -339,7 +339,9 @@ export function ChatRoom({ roomId }: { roomId: string }) {
             {/* Main Content with swipe support and animations */}
             <main
                 className={cn(
-                    "flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden"
+                    "flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden",
+                    // Отступ снизу для мобильной навигации (72px + safe-area)
+                    isMobile && "pb-[calc(72px+env(safe-area-inset-bottom,0px))]"
                 )}
                 {...(isMobile ? swipeHandlers : {})}
             >

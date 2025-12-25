@@ -41,14 +41,6 @@ function getCellSize(): number {
   return Math.min(Math.floor(maxWidth / GRID_W), CELL_SIZE);
 }
 
-// P1-001 FIX: Get grid dimensions based on cell size
-function getGridDimensions(cellSize: number): { width: number; height: number } {
-  return {
-    width: GRID_W * cellSize,
-    height: GRID_H * cellSize
-  };
-}
-
 // Проверка поддержки WebGL/Canvas для мобильных
 function checkCanvasSupport(): { supported: boolean; error?: string } {
   if (typeof window === 'undefined') return { supported: false, error: 'SSR' };

@@ -61,7 +61,8 @@
 
     /* Layout */
     --header-height: 60px; /* Slightly taller for better touch targets */
-    --sidebar-width: 320px;
+    --sidebar-width: 64px; /* Collapsed sidebar width */
+    --sidebar-width-expanded: 200px; /* Expanded sidebar width */
     --input-height: 52px; /* Taller input */
     --touch-target: 44px;
     --max-chat-width: 900px; /* Limit chat width on desktop */
