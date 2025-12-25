@@ -66,7 +66,7 @@ export function AnimatedTabTransition({
                         ease: [0.25, 0.46, 0.45, 0.94],
                         duration: 0.3,
                     }}
-                    className="w-full h-full"
+                    className="w-full h-full flex flex-col"
                 >
                     {children}
                 </motion.div>

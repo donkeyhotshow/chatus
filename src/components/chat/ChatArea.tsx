@@ -385,7 +385,7 @@ export const ChatArea = memo(function ChatArea({
                 onRetry={() => window.location.reload()}
             />
 
-            <section className="flex-1 flex flex-col min-h-0 bg-[var(--bg-primary)]">
+            <section className="flex-1 flex flex-col min-h-0 h-full bg-[var(--bg-primary)]">
                 <ChatHeader
                     roomId={roomId}
                     otherUser={otherUser}
