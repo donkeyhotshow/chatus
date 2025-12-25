@@ -11,13 +11,29 @@ const NEON_COLORS = [
     '#8B5CF6', '#D946EF', '#F43F5E', '#64748B'
 ];
 
+// Color names for accessibility
+const COLOR_NAMES: { [key: string]: string } = {
+    '#FFFFFF': 'Белый',
+    '#EF4444': 'Красный',
+    '#F97316': 'Оранжевый',
+    '#F59E0B': 'Жёлтый',
+    '#84CC16': 'Лаймовый',
+    '#10B981': 'Зелёный',
+    '#06B6D4': 'Голубой',
+    '#3B82F6': 'Синий',
+    '#8B5CF6': 'Фиолетовый',
+    '#D946EF': 'Розовый',
+    '#F43F5E': 'Малиновый',
+    '#64748B': 'Серый'
+};
+
 type BrushType = 'normal' | 'neon' | 'dashed' | 'calligraphy';
 
-const BRUSHES: { id: BrushType, name: string, icon: React.ElementType }[] = [
-    { id: 'normal', name: 'Normal', icon: Pen },
-    { id: 'neon', name: 'Neon', icon: Brush },
-    { id: 'dashed', name: 'Dashed', icon: Tally1 },
-    { id: 'calligraphy', name: 'Calligraphy', icon: Bot },
+const BRUSHES: { id: BrushType, name: string, nameRu: string, icon: React.ElementType }[] = [
+    { id: 'normal', name: 'Normal', nameRu: 'Обычная кисть', icon: Pen },
+    { id: 'neon', name: 'Neon', nameRu: 'Неоновая кисть', icon: Brush },
+    { id: 'dashed', name: 'Dashed', nameRu: 'Пунктирная кисть', icon: Tally1 },
+    { id: 'calligraphy', name: 'Calligraphy', nameRu: 'Каллиграфия', icon: Bot },
 ];
 
 type FloatingToolbarProps = {
@@ -96,12 +112,18 @@ export function FloatingToolbar({
                     <div className="flex flex-col gap-2 animate-in slide-in-from-bottom-2 duration-300">
                         {/* Color Palette */}
                         {showColorPalette && !isMazeActive && selectedTool === 'pen' && (
-                            <div className="bg-black/80 backdrop-blur-xl rounded-2xl p-3 border border-white/10 shadow-2xl animate-in slide-in-from-right-2 duration-200">
+                            <div
+                                className="bg-black/80 backdrop-blur-xl rounded-2xl p-3 border border-white/10 shadow-2xl animate-in slide-in-from-right-2 duration-200"
+                                role="group"
+                                aria-label="Палитра цветов"
+                            >
                                 <div className="grid grid-cols-4 gap-2">
                                     {NEON_COLORS.map((color) => (
                                         <button
                                             key={color}
                                             onClick={() => handleColorChange(color)}
+                                            aria-label={`Цвет: ${COLOR_NAMES[color] || color}`}
+                                            aria-pressed={selectedColor === color}
                                             className={cn(
                                                 "w-8 h-8 rounded-full transition-all duration-200 border-2 active:scale-95",
                                                 selectedColor === color
@@ -120,12 +142,18 @@ export function FloatingToolbar({
 
                         {/* Brush Types */}
                         {!isMazeActive && selectedTool === 'pen' && (
-                            <div className="bg-black/80 backdrop-blur-xl rounded-2xl p-2 border border-white/10 shadow-2xl animate-in slide-in-from-right-2 duration-200">
+                            <div
+                                className="bg-black/80 backdrop-blur-xl rounded-2xl p-2 border border-white/10 shadow-2xl animate-in slide-in-from-right-2 duration-200"
+                                role="group"
+                                aria-label="Типы кистей"
+                            >
                                 <div className="flex flex-col gap-1">
                                     {BRUSHES.map((brush) => (
                                         <button
                                             key={brush.id}
                                             onClick={() => handleBrushChange(brush.id)}
+                                            aria-label={brush.nameRu}
+                                            aria-pressed={brushType === brush.id}
                                             className={cn(
                                                 "p-3 rounded-xl transition-all duration-200 flex items-center justify-center active:scale-95",
                                                 brushType === brush.id
@@ -133,7 +161,7 @@ export function FloatingToolbar({
                                                     : "bg-white/10 text-white hover:bg-white/20"
                                             )}
                                         >
-                                            <brush.icon className="w-5 h-5" />
+                                            <brush.icon className="w-5 h-5" aria-hidden="true" />
                                         </button>
                                     ))}
                                 </div>
@@ -156,11 +184,17 @@ export function FloatingToolbar({
                         )}
 
                         {/* Tool Buttons */}
-                        <div className="bg-black/80 backdrop-blur-xl rounded-2xl p-2 border border-white/10 shadow-2xl animate-in slide-in-from-right-2 duration-200">
+                        <div
+                            className="bg-black/80 backdrop-blur-xl rounded-2xl p-2 border border-white/10 shadow-2xl animate-in slide-in-from-right-2 duration-200"
+                            role="toolbar"
+                            aria-label="Инструменты рисования"
+                        >
                             <div className="flex flex-col gap-1">
                                 <button
                                     onClick={() => handleToolChange('pen')}
                                     disabled={isMazeActive}
+                                    aria-label="Карандаш"
+                                    aria-pressed={selectedTool === 'pen'}
                                     className={cn(
                                         "p-3 rounded-xl transition-all duration-200 flex items-center justify-center active:scale-95",
                                         selectedTool === 'pen'
@@ -169,12 +203,14 @@ export function FloatingToolbar({
                                         isMazeActive && "opacity-50 cursor-not-allowed"
                                     )}
                                 >
-                                    <PenTool className="w-5 h-5" />
+                                    <PenTool className="w-5 h-5" aria-hidden="true" />
                                 </button>
 
                                 <button
                                     onClick={() => handleToolChange('eraser')}
                                     disabled={isMazeActive}
+                                    aria-label="Ластик"
+                                    aria-pressed={selectedTool === 'eraser'}
                                     className={cn(
                                         "p-3 rounded-xl transition-all duration-200 flex items-center justify-center active:scale-95",
                                         selectedTool === 'eraser'
@@ -183,30 +219,34 @@ export function FloatingToolbar({
                                         isMazeActive && "opacity-50 cursor-not-allowed"
                                     )}
                                 >
-                                    <Eraser className="w-5 h-5" />
+                                    <Eraser className="w-5 h-5" aria-hidden="true" />
                                 </button>
 
                                 {!isMazeActive && selectedTool === 'pen' && (
                                     <button
                                         onClick={() => setShowColorPalette(!showColorPalette)}
+                                        aria-label="Выбрать цвет"
+                                        aria-expanded={showColorPalette}
                                         className="p-3 rounded-xl transition-all duration-200 flex items-center justify-center bg-white/10 text-white hover:bg-white/20 active:scale-95"
                                     >
-                                        <Palette className="w-5 h-5" />
+                                        <Palette className="w-5 h-5" aria-hidden="true" />
                                     </button>
                                 )}
 
                                 <button
                                     onClick={handleSend}
+                                    aria-label="Отправить рисунок в чат"
                                     className="p-3 rounded-xl transition-all duration-200 flex items-center justify-center bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 active:scale-95"
                                 >
-                                    <Send className="w-5 h-5" />
+                                    <Send className="w-5 h-5" aria-hidden="true" />
                                 </button>
 
                                 <button
                                     onClick={handleClear}
+                                    aria-label="Очистить холст"
                                     className="p-3 rounded-xl transition-all duration-200 flex items-center justify-center bg-red-500/20 text-red-400 hover:bg-red-500/30 active:scale-95"
                                 >
-                                    <Trash2 className="w-5 h-5" />
+                                    <Trash2 className="w-5 h-5" aria-hidden="true" />
                                 </button>
                             </div>
                         </div>

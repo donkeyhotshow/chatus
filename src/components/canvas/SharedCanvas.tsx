@@ -739,37 +739,37 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
 
   return (
     <div className="h-full w-full relative flex flex-col">
-      {/* Desktop toolbar - hidden on mobile */}
-      <div className="absolute top-2 left-2 z-20 flex-col gap-1.5 md:gap-2 hidden md:flex">
-        <div className="flex flex-col gap-1.5 md:gap-2 p-1 bg-neutral-900/90 backdrop-blur-sm rounded-lg md:rounded-xl border border-white/10 w-auto md:w-48">
-          <div className="flex gap-1">
+      {/* Desktop toolbar - Dark Minimalism Theme */}
+      <div className="absolute top-3 left-3 z-20 flex-col gap-2 hidden md:flex">
+        <div className="flex flex-col gap-2 p-2 bg-[var(--glass-bg)] backdrop-blur-xl rounded-2xl border border-[var(--glass-border)] w-auto md:w-52 shadow-[var(--shadow-lg)]">
+          <div className="flex gap-1.5">
             <button
               onClick={() => setSelectedTool('pen')}
-              className={`p-1.5 md:p-2 rounded-md md:rounded-lg transition-all flex-1 flex justify-center ${selectedTool === 'pen' ? 'bg-white text-black' : 'bg-neutral-800 text-neutral-400 hover:bg-white/10 hover:text-white'}`}
+              className={`p-2.5 rounded-xl transition-all flex-1 flex justify-center min-h-[44px] ${selectedTool === 'pen' ? 'bg-gradient-to-r from-[var(--draw-primary)] to-emerald-600 text-white shadow-[var(--shadow-glow-success)]' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'}`}
               disabled={isMazeActive}
               title="Pen"
-            > <PenTool className="w-3.5 h-3.5 md:w-4 md:h-4" /></button>
+            > <PenTool className="w-4 h-4" /></button>
             <button
               onClick={() => setSelectedTool('eraser')}
-              className={`p-1.5 md:p-2 rounded-md md:rounded-lg transition-all flex-1 flex justify-center ${selectedTool === 'eraser' ? 'bg-white text-black' : 'bg-neutral-800 text-neutral-400 hover:bg-white/10 hover:text-white'}`}
+              className={`p-2.5 rounded-xl transition-all flex-1 flex justify-center min-h-[44px] ${selectedTool === 'eraser' ? 'bg-gradient-to-r from-[var(--draw-primary)] to-emerald-600 text-white shadow-[var(--shadow-glow-success)]' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'}`}
               disabled={isMazeActive}
               title="Eraser"
-            > <Eraser className="w-3.5 h-3.5 md:w-4 md:h-4" /></button>
-            <button onClick={() => handleClearSheet(sheetId)} className="p-1.5 md:p-2 rounded-md md:rounded-lg bg-neutral-800 text-neutral-400 hover:bg-red-500/20 hover:text-red-400 flex items-center justify-center transition-all" title="Clear Current Sheet">
-              <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
+            > <Eraser className="w-4 h-4" /></button>
+            <button onClick={() => handleClearSheet(sheetId)} className="p-2.5 rounded-xl bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--error)]/20 hover:text-[var(--error)] flex items-center justify-center transition-all min-h-[44px]" title="Clear Current Sheet">
+              <Trash2 className="w-4 h-4" />
             </button>
             <button
               onClick={handleSendToChat}
-              className="p-1.5 md:p-2 rounded-md md:rounded-lg bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 flex items-center justify-center transition-all"
+              className="p-2.5 rounded-xl bg-[var(--draw-primary)]/20 text-[var(--draw-primary)] hover:bg-[var(--draw-primary)]/30 hover:shadow-[var(--shadow-glow-success)] flex items-center justify-center transition-all min-h-[44px]"
               title="Send to Chat"
             >
-              <Send className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              <Send className="w-4 h-4" />
             </button>
           </div>
 
           {tool === 'pen' && !isMazeActive && (
             <>
-              <div className='px-1 pt-0.5 md:pt-1 hidden md:block'>
+              <div className='px-2 pt-1 hidden md:block'>
                 <Slider
                   defaultValue={[strokeWidth]}
                   max={30}
@@ -778,14 +778,14 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
                   onValueChange={(value) => setStrokeWidth(value[0])}
                 />
               </div>
-              <div className="grid grid-cols-4 gap-0.5 md:gap-1 p-0.5 md:p-1">
+              <div className="grid grid-cols-4 gap-1.5 p-1">
                 {BRUSHES.map((b) => (
                   <button
                     key={b.id}
                     onClick={() => setBrushType(b.id)}
                     title={b.name}
-                    className={`p-2 rounded-lg transition-all flex items-center justify-center
-                                ${brushType === b.id ? 'bg-white text-black' : 'bg-neutral-800 text-neutral-400 hover:bg-white/10 hover:text-white'}`
+                    className={`p-2.5 rounded-xl transition-all flex items-center justify-center min-h-[44px]
+                                ${brushType === b.id ? 'bg-gradient-to-r from-[var(--draw-primary)] to-emerald-600 text-white shadow-[var(--shadow-glow-success)]' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'}`
                     }>
                     <b.icon className="w-4 h-4" />
                   </button>
@@ -795,15 +795,15 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
           )}
         </div>
         {!isMazeActive && selectedTool === 'pen' && (
-          <div className="grid grid-cols-6 gap-0.5 md:gap-1 p-0.5 md:p-1 bg-neutral-900/90 backdrop-blur-sm rounded-lg md:rounded-xl border border-white/10 w-auto md:w-48">
+          <div className="grid grid-cols-6 gap-1.5 p-2 bg-[var(--glass-bg)] backdrop-blur-xl rounded-2xl border border-[var(--glass-border)] w-auto md:w-52 shadow-[var(--shadow-lg)]">
             {NEON_COLORS.map((c) => (
               <button
                 key={c}
                 onClick={() => setSelectedColor(c)}
-                className={`w-5 h-5 md:w-6 md:h-6 rounded-full transition-all border
-                                ${selectedColor === c ? 'ring-1 md:ring-2 ring-white scale-110 z-10 border-black' : 'hover:scale-105 opacity-80 hover:opacity-100 border-white/10'}
+                className={`w-6 h-6 md:w-7 md:h-7 rounded-full transition-all border-2
+                                ${selectedColor === c ? 'ring-2 ring-white scale-110 z-10 border-[var(--bg-primary)]' : 'hover:scale-110 opacity-80 hover:opacity-100 border-transparent'}
                             `}
-                style={{ backgroundColor: c, boxShadow: `0 0 4px ${c}20` }}
+                style={{ backgroundColor: c, boxShadow: selectedColor === c ? `0 0 12px ${c}` : `0 0 4px ${c}40` }}
               />
             ))}
           </div>
@@ -847,9 +847,9 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
         onWheel={handleWheel}
       />
 
-      {/* Mobile zoom hint */}
+      {/* Mobile zoom hint - Dark Minimalism */}
       {showZoomHint && (
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black/80 text-white px-4 py-2 rounded-lg text-sm font-medium pointer-events-none z-10 animate-in fade-in-0 zoom-in-95">
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-[var(--glass-bg)] backdrop-blur-xl text-[var(--text-primary)] px-5 py-3 rounded-xl text-sm font-medium pointer-events-none z-10 animate-in fade-in-0 zoom-in-95 border border-[var(--glass-border)] shadow-[var(--shadow-lg)]">
           Масштабирование активно
         </div>
       )}

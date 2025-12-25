@@ -14,6 +14,18 @@ import { StickerPicker } from './StickerPicker';
 // Common emoji list for quick picker
 const QUICK_EMOJIS = ['😀', '😂', '❤️', '👍', '👎', '🎉', '🔥', '😢', '😮', '🤔', '👋', '🙏'];
 
+// BUG-011 FIX: Detect Android device
+function isAndroid(): boolean {
+    if (typeof navigator === 'undefined') return false;
+    return /Android/i.test(navigator.userAgent);
+}
+
+// BUG-011 FIX: Detect landscape orientation
+function isLandscape(): boolean {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth > window.innerHeight;
+}
+
 export interface EnhancedMessageInputRef {
     focus: () => void;
 }
@@ -95,9 +107,20 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
         setTimeout(adjustTextareaHeight, 0);
     }, [isTyping, onTyping, adjustTextareaHeight]);
 
+    // BUG-020 FIX: Prevent double-tap duplicate messages
+    const lastSendTimeRef = useRef<number>(0);
+    const SEND_DEBOUNCE_MS = 500;
+
     const handleSend = useCallback(() => {
         const trimmed = message.trim();
         if (!trimmed || disabled) return;
+
+        // BUG-020 FIX: Prevent rapid double-tap from sending duplicate messages
+        const now = Date.now();
+        if (now - lastSendTimeRef.current < SEND_DEBOUNCE_MS) {
+            return;
+        }
+        lastSendTimeRef.current = now;
 
         onSend(trimmed);
         setMessage('');
@@ -177,16 +200,29 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
 
     // Handle iOS keyboard focus/blur
     const handleFocus = useCallback(() => {
+        setIsKeyboardVisible(true);
+
         if (isIOS() && iosViewportManagerRef.current) {
             iosViewportManagerRef.current.handleFocus();
-            setIsKeyboardVisible(true);
+        }
+
+        // BUG-011 FIX: Handle Android landscape keyboard
+        if (isAndroid() && isLandscape()) {
+            // Scroll input into view after keyboard appears
+            setTimeout(() => {
+                textareaRef.current?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }, 300);
         }
     }, []);
 
     const handleBlur = useCallback(() => {
+        setIsKeyboardVisible(false);
+
         if (isIOS() && iosViewportManagerRef.current) {
             iosViewportManagerRef.current.handleBlur();
-            setIsKeyboardVisible(false);
         }
     }, []);
 
@@ -205,14 +241,21 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                 "p-3 safe-bottom",
                 // iOS keyboard visible styles
                 isKeyboardVisible && isIOS() && "ios-keyboard-visible",
+                // BUG-011 FIX: Android landscape keyboard styles
+                isKeyboardVisible && isAndroid() && isLandscape() && "android-landscape-keyboard",
                 className
             )}
             style={{
-                // Ensure the container stays above the keyboard on iOS
-                ...(isKeyboardVisible && isIOS() ? {
+                // Ensure the container stays above the keyboard
+                ...(isKeyboardVisible ? {
                     position: 'sticky' as const,
                     bottom: 0,
                     zIndex: 100,
+                    // BUG-011 FIX: Reduce padding on Android landscape to save space
+                    ...(isAndroid() && isLandscape() ? {
+                        paddingTop: '4px',
+                        paddingBottom: '4px',
+                    } : {})
                 } : {})
             }}
         >

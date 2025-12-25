@@ -1,0 +1,13 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gamesGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F59E0B"/>
+      <stop offset="100%" style="stop-color:#D97706"/>
+    </linearGradient>
+  </defs>
+  <path d="M6 12H10" stroke="url(#gamesGradient)" stroke-width="2" stroke-linecap="round"/>
+  <path d="M8 10V14" stroke="url(#gamesGradient)" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="15" cy="11" r="1" fill="url(#gamesGradient)"/>
+  <circle cx="17" cy="13" r="1" fill="url(#gamesGradient)"/>
+  <path d="M2 6C2 4.89543 2.89543 4 4 4H20C21.1046 4 22 4.89543 22 6V15C22 16.1046 21.1046 17 20 17H16L14 20H10L8 17H4C2.89543 17 2 16.1046 2 15V6Z" stroke="url(#gamesGradient)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

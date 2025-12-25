@@ -172,7 +172,13 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
   }
 
   return (
-    <div className="flex-1 h-full">
+    <div
+      className="flex-1 h-full"
+      role="log"
+      aria-label="Список сообщений чата"
+      aria-live="polite"
+      aria-relevant="additions"
+    >
       <Virtuoso
         ref={virtuosoRef}
         data={messages}
@@ -191,7 +197,7 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
         style={{ height: '100%' }}
         components={{
           Header: hasMoreMessages ? () => (
-            <div className="flex justify-center py-4">
+            <div className="flex justify-center py-4" role="status" aria-label="Загрузка предыдущих сообщений">
               <div className="w-6 h-6 border-2 border-[var(--accent-primary)] border-t-transparent rounded-full animate-spin" />
             </div>
           ) : undefined,

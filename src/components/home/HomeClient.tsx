@@ -188,29 +188,30 @@ export function HomeClient() {
 
             <main className="pt-14">
                 {/* Hero */}
-                <section className="py-12 md:py-24 px-4">
+                <section className="py-16 md:py-28 px-4">
                     <div className="max-w-2xl mx-auto text-center">
-                        <div className="w-16 h-16 md:w-20 md:h-20 bg-[var(--accent-primary)] rounded-2xl flex items-center justify-center mx-auto mb-6 animate-in zoom-in duration-300">
-                            <Logo className="w-8 h-8 md:w-10 md:h-10 text-[var(--accent-contrast)]" />
+                        {/* Animated Logo */}
+                        <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] rounded-2xl flex items-center justify-center mx-auto mb-8 animate-fade-in-up animate-float shadow-lg" style={{ boxShadow: 'var(--shadow-glow)' }}>
+                            <Logo className="w-10 h-10 md:w-12 md:h-12 text-white" />
                         </div>
-                        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-4 leading-tight">
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[var(--text-primary)] mb-6 leading-tight animate-fade-in-up-delay-1">
                             Приватный чат
                         </h1>
-                        <p className="text-base sm:text-lg text-[var(--text-secondary)] mb-8 px-4">
+                        <p className="text-lg sm:text-xl text-[var(--text-secondary)] mb-10 px-4 animate-fade-in-up-delay-2">
                             Общайтесь, рисуйте и играйте вместе. Без регистрации.
                         </p>
                     </div>
                 </section>
 
                 {/* Login Form */}
-                <section id="login" className="py-8 md:py-12 px-4 bg-[var(--bg-secondary)]">
+                <section id="login" className="py-12 md:py-16 px-4">
                     <div className="max-w-md mx-auto">
-                        <div className="bg-[var(--bg-primary)] rounded-xl border border-[var(--border-primary)] p-4 md:p-6 shadow-lg">
-                            <h2 className="text-xl md:text-2xl font-semibold text-[var(--text-primary)] text-center mb-6">
+                        <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--glass-border)] p-6 md:p-8 shadow-xl backdrop-blur-sm animate-fade-in-up-delay-3">
+                            <h2 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] text-center mb-8">
                                 Войти в чат
                             </h2>
 
-                            <form onSubmit={handleJoinRoom} className="space-y-4 md:space-y-5">
+                            <form onSubmit={handleJoinRoom} className="space-y-6">
                                 {/* Username */}
                                 <div className="space-y-3">
                                     <label
@@ -230,12 +231,11 @@ export function HomeClient() {
                                             maxLength={20}
                                             autoComplete="username"
                                             className={cn(
-                                                "w-full px-4 py-4 bg-[var(--bg-secondary)] border rounded-lg text-base",
+                                                "w-full px-4 py-4 bg-[var(--bg-secondary)] border-2 rounded-xl text-base",
                                                 "text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
-                                                "focus:outline-none focus:border-[var(--accent-primary)] focus:ring-2 focus:ring-[var(--accent-primary)]/20",
+                                                "focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--accent-light)]",
                                                 "transition-all touch-manipulation",
-                                                "sm:py-3",
-                                                isUsernameValid ? "border-[var(--success)]" : "border-[var(--border-primary)]"
+                                                isUsernameValid ? "border-[var(--success)]" : "border-[var(--glass-border)]"
                                             )}
                                             aria-describedby={isUsernameValid ? "username-valid" : undefined}
                                         />
@@ -245,7 +245,6 @@ export function HomeClient() {
                                                 aria-hidden="true"
                                             />
                                         )}
-                                        {/* P3-002 FIX: Removed noisy validation message, using sr-only for screen readers */}
                                         <span id="username-valid" className="sr-only">
                                             {isUsernameValid ? "Имя пользователя валидно" : "Введите имя от 2 до 20 символов"}
                                         </span>
@@ -266,10 +265,10 @@ export function HomeClient() {
                                             type="button"
                                             ref={createRoomButtonRef}
                                             onClick={handleCreateRoom}
-                                            className="text-sm text-[var(--accent-primary)] hover:text-[var(--accent-hover)] transition-colors flex items-center gap-1 py-1 px-2 rounded touch-manipulation"
+                                            className="text-sm font-medium text-[var(--primary-light)] hover:text-[var(--primary)] transition-colors flex items-center gap-1 py-2 px-3 rounded-lg min-h-[44px] min-w-[44px] touch-manipulation hover:bg-[var(--accent-light)]"
                                             aria-label="Создать новую комнату"
                                         >
-                                            <Plus className="w-4 h-4" />
+                                            <Plus className="w-4 h-4" aria-hidden="true" />
                                             Создать
                                         </button>
                                     </div>
@@ -284,12 +283,11 @@ export function HomeClient() {
                                             autoComplete="off"
                                             inputMode="text"
                                             className={cn(
-                                                "w-full px-4 py-4 bg-[var(--bg-secondary)] border rounded-lg text-center tracking-widest font-mono text-base",
+                                                "w-full px-4 py-4 bg-[var(--bg-secondary)] border-2 rounded-xl text-center tracking-widest font-mono text-lg",
                                                 "text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
-                                                "focus:outline-none focus:border-[var(--accent-primary)] focus:ring-2 focus:ring-[var(--accent-primary)]/20",
+                                                "focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--accent-light)]",
                                                 "transition-all touch-manipulation uppercase",
-                                                "sm:py-3",
-                                                isRoomCodeValid ? "border-[var(--success)]" : "border-[var(--border-primary)]"
+                                                isRoomCodeValid ? "border-[var(--success)]" : "border-[var(--glass-border)]"
                                             )}
                                             aria-describedby={isRoomCodeValid ? "roomcode-valid" : undefined}
                                         />
@@ -299,7 +297,6 @@ export function HomeClient() {
                                                 aria-hidden="true"
                                             />
                                         )}
-                                        {/* P3-002 FIX: Removed noisy validation message, using sr-only for screen readers */}
                                         <span id="roomcode-valid" className="sr-only">
                                             {isRoomCodeValid ? "Код комнаты валиден" : "Введите код от 3 до 6 символов"}
                                         </span>
@@ -310,13 +307,19 @@ export function HomeClient() {
                                     ref={submitButtonRef}
                                     type="submit"
                                     disabled={!isFormValid || isConnecting}
+                                    aria-disabled={!isFormValid || isConnecting}
                                     isLoading={isConnecting}
                                     loadingText="Подключение..."
-                                    className="w-full h-12 text-base font-medium touch-manipulation"
+                                    className={cn(
+                                        "w-full h-14 text-base font-semibold touch-manipulation min-h-[56px] rounded-xl",
+                                        "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)]",
+                                        "hover:shadow-lg hover:shadow-[var(--primary)]/25",
+                                        "transition-all duration-300"
+                                    )}
                                     size="lg"
                                 >
                                     Войти
-                                    <ArrowRight className="w-5 h-5 ml-2" />
+                                    <ArrowRight className="w-5 h-5 ml-2" aria-hidden="true" />
                                 </Button>
                             </form>
                         </div>
@@ -324,41 +327,58 @@ export function HomeClient() {
                 </section>
 
                 {/* Features */}
-                <section id="features" className="py-16 px-4">
+                <section id="features" className="py-20 px-4 bg-[var(--bg-secondary)]">
                     <div className="max-w-4xl mx-auto">
-                        <h2 className="text-2xl font-bold text-[var(--text-primary)] text-center mb-12">
+                        <h2 className="text-3xl font-bold text-[var(--text-primary)] text-center mb-4">
                             Возможности
                         </h2>
+                        <p className="text-[var(--text-secondary)] text-center mb-12 max-w-lg mx-auto">
+                            Всё что нужно для общения в одном месте
+                        </p>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {[
                                 {
                                     icon: MessageCircle,
                                     title: "Чат",
-                                    desc: "Приватное общение в реальном времени"
+                                    desc: "Приватное общение в реальном времени",
+                                    color: "var(--chat-primary)",
+                                    gradient: "from-indigo-500 to-purple-600"
                                 },
                                 {
                                     icon: PenTool,
                                     title: "Рисование",
-                                    desc: "Совместный холст для творчества"
+                                    desc: "Совместный холст для творчества",
+                                    color: "var(--draw-primary)",
+                                    gradient: "from-emerald-500 to-teal-600"
                                 },
                                 {
                                     icon: Gamepad2,
                                     title: "Игры",
-                                    desc: "Мини-игры для развлечения"
+                                    desc: "Мини-игры для развлечения",
+                                    color: "var(--game-primary)",
+                                    gradient: "from-amber-500 to-orange-600"
                                 }
                             ].map((feature, i) => (
                                 <div
                                     key={i}
-                                    className="p-6 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-primary)]"
+                                    className="group p-6 bg-[var(--bg-card)] rounded-2xl border border-[var(--glass-border)] transition-all duration-300 hover:border-[var(--primary)] hover:shadow-xl hover:shadow-[var(--primary)]/10 hover:-translate-y-1"
                                 >
-                                    <div className="w-10 h-10 bg-[var(--accent-light)] rounded-lg flex items-center justify-center mb-4">
-                                        <feature.icon className="w-5 h-5 text-[var(--accent-primary)]" />
+                                    <div
+                                        className={cn(
+                                            "w-12 h-12 rounded-xl flex items-center justify-center mb-5 transition-all duration-300",
+                                            "bg-gradient-to-br",
+                                            feature.gradient,
+                                            "group-hover:scale-110 group-hover:rotate-3"
+                                        )}
+                                        style={{ boxShadow: `0 4px 20px ${feature.color}40` }}
+                                    >
+                                        <feature.icon className="w-6 h-6 text-white" />
                                     </div>
-                                    <h3 className="font-semibold text-[var(--text-primary)] mb-2">
+                                    <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
                                         {feature.title}
                                     </h3>
-                                    <p className="text-sm text-[var(--text-secondary)]">
+                                    <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
                                         {feature.desc}
                                     </p>
                                 </div>

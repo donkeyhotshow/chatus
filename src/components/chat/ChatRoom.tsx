@@ -36,7 +36,7 @@ import { RoomState } from '@/lib/session-manager';
 // Lazy load heavy components
 const CollaborationSpace = lazy(() => import('./CollaborationSpace').then(m => ({ default: m.CollaborationSpace })));
 
-// Skeleton-based loading з fallback
+// Skeleton-based loading з fallback - Dark Minimalism Theme
 function LoadingScreen({ text, showSkeleton = false, isSlow = false }: { text: string; showSkeleton?: boolean; isSlow?: boolean }) {
     const [showFallback, setShowFallback] = useState(false);
 
@@ -55,7 +55,10 @@ function LoadingScreen({ text, showSkeleton = false, isSlow = false }: { text: s
     if (showFallback) {
         return (
             <div className="flex h-full w-full items-center justify-center bg-[var(--bg-primary)] p-6">
-                <div className="max-w-sm text-center space-y-4">
+                <div className="max-w-sm text-center space-y-4 p-6 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)] backdrop-blur-xl">
+                    <div className="w-12 h-12 mx-auto rounded-xl bg-[var(--accent-light)] flex items-center justify-center">
+                        <span className="text-2xl">⏳</span>
+                    </div>
                     <p className="text-[var(--text-secondary)]">
                         {isSlow
                             ? 'Медленное соединение. Загрузка занимает больше времени...'
@@ -64,7 +67,7 @@ function LoadingScreen({ text, showSkeleton = false, isSlow = false }: { text: s
                     </p>
                     <button
                         onClick={handleReload}
-                        className="w-full py-3 bg-[var(--accent-primary)] text-[var(--accent-contrast)] font-medium rounded-lg hover:bg-[var(--accent-hover)] transition-colors touch-manipulation"
+                        className="w-full min-h-[48px] py-3 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] text-[var(--accent-contrast)] font-semibold rounded-xl hover:shadow-[var(--shadow-glow)] transition-all hover:-translate-y-0.5 touch-manipulation"
                     >
                         Перезагрузить
                     </button>
@@ -80,27 +83,27 @@ function LoadingScreen({ text, showSkeleton = false, isSlow = false }: { text: s
 
     return (
         <div className="flex h-full w-full items-center justify-center bg-[var(--bg-primary)]">
-            <div className="flex flex-col items-center gap-3">
-                <div className="w-8 h-8 border-2 border-[var(--border-primary)] border-t-[var(--accent-primary)] rounded-full animate-spin" />
-                <span className="text-sm text-[var(--text-muted)]">{text}</span>
+            <div className="flex flex-col items-center gap-4 p-8 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)] backdrop-blur-xl animate-fade-in">
+                <div className="w-10 h-10 border-2 border-[var(--glass-border)] border-t-[var(--primary)] rounded-full animate-spin" />
+                <span className="text-sm text-[var(--text-secondary)] font-medium">{text}</span>
                 {isSlow && (
-                    <span className="text-xs text-yellow-500">Медленное соединение...</span>
+                    <span className="text-xs text-[var(--warning)] animate-pulse">Медленное соединение...</span>
                 )}
             </div>
         </div>
     );
 }
 
-// Экран ошибки
+// Экран ошибки - Dark Minimalism Theme
 function ErrorScreen({ onRetry }: { onRetry: () => void }) {
     // Safari-safe retry handler
     const handleRetry = safariSafeClick(onRetry, 10);
 
     return (
         <div className="flex h-full w-full items-center justify-center bg-[var(--bg-primary)] p-6">
-            <div className="max-w-sm text-center space-y-4">
-                <div className="w-12 h-12 mx-auto bg-red-100 dark:bg-red-950/30 rounded-full flex items-center justify-center">
-                    <span className="text-2xl">!</span>
+            <div className="max-w-sm text-center space-y-4 p-6 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)] backdrop-blur-xl animate-fade-in">
+                <div className="w-14 h-14 mx-auto rounded-xl bg-[var(--error)]/15 flex items-center justify-center shadow-[var(--shadow-glow-error)]">
+                    <span className="text-2xl">⚠️</span>
                 </div>
                 <h2 className="text-lg font-semibold text-[var(--text-primary)]">
                     Ошибка подключения
@@ -110,7 +113,7 @@ function ErrorScreen({ onRetry }: { onRetry: () => void }) {
                 </p>
                 <button
                     onClick={handleRetry}
-                    className="w-full py-3 bg-[var(--accent-primary)] text-[var(--accent-contrast)] font-medium rounded-lg hover:bg-[var(--accent-hover)] transition-colors touch-manipulation"
+                    className="w-full min-h-[48px] py-3 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)] text-[var(--accent-contrast)] font-semibold rounded-xl hover:shadow-[var(--shadow-glow)] transition-all hover:-translate-y-0.5 touch-manipulation"
                 >
                     Попробовать снова
                 </button>

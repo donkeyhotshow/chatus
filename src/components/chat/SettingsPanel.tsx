@@ -22,15 +22,17 @@ export function SettingsPanel({ isOpen, onClose, onClearChat }: SettingsPanelPro
 
     return (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-            <div className="bg-[var(--bg-secondary)] rounded-xl w-full max-w-md border border-[var(--border-primary)]">
+            {/* BUG-017 FIX: Prevent horizontal scroll on small screens */}
+            <div className="bg-[var(--bg-secondary)] rounded-xl w-full max-w-md border border-[var(--border-primary)] overflow-hidden">
                 <div className="flex items-center justify-between p-4 border-b border-[var(--border-primary)]">
                     <h2 className="text-lg font-semibold text-[var(--text-primary)]">Настройки</h2>
-                    <Button variant="ghost" size="icon" onClick={onClose}>
+                    <Button variant="ghost" size="icon" onClick={onClose} className="min-w-[44px] min-h-[44px]">
                         <X className="h-5 w-5" />
                     </Button>
                 </div>
 
-                <div className="p-4 space-y-6 overflow-y-auto mobile-scroll-y settings-content max-h-[70vh]">
+                {/* BUG-017 FIX: Added overflow-x-hidden to prevent horizontal scroll */}
+                <div className="p-4 space-y-6 overflow-y-auto overflow-x-hidden mobile-scroll-y settings-content max-h-[70vh]">
                     {/* Тема */}
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">

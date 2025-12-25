@@ -497,27 +497,28 @@ export const ChatArea = memo(function ChatArea({
     );
 }, (prev, next) => prev.roomId === next.roomId && prev.user.id === next.user.id);
 
-// Empty state component
+// Empty state component - Dark Minimalism Theme
 function EmptyState({ onSend }: { onSend: (text: string) => void }) {
     const suggestions = ['Привет! 👋', 'Как дела?', 'Давай порисуем? 🎨', 'Сыграем? 🎮'];
 
     return (
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-            <div className="w-16 h-16 bg-[var(--accent-light)] rounded-2xl flex items-center justify-center mb-4">
-                <MessageCircle className="w-8 h-8 text-[var(--accent-primary)]" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] flex items-center justify-center mb-6 shadow-[var(--shadow-glow)] animate-float">
+                <MessageCircle className="w-10 h-10 text-white" />
             </div>
-            <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+            <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">
                 Начните общение
             </h3>
-            <p className="text-sm text-[var(--text-secondary)] mb-6 max-w-xs">
+            <p className="text-sm text-[var(--text-secondary)] mb-8 max-w-xs">
                 Отправьте первое сообщение или выберите быстрый ответ
             </p>
-            <div className="flex flex-wrap justify-center gap-2">
-                {suggestions.map(text => (
+            <div className="flex flex-wrap justify-center gap-3">
+                {suggestions.map((text, index) => (
                     <button
                         key={text}
                         onClick={() => onSend(text)}
-                        className="px-3 py-1.5 rounded-full bg-[var(--bg-tertiary)] border border-[var(--border-primary)] text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors"
+                        className="px-4 py-2.5 min-h-[44px] rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] backdrop-blur-sm text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--primary)]/50 hover:shadow-[var(--shadow-glow)] transition-all hover:-translate-y-0.5"
+                        style={{ animationDelay: `${index * 0.1}s` }}
                     >
                         {text}
                     </button>

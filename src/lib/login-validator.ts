@@ -3,6 +3,7 @@
  *
  * **Feature: chatus-bug-fixes, Property 14: Login Button State Validation**
  * **Validates: Requirements 14.1, 14.2**
+ * **BUG-022, BUG-023 FIX: Support Unicode and Emoji in usernames**
  */
 
 export interface LoginValidationResult {
@@ -16,14 +17,36 @@ export const MIN_USERNAME_LENGTH = 2;
 export const MAX_USERNAME_LENGTH = 20;
 
 /**
+ * BUG-022, BUG-023 FIX: Count actual characters including Unicode/Emoji
+ * Uses spread operator to properly count Unicode code points
+ */
+function getCharacterCount(str: string): number {
+  return [...str].length;
+}
+
+/**
+ * BUG-022, BUG-023 FIX: Check if string contains valid characters
+ * Supports Latin, Cyrillic, numbers, spaces, and emoji
+ */
+function hasValidCharacters(str: string): boolean {
+  // Check for at least one letter (any script), number, or emoji
+  // Using Unicode property escapes for broad support
+  const hasLetterOrNumber = /[\p{L}\p{N}]/u.test(str);
+  const hasEmoji = /\p{Emoji}/u.test(str);
+  return hasLetterOrNumber || hasEmoji;
+}
+
+/**
  * Validates login input and returns detailed validation result
  *
- * @param username - Thusername to validate
+ * @param username - The username to validate
  * @returns LoginValidationResult with validation status and error message
  */
 export function validateLoginInput(username: string): LoginValidationResult {
   const trimmed = username.trim();
-  const remainingChars = MAX_USERNAME_LENGTH - trimmed.length;
+  // BUG-022 FIX: Use proper Unicode character count
+  const charCount = getCharacterCount(trimmed);
+  const remainingChars = MAX_USERNAME_LENGTH - charCount;
 
   // Empty input
   if (!trimmed) {
@@ -36,7 +59,7 @@ export function validateLoginInput(username: string): LoginValidationResult {
   }
 
   // Too short
-  if (trimmed.length < MIN_USERNAME_LENGTH) {
+  if (charCount < MIN_USERNAME_LENGTH) {
     return {
       isValid: false,
       canSubmit: false,
@@ -46,7 +69,7 @@ export function validateLoginInput(username: string): LoginValidationResult {
   }
 
   // Too long
-  if (trimmed.length > MAX_USERNAME_LENGTH) {
+  if (charCount > MAX_USERNAME_LENGTH) {
     return {
       isValid: false,
       canSubmit: false,
@@ -55,7 +78,7 @@ export function validateLoginInput(username: string): LoginValidationResult {
     };
   }
 
-  // Invalid characters
+  // Invalid characters (only block dangerous HTML/script chars)
   const invalidChars = /[<>{}[\]\\\/]/;
   if (invalidChars.test(trimmed)) {
     return {
@@ -66,13 +89,12 @@ export function validateLoginInput(username: string): LoginValidationResult {
     };
   }
 
-  // Must contain letters or numbers
-  const hasLettersOrNumbers = /[a-zA-Zа-яА-ЯёЁ0-9]/;
-  if (!hasLettersOrNumbers.test(trimmed)) {
+  // BUG-022, BUG-023 FIX: Must contain valid characters (letters, numbers, or emoji)
+  if (!hasValidCharacters(trimmed)) {
     return {
       isValid: false,
       canSubmit: false,
-      errorMessage: 'Имя должно содержать буквы или цифры',
+      errorMessage: 'Имя должно содержать буквы, цифры или эмодзи',
       remainingChars,
     };
   }
@@ -94,13 +116,15 @@ export function validateLoginInput(username: string): LoginValidationResult {
  */
 export function shouldEnableLoginButton(username: string): boolean {
   const trimmed = username.trim();
+  // BUG-022 FIX: Use proper Unicode character count
+  const charCount = getCharacterCount(trimmed);
 
   // Quick length check first (most common case)
-  if (trimmed.length < MIN_USERNAME_LENGTH) {
+  if (charCount < MIN_USERNAME_LENGTH) {
     return false;
   }
 
-  if (trimmed.length > MAX_USERNAME_LENGTH) {
+  if (charCount > MAX_USERNAME_LENGTH) {
     return false;
   }
 
@@ -110,9 +134,8 @@ export function shouldEnableLoginButton(username: string): boolean {
     return false;
   }
 
-  // Must contain at least one letter or number
-  const hasLettersOrNumbers = /[a-zA-Zа-яА-ЯёЁ0-9]/;
-  if (!hasLettersOrNumbers.test(trimmed)) {
+  // BUG-022, BUG-023 FIX: Must contain valid characters
+  if (!hasValidCharacters(trimmed)) {
     return false;
   }
 

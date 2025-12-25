@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from 'react';
+import { memo, useCallback, useRef } from 'react';
 import { MessageCircle, Gamepad2, PenTool } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -28,8 +28,38 @@ export const MobileNavigation = memo(function MobileNavigation({
     unreadCount = 0,
     className
 }: MobileNavigationProps) {
+    const navRef = useRef<HTMLDivElement>(null);
+
+    // BUG-016 FIX: Handle keyboard navigation between tabs
+    const handleKeyDown = useCallback((e: React.KeyboardEvent, currentIndex: number) => {
+        let newIndex = currentIndex;
+
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            newIndex = (currentIndex + 1) % tabs.length;
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            newIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+        } else if (e.key === 'Home') {
+            e.preventDefault();
+            newIndex = 0;
+        } else if (e.key === 'End') {
+            e.preventDefault();
+            newIndex = tabs.length - 1;
+        } else {
+            return;
+        }
+
+        // Focus the new tab button
+        const buttons = navRef.current?.querySelectorAll('button[role="tab"]');
+        if (buttons && buttons[newIndex]) {
+            (buttons[newIndex] as HTMLButtonElement).focus();
+        }
+    }, []);
+
     return (
         <nav
+            ref={navRef}
             className={cn(
                 "shrink-0 bg-[var(--bg-secondary)] border-b border-[var(--border-primary)]",
                 className
@@ -37,25 +67,32 @@ export const MobileNavigation = memo(function MobileNavigation({
             role="navigation"
             aria-label="Основная навигация"
         >
-            {/* P0-002 FIX: Ensure min-height 56px for proper touch targets */}
-            <div className="flex items-center justify-around min-h-[56px] px-2">
-                {tabs.map((tab) => {
+            {/* BUG-016 FIX: Added role="tablist" for proper keyboard navigation */}
+            <div
+                className="flex items-center justify-around min-h-[56px] px-2"
+                role="tablist"
+                aria-label="Вкладки навигации"
+            >
+                {tabs.map((tab, index) => {
                     const isActive = activeTab === tab.id;
                     const showBadge = tab.id === 'chat' && unreadCount > 0;
 
                     return (
                         <button
                             key={tab.id}
+                            role="tab"
+                            aria-selected={isActive}
+                            tabIndex={isActive ? 0 : -1}
                             onClick={() => {
                                 if ('vibrate' in navigator) {
                                     navigator.vibrate(5);
                                 }
                                 onTabChange(tab.id);
                             }}
+                            onKeyDown={(e) => handleKeyDown(e, index)}
                             aria-label={tab.label}
                             aria-current={isActive ? 'page' : undefined}
                             className={cn(
-                                // P0-002 FIX: Explicit 48x48px minimum touch target (>44px requirement)
                                 "relative flex flex-col items-center justify-center gap-1.5 flex-1",
                                 "min-w-[48px] min-h-[48px] py-3",
                                 "transition-all duration-200 touch-target",

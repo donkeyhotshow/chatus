@@ -23,7 +23,9 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
   const myScore = gameState.scores?.[user.id] || 0;
   const otherScore = otherUser ? gameState.scores?.[otherUser.id] || 0 : 0;
   const isActive = !!gameState.active;
-  const isGameOver = !isActive && typeof gameState.scores !== 'undefined';
+  // Fix BUG-004: Game is over only if it was started (has scores with values > 0 or startTime was set)
+  const hasBeenPlayed = gameState.startTime !== null && gameState.startTime !== undefined;
+  const isGameOver = !isActive && hasBeenPlayed;
   const startTime = gameState.startTime || null;
 
   // Оптимистичное состояние для UI
