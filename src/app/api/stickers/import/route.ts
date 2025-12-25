@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { telegramStickerService } from '@/lib/telegram/TelegramStickerService';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -20,7 +22,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Import failed:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' }, 
+      { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

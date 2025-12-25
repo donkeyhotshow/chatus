@@ -1,5 +1,5 @@
 import path from 'path';
-import { adminStorage, adminDb } from '../firebase-admin';
+import { getAdminStorage, getAdminDb } from '../firebase-admin';
 import { TelegramStickerSet, TelegramFile, StickerPack } from './types';
 
 const TELEGRAM_API_BASE = 'https://api.telegram.org/bot';
@@ -53,25 +53,25 @@ export class TelegramStickerService {
    */
   public async downloadStickerToStorage(fileId: string, packName: string, fileName: string): Promise<string> {
     const fileInfo = await this.getFile(fileId);
-    
+
     if (!fileInfo.file_path) {
       throw new Error('File path not found in Telegram response');
     }
 
     const downloadUrl = `${this.fileUrl}/${fileInfo.file_path}`;
     const response = await fetch(downloadUrl);
-    
+
     if (!response.ok) {
       throw new Error(`Failed to download file: ${response.statusText}`);
     }
 
     const buffer = Buffer.from(await response.arrayBuffer());
-    
+
     // Determine extension
     const ext = path.extname(fileInfo.file_path) || '.webp';
     const storagePath = `stickers/${packName}/${fileName}${ext}`;
-    
-    const bucket = adminStorage.bucket();
+
+    const bucket = getAdminStorage().bucket();
     const file = bucket.file(storagePath);
 
     await file.save(buffer, {
@@ -101,11 +101,11 @@ export class TelegramStickerService {
       const sticker = stickersToProcess[i];
       try {
         const publicUrl = await this.downloadStickerToStorage(
-          sticker.file_id, 
-          shortName, 
+          sticker.file_id,
+          shortName,
           `sticker_${i}`
         );
-        
+
         stickers.push({
           fileId: sticker.file_id,
           localPath: publicUrl, // Now it's a storage URL
@@ -124,19 +124,19 @@ export class TelegramStickerService {
     };
 
     // Save metadata to Firestore
-    await adminDb.collection('stickerPacks').doc(pack.shortName).set(pack);
+    await getAdminDb().collection('stickerPacks').doc(pack.shortName).set(pack);
 
     return pack;
   }
 
   public async getPack(shortName: string): Promise<StickerPack | null> {
-    const doc = await adminDb.collection('stickerPacks').doc(shortName).get();
+    const doc = await getAdminDb().collection('stickerPacks').doc(shortName).get();
     if (!doc.exists) return null;
     return doc.data() as StickerPack;
   }
 
   public async getAllPacks(): Promise<StickerPack[]> {
-    const snapshot = await adminDb.collection('stickerPacks').get();
+    const snapshot = await getAdminDb().collection('stickerPacks').get();
     return snapshot.docs.map(doc => doc.data() as StickerPack);
   }
 }

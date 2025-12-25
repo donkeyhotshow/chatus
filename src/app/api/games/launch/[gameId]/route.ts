@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { gameLauncherService } from '@/lib/games/GameLauncherService';
 import { GameId } from '@/lib/games/types/game';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { gameId: string } }

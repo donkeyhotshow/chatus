@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { telegramStickerService } from '@/lib/telegram/TelegramStickerService';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { name: string } }
@@ -17,7 +19,7 @@ export async function GET(
   } catch (error) {
     console.error('Get pack failed:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown error' }, 
+      { error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

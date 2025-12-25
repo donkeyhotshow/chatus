@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin';
 
 let initialized = false;
 
-function initializeFirebaseAdmin() {
+function initializeFirebaseAdmin(): boolean {
   if (initialized || admin.apps.length) {
     return true;
   }
@@ -33,10 +33,39 @@ function initializeFirebaseAdmin() {
   }
 }
 
-// Initialize on module load
-initializeFirebaseAdmin();
+// Lazy getters to avoid initialization during build time
+export function getAdminDb(): admin.firestore.Firestore {
+  initializeFirebaseAdmin();
+  return admin.firestore();
+}
 
-export const adminDb = admin.firestore();
-export const adminStorage = admin.storage();
-export const adminAuth = admin.auth();
+export function getAdminStorage(): admin.storage.Storage {
+  initializeFirebaseAdmin();
+  return admin.storage();
+}
+
+export function getAdminAuth(): admin.auth.Auth {
+  initializeFirebaseAdmin();
+  return admin.auth();
+}
+
+// Legacy exports for backward compatibility (use getters in API routes)
+export const adminDb = new Proxy({} as admin.firestore.Firestore, {
+  get(_, prop) {
+    return getAdminDb()[prop as keyof admin.firestore.Firestore];
+  }
+});
+
+export const adminStorage = new Proxy({} as admin.storage.Storage, {
+  get(_, prop) {
+    return getAdminStorage()[prop as keyof admin.storage.Storage];
+  }
+});
+
+export const adminAuth = new Proxy({} as admin.auth.Auth, {
+  get(_, prop) {
+    return getAdminAuth()[prop as keyof admin.auth.Auth];
+  }
+});
+
 export { initializeFirebaseAdmin };

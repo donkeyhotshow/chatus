@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { telegramStickerService } from '@/lib/telegram/TelegramStickerService';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const packs = await telegramStickerService.getAllPacks();
