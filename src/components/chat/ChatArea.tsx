@@ -376,7 +376,7 @@ export const ChatArea = memo(function ChatArea({
     }, []);
 
     return (
-        <>
+        <section className="flex-1 flex flex-col min-h-0 h-full bg-[var(--bg-primary)] relative">
             <NetworkConnectionStatus />
             <MobileErrorHandler
                 isOnline={connectionState?.isOnline}
@@ -384,8 +384,6 @@ export const ChatArea = memo(function ChatArea({
                 isReconnecting={connectionState?.isReconnecting}
                 onRetry={() => window.location.reload()}
             />
-
-            <section className="flex-1 flex flex-col min-h-0 h-full bg-[var(--bg-primary)]">
                 <ChatHeader
                     roomId={roomId}
                     otherUser={otherUser}
@@ -473,7 +471,6 @@ export const ChatArea = memo(function ChatArea({
                         placeholder="Сообщение..."
                     />
                 </div>
-            </section>
 
             {/* Image viewer */}
             {imageForView && (
@@ -494,7 +491,7 @@ export const ChatArea = memo(function ChatArea({
                 onClose={handleSearchClose}
                 onMessageSelect={handleMessageSelect}
             />
-        </>
+        </section>
     );
 }, (prev, next) => prev.roomId === next.roomId && prev.user.id === next.user.id);
 
