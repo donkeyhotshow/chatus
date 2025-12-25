@@ -1,11 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 
-// Try to load .env.local if it exists (for local development)
+// Load environment variables from .env.local if available
 try {
   require('dotenv').config({ path: '.env.local' });
 } catch (e) {
-  // dotenv not available or .env.local doesn't exist - use process.env directly
+  // Ignore if file doesn't exist
 }
 
 const swContent = `/* eslint-disable no-undef */
