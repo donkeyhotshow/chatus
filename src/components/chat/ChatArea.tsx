@@ -27,12 +27,14 @@ interface ChatAreaProps {
     user: UserProfile;
     roomId: string;
     onMobileBack?: () => void;
+    hideSearch?: boolean;
 }
 
 export const ChatArea = memo(function ChatArea({
     user,
     roomId,
     onMobileBack,
+    hideSearch = false,
 }: ChatAreaProps) {
     const [replyTo, setReplyTo] = useState<Message | null>(null);
     const [showDoodlePad, setShowDoodlePad] = useState(false);
@@ -376,7 +378,7 @@ export const ChatArea = memo(function ChatArea({
     }, []);
 
     return (
-        <>
+        <section className="flex-1 flex flex-col min-h-0 h-full bg-[var(--bg-primary)] relative">
             <NetworkConnectionStatus />
             <MobileErrorHandler
                 isOnline={connectionState?.isOnline}
@@ -384,14 +386,12 @@ export const ChatArea = memo(function ChatArea({
                 isReconnecting={connectionState?.isReconnecting}
                 onRetry={() => window.location.reload()}
             />
-
-            <section className="flex-1 flex flex-col min-h-0 bg-[var(--bg-primary)]">
                 <ChatHeader
                     roomId={roomId}
                     otherUser={otherUser}
                     isOnline={isOnline}
                     onBack={onMobileBack}
-                    onSearchOpen={handleSearchOpen}
+                    onSearchOpen={hideSearch ? undefined : handleSearchOpen}
                 />
 
                 {/* Messages */}
@@ -473,7 +473,6 @@ export const ChatArea = memo(function ChatArea({
                         placeholder="Сообщение..."
                     />
                 </div>
-            </section>
 
             {/* Image viewer */}
             {imageForView && (
@@ -494,7 +493,7 @@ export const ChatArea = memo(function ChatArea({
                 onClose={handleSearchClose}
                 onMessageSelect={handleMessageSelect}
             />
-        </>
+        </section>
     );
 }, (prev, next) => prev.roomId === next.roomId && prev.user.id === next.user.id);
 

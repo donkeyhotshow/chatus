@@ -1,6 +1,12 @@
 const fs = require('fs');
 const path = require('path');
-require('dotenv').config({ path: '.env.local' });
+
+// Load environment variables from .env.local if available
+try {
+  require('dotenv').config({ path: '.env.local' });
+} catch (e) {
+  // Ignore if file doesn't exist
+}
 
 const swContent = `/* eslint-disable no-undef */
 const CACHE_NAME = 'chatus-v1';
