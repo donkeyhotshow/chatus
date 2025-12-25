@@ -283,12 +283,12 @@ export function ChatRoom({ roomId }: { roomId: string }) {
 
     // Loading states - використовуємо skeleton для кращого UX
     const isSlow = connectionState.isSlow;
-    
+
     if (!firebaseContext) return <LoadingScreen text="Инициализация..." showSkeleton isSlow={isSlow} />;
-    
+
     // P0 FIX: Optimistic UI - show chat if we have user data, even if still verifying
     if (isLoading && !user) return <LoadingScreen text="Загрузка..." showSkeleton isSlow={isSlow} />;
-    
+
     if (userError) return <ErrorScreen onRetry={() => window.location.reload()} />;
 
     if (!user) {
@@ -336,8 +336,7 @@ export function ChatRoom({ roomId }: { roomId: string }) {
             {/* Main Content with swipe support and animations */}
             <main
                 className={cn(
-                    "flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden",
-                    isMobile && "pb-[var(--nav-height-mobile)]"
+                    "flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden"
                 )}
                 {...(isMobile ? swipeHandlers : {})}
             >
