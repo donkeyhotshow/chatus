@@ -23,12 +23,14 @@ import MessageList from './MessageList';
 import { NewMessageNotification } from './NewMessageNotification';
 import { TypingIndicator } from './TypingIndicator';
 import { EnhancedMessageInput } from './EnhancedMessageInput';
+import { NavigationState } from '@/lib/navigation-state';
 
 interface ChatAreaProps {
     user: UserProfile;
     roomId: string;
     onMobileBack?: () => void;
     hideSearch?: boolean;
+    navigationState?: NavigationState | null;
 }
 
 export const ChatArea = memo(function ChatArea({
@@ -36,6 +38,7 @@ export const ChatArea = memo(function ChatArea({
     roomId,
     onMobileBack,
     hideSearch = false,
+    navigationState,
 }: ChatAreaProps) {
     const [replyTo, setReplyTo] = useState<Message | null>(null);
     const [showDoodlePad, setShowDoodlePad] = useState(false);
@@ -379,6 +382,8 @@ export const ChatArea = memo(function ChatArea({
                     isOnline={isOnline}
                     onBack={onMobileBack}
                     onSearchOpen={hideSearch ? undefined : handleSearchOpen}
+                    navigationState={navigationState}
+                    showBreadcrumb={true}
                 />
 
                 {/* Messages */}

@@ -22,6 +22,7 @@ import { useRoom } from '@/hooks/useRoom';
 import { useRoomManager } from '@/hooks/useRoomManager';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
 import { useConnectionStatus } from '@/hooks/useConnectionStatus';
+import { useNavigationState } from '@/hooks/useNavigationState';
 import { logger } from '@/lib/logger';
 import { isDemoMode } from '@/lib/demo-mode';
 import { getChatService } from '@/services/ChatService';
@@ -130,6 +131,7 @@ export function ChatRoom({ roomId }: { roomId: string }) {
     const firebaseContext = useFirebase();
     const isMobile = useIsMobile();
     const connectionState = useConnectionStatus();
+    const { currentState, navigateTo, goBack, updateState } = useNavigationState({ roomId });
 
     const { user, isLoading, createProfile, error: userError } = useCurrentUser(roomId);
     const [isCreating, setIsCreating] = useState(false);
@@ -166,22 +168,27 @@ export function ChatRoom({ roomId }: { roomId: string }) {
 
     const handleTabChange = useCallback((tab: ChatTab | string) => {
         setActiveTab(tab as ChatTab);
+        // Update navigation state
+        const view = tab === 'chat' ? 'chat' : (tab === 'canvas' ? 'canvas' : (tab === 'games' ? 'game' : 'chat'));
+        updateState(view as any);
         // Save state on tab change
         setTimeout(saveCurrentState, 100);
-    }, [saveCurrentState]);
+    }, [saveCurrentState, updateState]);
 
     const handleMobileBack = useCallback(() => {
         if (isMobile && activeTab !== 'chat') {
             // If on mobile and not on chat tab, go back to chat tab first
             setActiveTab('chat');
+            updateState('chat');
         } else {
-            // On desktop or on chat tab - go back to home page
-            // Use setTimeout to ensure navigation happens after React event handling
-            setTimeout(() => {
+            // Try app-level back navigation first
+            const handled = goBack();
+            if (!handled) {
+                // Fallback to home page
                 router.push('/');
-            }, 0);
+            }
         }
-    }, [isMobile, activeTab, router]);
+    }, [isMobile, activeTab, goBack, router, updateState]);
 
     // Swipe gestures for mobile navigation
     const swipeHandlers = useSwipe({
@@ -359,6 +366,7 @@ export function ChatRoom({ roomId }: { roomId: string }) {
                             roomId={roomId}
                             onMobileBack={handleMobileBack}
                             hideSearch={isMobile}
+                            navigationState={currentState}
                         />
                     )}
 

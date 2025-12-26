@@ -48,8 +48,8 @@ export function HomeClient() {
     }, []);
 
     // Form validation - using useMemo for better reactivity
-    // BUG-006 FIX: Minimum 3 characters as per specification
-    const isUsernameValid = username.trim().length >= 3 && username.trim().length <= 20;
+    // BUG-006 FIX: Minimum 3 characters, max 20, alphanumeric and underscores only
+    const isUsernameValid = /^[a-zA-Z0-9_]{3,20}$/.test(username.trim());
     const isRoomCodeValid = roomCode.trim().length >= 3 &&
                            roomCode.trim().length <= 6 &&
                            /^[A-Z0-9]+$/.test(roomCode.trim());
