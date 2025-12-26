@@ -44,6 +44,29 @@
         ".write": true
       }
     },
+    "canvas": {
+      "$roomId": {
+        ".read": true,
+        ".write": true,
+        "$canvasId": {
+          ".read": true,
+          ".write": true,
+          "cursors": {
+            ".read": true,
+            "$userId": {
+              ".read": true,
+              ".write": true
+            }
+          }
+        }
+      }
+    },
+    "games": {
+      "$roomId": {
+        ".read": true,
+        ".write": true
+      }
+    },
     "test": {
       ".read": true,
       ".write": true
