@@ -286,9 +286,9 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         return () => clearTimeout(timer);
     }, []);
 
-    // Keyboard controls (desktop)
+    // Keyboard controls (desktop and mobile)
     useEffect(() => {
-        if (!isGameStarted || countdown !== null || isMobile) return;
+        if (!isGameStarted || countdown !== null) return;
         const handleKeyDown = (e: KeyboardEvent) => {
             const key = e.key.toLowerCase();
             const validKeys = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd', ' ', 'shift'];
@@ -307,7 +307,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);
         };
-    }, [isGameStarted, countdown, isMobile]);
+    }, [isGameStarted, countdown]);
 
     // Update player physics
     const updatePlayer = useCallback((dt: number, now: number) => {

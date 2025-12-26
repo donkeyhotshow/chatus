@@ -326,18 +326,11 @@ export default function VibeJet({ onGameEnd, user, roomId }: {
         return () => clearTimeout(timeout);
     }, [isLoading]);
 
-    // BUG #11 FIX: Check if Firebase RTDB is available
+    // BUG #11 FIX: Check if Firebase RTDB is available - but don't block game
     useEffect(() => {
         if (!rtdb) {
-            console.warn('[VibeJet] Firebase RTDB not available');
-            // Don't set error immediately, give it time to initialize
-            const timeout = setTimeout(() => {
-                if (!rtdb) {
-                    setLoadError('Firebase не ініціалізовано. Спробуйте перезавантажити сторінку.');
-                    setIsLoading(false);
-                }
-            }, 5000);
-            return () => clearTimeout(timeout);
+            console.warn('[VibeJet] Firebase RTDB not available - multiplayer disabled');
+            // Don't show error - game can work in single-player mode without RTDB
         }
     }, [rtdb]);
 
@@ -360,27 +353,37 @@ export default function VibeJet({ onGameEnd, user, roomId }: {
     }, []);
 
     useEffect(() => {
-        if (!rtdb) return;
-        const service = new RealtimeVibeJetService(rtdb, roomId, user.id);
-        serviceRef.current = service;
+        // RTDB is optional - game works in single-player without it
+        if (!rtdb) {
+            console.log('[VibeJet] Running in single-player mode (no RTDB)');
+            return;
+        }
 
-        const unsubscribe = service.subscribe((state) => {
-            if (state.players) {
-                const others: { [userId: string]: VibeJetPlayerData } = {};
-                Object.entries(state.players).forEach(([id, data]) => {
-                    if (id !== user.id) others[id] = data;
-                });
-                setOtherPlayers(others);
-            }
-        });
+        try {
+            const service = new RealtimeVibeJetService(rtdb, roomId, user.id);
+            serviceRef.current = service;
 
-        return () => {
-            unsubscribe();
-            service.destroy();
-            serviceRef.current = null;
-            // Clear projectile pool to free memory
-            projectilePoolRef.current = [];
-        };
+            const unsubscribe = service.subscribe((state) => {
+                if (state.players) {
+                    const others: { [userId: string]: VibeJetPlayerData } = {};
+                    Object.entries(state.players).forEach(([id, data]) => {
+                        if (id !== user.id) others[id] = data;
+                    });
+                    setOtherPlayers(others);
+                }
+            });
+
+            return () => {
+                unsubscribe();
+                service.destroy();
+                serviceRef.current = null;
+                // Clear projectile pool to free memory
+                projectilePoolRef.current = [];
+            };
+        } catch (err) {
+            console.error('[VibeJet] Failed to initialize multiplayer:', err);
+            // Continue without multiplayer
+        }
     }, [rtdb, roomId, user.id]);
 
     useEffect(() => {

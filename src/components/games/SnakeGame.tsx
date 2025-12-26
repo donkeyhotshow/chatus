@@ -426,9 +426,8 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
                     onClick={handleStart}
                     className="w-full max-w-[200px]"
                     glow
-                    disabled={user.id !== gameState.hostId && !!gameState.hostId && !isGameOver}
                   >
-                    {user.id === gameState.hostId ? (isGameOver ? "ИГРАТЬ СНОВА" : "НАЧАТЬ") : "ЖДЕМ ХОСТА..."}
+                    {isGameOver ? "ИГРАТЬ СНОВА" : "НАЧАТЬ"}
                   </PremiumButton>
                 </motion.div>
               )}
