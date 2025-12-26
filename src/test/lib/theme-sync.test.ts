@@ -15,7 +15,6 @@ import {
   syncThemeState,
   createThemeStateFromToggle,
   isThemeStateSynced,
-  getSystemPrefersDark,
 } from '@/lib/theme-sync';
 
 // Mock localStorage

@@ -11,7 +11,6 @@ import {
   validateLoginInput,
   shouldEnableLoginButton,
   handleLoginValidationError,
-  MIN_USERNAME_LENGTH,
   MAX_USERNAME_LENGTH,
 } from '@/lib/login-validator';
 

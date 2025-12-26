@@ -130,7 +130,7 @@ export class RealtimeCanvasService {
     this.onStrokeRemoved = onRemoved || null;
 
     // Listen for new strokes (onChildAdded is much faster than onValue)
-    const unsubAdded = onChildAdded(this.strokesRef, (snapshot) => {
+    onChildAdded(this.strokesRef, (snapshot) => {
       const stroke = snapshot.val() as CanvasStroke;
       if (stroke && snapshot.key) {
         // Skip own strokes (already rendered locally)
@@ -144,7 +144,7 @@ export class RealtimeCanvasService {
     });
 
     // Listen for removed strokes
-    const unsubRemoved = onChildRemoved(this.strokesRef, (snapshot) => {
+    onChildRemoved(this.strokesRef, (snapshot) => {
       if (snapshot.key) {
         this.onStrokeRemoved?.(snapshot.key);
       }
@@ -162,7 +162,7 @@ export class RealtimeCanvasService {
   subscribeToCursors(onUpdate: CursorCallback): void {
     this.onCursorsUpdate = onUpdate;
 
-    const unsubscribe = onValue(this.cursorsRef, (snapshot) => {
+    onValue(this.cursorsRef, (snapshot) => {
       const cursors = new Map<string, RemoteCursor>();
       const data = snapshot.val();
 

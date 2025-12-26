@@ -34,7 +34,7 @@ export const RemoteCursors = memo(function RemoteCursors({
       className="absolute inset-0 pointer-events-none overflow-hidden z-50"
       aria-hidden="true"
     >
-      {Array.from(cursors.entries()).map(([_orderId, cursor]) => (
+      {Array.from(cursors.entries()).map(([, cursor]) => (
         <div
           key={cursor.userId}
           className="absolute transition-all duration-75 ease-out"

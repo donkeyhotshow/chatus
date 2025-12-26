@@ -21,12 +21,8 @@ const cyrillicLowercase = 'абвгдеёжзийклмнопрстуфхцчш�
 const cyrillicUppercase = 'АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ';
 const latinChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const digits = '0123456789';
-const commonPunctuation = '.,!?;:-_()[]{}@#$%^&*+=';
 
-// Arbitraries for generating test data
 const cyrillicCharArb = fc.constantFrom(...(cyrillicLowercase + cyrillicUppercase).split(''));
-const latinCharArb = fc.constantFrom(...latinChars.split(''));
-const digitArb = fc.constantFrom(...digits.split(''));
 const mixedCharArb = fc.constantFrom(
   ...(cyrillicLowercase + cyrillicUppercase + latinChars + digits).split('')
 );

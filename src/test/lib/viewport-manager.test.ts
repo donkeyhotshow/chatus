@@ -5,14 +5,13 @@
  * **Validates: Requirements 5.1, 5.2, 5.3**
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fc from 'fast-check';
 import {
   type ViewportState,
   createInitialViewportState,
   calculateViewportAdjustment,
   restoreViewport,
-  updateViewportState,
   isViewportRestored,
   simulateKeyboardShow,
   simulateKeyboardHide,
