@@ -47,28 +47,44 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
   const directionRef = useRef({ x: 1, y: 0 });
   const nextDirectionRef = useRef({ x: 1, y: 0 });
   const lastMoveTimeRef = useRef(0);
+  const isInitializedRef = useRef(false);
+  const gameActiveRef = useRef(false);
 
-  // Initialize RTDB Service
+  // Initialize RTDB Service with error handling
   useEffect(() => {
     if (!realtimeDb || !roomId || !user) return;
+    if (isInitializedRef.current) return; // Prevent double initialization
 
-    const service = new RealtimeSnakeService(realtimeDb, roomId, user.id);
-    rtServiceRef.current = service;
+    try {
+      const service = new RealtimeSnakeService(realtimeDb, roomId, user.id);
+      rtServiceRef.current = service;
+      isInitializedRef.current = true;
 
-    const unsub = service.subscribe((state) => {
-      setRtState(state);
-    });
+      const unsub = service.subscribe((state) => {
+        setRtState(state);
+        gameActiveRef.current = state?.active || false;
+      });
 
-    return () => {
-      unsub();
-      service.destroy();
-    };
+      return () => {
+        unsub();
+        service.destroy();
+        rtServiceRef.current = null;
+        isInitializedRef.current = false;
+        gameActiveRef.current = false;
+      };
+    } catch (error) {
+      console.error('[SnakeGame] Failed to initialize service:', error);
+    }
   }, [roomId, user]);
 
-  // Sync local snake to RTDB
+  // Sync local snake to RTDB with error handling
   useEffect(() => {
-    if (rtServiceRef.current && rtState?.active) {
-      rtServiceRef.current.updateMySnake(mySnake);
+    if (rtServiceRef.current && rtState?.active && !mySnake.isDead) {
+      try {
+        rtServiceRef.current.updateMySnake(mySnake);
+      } catch (error) {
+        console.error('[SnakeGame] Failed to sync snake:', error);
+      }
     }
   }, [mySnake, rtState?.active]);
 
@@ -90,12 +106,33 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
 
   const spawnFood = useCallback(() => {
     if (!rtServiceRef.current) return;
-    const newFood = {
+
+    // Generate food position avoiding snake bodies
+    let attempts = 0;
+    let newFood = {
       x: Math.floor(Math.random() * (CANVAS_SIZE / GRID_SIZE)),
       y: Math.floor(Math.random() * (CANVAS_SIZE / GRID_SIZE))
     };
-    rtServiceRef.current.updateFood(newFood);
-  }, []);
+
+    // Try to avoid spawning on snakes (max 10 attempts)
+    while (attempts < 10) {
+      const onSnake = mySnake.body.some(p => p.x === newFood.x && p.y === newFood.y) ||
+                      (aiSnake?.body.some(p => p.x === newFood.x && p.y === newFood.y));
+      if (!onSnake) break;
+
+      newFood = {
+        x: Math.floor(Math.random() * (CANVAS_SIZE / GRID_SIZE)),
+        y: Math.floor(Math.random() * (CANVAS_SIZE / GRID_SIZE))
+      };
+      attempts++;
+    }
+
+    try {
+      rtServiceRef.current.updateFood(newFood);
+    } catch (error) {
+      console.error('[SnakeGame] Failed to spawn food:', error);
+    }
+  }, [mySnake.body, aiSnake?.body]);
 
   const handleStart = useCallback(() => {
     // BUG #9 FIX: Check if service is ready before starting
@@ -434,14 +471,38 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
             </AnimatePresence>
           </div>
 
-          {/* Mobile Controls */}
+          {/* Mobile Controls - P1 Fix: 48px touch targets for accessibility */}
           <div className="grid grid-cols-3 gap-2 md:hidden">
             <div />
-            <button onClick={() => { if (directionRef.current.y === 0) nextDirectionRef.current = { x: 0, y: -1 } }} className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center active:bg-white/10"><Zap className="w-5 h-5 rotate-0" /></button>
+            <button
+              onClick={() => { if (directionRef.current.y === 0) nextDirectionRef.current = { x: 0, y: -1 }; hapticFeedback('light'); }}
+              className="w-14 h-14 min-w-[48px] min-h-[48px] bg-white/5 rounded-xl flex items-center justify-center active:bg-white/10 active:scale-95 transition-transform touch-target"
+              aria-label="Вверх"
+            >
+              <Zap className="w-6 h-6 rotate-0" />
+            </button>
             <div />
-            <button onClick={() => { if (directionRef.current.x === 0) nextDirectionRef.current = { x: -1, y: 0 } }} className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center active:bg-white/10"><Zap className="w-5 h-5 -rotate-90" /></button>
-            <button onClick={() => { if (directionRef.current.y === 0) nextDirectionRef.current = { x: 0, y: 1 } }} className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center active:bg-white/10"><Zap className="w-5 h-5 rotate-180" /></button>
-            <button onClick={() => { if (directionRef.current.x === 0) nextDirectionRef.current = { x: 1, y: 0 } }} className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center active:bg-white/10"><Zap className="w-5 h-5 rotate-90" /></button>
+            <button
+              onClick={() => { if (directionRef.current.x === 0) nextDirectionRef.current = { x: -1, y: 0 }; hapticFeedback('light'); }}
+              className="w-14 h-14 min-w-[48px] min-h-[48px] bg-white/5 rounded-xl flex items-center justify-center active:bg-white/10 active:scale-95 transition-transform touch-target"
+              aria-label="Влево"
+            >
+              <Zap className="w-6 h-6 -rotate-90" />
+            </button>
+            <button
+              onClick={() => { if (directionRef.current.y === 0) nextDirectionRef.current = { x: 0, y: 1 }; hapticFeedback('light'); }}
+              className="w-14 h-14 min-w-[48px] min-h-[48px] bg-white/5 rounded-xl flex items-center justify-center active:bg-white/10 active:scale-95 transition-transform touch-target"
+              aria-label="Вниз"
+            >
+              <Zap className="w-6 h-6 rotate-180" />
+            </button>
+            <button
+              onClick={() => { if (directionRef.current.x === 0) nextDirectionRef.current = { x: 1, y: 0 }; hapticFeedback('light'); }}
+              className="w-14 h-14 min-w-[48px] min-h-[48px] bg-white/5 rounded-xl flex items-center justify-center active:bg-white/10 active:scale-95 transition-transform touch-target"
+              aria-label="Вправо"
+            >
+              <Zap className="w-6 h-6 rotate-90" />
+            </button>
           </div>
         </PremiumCardContent>
 

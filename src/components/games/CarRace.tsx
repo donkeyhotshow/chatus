@@ -154,6 +154,8 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
     const [raceStartTime, setRaceStartTime] = useState<number>(0);
     const [canvasSize, setCanvasSize] = useState({ width: DESKTOP_WIDTH, height: DESKTOP_HEIGHT });
     const [scale, setScale] = useState(1);
+    const [showLandscapeHint, setShowLandscapeHint] = useState(false);
+    const [isPortrait, setIsPortrait] = useState(false);
 
     const lastUpdateRef = useRef<number>(0);
     const prevPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -189,6 +191,29 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         window.addEventListener('resize', updateSize);
         return () => window.removeEventListener('resize', updateSize);
     }, [isGameStarted]);
+
+    // Landscape hint for mobile - detect portrait orientation
+    useEffect(() => {
+        if (!isMobile) return;
+
+        const checkOrientation = () => {
+            const portrait = window.innerHeight > window.innerWidth;
+            setIsPortrait(portrait);
+            // Show hint only once per session when in portrait
+            if (portrait && !sessionStorage.getItem('carrace-landscape-hint-shown')) {
+                setShowLandscapeHint(true);
+            }
+        };
+
+        checkOrientation();
+        window.addEventListener('resize', checkOrientation);
+        window.addEventListener('orientationchange', checkOrientation);
+
+        return () => {
+            window.removeEventListener('resize', checkOrientation);
+            window.removeEventListener('orientationchange', checkOrientation);
+        };
+    }, [isMobile]);
 
     // Initialize player
     useEffect(() => {
@@ -286,9 +311,10 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         return () => clearTimeout(timer);
     }, []);
 
-    // Keyboard controls (desktop and mobile)
+    // Keyboard controls (desktop and mobile) with proper cleanup
     useEffect(() => {
         if (!isGameStarted || countdown !== null) return;
+
         const handleKeyDown = (e: KeyboardEvent) => {
             const key = e.key.toLowerCase();
             const validKeys = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd', ' ', 'shift'];
@@ -297,15 +323,35 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
                 keysRef.current.add(key);
             }
         };
+
         const handleKeyUp = (e: KeyboardEvent) => {
             const key = e.key.toLowerCase();
             keysRef.current.delete(key);
         };
+
+        // Clear all keys when window loses focus to prevent stuck keys
+        const handleBlur = () => {
+            keysRef.current.clear();
+        };
+
+        // Clear keys on visibility change (tab switch)
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                keysRef.current.clear();
+            }
+        };
+
         window.addEventListener('keydown', handleKeyDown);
         window.addEventListener('keyup', handleKeyUp);
+        window.addEventListener('blur', handleBlur);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);
+            window.removeEventListener('blur', handleBlur);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            keysRef.current.clear(); // Clear keys on cleanup
         };
     }, [isGameStarted, countdown]);
 
@@ -610,7 +656,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         });
     };
 
-    // Game loop
+    // Game loop with improved stability
     useEffect(() => {
         if (!isGameStarted || countdown !== null || !canvasRef.current) return;
         const canvas = canvasRef.current;
@@ -618,8 +664,11 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         if (!ctx) return;
 
         let lastTime = performance.now();
+        let isRunning = true;
 
         const gameLoop = (now: number) => {
+            if (!isRunning) return;
+
             const dt = Math.min((now - lastTime) / 1000, 0.05);
             lastTime = now;
 
@@ -641,8 +690,15 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         };
 
         gameLoopRef.current = requestAnimationFrame(gameLoop);
-        return () => { if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current); };
-    }, [isGameStarted, countdown, updatePlayer, updateAI, otherUser, scale]);
+
+        return () => {
+            isRunning = false;
+            if (gameLoopRef.current) {
+                cancelAnimationFrame(gameLoopRef.current);
+                gameLoopRef.current = null;
+            }
+        };
+    }, [isGameStarted, countdown, updatePlayer, updateAI, otherUser, scale, render]);
 
     const render = useCallback((ctx: CanvasRenderingContext2D, now: number) => {
         ctx.save();
@@ -990,6 +1046,31 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
                         </div>
                     </div>
                 )}
+
+                {/* Landscape hint for mobile */}
+                {showLandscapeHint && isMobile && isPortrait && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-20 p-4">
+                        <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-6 max-w-sm text-center border border-white/20">
+                            <div className="text-5xl mb-4">📱↔️</div>
+                            <h3 className="text-lg font-semibold text-white mb-2">
+                                Поверните устройство
+                            </h3>
+                            <p className="text-sm text-white/70 mb-4">
+                                Для лучшего игрового опыта рекомендуем горизонтальную ориентацию
+                            </p>
+                            <button
+                                onClick={() => {
+                                    setShowLandscapeHint(false);
+                                    sessionStorage.setItem('carrace-landscape-hint-shown', 'true');
+                                }}
+                                className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl font-medium min-h-[44px] active:scale-95 transition-transform"
+                            >
+                                Понятно
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 <canvas
                     ref={canvasRef}
                     width={canvasSize.width}

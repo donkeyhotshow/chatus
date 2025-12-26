@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Swords, ArrowLeft, Trophy, Zap, Bot } from "lucide-react";
 import { GameState, UserProfile } from "@/lib/types";
 import { useActionGuard, calculateTimeLeft, hapticFeedback } from "@/lib/game-utils";
+import { createClickLimiter, sanitizeNumber } from "@/lib/game-stability";
 import { cn } from "@/lib/utils";
 import { PremiumButton } from "../ui/premium-button";
 import { PremiumCard, PremiumCardContent, PremiumCardDescription, PremiumCardHeader, PremiumCardTitle, PremiumCardFooter } from "../ui/premium-card";
@@ -19,6 +20,8 @@ type ClickWarProps = {
 
 const GAME_DURATION = 10; // seconds
 const AI_PLAYER_ID = '__AI_BOT__';
+const MAX_SCORE = 999999; // Prevent score overflow
+const MAX_CLICKS_PER_SECOND = 30; // Anti-cheat limit
 
 export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUser }: ClickWarProps) {
   const myScore = gameState.scores?.[user.id] || 0;
@@ -47,6 +50,14 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
   const aiIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const { guard } = useActionGuard();
   const animationFrameRef = useRef<number | undefined>(undefined);
+  const clickLimiterRef = useRef(createClickLimiter(MAX_CLICKS_PER_SECOND));
+
+  // Reset click limiter when game starts
+  useEffect(() => {
+    if (isActive) {
+      clickLimiterRef.current.reset();
+    }
+  }, [isActive]);
 
   useEffect(() => {
     if (!isActive || !startTime) {
@@ -158,17 +169,24 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
     hapticFeedback('medium');
   });
 
-  // Direct click handler without guard for maximum responsiveness
+  // Direct click handler with anti-cheat protection
   const handleClickDirect = useCallback((e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (!isActive || timeLeft <= 0) return;
 
-    // Immediate optimistic update
-    setOptimisticScore(prev => prev + 1);
+    // Anti-cheat: Check click rate limit
+    if (!clickLimiterRef.current.canClick()) return;
+    clickLimiterRef.current.recordClick();
+
+    // Prevent score overflow
+    if (optimisticScore >= MAX_SCORE) return;
+
+    // Immediate optimistic update with sanitization
+    setOptimisticScore(prev => sanitizeNumber(prev + 1, prev, 0, MAX_SCORE));
     clickBufferRef.current += 1;
     hapticFeedback('light');
-  }, [isActive, timeLeft]);
+  }, [isActive, timeLeft, optimisticScore]);
 
   const displayScore = isActive ? optimisticScore : myScore;
   const totalScore = displayScore + otherScore;

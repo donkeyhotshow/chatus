@@ -136,9 +136,9 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
             )}
             onDoubleClick={handleDoubleClick}
         >
-            {/* Avatar */}
+            {/* Avatar - visible on all devices */}
             {!isSticker && (
-                <div className="flex-shrink-0 mt-1">
+                <div className="flex-shrink-0 mt-1 message-avatar">
                     <motion.div
                         whileHover={{ scale: 1.1 }}
                         className={cn(
@@ -162,12 +162,12 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
                 {!isSticker && (
                     <div className="mb-1.5 px-1 flex items-center gap-2">
                         <span className={cn(
-                            "text-[11px] font-semibold tracking-wide",
+                            "text-sm font-semibold tracking-wide message-username",
                             isOwn ? "text-white/70" : "text-violet-400"
                         )}>
                             {user.name}
                         </span>
-                        <span className="text-[10px] text-white/50">{formattedTime}</span>
+                        <span className="text-xs text-white/60 message-time">{formattedTime}</span>
                     </div>
                 )}
 

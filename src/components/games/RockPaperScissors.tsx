@@ -187,13 +187,14 @@ export function RockPaperScissors({ onGameEnd, updateGameState, gameState, user,
                         </div>
                     </div>
                     {!myMove && (otherUser || isVsAI) && !isAnimating && (
-                        <div className="flex gap-4">
+                        <div className="flex gap-3 sm:gap-4">
                             {choices.map(choice => (
                                 <Button
                                     key={choice.id}
                                     size="icon"
-                                    className="h-20 w-20 transition-all hover:scale-110 active:scale-95 bg-white/5 border border-white/10 hover:border-violet-500/30 hover:bg-violet-500/10"
+                                    className="h-16 w-16 sm:h-20 sm:w-20 min-w-[60px] min-h-[60px] transition-all hover:scale-110 active:scale-95 bg-white/5 border border-white/10 hover:border-violet-500/30 hover:bg-violet-500/10 touch-target"
                                     onClick={() => handlePlay(choice.id)}
+                                    aria-label={choice.id === 'rock' ? 'Камень' : choice.id === 'paper' ? 'Бумага' : 'Ножницы'}
                                 >
                                     {choice.icon}
                                 </Button>

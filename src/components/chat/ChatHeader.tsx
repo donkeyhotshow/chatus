@@ -1,11 +1,12 @@
 "use client";
 
-import { memo } from 'react';
-import { ArrowLeft, Search, MoreVertical } from 'lucide-react';
+import { memo, useState } from 'react';
+import { ArrowLeft, Search, MoreVertical, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Breadcrumb, BreadcrumbCompact } from '@/components/ui/Breadcrumb';
 import { NavigationState } from '@/lib/navigation-state';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileMenuDrawer } from '@/components/mobile/MobileMenuDrawer';
 
 interface ChatHeaderProps {
     roomId: string;
@@ -16,10 +17,13 @@ interface ChatHeaderProps {
     onBack?: () => void;
     onSearchOpen?: () => void;
     onSettings?: () => void;
+    onLogout?: () => void;
     className?: string;
     navigationState?: NavigationState | null;
     onBreadcrumbNavigate?: (path: string) => void;
     showBreadcrumb?: boolean;
+    currentUserName?: string;
+    currentUserAvatar?: string;
 }
 
 export const ChatHeader = memo(function ChatHeader({
@@ -29,12 +33,16 @@ export const ChatHeader = memo(function ChatHeader({
     onBack,
     onSearchOpen,
     onSettings,
+    onLogout,
     className,
     navigationState,
     onBreadcrumbNavigate,
-    showBreadcrumb = false
+    showBreadcrumb = false,
+    currentUserName,
+    currentUserAvatar,
 }: ChatHeaderProps) {
     const isMobile = useIsMobile();
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const roomName = otherUser?.name || `Комната ${roomId}`;
 
     return (
@@ -115,7 +123,7 @@ export const ChatHeader = memo(function ChatHeader({
 
             {/* Right section */}
             <div className="flex items-center gap-1 shrink-0">
-                {onSearchOpen && (
+                {onSearchOpen && !isMobile && (
                     <button
                         onClick={onSearchOpen}
                         className={cn(
@@ -130,7 +138,8 @@ export const ChatHeader = memo(function ChatHeader({
                     </button>
                 )}
 
-                {onSettings && (
+                {/* Desktop: Settings button */}
+                {onSettings && !isMobile && (
                     <button
                         onClick={onSettings}
                         className={cn(
@@ -144,7 +153,36 @@ export const ChatHeader = memo(function ChatHeader({
                         <MoreVertical className="w-5 h-5" />
                     </button>
                 )}
+
+                {/* Mobile: Hamburger menu button */}
+                {isMobile && (
+                    <button
+                        onClick={() => setIsMenuOpen(true)}
+                        className={cn(
+                            "hamburger-btn p-2.5 rounded-xl",
+                            "text-white/50 hover:text-white",
+                            "hover:bg-white/[0.06] active:bg-white/[0.08]",
+                            "transition-all duration-200"
+                        )}
+                        aria-label="Открыть меню"
+                        aria-expanded={isMenuOpen}
+                    >
+                        <Menu className="w-5 h-5" />
+                    </button>
+                )}
             </div>
+
+            {/* Mobile Menu Drawer */}
+            {isMobile && (
+                <MobileMenuDrawer
+                    isOpen={isMenuOpen}
+                    onClose={() => setIsMenuOpen(false)}
+                    onSettings={onSettings}
+                    onLogout={onLogout}
+                    userName={currentUserName}
+                    userAvatar={currentUserAvatar}
+                />
+            )}
         </header>
     );
 });
