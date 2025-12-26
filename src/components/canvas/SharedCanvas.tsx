@@ -1,23 +1,16 @@
 "use client";
 
-import { CanvasPath, GameState, UserProfile } from '@/lib/types';
-import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
+import { CanvasPath, UserProfile } from '@/lib/types';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useChatService } from '@/hooks/useChatService';
-import { collection, query, where, Timestamp, doc } from 'firebase/firestore';
+import { Timestamp } from 'firebase/firestore';
 import { useFirebase } from '../firebase/FirebaseProvider';
 import { Slider } from '../ui/slider';
-import { useCollection, useDoc } from '@/hooks/useCollection';
 import { LucideIcon, Eraser, PenTool, Trash2, Brush, Tally1, Bot, Pen, Send } from 'lucide-react';
-import { debounce } from '@/lib/utils';
 import { createCanvasBatcher } from '@/lib/canvas-batch';
 import { logger } from '@/lib/logger';
 import { FloatingToolbar } from './FloatingToolbar';
-import {
-  serializeStyle,
-  deserializeStyle,
-  createStyleMetadata,
-} from '@/lib/canvas-style';
 import {
   CanvasDrawState,
   Point,
@@ -65,17 +58,16 @@ type SharedCanvasProps = {
   isMazeActive: boolean;
 };
 
-const MAZE_CELL_SIZE = 40;
+// MAZE_CELL_SIZE removed - not currently used
 
 export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanvasProps) {
   const { service } = useChatService(roomId, user || undefined);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const batcherRef = useRef<ReturnType<typeof createCanvasBatcher> | null>(null);
+  const rafIdRef = useRef<number | null>(null);
 
   // Canvas stabilizer state for smooth drawing
   const stabilizerStateRef = useRef<CanvasDrawState | null>(null);
-  const throttledDrawRef = useRef<((point: Point) => void) | null>(null);
-  const rafIdRef = useRef<number | null>(null);
 
   const [selectedTool, setSelectedTool] = useState<'pen' | 'eraser'>('pen');
   const [selectedColor, setSelectedColor] = useState('#3B82F6');
@@ -176,7 +168,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
         if (ctx) {
           // Clear and redraw everything
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-          
+
           // Draw background if needed (e.g. for maze)
           if (isMazeActive) {
             // Maze drawing logic would go here
@@ -227,7 +219,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
       ctx.lineTo(path.points[i], path.points[i + 1]);
     }
     ctx.stroke();
-    
+
     // Reset styles
     ctx.shadowBlur = 0;
     ctx.setLineDash([]);
@@ -240,7 +232,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     if (!point) return;
 
     startDrawing(stabilizerStateRef.current, point);
-    
+
     // Update cursor position in RTDB
     if (realtimeServiceRef.current) {
       realtimeServiceRef.current.updateCursor(point.x, point.y, cursorColor);
@@ -364,7 +356,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
 
       const deltaScale = dist / lastTouchDistance.current;
       const newScale = Math.min(Math.max(scale * deltaScale, 0.5), 5);
-      
+
       // Zoom relative to center
       const dx = center.x - lastTouchCenter.current.x;
       const dy = center.y - lastTouchCenter.current.y;
@@ -411,7 +403,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
       if (realtimeServiceRef.current) {
         await realtimeServiceRef.current.clearCanvas();
       }
-      
+
       await service.clearCanvasSheet(sheetId);
       toast({ title: "Canvas Cleared", description: "The current sheet has been cleared for everyone." });
     } catch (error) {
@@ -481,7 +473,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
               <Send className="w-5 h-5" />
             </button>
           </div>
-          
+
           {selectedTool === 'pen' && (
             <>
               <div className="px-2 py-1">
@@ -531,7 +523,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
 
       {/* Mobile Toolbar - Floating minimal */}
       <div className="md:hidden">
-        <FloatingToolbar 
+        <FloatingToolbar
           selectedTool={selectedTool}
           onToolChange={setSelectedTool}
           selectedColor={selectedColor}
@@ -545,11 +537,11 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
           onSendToChat={handleSendToChat}
         />
       </div>
-      <RemoteCursors 
-        cursors={remoteCursors} 
-        scale={scale} 
-        translateX={translateX} 
-        translateY={translateY} 
+      <RemoteCursors
+        cursors={remoteCursors}
+        scale={scale}
+        translateX={translateX}
+        translateY={translateY}
       />
       <canvas
         ref={canvasRef}

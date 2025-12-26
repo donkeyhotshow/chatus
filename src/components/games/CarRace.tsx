@@ -6,7 +6,6 @@ import { Button } from '../ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { ArrowLeft, Car, Users, Gamepad2, Trophy, Heart } from 'lucide-react';
 import { useActionGuard, hapticFeedback } from '@/lib/game-utils';
-import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 type CarRaceProps = {
@@ -560,7 +559,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
             const friction = onTrack ? FRICTION : GRASS_FRICTION;
             ai.vx *= friction;
             ai.vy *= friction;
-            
+
             ai.x += ai.vx * dt;
             ai.y += ai.vy * dt;
 
@@ -624,7 +623,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
             if (playerRef.current && !playerRef.current.finished) {
                 updatePlayer(dt, now);
             }
-            
+
             // Update AI if alone
             if (!otherUser) {
                 updateAI(dt, now);

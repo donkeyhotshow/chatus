@@ -9,7 +9,6 @@ import {
   remove,
   onValue,
   off,
-  serverTimestamp,
   Database,
 } from "firebase/database";
 import { logger } from "@/lib/logger";

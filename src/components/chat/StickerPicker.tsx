@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { Smile, SmilePlus, Loader2, X } from 'lucide-react';
+import { SmilePlus, Loader2, X } from 'lucide-react';
 import { StickerPack } from '@/lib/telegram/types';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';

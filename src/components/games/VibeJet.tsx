@@ -1,26 +1,26 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo, Suspense } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { 
+import { Canvas, useFrame } from '@react-three/fiber';
+import {
     PerspectiveCamera,
-    Sky, 
-    Stars, 
-    Cloud, 
-    useGLTF, 
-    Environment, 
+    Sky,
+    Stars,
+    Cloud,
+    useGLTF,
+    Environment,
     Html,
     Text
 } from '@react-three/drei';
 import * as THREE from 'three';
-import { UserProfile, GameState } from '@/lib/types';
+import { UserProfile } from '@/lib/types';
 import { RealtimeVibeJetService, VibeJetPlayerData } from '@/services/RealtimeVibeJetService';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { hapticFeedback } from '@/lib/game-utils';
 import { useFirebase } from '../firebase/FirebaseProvider';
 import { Button } from '../ui/button';
-import { ArrowLeft, Gamepad2, Trophy, Heart, Zap } from 'lucide-react';
+import { ArrowLeft, Gamepad2, Trophy, Zap } from 'lucide-react';
 
 // --- Constants ---
 const GROUND_SIZE = 8000;
@@ -31,7 +31,7 @@ const AFTERBURNER_MULTIPLIER = 3.0;
 const ROLL_SPEED = Math.PI * 1.0;
 const PITCH_SPEED = Math.PI * 0.8;
 const YAW_SPEED = Math.PI * 0.5;
-const DAMPING = 0.95;
+// DAMPING removed - not currently used
 const ASSETS_PATH = '/games/vibe-jet/assets';
 const MODEL_URL = `${ASSETS_PATH}/shenyang_j-11.glb`;
 
@@ -46,8 +46,8 @@ function getTerrainHeight(x: number, z: number) {
 
 // --- Components ---
 
-function Aircraft({ modelUrl, isPlayer, position, quaternion, name, color }: { 
-    modelUrl: string, 
+function Aircraft({ modelUrl, isPlayer, position, quaternion, name, color }: {
+    modelUrl: string,
     isPlayer?: boolean,
     position?: [number, number, number],
     quaternion?: [number, number, number, number],
@@ -94,7 +94,7 @@ function Aircraft({ modelUrl, isPlayer, position, quaternion, name, color }: {
 
 function Terrain() {
     const meshRef = useRef<THREE.Mesh>(null);
-    
+
     const geometry = useMemo(() => {
         const geo = new THREE.PlaneGeometry(GROUND_SIZE, GROUND_SIZE, 100, 100);
         const vertices = geo.attributes.position.array;
@@ -155,7 +155,7 @@ function Trees({ count = 500 }) {
             const x = (Math.random() - 0.5) * GROUND_SIZE * 0.9;
             const z = (Math.random() - 0.5) * GROUND_SIZE * 0.9;
             const y = getTerrainHeight(x, z);
-            
+
             tempObject.position.set(x, y + 5, z);
             tempObject.scale.setScalar(2 + Math.random() * 3);
             tempObject.updateMatrix();
@@ -219,10 +219,10 @@ function World() {
             <Cloud position={[0, 1500, 2000]} speed={0.2} opacity={0.5} />
             <Environment preset="night" />
             <ambientLight intensity={0.2} />
-            <directionalLight 
-                position={[100, 1000, 100]} 
-                intensity={1.5} 
-                castShadow 
+            <directionalLight
+                position={[100, 1000, 100]}
+                intensity={1.5}
+                castShadow
                 shadow-mapSize={[2048, 2048]}
             />
         </>
@@ -231,17 +231,17 @@ function World() {
 
 // --- Main Game Logic ---
 
-export default function VibeJet({ onGameEnd, user, roomId }: { 
-    onGameEnd: () => void, 
-    user: UserProfile, 
-    roomId: string 
+export default function VibeJet({ onGameEnd, user, roomId }: {
+    onGameEnd: () => void,
+    user: UserProfile,
+    roomId: string
 }) {
     const { rtdb } = useFirebase();
     const isMobile = useIsMobile();
-    const [isStarted, setIsStarted] = useState(false);
+    const [_isStarted, _setIsStarted] = useState(false);
     const [otherPlayers, setOtherPlayers] = useState<{ [userId: string]: VibeJetPlayerData }>({});
     const serviceRef = useRef<RealtimeVibeJetService | null>(null);
-    
+
     // Player State
     const playerRef = useRef<THREE.Group>(null);
     const [stats, setStats] = useState({ health: 100, score: 0, speed: 0, altitude: 0, ammo: 50 });
@@ -366,7 +366,7 @@ export default function VibeJet({ onGameEnd, user, roomId }: {
             const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(aircraft.quaternion);
             const pos = aircraft.position.clone().add(forward.clone().multiplyScalar(20));
             const vel = forward.clone().multiplyScalar(1500);
-            
+
                 setProjectiles(prev => [...prev, {
                     id: Math.random().toString(36).substr(2, 9),
                     position: pos,
@@ -434,7 +434,7 @@ export default function VibeJet({ onGameEnd, user, roomId }: {
                         <div className="text-xs font-bold text-white">{Math.round(stats.health)}%</div>
                     </div>
                     <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                        <div 
+                        <div
                             className={cn(
                                 "h-full transition-all duration-300",
                                 stats.health > 50 ? "bg-emerald-500" : stats.health > 20 ? "bg-amber-500" : "bg-red-500"
@@ -450,9 +450,9 @@ export default function VibeJet({ onGameEnd, user, roomId }: {
                 <div className="bg-black/60 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 text-white font-bold shadow-2xl">
                     СЧЕТ: {stats.score}
                 </div>
-                <Button 
-                    variant="ghost" 
-                    size="icon" 
+                <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={onGameEnd}
                     className="bg-black/60 backdrop-blur-md hover:bg-white/10 text-white rounded-xl border border-white/10"
                 >
@@ -476,7 +476,7 @@ export default function VibeJet({ onGameEnd, user, roomId }: {
                         </div>
                         <h2 className="text-4xl font-black text-white mb-2 tracking-tight">САМОЛЕТ УНИЧТОЖЕН</h2>
                         <p className="text-white/60 mb-8">Вы не справились с управлением или получили слишком много урона.</p>
-                        <Button 
+                        <Button
                             onClick={() => {
                                 setStats({ health: 100, score: 0, speed: 0, altitude: 0, ammo: 50 });
                                 if (playerRef.current) {
@@ -496,7 +496,7 @@ export default function VibeJet({ onGameEnd, user, roomId }: {
             <Canvas shadows gl={{ antialias: true, powerPreference: "high-performance" }}>
                 <Suspense fallback={null}>
                     <World />
-                    
+
                     {/* Player */}
                     <group ref={playerRef} position={[0, 500, 0]}>
                         <Aircraft modelUrl={MODEL_URL} isPlayer />
@@ -505,10 +505,10 @@ export default function VibeJet({ onGameEnd, user, roomId }: {
 
                     {/* Other Players */}
                     {Object.entries(otherPlayers).map(([id, data]) => (
-                        <Aircraft 
-                            key={id} 
-                            modelUrl={MODEL_URL} 
-                            position={data.position} 
+                        <Aircraft
+                            key={id}
+                            modelUrl={MODEL_URL}
+                            position={data.position}
                             quaternion={data.quaternion}
                             name={data.userName}
                             color="#00aaff"
@@ -541,14 +541,14 @@ export default function VibeJet({ onGameEnd, user, roomId }: {
             {/* Mobile Controls */}
             {isMobile && (
                 <div className="absolute bottom-8 right-8 z-10 flex flex-col gap-6">
-                    <button 
+                    <button
                         className="w-20 h-20 rounded-full bg-violet-500/30 backdrop-blur-xl border-2 border-white/10 flex items-center justify-center active:scale-90 transition-transform shadow-2xl"
                         onPointerDown={() => controlsRef.current.boost = true}
                         onPointerUp={() => controlsRef.current.boost = false}
                     >
                         <Zap className="w-10 h-10 text-white" />
                     </button>
-                    <button 
+                    <button
                         className="w-20 h-20 rounded-full bg-red-500/30 backdrop-blur-xl border-2 border-white/10 flex items-center justify-center active:scale-90 transition-transform shadow-2xl"
                         onPointerDown={() => controlsRef.current.fire = true}
                         onPointerUp={() => controlsRef.current.fire = false}

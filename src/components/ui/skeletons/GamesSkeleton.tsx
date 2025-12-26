@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from '@/lib/utils';
+// cn removed - not currently used in this file
 
 /**
  * Skeleton для страницы игр

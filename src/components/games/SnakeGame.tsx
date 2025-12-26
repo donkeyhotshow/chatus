@@ -8,7 +8,7 @@ import { db as realtimeDb } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { PremiumCard, PremiumCardContent, PremiumCardHeader, PremiumCardTitle, PremiumCardFooter } from '../ui/premium-card';
 import { PremiumButton } from '../ui/premium-button';
-import { Trophy, Zap, ArrowLeft, Gamepad2, Bot } from 'lucide-react';
+import { Trophy, Zap, ArrowLeft, Gamepad2 } from 'lucide-react';
 import { hapticFeedback } from '@/lib/game-utils';
 
 interface SnakeGameProps {
@@ -29,7 +29,7 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [rtState, setRtState] = useState<SnakeGameState | null>(null);
   const rtServiceRef = useRef<RealtimeSnakeService | null>(null);
-  const { toast } = useToast();
+  // toast removed - not currently used
 
   // Local snake state
   const [mySnake, setMySnake] = useState<Omit<SnakeData, 'userId'>>({
@@ -99,7 +99,7 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
 
   const handleStart = () => {
     if (!rtServiceRef.current) return;
-    
+
     const isHost = user.id === gameState.hostId;
     const startX = isHost ? 5 : 15;
     const startY = isHost ? 10 : 10;
@@ -117,7 +117,7 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
     directionRef.current = startDir;
     nextDirectionRef.current = startDir;
     setMySnake(initialSnake);
-    
+
     if (isHost) {
       rtServiceRef.current.setGameState(true, Date.now());
       spawnFood();
@@ -136,7 +136,7 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
         rtServiceRef.current.updateOtherSnake('ai-bot', initialAiSnake);
       }
     }
-    
+
     hapticFeedback('medium');
   };
 
@@ -150,7 +150,7 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
     const move = () => {
       const now = Date.now();
       const speed = Math.max(MIN_SPEED, INITIAL_SPEED - Math.floor(mySnake.score / 5) * 10);
-      
+
       if (now - lastMoveTimeRef.current < speed) {
         rafId = requestAnimationFrame(move);
         return;
@@ -163,9 +163,9 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
       setMySnake(prev => {
         if (prev.isDead) return prev;
 
-        const head = { 
-          x: prev.body[0].x + directionRef.current.x, 
-          y: prev.body[0].y + directionRef.current.y 
+        const head = {
+          x: prev.body[0].x + directionRef.current.x,
+          y: prev.body[0].y + directionRef.current.y
         };
 
         // Wall collision
@@ -237,7 +237,7 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
             }
 
             const newAiHead = { x: head.x + nextDir.x, y: head.y + nextDir.y };
-            
+
             // AI Self collision check
             if (prev.body.some(part => part.x === newAiHead.x && part.y === newAiHead.y)) {
                 return { ...prev, isDead: true };
@@ -308,18 +308,18 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
         ctx.fillStyle = player.color;
         ctx.shadowBlur = 10;
         ctx.shadowColor = player.color;
-        
+
         player.body.forEach((part, index) => {
           const isHead = index === 0;
           const opacity = isHead ? 1 : 1 - (index / player.body.length) * 0.6;
           ctx.globalAlpha = player.isDead ? opacity * 0.3 : opacity;
-          
+
           const padding = isHead ? 1 : 2;
           const size = GRID_SIZE - padding * 2;
-          
+
           const x = part.x * GRID_SIZE + padding;
           const y = part.y * GRID_SIZE + padding;
-          
+
           ctx.beginPath();
           // Fallback for roundRect
           if (ctx.roundRect) {
@@ -339,7 +339,7 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
             ctx.fillStyle = player.color;
           }
         });
-        
+
         ctx.globalAlpha = 1;
         ctx.shadowBlur = 0;
       });
@@ -382,7 +382,7 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
               height={CANVAS_SIZE}
               className="max-w-full h-auto"
             />
-            
+
             <AnimatePresence>
               {(!rtState?.active || isGameOver) && (
                 <motion.div
@@ -393,7 +393,7 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
                 >
                   {isGameOver ? (
                     <>
-                      <motion.div 
+                      <motion.div
                         animate={{ y: [0, -10, 0] }}
                         transition={{ repeat: Infinity, duration: 2 }}
                         className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mb-4"
@@ -419,8 +419,8 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
                     </>
                   )}
 
-                  <PremiumButton 
-                    onClick={handleStart} 
+                  <PremiumButton
+                    onClick={handleStart}
                     className="w-full max-w-[200px]"
                     glow
                     disabled={user.id !== gameState.hostId && !!gameState.hostId && !isGameOver}

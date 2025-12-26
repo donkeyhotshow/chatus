@@ -5,7 +5,7 @@ import { X, Moon, Sun, Bell, Volume2, Trash2, Settings, Play } from 'lucide-reac
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
+// Slider removed - not currently used
 import { cn } from '@/lib/utils';
 import { getNotificationSound } from '@/lib/notification-sound';
 
@@ -19,7 +19,7 @@ export function SettingsPanel({ isOpen, onClose, onClearChat }: SettingsPanelPro
     const [darkMode, setDarkMode] = useState(true);
     const [notifications, setNotifications] = useState(true);
     const [soundEnabled, setSoundEnabled] = useState(true);
-    const [soundVolume, setSoundVolume] = useState([50]);
+    // Volume control removed - using system volume
 
     // P3 Fix: Загрузка настроек звуковых уведомлений
     useEffect(() => {
