@@ -44,6 +44,33 @@ function getTerrainHeight(x: number, z: number) {
     );
 }
 
+// --- Error Boundary for 3D content ---
+class ModelErrorBoundary extends React.Component<
+    { children: React.ReactNode; onError: (error: Error) => void },
+    { hasError: boolean }
+> {
+    constructor(props: { children: React.ReactNode; onError: (error: Error) => void }) {
+        super(props);
+        this.state = { hasError: false };
+    }
+
+    static getDerivedStateFromError() {
+        return { hasError: true };
+    }
+
+    componentDidCatch(error: Error) {
+        console.error('[VibeJet] 3D Model loading error:', error);
+        this.props.onError(error);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return null;
+        }
+        return this.props.children;
+    }
+}
+
 // --- Components ---
 
 function Aircraft({ modelUrl, isPlayer, position, quaternion, name, color }: {
@@ -316,21 +343,32 @@ export default function VibeJet({ onGameEnd, user, roomId }: {
     const projectilePoolRef = useRef<{ position: THREE.Vector3, velocity: THREE.Vector3 }[]>([]);
     const MAX_PROJECTILES = 50;
 
-    // Handle model loading
+    // Handle model loading - increased timeout and better error handling
     useEffect(() => {
         const timeout = setTimeout(() => {
             if (isLoading) {
-                setLoadError('Завантаження займає занадто багато часу. Перевірте з\'єднання.');
+                // Don't show error immediately - just log warning
+                console.warn('[VibeJet] Loading taking longer than expected');
             }
-        }, 15000);
-        return () => clearTimeout(timeout);
+        }, 10000);
+
+        // Extended timeout for actual error
+        const errorTimeout = setTimeout(() => {
+            if (isLoading) {
+                setLoadError('Загрузка занимает слишком много времени. Проверьте соединение или попробуйте перезагрузить.');
+            }
+        }, 30000);
+
+        return () => {
+            clearTimeout(timeout);
+            clearTimeout(errorTimeout);
+        };
     }, [isLoading]);
 
-    // BUG #11 FIX: Check if Firebase RTDB is available - but don't block game
+    // RTDB is optional - game works in single-player mode without it
     useEffect(() => {
         if (!rtdb) {
-            console.warn('[VibeJet] Firebase RTDB not available - multiplayer disabled');
-            // Don't show error - game can work in single-player mode without RTDB
+            console.warn('[VibeJet] Firebase RTDB not available - running in single-player mode');
         }
     }, [rtdb]);
 
@@ -534,7 +572,8 @@ export default function VibeJet({ onGameEnd, user, roomId }: {
             {isLoading && (
                 <div className="absolute inset-0 z-30 bg-black flex flex-col items-center justify-center">
                     <div className="w-12 h-12 border-2 border-white/10 border-t-violet-500 rounded-full animate-spin mb-4" />
-                    <p className="text-white/60 text-sm">Завантаження 3D моделей...</p>
+                    <p className="text-white/60 text-sm">Загрузка 3D моделей...</p>
+                    <p className="text-white/30 text-xs mt-2">Это может занять несколько секунд</p>
                 </div>
             )}
 
@@ -544,14 +583,14 @@ export default function VibeJet({ onGameEnd, user, roomId }: {
                     <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mb-4">
                         <Gamepad2 className="w-8 h-8 text-red-500" />
                     </div>
-                    <h2 className="text-xl font-bold text-white mb-2">Щось пішло не так</h2>
+                    <h2 className="text-xl font-bold text-white mb-2">Что-то пошло не так</h2>
                     <p className="text-white/60 mb-6 max-w-sm">{loadError}</p>
                     <div className="flex gap-3">
                         <Button onClick={() => window.location.reload()} variant="outline" className="border-white/20 text-white">
-                            Перезавантажити
+                            Перезагрузить
                         </Button>
                         <Button onClick={onGameEnd} className="bg-violet-600 hover:bg-violet-700">
-                            Назад до ігор
+                            Назад к играм
                         </Button>
                     </div>
                 </div>
@@ -650,53 +689,59 @@ export default function VibeJet({ onGameEnd, user, roomId }: {
                 gl={{
                     antialias: !isMobile,
                     powerPreference: isMobile ? "low-power" : "high-performance",
-                    precision: isMobile ? "mediump" : "highp"
+                    precision: isMobile ? "mediump" : "highp",
+                    failIfMajorPerformanceCaveat: false // Allow software rendering
                 }}
                 dpr={isMobile ? [1, 1.5] : [1, 2]}
                 onCreated={handleCanvasCreated}
                 onError={(error) => {
-                    console.error('Canvas error:', error);
-                    setLoadError('Помилка ініціалізації 3D. Ваш браузер може не підтримувати WebGL.');
+                    console.error('[VibeJet] Canvas error:', error);
+                    setLoadError('Ошибка инициализации 3D. Ваш браузер может не поддерживать WebGL. Попробуйте другой браузер.');
                     setIsLoading(false);
                 }}
             >
-                <Suspense fallback={null}>
-                    <World isMobile={isMobile} />
+                <ModelErrorBoundary onError={(error) => {
+                    setLoadError(`Ошибка загрузки 3D модели: ${error.message}`);
+                    setIsLoading(false);
+                }}>
+                    <Suspense fallback={null}>
+                        <World isMobile={isMobile} />
 
-                    {/* Player */}
-                    <group ref={playerRef} position={[0, 500, 0]}>
-                        <Aircraft modelUrl={MODEL_URL} isPlayer />
-                        <PerspectiveCamera makeDefault position={[0, 5, -15]} fov={75} />
-                    </group>
+                        {/* Player */}
+                        <group ref={playerRef} position={[0, 500, 0]}>
+                            <Aircraft modelUrl={MODEL_URL} isPlayer />
+                            <PerspectiveCamera makeDefault position={[0, 5, -15]} fov={75} />
+                        </group>
 
-                    {/* Other Players */}
-                    {Object.entries(otherPlayers).map(([id, data]) => (
-                        <Aircraft
-                            key={id}
-                            modelUrl={MODEL_URL}
-                            position={data.position}
-                            quaternion={data.quaternion}
-                            name={data.userName}
-                            color="#00aaff"
-                        />
-                    ))}
+                        {/* Other Players */}
+                        {Object.entries(otherPlayers).map(([id, data]) => (
+                            <Aircraft
+                                key={id}
+                                modelUrl={MODEL_URL}
+                                position={data.position}
+                                quaternion={data.quaternion}
+                                name={data.userName}
+                                color="#00aaff"
+                            />
+                        ))}
 
-                    {/* Projectiles */}
-                    {projectiles.map(p => (
-                        <mesh key={p.id} position={p.position}>
-                            <sphereGeometry args={[1, 8, 8]} />
-                            <meshBasicMaterial color="#ff4400" />
-                        </mesh>
-                    ))}
+                        {/* Projectiles */}
+                        {projectiles.map(p => (
+                            <mesh key={p.id} position={p.position}>
+                                <sphereGeometry args={[1, 8, 8]} />
+                                <meshBasicMaterial color="#ff4400" />
+                            </mesh>
+                        ))}
 
-                    {/* Muzzle Flash */}
-                    {muzzleFlash && (
-                        <pointLight position={muzzleFlash} color="#ff4400" intensity={5} distance={50} />
-                    )}
+                        {/* Muzzle Flash */}
+                        {muzzleFlash && (
+                            <pointLight position={muzzleFlash} color="#ff4400" intensity={5} distance={50} />
+                        )}
 
-                    {/* Physics Loop */}
-                    <PhysicsRunner onUpdate={updatePhysics} />
-                </Suspense>
+                        {/* Physics Loop */}
+                        <PhysicsRunner onUpdate={updatePhysics} />
+                    </Suspense>
+                </ModelErrorBoundary>
             </Canvas>
 
             {/* Controls Hint */}
