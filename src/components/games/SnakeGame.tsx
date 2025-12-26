@@ -135,12 +135,7 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
   }, [mySnake.body, aiSnake?.body]);
 
   const handleStart = useCallback(() => {
-    // BUG #9 FIX: Check if service is ready before starting
-    if (!rtServiceRef.current) {
-      console.warn('[SnakeGame] Service not ready, cannot start');
-      return;
-    }
-
+    // BUG #9 FIX: If service not ready, initialize it first or start locally
     const isHost = user.id === gameState.hostId || !gameState.hostId;
     const startX = isHost ? 5 : 15;
     const startY = isHost ? 10 : 10;
@@ -159,9 +154,15 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
     nextDirectionRef.current = startDir;
     setMySnake(initialSnake);
 
-    // Always set game state if we're starting (either as host or if no host exists)
-    rtServiceRef.current.setGameState(true, Date.now());
-    spawnFood();
+    // Try to use service, but don't block if not ready
+    if (rtServiceRef.current) {
+      rtServiceRef.current.setGameState(true, Date.now());
+      spawnFood();
+    } else {
+      // Fallback: set local state to active
+      setRtState(prev => prev ? { ...prev, active: true } : { active: true, food: { x: 10, y: 10 }, players: {} });
+      console.warn('[SnakeGame] Service not ready, starting locally');
+    }
 
     // Spawn AI if no other user
     if (!otherUser) {
@@ -174,7 +175,9 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
           isDead: false
       };
       setAiSnake(initialAiSnake);
-      rtServiceRef.current.updateOtherSnake('ai-bot', initialAiSnake);
+      if (rtServiceRef.current) {
+        rtServiceRef.current.updateOtherSnake('ai-bot', initialAiSnake);
+      }
     }
 
     hapticFeedback('medium');

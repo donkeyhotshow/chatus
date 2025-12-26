@@ -146,12 +146,13 @@ export function DiceRoll({ onGameEnd, updateGameState, gameState, user, otherUse
 
         const aiResult = Math.floor(Math.random() * 6) + 1;
 
+        // Faster AI response: 400-600ms instead of 800-1200ms
         setTimeout(() => {
             updateGameState({ diceRoll: { ...currentRolls, [AI_BOT_ID]: aiResult } });
             setIsAiRolling(false);
             setAiRollingValue(null);
             hapticFeedback('heavy');
-        }, 800 + Math.random() * 400);
+        }, 400 + Math.random() * 200);
     };
 
     const handleReset = guard(() => {

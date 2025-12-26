@@ -656,50 +656,6 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         });
     };
 
-    // Game loop with improved stability
-    useEffect(() => {
-        if (!isGameStarted || countdown !== null || !canvasRef.current) return;
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        let lastTime = performance.now();
-        let isRunning = true;
-
-        const gameLoop = (now: number) => {
-            if (!isRunning) return;
-
-            const dt = Math.min((now - lastTime) / 1000, 0.05);
-            lastTime = now;
-
-            if (playerRef.current && !playerRef.current.finished) {
-                updatePlayer(dt, now);
-            }
-
-            // Update AI if alone
-            if (!otherUser) {
-                updateAI(dt, now);
-            }
-
-            updateParticles(dt);
-            updateTireTracks(dt);
-            updateSparks(dt);
-            render(ctx, now);
-
-            gameLoopRef.current = requestAnimationFrame(gameLoop);
-        };
-
-        gameLoopRef.current = requestAnimationFrame(gameLoop);
-
-        return () => {
-            isRunning = false;
-            if (gameLoopRef.current) {
-                cancelAnimationFrame(gameLoopRef.current);
-                gameLoopRef.current = null;
-            }
-        };
-    }, [isGameStarted, countdown, updatePlayer, updateAI, otherUser, scale, render]);
-
     const render = useCallback((ctx: CanvasRenderingContext2D, now: number) => {
         ctx.save();
         ctx.scale(scale, scale);
@@ -938,6 +894,50 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
             ctx.fillText(`Время: ${(player.finishTime / 1000).toFixed(2)}s`, DESKTOP_WIDTH/2, DESKTOP_HEIGHT/2 + 20);
         }
     };
+
+    // Game loop with improved stability - MUST be after render is defined
+    useEffect(() => {
+        if (!isGameStarted || countdown !== null || !canvasRef.current) return;
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        let lastTime = performance.now();
+        let isRunning = true;
+
+        const gameLoop = (now: number) => {
+            if (!isRunning) return;
+
+            const dt = Math.min((now - lastTime) / 1000, 0.05);
+            lastTime = now;
+
+            if (playerRef.current && !playerRef.current.finished) {
+                updatePlayer(dt, now);
+            }
+
+            // Update AI if alone
+            if (!otherUser) {
+                updateAI(dt, now);
+            }
+
+            updateParticles(dt);
+            updateTireTracks(dt);
+            updateSparks(dt);
+            render(ctx, now);
+
+            gameLoopRef.current = requestAnimationFrame(gameLoop);
+        };
+
+        gameLoopRef.current = requestAnimationFrame(gameLoop);
+
+        return () => {
+            isRunning = false;
+            if (gameLoopRef.current) {
+                cancelAnimationFrame(gameLoopRef.current);
+                gameLoopRef.current = null;
+            }
+        };
+    }, [isGameStarted, countdown, updatePlayer, updateAI, otherUser, scale, render]);
 
     const handleStart = guard(() => {
         setIsGameStarted(true);

@@ -49,11 +49,12 @@ export function RockPaperScissors({ onGameEnd, updateGameState, gameState, user,
         }
     }, [gameState.moves]);
 
-    // AI Move Logic - Fixed to prevent infinite loop
+    // AI Move Logic - Fixed to prevent infinite loop, faster response
     useEffect(() => {
         // Only run if: playing vs AI, player made move, AI hasn't moved, no result yet
         if (!isVsAI || !myMove || otherMove || gameState.result) return;
 
+        // Faster AI: 500-800ms instead of 1000-2000ms
         const timer = setTimeout(() => {
             const aiMove = choices[Math.floor(Math.random() * choices.length)].id;
             const outcome = outcomes[myMove][aiMove];
@@ -68,7 +69,7 @@ export function RockPaperScissors({ onGameEnd, updateGameState, gameState, user,
                 result: resultText
             });
             hapticFeedback('medium');
-        }, 1000 + Math.random() * 1000);
+        }, 500 + Math.random() * 300);
 
         return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
