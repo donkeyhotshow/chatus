@@ -80,6 +80,9 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
   const realtimeServiceRef = useRef<RealtimeCanvasService | null>(null);
   const cursorColor = useMemo(() => user ? generateCursorColor(user.id) : '#3B82F6', [user]);
 
+  // Memory leak prevention: limit max strokes in memory
+  const MAX_STROKES_IN_MEMORY = 500;
+
   // Touch and zoom state
   const [scale, setScale] = useState(1);
   const [translateX, setTranslateX] = useState(0);
@@ -139,6 +142,22 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
             brush: stroke.brush || 'normal',
             createdAt: stroke.timestamp ? Timestamp.fromMillis(stroke.timestamp) : new Date(),
           });
+
+          // Memory leak prevention: remove oldest strokes if exceeding limit
+          if (next.size > MAX_STROKES_IN_MEMORY) {
+            const entries = Array.from(next.entries());
+            // Sort by timestamp and remove oldest
+            entries.sort((a, b) => {
+              const timeA = a[1].createdAt instanceof Timestamp ? a[1].createdAt.toMillis() : (a[1].createdAt as Date).getTime();
+              const timeB = b[1].createdAt instanceof Timestamp ? b[1].createdAt.toMillis() : (b[1].createdAt as Date).getTime();
+              return timeA - timeB;
+            });
+            // Remove oldest 10% of strokes
+            const toRemove = Math.floor(MAX_STROKES_IN_MEMORY * 0.1);
+            for (let i = 0; i < toRemove; i++) {
+              next.delete(entries[i][0]);
+            }
+          }
         }
         return next;
       });
@@ -152,6 +171,10 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
 
     return () => {
       rtService.destroy();
+      realtimeServiceRef.current = null;
+      // Clear paths to free memory on unmount
+      setRealtimePaths(new Map());
+      setRemoteCursors(new Map());
     };
   }, [roomId, sheetId, user, rtdb]);
 
@@ -162,7 +185,18 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
 
     stabilizerStateRef.current = initCanvasStabilizer(canvas);
 
-    const drawLoop = () => {
+    // Throttle draw loop for better performance on weak devices
+    let lastDrawTime = 0;
+    const MIN_DRAW_INTERVAL = 16; // ~60fps max
+
+    const drawLoop = (timestamp: number) => {
+      // Throttle rendering
+      if (timestamp - lastDrawTime < MIN_DRAW_INTERVAL) {
+        rafIdRef.current = requestAnimationFrame(drawLoop);
+        return;
+      }
+      lastDrawTime = timestamp;
+
       if (canvasRef.current && stabilizerStateRef.current) {
         const ctx = canvasRef.current.getContext('2d');
         if (ctx) {
@@ -180,6 +214,39 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
               drawPath(ctx, path);
             }
           });
+
+          // BUG FIX: Draw current stroke being drawn (live preview)
+          if (stabilizerStateRef.current.isDrawing) {
+            const points = getPointsArray(stabilizerStateRef.current);
+            if (points.length >= 2) {
+              ctx.beginPath();
+              ctx.strokeStyle = selectedTool === 'eraser' ? '#0d0d0d' : selectedColor;
+              ctx.lineWidth = strokeWidth;
+              ctx.lineCap = 'round';
+              ctx.lineJoin = 'round';
+
+              // Apply brush styles for live preview
+              if (brushType === 'neon') {
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = selectedColor;
+              } else if (brushType === 'dashed') {
+                ctx.setLineDash([10, 10]);
+              } else {
+                ctx.shadowBlur = 0;
+                ctx.setLineDash([]);
+              }
+
+              ctx.moveTo(points[0], points[1]);
+              for (let i = 2; i < points.length; i += 2) {
+                ctx.lineTo(points[i], points[i + 1]);
+              }
+              ctx.stroke();
+
+              // Reset styles
+              ctx.shadowBlur = 0;
+              ctx.setLineDash([]);
+            }
+          }
         }
       }
       rafIdRef.current = requestAnimationFrame(drawLoop);
@@ -190,9 +257,12 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     return () => {
       if (rafIdRef.current) {
         cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
       }
+      // Clear stabilizer state
+      stabilizerStateRef.current = null;
     };
-  }, [realtimePaths, sheetId, isMazeActive]);
+  }, [realtimePaths, sheetId, isMazeActive, selectedTool, selectedColor, strokeWidth, brushType]);
 
   const drawPath = (ctx: CanvasRenderingContext2D, path: CanvasPath) => {
     if (path.points.length < 2) return;
@@ -265,7 +335,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
 
     const points = getPointsArray(stabilizerStateRef.current);
     if (points.length > 1) {
-      const strokeId = `stroke-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      // Generate unique stroke ID (used for tracking)
       const pathData: Omit<CanvasPath, 'id' | 'createdAt'> = {
         sheetId,
         user: { id: user.id, name: user.name, avatar: user.avatar },

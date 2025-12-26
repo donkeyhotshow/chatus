@@ -8,12 +8,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as fc from 'fast-check';
 import {
-  AnimationQueue,
-  AnimationTask,
   createAnimationQueue,
   isValidAnimationDuration,
   calculateRemainingTime,
 } from '@/lib/animation-queue';
+import type { AnimationTask } from '@/lib/animation-queue';
 
 describe('AnimationQueue', () => {
   beforeEach(() => {

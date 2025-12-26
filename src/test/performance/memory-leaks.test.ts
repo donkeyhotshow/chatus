@@ -23,7 +23,8 @@ describe('Memory Leak Tests', () => {
 
     it('handles state updates after unmount gracefully', () => {
         let isMounted = true;
-        const setState = vi.fn((value) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const setState = vi.fn((_value) => {
             if (isMounted) {
                 // Update state
             }
