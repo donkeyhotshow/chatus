@@ -8,7 +8,7 @@ import { db as realtimeDb } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { PremiumCard, PremiumCardContent, PremiumCardHeader, PremiumCardTitle, PremiumCardFooter } from '../ui/premium-card';
 import { PremiumButton } from '../ui/premium-button';
-import { Trophy, Zap, ArrowLeft, Gamepad2 } from 'lucide-react';
+import { Trophy, Zap, ArrowLeft, Gamepad2, Bot } from 'lucide-react';
 import { hapticFeedback } from '@/lib/game-utils';
 
 interface SnakeGameProps {
@@ -25,7 +25,7 @@ const CANVAS_SIZE = 400;
 const INITIAL_SPEED = 150;
 const MIN_SPEED = 60;
 
-export function SnakeGame({ onGameEnd, gameState, user, roomId }: SnakeGameProps) {
+export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: SnakeGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [rtState, setRtState] = useState<SnakeGameState | null>(null);
   const rtServiceRef = useRef<RealtimeSnakeService | null>(null);
@@ -40,6 +40,9 @@ export function SnakeGame({ onGameEnd, gameState, user, roomId }: SnakeGameProps
     color: '#8B5CF6', // Violet
     isDead: false
   });
+
+  // AI snake state (only managed by host)
+  const [aiSnake, setAiSnake] = useState<Omit<SnakeData, 'userId'> | null>(null);
 
   const directionRef = useRef({ x: 1, y: 0 });
   const nextDirectionRef = useRef({ x: 1, y: 0 });
@@ -118,6 +121,20 @@ export function SnakeGame({ onGameEnd, gameState, user, roomId }: SnakeGameProps
     if (isHost) {
       rtServiceRef.current.setGameState(true, Date.now());
       spawnFood();
+
+      // Spawn AI if no other user
+      if (!otherUser) {
+        const initialAiSnake = {
+            userName: 'AI Bot 🤖',
+            body: [{ x: 15, y: 10 }, { x: 16, y: 10 }, { x: 17, y: 10 }],
+            direction: { x: -1, y: 0 },
+            score: 0,
+            color: '#EC4899',
+            isDead: false
+        };
+        setAiSnake(initialAiSnake);
+        rtServiceRef.current.updateOtherSnake('ai-bot', initialAiSnake);
+      }
     }
     
     hapticFeedback('medium');
@@ -128,6 +145,7 @@ export function SnakeGame({ onGameEnd, gameState, user, roomId }: SnakeGameProps
     if (!rtState?.active || mySnake.isDead) return;
 
     let rafId: number;
+    const isHost = user.id === gameState.hostId;
 
     const move = () => {
       const now = Date.now();
@@ -141,6 +159,7 @@ export function SnakeGame({ onGameEnd, gameState, user, roomId }: SnakeGameProps
       lastMoveTimeRef.current = now;
       directionRef.current = nextDirectionRef.current;
 
+      // Update My Snake
       setMySnake(prev => {
         if (prev.isDead) return prev;
 
@@ -187,12 +206,68 @@ export function SnakeGame({ onGameEnd, gameState, user, roomId }: SnakeGameProps
         return { ...prev, body: newBody, score: newScore, direction: directionRef.current };
       });
 
+      // Update AI Snake (only by host)
+      if (isHost && !otherUser && aiSnake && !aiSnake.isDead) {
+        setAiSnake(prev => {
+            if (!prev || prev.isDead) return prev;
+
+            const head = prev.body[0];
+            const food = rtState.food;
+            let nextDir = prev.direction;
+
+            // Simple AI: Move towards food
+            if (food) {
+                if (food.x < head.x && prev.direction.x === 0) nextDir = { x: -1, y: 0 };
+                else if (food.x > head.x && prev.direction.x === 0) nextDir = { x: 1, y: 0 };
+                else if (food.y < head.y && prev.direction.y === 0) nextDir = { x: 0, y: -1 };
+                else if (food.y > head.y && prev.direction.y === 0) nextDir = { x: 0, y: 1 };
+            }
+
+            // Avoid walls
+            const nextHead = { x: head.x + nextDir.x, y: head.y + nextDir.y };
+            if (nextHead.x < 0 || nextHead.x >= 20 || nextHead.y < 0 || nextHead.y >= 20) {
+                const dirs = [{ x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }];
+                for (const d of dirs) {
+                    const h = { x: head.x + d.x, y: head.y + d.y };
+                    if (h.x >= 0 && h.x < 20 && h.y >= 0 && h.y < 20) {
+                        nextDir = d;
+                        break;
+                    }
+                }
+            }
+
+            const newAiHead = { x: head.x + nextDir.x, y: head.y + nextDir.y };
+            
+            // AI Self collision check
+            if (prev.body.some(part => part.x === newAiHead.x && part.y === newAiHead.y)) {
+                return { ...prev, isDead: true };
+            }
+
+            const newAiBody = [newAiHead, ...prev.body];
+            let newAiScore = prev.score;
+            let isAiDead = false;
+
+            if (newAiHead.x < 0 || newAiHead.x >= 20 || newAiHead.y < 0 || newAiHead.y >= 20) isAiDead = true;
+
+            if (food && newAiHead.x === food.x && newAiHead.y === food.y) {
+                newAiScore++;
+                spawnFood();
+            } else {
+                newAiBody.pop();
+            }
+
+            const updatedAi = { ...prev, body: newAiBody, score: newAiScore, direction: nextDir, isDead: isAiDead };
+            rtServiceRef.current?.updateOtherSnake('ai-bot', updatedAi);
+            return updatedAi;
+        });
+      }
+
       rafId = requestAnimationFrame(move);
     };
 
     rafId = requestAnimationFrame(move);
     return () => cancelAnimationFrame(rafId);
-  }, [rtState?.active, rtState?.food, rtState?.players, mySnake.isDead, user.id, spawnFood, mySnake.score]);
+  }, [rtState?.active, rtState?.food, rtState?.players, mySnake.isDead, aiSnake, user.id, gameState.hostId, otherUser, spawnFood, mySnake.score]);
 
   // Rendering
   useEffect(() => {
@@ -289,7 +364,9 @@ export function SnakeGame({ onGameEnd, gameState, user, roomId }: SnakeGameProps
             </div>
             <div className="text-white/20 font-black text-xl italic">VS</div>
             <div className="flex flex-col items-end">
-              <span className="text-[10px] uppercase tracking-widest text-white/40 font-bold">Оппонент</span>
+              <span className="text-[10px] uppercase tracking-widest text-white/40 font-bold">
+                {otherUser ? 'Оппонент' : 'AI Bot 🤖'}
+              </span>
               <span className="text-xl font-black text-pink-400">
                 {Object.values(rtState?.players || {}).find(p => p.userId !== user.id)?.score || 0}
               </span>
@@ -324,7 +401,7 @@ export function SnakeGame({ onGameEnd, gameState, user, roomId }: SnakeGameProps
                         <Trophy className="w-8 h-8 text-yellow-500" />
                       </motion.div>
                       <h2 className="text-3xl font-black text-white mb-1">
-                        {winner?.userId === user.id ? "ПОБЕДА!" : "ПОРАЖЕНИЕ"}
+                        {winner?.userId === user.id ? "ПОБЕДА!" : (winner?.userId === 'ai-bot' ? "БОТ ВЫИГРАЛ!" : "ПОРАЖЕНИЕ")}
                       </h2>
                       <p className="text-white/50 mb-6">
                         Счет: {winner?.score}

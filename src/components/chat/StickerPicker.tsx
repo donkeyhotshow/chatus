@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import { Smile, Loader2, X } from 'lucide-react';
+import { Smile, SmilePlus, Loader2, X } from 'lucide-react';
 import { StickerPack } from '@/lib/telegram/types';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
@@ -75,13 +75,16 @@ export function StickerPicker({ onSelect, onClose }: StickerPickerProps) {
       {/* Trigger Button */}
       <button
         type="button"
-        onClick={handleToggle}
-        className="p-2.5 rounded-xl text-white/40 hover:text-white/70 hover:bg-white/[0.05] transition-all duration-200 min-w-[44px] min-h-[44px]"
+        onPointerDown={(e) => {
+          e.preventDefault();
+          handleToggle();
+        }}
+        className="p-2.5 rounded-xl text-white/40 hover:text-white/70 hover:bg-white/[0.05] transition-all duration-200 min-w-[44px] min-h-[44px] relative z-[105]"
         title="Стикеры"
         aria-label="Стикеры"
         aria-expanded={isOpen}
       >
-        <Smile className="w-5 h-5" />
+        <SmilePlus className="w-5 h-5" />
       </button>
 
       {/* Dropdown Panel - Mobile adapted */}
@@ -89,11 +92,11 @@ export function StickerPicker({ onSelect, onClose }: StickerPickerProps) {
         <>
           {/* Mobile backdrop */}
           <div
-            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            className="fixed inset-0 bg-black/50 z-[100] md:hidden"
             onClick={() => setIsOpen(false)}
           />
           <div className={cn(
-            "bg-black/95 border border-white/10 rounded-2xl shadow-2xl z-50 backdrop-blur-2xl overflow-hidden",
+            "bg-black/95 border border-white/10 rounded-2xl shadow-2xl z-[110] backdrop-blur-2xl overflow-hidden",
             // Desktop: absolute positioning
             "md:absolute md:bottom-full md:right-0 md:mb-2 md:w-80",
             // Mobile: fixed bottom sheet

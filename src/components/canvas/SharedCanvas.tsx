@@ -4,14 +4,13 @@ import { CanvasPath, GameState, UserProfile } from '@/lib/types';
 import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useChatService } from '@/hooks/useChatService';
-import { Eraser, PenTool, Trash2, Brush, Tally1, Bot, Pen, Send } from 'lucide-react';
-import { debounce } from '@/lib/utils';
-import { createCanvasBatcher } from '@/lib/canvas-batch';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, Timestamp, doc } from 'firebase/firestore';
 import { useFirebase } from '../firebase/FirebaseProvider';
 import { Slider } from '../ui/slider';
 import { useCollection, useDoc } from '@/hooks/useCollection';
-import { doc } from 'firebase/firestore';
+import { LucideIcon, Eraser, PenTool, Trash2, Brush, Tally1, Bot, Pen, Send } from 'lucide-react';
+import { debounce } from '@/lib/utils';
+import { createCanvasBatcher } from '@/lib/canvas-batch';
 import { logger } from '@/lib/logger';
 import { FloatingToolbar } from './FloatingToolbar';
 import {
@@ -29,22 +28,30 @@ import {
   getPointsArray,
   clearPendingPoints,
   captureCanvasImage,
-  cleanupCanvasResources,
-  createThrottledDrawHandler,
 } from '@/lib/canvas-stabilizer';
-import { db as realtimeDb } from '@/lib/firebase';
-import { RealtimeCanvasService, RemoteCursor } from '@/services/RealtimeCanvasService';
-import { RemoteCursors, generateCursorColor } from './RemoteCursors';
+import { RealtimeCanvasService } from '@/services/RealtimeCanvasService';
+import { RemoteCursors } from './RemoteCursors';
+import { RemoteCursor } from '@/lib/types';
+
+// Helper to generate a consistent color for a user ID
+const generateCursorColor = (userId: string) => {
+  const colors = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899'];
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+};
 
 const NEON_COLORS = [
-  '#FFFFFF', '#EF4444', '#F97316', '#F59E0B',
-  '#84CC16', '#10B981', '#06B6D4', '#3B82F6',
-  '#8B5CF6', '#D946EF', '#F43F5E', '#64748B'
+    '#FFFFFF', '#EF4444', '#F97316', '#F59E0B',
+    '#84CC16', '#10B981', '#06B6D4', '#3B82F6',
+    '#6366F1', '#8B5CF6', '#D946EF', '#EC4899',
 ];
 
 type BrushType = 'normal' | 'neon' | 'dashed' | 'calligraphy';
 
-const BRUSHES: { id: BrushType, name: string, icon: React.ElementType }[] = [
+const BRUSHES: { id: BrushType, name: string, icon: LucideIcon }[] = [
   { id: 'normal', name: 'Normal', icon: Pen },
   { id: 'neon', name: 'Neon', icon: Brush },
   { id: 'dashed', name: 'Dashed', icon: Tally1 },
@@ -91,712 +98,316 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
   const [showZoomHint, setShowZoomHint] = useState(false);
 
   const { toast } = useToast();
-  const { db } = useFirebase()!;
+  const { rtdb } = useFirebase()!;
 
   // Initialize batcher
   useEffect(() => {
     if (!service) return;
 
     batcherRef.current = createCanvasBatcher(async (strokes) => {
-      // Send all strokes in parallel for better performance
-      await Promise.all(strokes.map(stroke => service.saveCanvasPath(stroke)));
+      try {
+        await service.saveCanvasStrokes(sheetId, strokes);
+      } catch (error) {
+        logger.error('Failed to save batch strokes', error as Error);
+      }
     });
 
     return () => {
       if (batcherRef.current) {
-        batcherRef.current.destroy();
-        batcherRef.current = null;
+        batcherRef.current.flush();
       }
     };
-  }, [service]);
+  }, [service, sheetId]);
 
-  // Initialize RealtimeCanvasService for remote cursors (IMP-002) and fast sync (BUG-004)
+  // Initialize Real-time Service (BUG-004)
   useEffect(() => {
-    if (!realtimeDb || !user || !roomId || !sheetId) return;
+    if (!roomId || !user) return;
 
-    try {
-      const rtService = new RealtimeCanvasService(
-        realtimeDb,
-        roomId,
-        sheetId,
-        user.id,
-        user.name || 'Anonymous'
-      );
+    const rtService = new RealtimeCanvasService(rtdb!, roomId, sheetId, user.id, user.name);
+    realtimeServiceRef.current = rtService;
 
-      // Subscribe to remote cursors
-      rtService.subscribeToCursors((cursors) => {
-        setRemoteCursors(new Map(cursors));
-      });
+    // Subscribe to cursors
+    rtService.subscribeToCursors((cursors) => {
+      setRemoteCursors(cursors);
+    });
 
-      // BUG-004 FIX: Subscribe to real-time strokes
-      rtService.subscribeToStrokes(
-        (stroke) => {
-          if (!stroke.id) return;
-          
-          const path: CanvasPath = {
+    // BUG-004 FIX: Subscribe to real-time strokes
+    rtService.subscribeToStrokes((stroke) => {
+      setRealtimePaths(prev => {
+        const next = new Map(prev);
+        if (stroke.id) {
+          next.set(stroke.id, {
             id: stroke.id,
-            sheetId: sheetId,
+            sheetId,
+            user: { id: stroke.userId, name: stroke.userName || 'Unknown', avatar: '' },
             points: stroke.points,
             color: stroke.color,
             strokeWidth: stroke.width,
             tool: stroke.tool,
             brush: stroke.brush || 'normal',
-            createdAt: stroke.timestamp ? { seconds: Math.floor(stroke.timestamp / 1000), nanoseconds: 0 } : new Date(),
-            user: {
-              id: stroke.userId,
-              name: stroke.userName || 'Anonymous',
-              avatar: ''
-            }
-          };
-
-          setRealtimePaths(prev => {
-            const next = new Map(prev);
-            next.set(path.id, path);
-            return next;
-          });
-        },
-        (strokeId) => {
-          setRealtimePaths(prev => {
-            const next = new Map(prev);
-            next.delete(strokeId);
-            return next;
+            createdAt: stroke.timestamp ? Timestamp.fromMillis(stroke.timestamp) : new Date(),
           });
         }
-      );
+        return next;
+      });
+    }, (strokeId) => {
+      setRealtimePaths(prev => {
+        const next = new Map(prev);
+        next.delete(strokeId);
+        return next;
+      });
+    });
 
-      realtimeServiceRef.current = rtService;
-      logger.info('RealtimeCanvasService initialized for cursors and strokes', { roomId, sheetId });
+    return () => {
+      rtService.destroy();
+    };
+  }, [roomId, sheetId, user, rtdb]);
 
-      return () => {
-        rtService.destroy();
-        realtimeServiceRef.current = null;
-        setRemoteCursors(new Map());
-        setRealtimePaths(new Map());
-      };
-    } catch (error) {
-      logger.error('Failed to initialize RealtimeCanvasService', error as Error);
-    }
-  }, [realtimeDb, user, roomId, sheetId]);
-
-  // Initialize canvas stabilizer for smooth drawing
+  // Initialize stabilizer and draw loop
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Initialize stabilizer state
     stabilizerStateRef.current = initCanvasStabilizer(canvas);
 
-    // Create throttled draw handler for rAF-based rendering
-    throttledDrawRef.current = createThrottledDrawHandler((point: Point) => {
-      if (!stabilizerStateRef.current) return;
-      stabilizerStateRef.current = processDrawEvent(stabilizerStateRef.current, point);
-    });
+    const drawLoop = () => {
+      if (canvasRef.current && stabilizerStateRef.current) {
+        const ctx = canvasRef.current.getContext('2d');
+        if (ctx) {
+          // Clear and redraw everything
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          
+          // Draw background if needed (e.g. for maze)
+          if (isMazeActive) {
+            // Maze drawing logic would go here
+          }
+
+          // Draw all paths (historical + real-time)
+          realtimePaths.forEach(path => {
+            if (path.sheetId === sheetId) {
+              drawPath(ctx, path);
+            }
+          });
+        }
+      }
+      rafIdRef.current = requestAnimationFrame(drawLoop);
+    };
+
+    rafIdRef.current = requestAnimationFrame(drawLoop);
 
     return () => {
-      // Cleanup stabilizer resources on unmount
-      if (stabilizerStateRef.current) {
-        stabilizerStateRef.current = cleanupCanvasResources(stabilizerStateRef.current);
-      }
-      if (rafIdRef.current !== null) {
+      if (rafIdRef.current) {
         cancelAnimationFrame(rafIdRef.current);
-        rafIdRef.current = null;
       }
     };
-  }, []);
+  }, [realtimePaths, sheetId, isMazeActive]);
 
-  // Subscribe to game state for maze
-  const gameDocRef = useMemo(() => (isMazeActive && db) ? doc(db, 'rooms', roomId, 'games', 'maze') : null, [db, roomId, isMazeActive]);
-  const { data: gameState } = useDoc<GameState>(gameDocRef);
-
-  // Subscribe to canvas paths for the current sheet
-  const pathsQuery = useMemo(() => db ? query(collection(db, 'rooms', roomId, 'canvasPaths'), where('sheetId', '==', sheetId)) : null, [db, roomId, sheetId]);
-  const { data: paths } = useCollection<CanvasPath>(pathsQuery);
-
-  const tool = isMazeActive ? 'pen' : selectedTool;
-  const color = isMazeActive ? '#FFFFFF' : selectedColor;
-  const stroke = isMazeActive ? 5 : (tool === 'eraser' ? 20 : strokeWidth);
-  const currentBrush = isMazeActive ? 'normal' : brushType;
-
-  const getCanvasContext = useCallback(() => {
-    const canvas = canvasRef.current;
-    return canvas?.getContext('2d');
-  }, []);
-
-  // Улучшенная функция рисования с реальным временем
-  const drawPath = useCallback((ctx: CanvasRenderingContext2D, path: CanvasPath) => {
+  const drawPath = (ctx: CanvasRenderingContext2D, path: CanvasPath) => {
     if (path.points.length < 2) return;
 
-    ctx.save();
-
-    const isErasingPath = path.tool === 'eraser';
-    ctx.globalCompositeOperation = isErasingPath ? 'destination-out' : 'source-over';
+    ctx.beginPath();
+    ctx.strokeStyle = path.color;
+    ctx.lineWidth = path.strokeWidth;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    // Try to restore style from metadata if available
-    let effectiveBrush = path.brush;
-    let effectiveColor = path.color;
-    let effectiveStrokeWidth = path.strokeWidth;
-
-    if (path.styleMetadata) {
-      const deserializeResult = deserializeStyle(path.styleMetadata);
-      if (deserializeResult.success && deserializeResult.style) {
-        const restoredStyle = deserializeResult.style;
-        effectiveBrush = restoredStyle.brushType;
-        effectiveColor = restoredStyle.color;
-        effectiveStrokeWidth = restoredStyle.strokeWidth;
-      }
-    }
-
-    ctx.strokeStyle = isErasingPath ? '#000000' : effectiveColor;
-    ctx.lineWidth = effectiveStrokeWidth;
-
-    // Настройка стиля линии
-    if (effectiveBrush === 'dashed') {
-      ctx.setLineDash([effectiveStrokeWidth * 2, effectiveStrokeWidth * 3]);
+    // Apply brush styles
+    if (path.brush === 'neon') {
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = path.color;
+    } else if (path.brush === 'dashed') {
+      ctx.setLineDash([10, 10]);
     } else {
+      ctx.shadowBlur = 0;
       ctx.setLineDash([]);
     }
 
-    // Неоновый эффект
-    if (!isErasingPath && effectiveBrush === 'neon') {
-      ctx.shadowColor = effectiveColor;
-      ctx.shadowBlur = effectiveStrokeWidth * 1.5;
-      ctx.globalAlpha = 0.8;
-    } else {
-      ctx.shadowColor = 'transparent';
-      ctx.shadowBlur = 0;
-      ctx.globalAlpha = 1;
+    ctx.moveTo(path.points[0], path.points[1]);
+    for (let i = 2; i < path.points.length; i += 2) {
+      ctx.lineTo(path.points[i], path.points[i + 1]);
     }
+    ctx.stroke();
+    
+    // Reset styles
+    ctx.shadowBlur = 0;
+    ctx.setLineDash([]);
+  };
 
-    ctx.beginPath();
+  const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!stabilizerStateRef.current || !user) return;
 
-    // Проверяем, что у нас есть достаточно точек
-    if (path.points.length >= 2) {
-      ctx.moveTo(path.points[0], path.points[1]);
+    const point = getEventPoint(e);
+    if (!point) return;
 
-      // Используем quadraticCurveTo для более плавных линий
-      if (path.points.length >= 4) {
-        for (let i = 2; i < path.points.length - 2; i += 2) {
-          const xc = (path.points[i] + path.points[i + 2]) / 2;
-          const yc = (path.points[i + 1] + path.points[i + 3]) / 2;
-          ctx.quadraticCurveTo(path.points[i], path.points[i + 1], xc, yc);
-        }
-        // Рисуем последний сегмент
-        const lastIndex = path.points.length - 2;
-        ctx.quadraticCurveTo(
-          path.points[lastIndex - 2],
-          path.points[lastIndex - 1],
-          path.points[lastIndex],
-          path.points[lastIndex + 1]
-        );
-      } else {
-        // Если точек мало, рисуем прямую линию
-        ctx.lineTo(path.points[2], path.points[3]);
-      }
-
-      ctx.stroke();
+    startDrawing(stabilizerStateRef.current, point);
+    
+    // Update cursor position in RTDB
+    if (realtimeServiceRef.current) {
+      realtimeServiceRef.current.updateCursor(point.x, point.y, cursorColor);
     }
+  };
 
-    ctx.restore();
-  }, []);
-
-  const drawMaze = useCallback((ctx: CanvasRenderingContext2D, mazeString: string) => {
-    let maze: number[][];
-    try {
-      maze = JSON.parse(mazeString) as number[][];
-      if (!Array.isArray(maze) || maze.length === 0 || !Array.isArray(maze[0])) {
-        throw new Error('Invalid maze format');
+  const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!stabilizerStateRef.current || !stabilizerStateRef.current.isDrawing || !user) {
+      // Just update cursor if not drawing
+      const point = getEventPoint(e);
+      if (point && user && realtimeServiceRef.current) {
+        realtimeServiceRef.current.updateCursor(point.x, point.y, cursorColor);
       }
-    } catch (err) {
-      logger.warn('Failed to parse maze string, skipping drawMaze', { error: err });
       return;
     }
 
-    ctx.strokeStyle = 'white';
-    ctx.lineWidth = 2;
+    const point = getEventPoint(e);
+    if (!point) return;
 
-    const rows = maze.length;
-    const cols = (maze[0] && Array.isArray(maze[0])) ? maze[0].length : 0;
+    processDrawEvent(stabilizerStateRef.current, point);
 
-    for (let y = 0; y < rows; y++) {
-      for (let x = 0; x < cols; x++) {
-        if (maze[y][x] === 1) { // is wall
-          ctx.fillStyle = 'white';
-          ctx.fillRect(x * MAZE_CELL_SIZE, y * MAZE_CELL_SIZE, MAZE_CELL_SIZE, MAZE_CELL_SIZE);
-        }
-      }
+    // Update cursor
+    if (realtimeServiceRef.current) {
+      realtimeServiceRef.current.updateCursor(point.x, point.y, cursorColor);
     }
-
-    ctx.font = "24px monospace";
-    ctx.fillStyle = "black";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("S", MAZE_CELL_SIZE * 1.5, MAZE_CELL_SIZE * 0.5);
-
-    ctx.fillStyle = "black";
-    ctx.fillText("F", (cols - 1.5) * MAZE_CELL_SIZE, (rows - 0.5) * MAZE_CELL_SIZE);
-
-  }, []);
-
-  const redrawCanvas = useCallback(() => {
-    const canvas = canvasRef.current;
-    const ctx = getCanvasContext();
-    if (!ctx || !canvas) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    if (isMazeActive && gameState?.maze) {
-      drawMaze(ctx, gameState.maze as string);
-    } else {
-      // Photoshop-style checkerboard background
-      const checkerSize = 16;
-      const darkColor = '#0a0a0a';
-      const lightColor = '#1a1a1a';
-
-      for (let x = 0; x < canvas.width; x += checkerSize) {
-        for (let y = 0; y < canvas.height; y += checkerSize) {
-          const isEven = (Math.floor(x / checkerSize) + Math.floor(y / checkerSize)) % 2 === 0;
-          ctx.fillStyle = isEven ? darkColor : lightColor;
-          ctx.fillRect(x, y, checkerSize, checkerSize);
-        }
-      }
-
-      // Subtle neon grid overlay
-      const gridSize = 40;
-      ctx.strokeStyle = 'rgba(0, 255, 255, 0.05)';
-      ctx.lineWidth = 0.5;
-
-      // Vertical lines
-      for (let x = 0; x <= canvas.width; x += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, canvas.height);
-        ctx.stroke();
-      }
-
-      // Horizontal lines
-      for (let y = 0; y <= canvas.height; y += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(canvas.width, y);
-        ctx.stroke();
-      }
-
-      // Neon intersection dots
-      ctx.fillStyle = 'rgba(0, 255, 255, 0.15)';
-      for (let x = 0; x <= canvas.width; x += gridSize) {
-        for (let y = 0; y <= canvas.height; y += gridSize) {
-          ctx.beginPath();
-          ctx.arc(x, y, 1, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-    }
-
-    // Draw persistent paths from Firestore
-    (paths || []).forEach(p => drawPath(ctx, p));
-
-    // Draw real-time paths from RTDB (BUG-004)
-    realtimePaths.forEach(p => drawPath(ctx, p));
-
-  }, [getCanvasContext, drawPath, gameState, drawMaze, paths, isMazeActive, realtimePaths]);
-
-  useEffect(() => {
-    redrawCanvas();
-  }, [paths, realtimePaths, redrawCanvas]);
-
-  const checkMazeCollision = (x: number, y: number): boolean => {
-    if (!isMazeActive || !gameState || gameState.type !== 'maze' || !gameState.maze) return false;
-    let maze: number[][];
-    try {
-      maze = JSON.parse(gameState.maze as string) as number[][];
-      if (!Array.isArray(maze) || maze.length === 0) return false;
-    } catch (err) {
-      logger.warn('Failed to parse gameState.maze for collision check', { error: err });
-      return false;
-    }
-    const gridX = Math.floor(x / MAZE_CELL_SIZE);
-    const gridY = Math.floor(y / MAZE_CELL_SIZE);
-
-    if (maze[gridY] && maze[gridY][gridX] === 1) {
-      return true;
-    }
-    return false;
   };
 
-  const getMousePos = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) {
-      return { x: 0, y: 0 };
-    }
-    const rect = canvas.getBoundingClientRect();
-    return {
-      x: (e.clientX - rect.left - translateX) / scale,
-      y: (e.clientY - rect.top - translateY) / scale,
-    };
-  };
-
-  const getTouchPos = (touch: React.Touch) => {
-    const canvas = canvasRef.current;
-    if (!canvas) {
-      return { x: 0, y: 0 };
-    }
-    const rect = canvas.getBoundingClientRect();
-    return {
-      x: (touch.clientX - rect.left - translateX) / scale,
-      y: (touch.clientY - rect.top - translateY) / scale,
-    };
-  };
-
-  const getTouchDistance = (touches: React.TouchList) => {
-    if (touches.length < 2) return 0;
-    const touch1 = touches[0];
-    const touch2 = touches[1];
-    return Math.sqrt(
-      Math.pow(touch2.clientX - touch1.clientX, 2) +
-      Math.pow(touch2.clientY - touch1.clientY, 2)
-    );
-  };
-
-  const getTouchCenter = (touches: React.TouchList) => {
-    if (touches.length < 2) return { x: 0, y: 0 };
-    const touch1 = touches[0];
-    const touch2 = touches[1];
-    return {
-      x: (touch1.clientX + touch2.clientX) / 2,
-      y: (touch1.clientY + touch2.clientY) / 2,
-    };
-  };
-
-  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!user || !canvasRef.current || !stabilizerStateRef.current) return;
-
-    const pos = getMousePos(e);
-    stabilizerStateRef.current = startDrawing(stabilizerStateRef.current, { x: pos.x, y: pos.y });
-    redrawCanvas(); // Redraw to clear any previous temporary path from other users
-  };
-
-  // Throttle mouse move using rAF for smooth rendering
-  const lastMouseMoveTime = useRef<number>(0);
-  const MOUSE_MOVE_THROTTLE = 16; // ms (~60 FPS)
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const pos = getMousePos(e);
-
-    // Update remote cursor position (IMP-002)
-    if (realtimeServiceRef.current && user) {
-      realtimeServiceRef.current.updateCursor(pos.x, pos.y, cursorColor);
-    }
-
-    if (!stabilizerStateRef.current?.isDrawing || !user || !canvasRef.current) return;
-
-    // Throttle mouse move events using rAF timing
-    const now = performance.now();
-    if (now - lastMouseMoveTime.current < MOUSE_MOVE_THROTTLE) {
-      return; // Skip if too frequent
-    }
-    lastMouseMoveTime.current = now;
-
-    const ctx = getCanvasContext();
-    if (!ctx) return;
-
-    if (isMazeActive && checkMazeCollision(pos.x, pos.y)) {
-      toast({ title: 'Oops!', description: 'You hit a wall. Your path was reset.', variant: 'destructive' });
-      stabilizerStateRef.current = stopDrawing(stabilizerStateRef.current);
-      stabilizerStateRef.current = clearPendingPoints(stabilizerStateRef.current);
-      redrawCanvas();
-      return;
-    }
-
-    // Process draw event through stabilizer
-    stabilizerStateRef.current = processDrawEvent(stabilizerStateRef.current, { x: pos.x, y: pos.y });
-
-    // Use rAF for smooth rendering
-    if (rafIdRef.current !== null) {
-      cancelAnimationFrame(rafIdRef.current);
-    }
-
-    rafIdRef.current = requestAnimationFrame(() => {
-      rafIdRef.current = null;
-      if (!stabilizerStateRef.current) return;
-
-      // Redraw canvas and draw current path on top
-      redrawCanvas();
-      const points = getPointsArray(stabilizerStateRef.current);
-      if (points.length >= 2) {
-        const tempPath: CanvasPath = {
-          id: 'temp',
-          sheetId: sheetId,
-          points: points,
-          color: color,
-          strokeWidth: stroke,
-          tool: tool,
-          brush: currentBrush,
-          createdAt: new Date(),
-          user: user
-        };
-        drawPath(ctx, tempPath);
-      }
-    });
-  };
-
-  const handleMouseUp = async () => {
-    if (!stabilizerStateRef.current?.isDrawing || !user) {
-      if (stabilizerStateRef.current) {
-        stabilizerStateRef.current = stopDrawing(stabilizerStateRef.current);
-      }
-      return;
-    }
+  const handleMouseUp = () => {
+    if (!stabilizerStateRef.current || !stabilizerStateRef.current.isDrawing || !user || !service) return;
 
     const points = getPointsArray(stabilizerStateRef.current);
-    stabilizerStateRef.current = stopDrawing(stabilizerStateRef.current);
+    if (points.length > 1) {
+      const strokeId = `stroke-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const pathData: Omit<CanvasPath, 'id' | 'createdAt'> = {
+        sheetId,
+        user: { id: user.id, name: user.name, avatar: user.avatar },
+        points,
+        color: selectedTool === 'eraser' ? '#0d0d0d' : selectedColor,
+        strokeWidth,
+        tool: selectedTool,
+        brush: brushType,
+      };
 
-    if (points.length < 4) { // Need at least 2 points (4 values: x1,y1,x2,y2)
-      stabilizerStateRef.current = clearPendingPoints(stabilizerStateRef.current);
-      return;
-    }
-
-    // Generate unique client stroke ID for deduplication
-    const clientStrokeId = `stroke_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    // Create and serialize style metadata for preservation
-    const styleMetadata = createStyleMetadata(currentBrush, stroke, color);
-    const serializedStyle = serializeStyle(styleMetadata);
-
-    const finalPathData: Omit<CanvasPath, 'id' | 'createdAt'> = {
-      sheetId: sheetId,
-      user: user,
-      points: points,
-      color: color,
-      strokeWidth: stroke,
-      tool: tool,
-      brush: currentBrush,
-      clientStrokeId: clientStrokeId, // For deduplication on reconnect
-      styleMetadata: serializedStyle.success ? serializedStyle.data : undefined, // Include serialized style
-    };
-
-    // Clear pending points after capturing
-    stabilizerStateRef.current = clearPendingPoints(stabilizerStateRef.current);
-
-    try {
-      // BUG-004 FIX: Send to Realtime Database for immediate broadcast
+      // Send to RTDB for immediate display to others
       if (realtimeServiceRef.current) {
         realtimeServiceRef.current.addStroke({
-          points: points,
-          color: color,
-          width: stroke,
-          tool: tool,
-          brush: currentBrush
+          points: pathData.points,
+          color: pathData.color,
+          width: pathData.strokeWidth,
+          tool: pathData.tool,
+          brush: pathData.brush
         });
       }
 
-      // Also save to Firestore for persistence
+      // Add to batcher for persistent storage
       if (batcherRef.current) {
-        batcherRef.current.addStroke(finalPathData);
-      } else if (service) {
-        await service.saveCanvasPath(finalPathData);
+        batcherRef.current.addStroke(pathData);
       }
-    } catch (error) {
-      logger.error('Failed to save canvas path', error as Error, {
-        sheetId,
-        user: user?.id,
-        pathLength: points.length
-      });
-      toast({ title: 'Could not save drawing', variant: 'destructive' });
     }
+
+    stopDrawing(stabilizerStateRef.current);
+    clearPendingPoints(stabilizerStateRef.current);
   };
 
-  // Touch event handlers
-  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (e.touches.length === 2) {
-      // Two fingers - start pinch zoom
-      isPinching.current = true;
-      lastTouchDistance.current = getTouchDistance(e.touches);
-      lastTouchCenter.current = getTouchCenter(e.touches);
-      setShowZoomHint(true);
-      setTimeout(() => setShowZoomHint(false), 1500);
-      return;
-    }
-
-    if (e.touches.length === 1 && !isPinching.current) {
-      // Single finger - start drawing
-      if (!user || !canvasRef.current || !stabilizerStateRef.current) return;
-      const pos = getTouchPos(e.touches[0]);
-      stabilizerStateRef.current = startDrawing(stabilizerStateRef.current, { x: pos.x, y: pos.y });
-      redrawCanvas();
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (e.touches.length === 2 && isPinching.current) {
-      // Two fingers - handle pinch zoom
-      const distance = getTouchDistance(e.touches);
-      const center = getTouchCenter(e.touches);
-
-      if (lastTouchDistance.current > 0) {
-        const scaleChange = distance / lastTouchDistance.current;
-        const newScale = Math.max(0.5, Math.min(3, scale * scaleChange));
-
-        // Calculate translation to keep zoom centered
-        const canvas = canvasRef.current;
-        if (canvas) {
-          const rect = canvas.getBoundingClientRect();
-          const centerX = center.x - rect.left;
-          const centerY = center.y - rect.top;
-
-          setScale(newScale);
-          setTranslateX(translateX + (centerX - lastTouchCenter.current.x + rect.left) * (1 - scaleChange));
-          setTranslateY(translateY + (centerY - lastTouchCenter.current.y + rect.top) * (1 - scaleChange));
-        }
-      }
-
-      lastTouchDistance.current = distance;
-      lastTouchCenter.current = center;
-      return;
-    }
-
-    if (e.touches.length === 1 && stabilizerStateRef.current?.isDrawing && !isPinching.current) {
-      // Single finger - continue drawing
-      if (!user || !canvasRef.current) return;
-
-      const now = performance.now();
-      if (now - lastMouseMoveTime.current < MOUSE_MOVE_THROTTLE) {
-        return;
-      }
-      lastMouseMoveTime.current = now;
-
-      const pos = getTouchPos(e.touches[0]);
-      const ctx = getCanvasContext();
-      if (!ctx) return;
-
-      if (isMazeActive && checkMazeCollision(pos.x, pos.y)) {
-        toast({ title: 'Oops!', description: 'You hit a wall. Your path was reset.', variant: 'destructive' });
-        stabilizerStateRef.current = stopDrawing(stabilizerStateRef.current);
-        stabilizerStateRef.current = clearPendingPoints(stabilizerStateRef.current);
-        redrawCanvas();
-        return;
-      }
-
-      // Process draw event through stabilizer
-      stabilizerStateRef.current = processDrawEvent(stabilizerStateRef.current, { x: pos.x, y: pos.y });
-
-      // Use rAF for smooth rendering
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current);
-      }
-
-      rafIdRef.current = requestAnimationFrame(() => {
-        rafIdRef.current = null;
-        if (!stabilizerStateRef.current) return;
-
-        redrawCanvas();
-        const points = getPointsArray(stabilizerStateRef.current);
-        if (points.length >= 2) {
-          const tempPath: CanvasPath = {
-            id: 'temp',
-            sheetId: sheetId,
-            points: points,
-            color: color,
-            strokeWidth: stroke,
-            tool: tool,
-            brush: currentBrush,
-            createdAt: new Date(),
-            user: user
-          };
-          drawPath(ctx, tempPath);
-        }
-      });
-    }
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (e.touches.length === 0) {
-      // All fingers lifted
-      isPinching.current = false;
-      lastTouchDistance.current = 0;
-
-      if (stabilizerStateRef.current?.isDrawing) {
-        handleMouseUp(); // Reuse mouse up logic
-      }
-    } else if (e.touches.length === 1 && isPinching.current) {
-      // One finger remaining after pinch - stop pinching
-      isPinching.current = false;
-      lastTouchDistance.current = 0;
-    }
-  };
-
-  // Mouse wheel zoom for desktop
-  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
-    e.preventDefault();
-
-    const zoomFactor = e.deltaY > 0 ? 0.9 : 1.1;
-    const newScale = Math.max(0.5, Math.min(3, scale * zoomFactor));
-
-    // Calculate translation to keep zoom centered on mouse position
+  const getEventPoint = (e: React.MouseEvent | React.TouchEvent): Point | null => {
     const canvas = canvasRef.current;
-    if (canvas) {
-      const rect = canvas.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
+    if (!canvas) return null;
+
+    const rect = canvas.getBoundingClientRect();
+    let clientX, clientY;
+
+    if ('touches' in e) {
+      if (e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else {
+        return null;
+      }
+    } else {
+      clientX = (e as React.MouseEvent).clientX;
+      clientY = (e as React.MouseEvent).clientY;
+    }
+
+    // Adjust for scale and translation
+    return {
+      x: (clientX - rect.left - translateX) / scale,
+      y: (clientY - rect.top - translateY) / scale,
+      timestamp: Date.now()
+    };
+  };
+
+  // Touch handlers for zoom/pan
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      isPinching.current = true;
+      const dist = Math.hypot(
+        e.touches[0].pageX - e.touches[1].pageX,
+        e.touches[0].pageY - e.touches[1].pageY
+      );
+      lastTouchDistance.current = dist;
+      lastTouchCenter.current = {
+        x: (e.touches[0].pageX + e.touches[1].pageX) / 2,
+        y: (e.touches[0].pageY + e.touches[1].pageY) / 2
+      };
+      setShowZoomHint(true);
+    } else if (e.touches.length === 1) {
+      handleMouseDown(e);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2 && isPinching.current) {
+      const dist = Math.hypot(
+        e.touches[0].pageX - e.touches[1].pageX,
+        e.touches[0].pageY - e.touches[1].pageY
+      );
+      const center = {
+        x: (e.touches[0].pageX + e.touches[1].pageX) / 2,
+        y: (e.touches[0].pageY + e.touches[1].pageY) / 2
+      };
+
+      const deltaScale = dist / lastTouchDistance.current;
+      const newScale = Math.min(Math.max(scale * deltaScale, 0.5), 5);
+      
+      // Zoom relative to center
+      const dx = center.x - lastTouchCenter.current.x;
+      const dy = center.y - lastTouchCenter.current.y;
 
       setScale(newScale);
-      setTranslateX(translateX + mouseX * (1 - zoomFactor));
-      setTranslateY(translateY + mouseY * (1 - zoomFactor));
+      setTranslateX(prev => prev + dx);
+      setTranslateY(prev => prev + dy);
+
+      lastTouchDistance.current = dist;
+      lastTouchCenter.current = center;
+    } else if (e.touches.length === 1 && !isPinching.current) {
+      handleMouseMove(e);
     }
   };
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const resizeCanvas = () => {
-        const container = canvas.parentElement;
-        if (!container) return;
-        const { width, height } = container.getBoundingClientRect();
-
-        // Skip if container has no size yet (lazy loading)
-        if (width === 0 || height === 0) return;
-
-        if (canvas.width !== width || canvas.height !== height) {
-          canvas.width = width;
-          canvas.height = height;
-          redrawCanvas();
-        }
-      };
-
-      const debouncedResize = debounce(resizeCanvas, 250);
-      window.addEventListener('resize', debouncedResize);
-
-      // Initial resize with multiple retries for lazy-loaded containers
-      resizeCanvas();
-      const retryTimeouts = [
-        setTimeout(resizeCanvas, 50),
-        setTimeout(resizeCanvas, 150),
-        setTimeout(resizeCanvas, 300),
-        setTimeout(resizeCanvas, 500),
-      ];
-
-      return () => {
-        window.removeEventListener('resize', debouncedResize);
-        retryTimeouts.forEach(clearTimeout);
-      };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (e.touches.length < 2) {
+      isPinching.current = false;
+      setTimeout(() => setShowZoomHint(false), 1000);
     }
-  }, [redrawCanvas]);
+    if (e.touches.length === 0) {
+      handleMouseUp();
+    }
+  };
 
-  const handleClearSheet = async (sheetId: string) => {
-    if (!sheetId || !service) return;
+  const handleWheel = (e: React.WheelEvent) => {
+    if (e.ctrlKey) {
+      e.preventDefault();
+      const delta = -e.deltaY;
+      const factor = Math.pow(1.1, delta / 100);
+      const newScale = Math.min(Math.max(scale * factor, 0.5), 5);
+      setScale(newScale);
+    } else {
+      setTranslateX(prev => prev - e.deltaX);
+      setTranslateY(prev => prev - e.deltaY);
+    }
+  };
+
+  const handleClear = async () => {
+    if (!service || !window.confirm("Вы уверены, что хотите очистить холст?")) return;
 
     try {
-      // Clear RTDB strokes too
+      // Clear RTDB first
       if (realtimeServiceRef.current) {
         await realtimeServiceRef.current.clearCanvas();
       }
@@ -848,34 +459,40 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
             <button
               onClick={() => setSelectedTool('pen')}
               className={`p-2.5 rounded-xl transition-all flex-1 flex justify-center min-h-[44px] ${selectedTool === 'pen' ? 'bg-gradient-to-r from-[var(--draw-primary)] to-emerald-600 text-white shadow-[var(--shadow-glow-success)]' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'}`}
-              disabled={isMazeActive}
-              title="Pen"
-            > <PenTool className="w-4 h-4" /></button>
+            >
+              <PenTool className="w-5 h-5" />
+            </button>
             <button
               onClick={() => setSelectedTool('eraser')}
-              className={`p-2.5 rounded-xl transition-all flex-1 flex justify-center min-h-[44px] ${selectedTool === 'eraser' ? 'bg-gradient-to-r from-[var(--draw-primary)] to-emerald-600 text-white shadow-[var(--shadow-glow-success)]' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'}`}
-              disabled={isMazeActive}
-              title="Eraser"
-            > <Eraser className="w-4 h-4" /></button>
-            <button onClick={() => handleClearSheet(sheetId)} className="p-2.5 rounded-xl bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--error)]/20 hover:text-[var(--error)] flex items-center justify-center transition-all min-h-[44px]" title="Clear Current Sheet">
-              <Trash2 className="w-4 h-4" />
+              className={`p-2.5 rounded-xl transition-all flex-1 flex justify-center min-h-[44px] ${selectedTool === 'eraser' ? 'bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-[var(--shadow-glow-error)]' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'}`}
+            >
+              <Eraser className="w-5 h-5" />
+            </button>
+            <button
+              onClick={handleClear}
+              className="p-2.5 rounded-xl bg-[var(--bg-tertiary)] text-rose-400 hover:bg-rose-500/20 transition-all flex-1 flex justify-center min-h-[44px]"
+            >
+              <Trash2 className="w-5 h-5" />
             </button>
             <button
               onClick={handleSendToChat}
-              className="p-2.5 rounded-xl bg-[var(--draw-primary)]/20 text-[var(--draw-primary)] hover:bg-[var(--draw-primary)]/30 hover:shadow-[var(--shadow-glow-success)] flex items-center justify-center transition-all min-h-[44px]"
-              title="Send to Chat"
+              className="p-2.5 rounded-xl bg-[var(--bg-tertiary)] text-emerald-400 hover:bg-emerald-500/20 transition-all flex-1 flex justify-center min-h-[44px]"
             >
-              <Send className="w-4 h-4" />
+              <Send className="w-5 h-5" />
             </button>
           </div>
-
-          {selectedTool === 'pen' && !isMazeActive && (
+          
+          {selectedTool === 'pen' && (
             <>
-              <div className='px-2 pt-1 hidden md:block'>
+              <div className="px-2 py-1">
+                <div className="flex justify-between text-[10px] text-[var(--text-muted)] mb-1 uppercase tracking-wider font-bold">
+                  <span>Толщина</span>
+                  <span>{strokeWidth}px</span>
+                </div>
                 <Slider
-                  defaultValue={[strokeWidth]}
-                  max={30}
+                  value={[strokeWidth]}
                   min={1}
+                  max={20}
                   step={1}
                   onValueChange={(value) => setStrokeWidth(value[0])}
                 />
@@ -912,19 +529,19 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
         )}
       </div>
 
-      {/* Mobile floating toolbar */}
+      {/* Mobile Toolbar - Floating minimal */}
       <div className="md:hidden">
-        <FloatingToolbar
+        <FloatingToolbar 
           selectedTool={selectedTool}
-          selectedColor={selectedColor}
-          strokeWidth={strokeWidth}
-          brushType={brushType}
-          isMazeActive={isMazeActive}
           onToolChange={setSelectedTool}
+          selectedColor={selectedColor}
           onColorChange={setSelectedColor}
+          strokeWidth={strokeWidth}
           onStrokeWidthChange={setStrokeWidth}
+          brushType={brushType}
           onBrushTypeChange={setBrushType}
-          onClearSheet={() => handleClearSheet(sheetId)}
+          isMazeActive={isMazeActive}
+          onClearSheet={handleClear}
           onSendToChat={handleSendToChat}
         />
       </div>

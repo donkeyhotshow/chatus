@@ -1,0 +1,62 @@
+﻿games/Marinette-L-Aventure-du-Marais-Poitevin-3D-version/components/fx/Particles.tsx(109,9): error TS18047: 'meshRef.current' is possibly 'null'.
+games/Marinette-L-Aventure-du-Marais-Poitevin-3D-version/components/fx/Particles.tsx(110,9): error TS18047: 'meshRef.current' is possibly 'null'.
+games/Marinette-L-Aventure-du-Marais-Poitevin-3D-version/components/fx/Particles.tsx(116,9): error TS18047: 'meshRef.current' is possibly 'null'.
+games/Marinette-L-Aventure-du-Marais-Poitevin-3D-version/components/GameScene.tsx(37,11): error TS2345: Argument of type 'Element' is not assignable to parameter of type 'never'.
+games/Marinette-L-Aventure-du-Marais-Poitevin-3D-version/components/models/RagondinModel.tsx(11,9): error TS2345: Argument of type 'Element' is not assignable to parameter of type 'never'.
+games/Marinette-L-Aventure-du-Marais-Poitevin-3D-version/components/models/SanglierModel.tsx(11,9): error TS2345: Argument of type 'Element' is not assignable to parameter of type 'never'.
+src/components/canvas/FloatingToolbar.tsx(33,62): error TS2322: Type 'ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>' is not assignable to type 'ComponentType<{ className?: string | undefined; "aria-hidden"?: string | undefined; }>'.
+  Type 'ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>' is not assignable to type 'FunctionComponent<{ className?: string | undefined; "aria-hidden"?: string | undefined; }>'.
+    Types of property 'propTypes' are incompatible.
+      Type 'WeakValidationMap<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>> | undefined' is not assignable to type 'WeakValidationMap<{ className?: string | undefined; "aria-hidden"?: string | undefined; }> | undefined'.
+        Type 'WeakValidationMap<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>' is not assignable to type 'WeakValidationMap<{ className?: string | undefined; "aria-hidden"?: string | undefined; }>'.
+          Types of property '"aria-hidden"' are incompatible.
+            Type 'Validator<Booleanish | null | undefined> | undefined' is not assignable to type 'Validator<string | null | undefined> | undefined'.
+              Type 'Validator<Booleanish | null | undefined>' is not assignable to type 'Validator<string | null | undefined>'.
+                Type 'Booleanish | null | undefined' is not assignable to type 'string | null | undefined'.
+                  Type 'boolean' is not assignable to type 'string'.
+src/components/canvas/FloatingToolbar.tsx(34,59): error TS2322: Type 'ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>' is not assignable to type 'ComponentType<{ className?: string | undefined; "aria-hidden"?: string | undefined; }>'.
+  Type 'ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>' is not assignable to type 'FunctionComponent<{ className?: string | undefined; "aria-hidden"?: string | undefined; }>'.
+    Types of property 'propTypes' are incompatible.
+      Type 'WeakValidationMap<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>> | undefined' is not assignable to type 'WeakValidationMap<{ className?: string | undefined; "aria-hidden"?: string | undefined; }> | undefined'.
+        Type 'WeakValidationMap<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>' is not assignable to type 'WeakValidationMap<{ className?: string | undefined; "aria-hidden"?: string | undefined; }>'.
+          Types of property '"aria-hidden"' are incompatible.
+            Type 'Validator<Booleanish | null | undefined> | undefined' is not assignable to type 'Validator<string | null | undefined> | undefined'.
+              Type 'Validator<Booleanish | null | undefined>' is not assignable to type 'Validator<string | null | undefined>'.
+                Type 'Booleanish | null | undefined' is not assignable to type 'string | null | undefined'.
+                  Type 'boolean' is not assignable to type 'string'.
+src/components/canvas/FloatingToolbar.tsx(35,65): error TS2322: Type 'ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>' is not assignable to type 'ComponentType<{ className?: string | undefined; "aria-hidden"?: string | undefined; }>'.
+  Type 'ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>' is not assignable to type 'FunctionComponent<{ className?: string | undefined; "aria-hidden"?: string | undefined; }>'.
+    Types of property 'propTypes' are incompatible.
+      Type 'WeakValidationMap<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>> | undefined' is not assignable to type 'WeakValidationMap<{ className?: string | undefined; "aria-hidden"?: string | undefined; }> | undefined'.
+        Type 'WeakValidationMap<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>' is not assignable to type 'WeakValidationMap<{ className?: string | undefined; "aria-hidden"?: string | undefined; }>'.
+          Types of property '"aria-hidden"' are incompatible.
+            Type 'Validator<Booleanish | null | undefined> | undefined' is not assignable to type 'Validator<string | null | undefined> | undefined'.
+              Type 'Validator<Booleanish | null | undefined>' is not assignable to type 'Validator<string | null | undefined>'.
+                Type 'Booleanish | null | undefined' is not assignable to type 'string | null | undefined'.
+                  Type 'boolean' is not assignable to type 'string'.
+src/components/canvas/FloatingToolbar.tsx(36,70): error TS2322: Type 'ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>' is not assignable to type 'ComponentType<{ className?: string | undefined; "aria-hidden"?: string | undefined; }>'.
+  Type 'ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>' is not assignable to type 'FunctionComponent<{ className?: string | undefined; "aria-hidden"?: string | undefined; }>'.
+    Types of property 'propTypes' are incompatible.
+      Type 'WeakValidationMap<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>> | undefined' is not assignable to type 'WeakValidationMap<{ className?: string | undefined; "aria-hidden"?: string | undefined; }> | undefined'.
+        Type 'WeakValidationMap<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>' is not assignable to type 'WeakValidationMap<{ className?: string | undefined; "aria-hidden"?: string | undefined; }>'.
+          Types of property '"aria-hidden"' are incompatible.
+            Type 'Validator<Booleanish | null | undefined> | undefined' is not assignable to type 'Validator<string | null | undefined> | undefined'.
+              Type 'Validator<Booleanish | null | undefined>' is not assignable to type 'Validator<string | null | undefined>'.
+                Type 'Booleanish | null | undefined' is not assignable to type 'string | null | undefined'.
+                  Type 'boolean' is not assignable to type 'string'.
+src/components/canvas/SharedCanvas.tsx(144,13): error TS2322: Type 'Date | { seconds: number; nanoseconds: number; }' is not assignable to type 'Date | Timestamp'.
+  Type '{ seconds: number; nanoseconds: number; }' is not assignable to type 'Date | Timestamp'.
+    Type '{ seconds: number; nanoseconds: number; }' is missing the following properties from type 'Timestamp': toDate, toMillis, isEqual, toJSON
+src/components/canvas/SharedCanvas.tsx(892,22): error TS2604: JSX element type 'b.icon' does not have any construct or call signatures.
+src/components/canvas/SharedCanvas.tsx(892,22): error TS2786: 'b.icon' cannot be used as a JSX component.
+  Its type 'ElementType<any, keyof IntrinsicElements>' is not a valid JSX element type.
+    Type 'number' is not assignable to type 'ElementType'.
+src/components/chat/OnboardingTour.tsx(77,22): error TS2604: JSX element type 'Icon' does not have any construct or call signatures.
+src/components/chat/OnboardingTour.tsx(77,22): error TS2786: 'Icon' cannot be used as a JSX component.
+  Its type 'ElementType<any, keyof IntrinsicElements>' is not a valid JSX element type.
+    Type 'number' is not assignable to type 'ElementType'.
+src/components/games/PhysicsWorld.tsx(268,64): error TS2322: Type '"default"' is not assignable to type '"primary" | "secondary" | "ghost" | "outline" | "destructive" | undefined'.
+src/components/mobile/MobileSettingsPanel.tsx(103,18): error TS2604: JSX element type 'Icon' does not have any construct or call signatures.
+src/components/mobile/MobileSettingsPanel.tsx(103,18): error TS2786: 'Icon' cannot be used as a JSX component.
+  Its type 'ElementType<any, keyof IntrinsicElements>' is not a valid JSX element type.
+    Type 'number' is not assignable to type 'ElementType'.

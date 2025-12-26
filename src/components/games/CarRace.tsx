@@ -144,6 +144,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
     const keysRef = useRef<Set<string>>(new Set());
     const playerRef = useRef<PlayerState | null>(null);
     const otherPlayersRef = useRef<Map<string, PlayerState>>(new Map());
+    const aiPlayersRef = useRef<Map<string, PlayerState>>(new Map());
     const tireTracksRef = useRef<TireTrack[]>([]);
     const particlesRef = useRef<Particle[]>([]);
     const sparksRef = useRef<Spark[]>([]);
@@ -220,7 +221,32 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         updateGameState({
             carRacePlayers: { ...gameState.carRacePlayers, [user.id]: playerRef.current },
         });
-    }, [isGameStarted, countdown, user.id, user.name, gameState.carRacePlayers, updateGameState]);
+
+        // Initialize AI if no other user
+        if (!otherUser) {
+            const aiId = 'ai-bot-1';
+            const aiStartPos = TRACK.startPositions[1];
+            aiPlayersRef.current.set(aiId, {
+                id: aiId,
+                name: 'AI Bot 🤖',
+                x: aiStartPos.x,
+                y: aiStartPos.y,
+                vx: 0,
+                vy: 0,
+                rotation: aiStartPos.rotation,
+                color: COLORS[1],
+                hp: 100,
+                lap: 0,
+                checkpoint: 0,
+                bestLapTime: Infinity,
+                currentLapStart: performance.now(),
+                finished: false,
+                finishTime: 0,
+                turbo: 50,
+                isTurboActive: false,
+            });
+        }
+    }, [isGameStarted, countdown, user.id, user.name, otherUser]);
 
     // Sync other players
     useEffect(() => {
@@ -262,12 +288,16 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         if (!isGameStarted || countdown !== null || isMobile) return;
         const handleKeyDown = (e: KeyboardEvent) => {
             const key = e.key.toLowerCase();
-            if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd', ' ', 'shift'].includes(key)) {
+            const validKeys = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd', ' ', 'shift'];
+            if (validKeys.includes(key)) {
                 e.preventDefault();
                 keysRef.current.add(key);
             }
         };
-        const handleKeyUp = (e: KeyboardEvent) => keysRef.current.delete(e.key.toLowerCase());
+        const handleKeyUp = (e: KeyboardEvent) => {
+            const key = e.key.toLowerCase();
+            keysRef.current.delete(key);
+        };
         window.addEventListener('keydown', handleKeyDown);
         window.addEventListener('keyup', handleKeyUp);
         return () => {
@@ -500,6 +530,55 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         }
     }, [gameState.carRacePlayers, updateGameState, user.id, raceStartTime, isMobile]);
 
+    // Update AI physics
+    const updateAI = useCallback((dt: number, now: number) => {
+        aiPlayersRef.current.forEach(ai => {
+            if (ai.finished) return;
+
+            const prevX = ai.x, prevY = ai.y;
+            const nextCheckpoint = ai.checkpoint % TRACK.checkpoints.length;
+            const cp = TRACK.checkpoints[nextCheckpoint];
+            const targetX = (cp.x1 + cp.x2) / 2;
+            const targetY = (cp.y1 + cp.y2) / 2;
+
+            const angleToTarget = Math.atan2(targetY - ai.y, targetX - ai.x);
+            const angleDiff = normalizeAngle(angleToTarget - ai.rotation);
+
+            // Turn towards target
+            const turnDir = angleDiff > 0.1 ? 1 : angleDiff < -0.1 ? -1 : 0;
+            ai.rotation += turnDir * TURN_SPEED * 0.8 * dt;
+
+            // Accelerate if facing target
+            const speed = Math.sqrt(ai.vx ** 2 + ai.vy ** 2);
+            if (Math.abs(angleDiff) < 0.5) {
+                ai.vx += Math.cos(ai.rotation) * ACCELERATION * 0.7 * dt;
+                ai.vy += Math.sin(ai.rotation) * ACCELERATION * 0.7 * dt;
+            }
+
+            // Simple physics
+            const onTrack = isOnTrack(ai.x, ai.y);
+            const friction = onTrack ? FRICTION : GRASS_FRICTION;
+            ai.vx *= friction;
+            ai.vy *= friction;
+            
+            ai.x += ai.vx * dt;
+            ai.y += ai.vy * dt;
+
+            // Checkpoint logic
+            if (checkCheckpoint(prevX, prevY, ai.x, ai.y, cp)) {
+                ai.checkpoint++;
+                if (nextCheckpoint === 0 && ai.checkpoint > TRACK.checkpoints.length) {
+                    ai.lap++;
+                    ai.currentLapStart = now;
+                    if (ai.lap >= TOTAL_LAPS) {
+                        ai.finished = true;
+                        ai.finishTime = now - raceStartTime;
+                    }
+                }
+            }
+        });
+    }, [raceStartTime]);
+
     const updateParticles = (dt: number) => {
         particlesRef.current = particlesRef.current.filter(p => {
             p.x += p.vx * dt;
@@ -545,6 +624,12 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
             if (playerRef.current && !playerRef.current.finished) {
                 updatePlayer(dt, now);
             }
+            
+            // Update AI if alone
+            if (!otherUser) {
+                updateAI(dt, now);
+            }
+
             updateParticles(dt);
             updateTireTracks(dt);
             updateSparks(dt);
@@ -555,7 +640,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
 
         gameLoopRef.current = requestAnimationFrame(gameLoop);
         return () => { if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current); };
-    }, [isGameStarted, countdown, updatePlayer, scale]);
+    }, [isGameStarted, countdown, updatePlayer, updateAI, otherUser, scale]);
 
     const render = useCallback((ctx: CanvasRenderingContext2D, now: number) => {
         ctx.save();
@@ -632,6 +717,9 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
 
         // Other players
         otherPlayersRef.current.forEach(p => drawCar(ctx, p, false));
+
+        // AI players
+        aiPlayersRef.current.forEach(p => drawCar(ctx, p, false));
 
         // Current player
         if (playerRef.current) drawCar(ctx, playerRef.current, true);
@@ -732,6 +820,13 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
             ctx.fill();
         });
 
+        aiPlayersRef.current.forEach(p => {
+            ctx.fillStyle = `#${p.color.toString(16).padStart(6, '0')}`;
+            ctx.beginPath();
+            ctx.arc(offsetX + p.x * mapScale, offsetY + p.y * mapScale, 3, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
         if (playerRef.current) {
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
@@ -800,7 +895,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         onGameEnd();
     });
 
-    const playerCount = Object.keys(gameState.carRacePlayers || {}).length;
+    const playerCount = Object.keys(gameState.carRacePlayers || {}).length + aiPlayersRef.current.size;
 
     if (!isGameStarted) {
         return (
@@ -846,7 +941,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
                         </div>
                         <div className="flex items-center justify-center gap-2 text-sm text-white/50">
                             <Users className="w-4 h-4" />
-                            <span>{playerCount} игрок(ов)</span>
+                            <span>{playerCount} игрок(ов) {!otherUser && '(включая AI)'}</span>
                         </div>
                         {isLoading ? (
                             <div className="flex items-center justify-center py-4">
@@ -903,136 +998,75 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
 
             {/* Mobile Controls */}
             {isMobile && (
-                <MobileControls
-                    keysRef={keysRef}
-                    joystickRef={joystickRef}
-                    joystickActiveRef={joystickActiveRef}
-                    joystickCenterRef={joystickCenterRef}
-                />
+                <MobileControls keysRef={keysRef} />
             )}
         </div>
     );
 }
 
-// Mobile Controls Component with Virtual Joystick
-function MobileControls({
-    keysRef,
-    joystickRef,
-    joystickActiveRef,
-    joystickCenterRef
-}: {
-    keysRef: React.RefObject<Set<string>>;
-    joystickRef: React.RefObject<{ angle: number; force: number }>;
-    joystickActiveRef: React.RefObject<boolean>;
-    joystickCenterRef: React.RefObject<{ x: number; y: number }>;
-}) {
-    const joystickAreaRef = useRef<HTMLDivElement>(null);
-    const [joystickPos, setJoystickPos] = useState({ x: 0, y: 0 });
-    const [isJoystickActive, setIsJoystickActive] = useState(false);
-
-    const handleJoystickStart = useCallback((e: React.TouchEvent) => {
-        e.preventDefault();
-        const touch = e.touches[0];
-        const rect = joystickAreaRef.current?.getBoundingClientRect();
-        if (!rect) return;
-
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        joystickCenterRef.current = { x: centerX, y: centerY };
-        joystickActiveRef.current = true;
-        setIsJoystickActive(true);
-
-        updateJoystick(touch.clientX, touch.clientY, centerX, centerY);
+// Mobile Controls Component with Buttons
+function MobileControls({ keysRef }: { keysRef: React.RefObject<Set<string>> }) {
+    const handleTouchStart = (key: string) => {
+        keysRef.current?.add(key);
         hapticFeedback('light');
-    }, [joystickCenterRef, joystickActiveRef]);
+    };
 
-    const handleJoystickMove = useCallback((e: React.TouchEvent) => {
-        e.preventDefault();
-        if (!joystickActiveRef.current) return;
-
-        const touch = e.touches[0];
-        const { x: centerX, y: centerY } = joystickCenterRef.current;
-        updateJoystick(touch.clientX, touch.clientY, centerX, centerY);
-    }, [joystickActiveRef, joystickCenterRef]);
-
-    const handleJoystickEnd = useCallback((e: React.TouchEvent) => {
-        e.preventDefault();
-        joystickActiveRef.current = false;
-        setIsJoystickActive(false);
-        setJoystickPos({ x: 0, y: 0 });
-        joystickRef.current = { angle: 0, force: 0 };
-    }, [joystickActiveRef, joystickRef]);
-
-    const updateJoystick = (touchX: number, touchY: number, centerX: number, centerY: number) => {
-        const maxRadius = 50;
-        let dx = touchX - centerX;
-        let dy = touchY - centerY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        if (dist > maxRadius) {
-            dx = (dx / dist) * maxRadius;
-            dy = (dy / dist) * maxRadius;
-        }
-
-        setJoystickPos({ x: dx, y: dy });
-
-        const angle = Math.atan2(dy, dx);
-        const force = Math.min(dist / maxRadius, 1);
-        joystickRef.current = { angle, force };
+    const handleTouchEnd = (key: string) => {
+        keysRef.current?.delete(key);
     };
 
     return (
-        <div className="p-3 border-t border-white/10 bg-black/90 backdrop-blur-xl shrink-0">
-            <div className="flex justify-between items-center max-w-lg mx-auto gap-4">
-                {/* Virtual Joystick */}
-                <div
-                    ref={joystickAreaRef}
-                    className="relative w-32 h-32 rounded-full bg-white/5 border-2 border-white/20 touch-none"
-                    onTouchStart={handleJoystickStart}
-                    onTouchMove={handleJoystickMove}
-                    onTouchEnd={handleJoystickEnd}
-                    onTouchCancel={handleJoystickEnd}
-                >
-                    {/* Joystick base */}
-                    <div className="absolute inset-4 rounded-full bg-white/10 border border-white/10" />
-
-                    {/* Joystick knob */}
-                    <div
-                        className={cn(
-                            "absolute w-14 h-14 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg transition-transform",
-                            isJoystickActive ? "scale-110" : "scale-100"
-                        )}
-                        style={{
-                            left: '50%',
-                            top: '50%',
-                            transform: `translate(calc(-50% + ${joystickPos.x}px), calc(-50% + ${joystickPos.y}px))`,
-                        }}
-                    />
-
-                    {/* Direction indicators */}
-                    <div className="absolute top-1 left-1/2 -translate-x-1/2 text-white/30 text-xs">▲</div>
-                    <div className="absolute bottom-1 left-1/2 -translate-x-1/2 text-white/30 text-xs">▼</div>
-                    <div className="absolute left-1 top-1/2 -translate-y-1/2 text-white/30 text-xs">◀</div>
-                    <div className="absolute right-1 top-1/2 -translate-y-1/2 text-white/30 text-xs">▶</div>
-                </div>
-
-                {/* Action buttons */}
-                <div className="flex flex-col gap-3">
-                    {/* Turbo button */}
+        <div className="p-4 border-t border-white/10 bg-black/90 backdrop-blur-xl shrink-0 select-none">
+            <div className="flex justify-between items-end max-w-lg mx-auto">
+                {/* Steering */}
+                <div className="flex gap-4">
                     <button
-                        onTouchStart={(e) => { e.preventDefault(); keysRef.current?.add('shift'); hapticFeedback('medium'); }}
-                        onTouchEnd={(e) => { e.preventDefault(); keysRef.current?.delete('shift'); }}
-                        className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-500 to-red-600 text-white text-2xl font-bold flex items-center justify-center active:scale-95 transition-transform touch-none select-none shadow-lg shadow-orange-500/30"
+                        onPointerDown={() => handleTouchStart('arrowleft')}
+                        onPointerUp={() => handleTouchEnd('arrowleft')}
+                        onPointerLeave={() => handleTouchEnd('arrowleft')}
+                        className="w-20 h-20 rounded-2xl bg-white/5 border-2 border-white/10 flex items-center justify-center active:bg-white/20 active:scale-95 transition-all touch-none"
                     >
-                        🔥
+                        <div className="w-0 h-0 border-t-[15px] border-t-transparent border-b-[15px] border-b-transparent border-r-[25px] border-r-white/60" />
                     </button>
-                    <span className="text-center text-xs text-white/50">TURBO</span>
+                    <button
+                        onPointerDown={() => handleTouchStart('arrowright')}
+                        onPointerUp={() => handleTouchEnd('arrowright')}
+                        onPointerLeave={() => handleTouchEnd('arrowright')}
+                        className="w-20 h-20 rounded-2xl bg-white/5 border-2 border-white/10 flex items-center justify-center active:bg-white/20 active:scale-95 transition-all touch-none"
+                    >
+                        <div className="w-0 h-0 border-t-[15px] border-t-transparent border-b-[15px] border-b-transparent border-l-[25px] border-l-white/60" />
+                    </button>
                 </div>
-            </div>
 
-            {/* Instructions */}
-            <div className="mt-2 text-center text-xs text-white/40">
-                Джойстик: вверх = газ, вниз = тормоз, влево/вправо = поворот
+                {/* Action Buttons */}
+                <div className="flex flex-col gap-4 items-center">
+                    <button
+                        onPointerDown={() => { handleTouchStart('shift'); hapticFeedback('medium'); }}
+                        onPointerUp={() => handleTouchEnd('shift')}
+                        onPointerLeave={() => handleTouchEnd('shift')}
+                        className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-orange-500/20 touch-none"
+                    >
+                        <span className="text-2xl">🔥</span>
+                    </button>
+                    <div className="flex gap-4">
+                        <button
+                            onPointerDown={() => handleTouchStart('arrowdown')}
+                            onPointerUp={() => handleTouchEnd('arrowdown')}
+                            onPointerLeave={() => handleTouchEnd('arrowdown')}
+                            className="w-20 h-20 rounded-2xl bg-red-500/10 border-2 border-red-500/20 flex items-center justify-center active:bg-red-500/30 active:scale-95 transition-all touch-none"
+                        >
+                            <div className="w-6 h-6 bg-red-500/60 rounded-sm" />
+                        </button>
+                        <button
+                            onPointerDown={() => handleTouchStart('arrowup')}
+                            onPointerUp={() => handleTouchEnd('arrowup')}
+                            onPointerLeave={() => handleTouchEnd('arrowup')}
+                            className="w-24 h-24 rounded-2xl bg-emerald-500/10 border-2 border-emerald-500/20 flex items-center justify-center active:bg-emerald-500/30 active:scale-95 transition-all touch-none"
+                        >
+                            <div className="w-0 h-0 border-l-[15px] border-l-transparent border-r-[15px] border-r-transparent border-b-[25px] border-b-emerald-500/60" />
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     );

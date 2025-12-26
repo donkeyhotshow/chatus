@@ -3,7 +3,7 @@
 import { GameState, UserProfile } from "@/lib/types";
 import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
-import { Hand, HandMetal, Scissors, ArrowLeft } from 'lucide-react';
+import { Hand, HandMetal, Scissors, ArrowLeft, Bot } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { useActionGuard, hapticFeedback } from "@/lib/game-utils";
@@ -28,12 +28,17 @@ const outcomes: { [key: string]: { [key: string]: string } } = {
     scissors: { rock: 'lose', paper: 'win', scissors: 'draw' }
 };
 
+const AI_BOT_ID = '__AI_BOT__';
+
 export function RockPaperScissors({ onGameEnd, updateGameState, gameState, user, otherUser }: RockPaperScissorsProps) {
     const [selectedChoice, setSelectedChoice] = useState<'rock' | 'paper' | 'scissors' | null>(null);
     const [isAnimating, setIsAnimating] = useState(false);
 
+    const isVsAI = !otherUser;
+    const opponent = otherUser || { id: AI_BOT_ID, name: 'AI Bot', avatar: '' };
+    
     const myMove = gameState.moves?.[user.id];
-    const otherMove = otherUser ? gameState.moves?.[otherUser.id] : undefined;
+    const otherMove = gameState.moves?.[opponent.id];
     const { guard } = useActionGuard();
 
     // Сброс выбора при сбросе игры
@@ -44,9 +49,29 @@ export function RockPaperScissors({ onGameEnd, updateGameState, gameState, user,
         }
     }, [gameState.moves]);
 
+    // AI Move Logic
+    useEffect(() => {
+        if (isVsAI && myMove && !otherMove && !gameState.result) {
+            const timer = setTimeout(() => {
+                const aiMove = choices[Math.floor(Math.random() * choices.length)].id;
+                const newMoves = { ...gameState.moves, [user.id]: myMove, [AI_BOT_ID]: aiMove };
+                const outcome = outcomes[myMove][aiMove];
+                
+                let resultText = "";
+                if (outcome === 'win') resultText = `${user.name} Wins!`;
+                else if (outcome === 'lose') resultText = `AI Bot Wins!`;
+                else resultText = "It's a Draw!";
+                
+                updateGameState({ moves: newMoves, result: resultText });
+                hapticFeedback('medium');
+            }, 1000 + Math.random() * 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [isVsAI, myMove, otherMove, gameState.result, user.name, updateGameState]);
+
     const handlePlay = guard((...args: unknown[]) => {
         const move = args[0] as 'rock' | 'paper' | 'scissors';
-        if (myMove || !otherUser || isAnimating) return;
+        if (myMove || isAnimating) return;
 
         setSelectedChoice(move);
         setIsAnimating(true);
@@ -55,16 +80,14 @@ export function RockPaperScissors({ onGameEnd, updateGameState, gameState, user,
         setTimeout(() => {
             const newMoves = { ...gameState.moves, [user.id]: move };
 
-            // If the other player has already made a move, determine the result
             if (otherMove) {
                 const outcome = outcomes[move][otherMove];
                 let resultText = "";
                 if (outcome === 'win') resultText = `${user.name} Wins!`;
-                else if (outcome === 'lose') resultText = `${otherUser.name} Wins!`;
+                else if (outcome === 'lose') resultText = `${opponent.name} Wins!`;
                 else resultText = "It's a Draw!";
                 updateGameState({ moves: newMoves, result: resultText });
             } else {
-                // If other player hasn't moved, just update our move
                 updateGameState({ moves: newMoves });
             }
 
@@ -81,14 +104,14 @@ export function RockPaperScissors({ onGameEnd, updateGameState, gameState, user,
     });
 
     let description = 'Выберите оружие!';
-    if (!otherUser) {
+    if (!otherUser && !isVsAI) {
         description = "Ожидание соперника...";
     } else if (gameState.result) {
         description = `Результат: ${gameState.result}`;
     } else if (myMove && !otherMove) {
-        description = 'Ожидание хода соперника...';
+        description = isVsAI ? 'AI Bot думает...' : 'Ожидание хода соперника...';
     } else if (!myMove && otherMove) {
-        description = `${otherUser.name} сделал ход!`;
+        description = `${opponent.name} сделал ход!`;
     }
 
     const displayMyMove = selectedChoice || myMove;
@@ -119,19 +142,35 @@ export function RockPaperScissors({ onGameEnd, updateGameState, gameState, user,
                                     </span>
                                 ) : '?'}
                             </div>
+                            <span className="text-[10px] uppercase tracking-widest text-white/40 font-bold">ВЫ</span>
                         </div>
-                        <span className="font-bold text-2xl text-white/30">VS</span>
+                        <div className="flex flex-col items-center">
+                            <span className="font-bold text-2xl text-white/30 italic">VS</span>
+                            {isVsAI && (
+                                <div className="mt-1 flex items-center gap-1 text-[8px] text-violet-400 uppercase tracking-tighter font-bold">
+                                    <Bot className="w-2 h-2" /> AI
+                                </div>
+                            )}
+                        </div>
                         <div className="flex flex-col items-center gap-2">
                             <Avatar>
-                                <AvatarImage src={otherUser?.avatar} alt={otherUser?.name} />
-                                <AvatarFallback>{otherUser?.name?.charAt(0) || '?'}</AvatarFallback>
+                                {isVsAI ? (
+                                    <div className="w-10 h-10 bg-violet-500/20 flex items-center justify-center rounded-full">
+                                        <Bot className="w-5 h-5 text-violet-400" />
+                                    </div>
+                                ) : (
+                                    <>
+                                        <AvatarImage src={otherUser?.avatar} alt={otherUser?.name} />
+                                        <AvatarFallback>{otherUser?.name?.charAt(0) || '?'}</AvatarFallback>
+                                    </>
+                                )}
                             </Avatar>
                             <div className={`
                             h-24 w-24 text-6xl flex items-center justify-center bg-white/[0.02] rounded-xl
                             border border-white/[0.06] transition-all duration-300
                             ${gameState.result && otherMove ? 'bg-purple-500/10 border-purple-500/30' : ''}
                         `}>
-                                {gameState.result || (myMove && otherUser) ? (
+                                {gameState.result || (myMove && opponent.id === AI_BOT_ID) ? (
                                     otherMove ? (
                                         <span className={choices.find(c => c.id === otherMove)?.color}>
                                             {choices.find(c => c.id === otherMove)?.icon}
@@ -139,9 +178,10 @@ export function RockPaperScissors({ onGameEnd, updateGameState, gameState, user,
                                     ) : '?'
                                 ) : '?'}
                             </div>
+                            <span className="text-[10px] uppercase tracking-widest text-white/40 font-bold">ОППОНЕНТ</span>
                         </div>
                     </div>
-                    {!myMove && otherUser && !isAnimating && (
+                    {!myMove && (otherUser || isVsAI) && !isAnimating && (
                         <div className="flex gap-4">
                             {choices.map(choice => (
                                 <Button

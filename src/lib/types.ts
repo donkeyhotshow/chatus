@@ -12,6 +12,15 @@ export interface UserProfile {
   avatar: string;
 }
 
+export interface RemoteCursor {
+  userId: string;
+  userName: string;
+  x: number;
+  y: number;
+  color: string;
+  lastUpdate: number;
+}
+
 export interface Reaction {
   emoji: string;
   userId: string;
@@ -90,7 +99,7 @@ export interface CanvasState {
 
 export type AppType = 'canvas' | 'games';
 
-export type GameType = 'tic-tac-toe' | 'rock-paper-scissors' | 'click-war' | 'dice-roll' | 'maze' | 'physics-sandbox' | 'tower-defense' | 'car-race' | 'snake';
+export type GameType = 'tic-tac-toe' | 'rock-paper-scissors' | 'click-war' | 'dice-roll' | 'maze' | 'physics-sandbox' | 'tower-defense' | 'car-race' | 'snake' | 'vibe-jet';
 
 // --- Tower Defense Specific Types ---
 export type TDNode = {
@@ -161,7 +170,7 @@ export interface GameState {
   tdScores?: { [userId: string]: number }; // Очки игроков (leaderboard)
   tdSelectedTower?: string | null; // ID выбранной башни для апгрейда
   // Car Race
-  carRacePlayers?: { [oderId: string]: {
+  carRacePlayers?: { [userId: string]: {
     id: string;
     name: string;
     x: number;
@@ -180,4 +189,14 @@ export interface GameState {
   }};
   snakeFood?: { x: number; y: number };
   snakeActive?: boolean;
+  // Vibe Jet
+  vibeJetPlayers?: { [userId: string]: {
+    id: string;
+    name: string;
+    position: [number, number, number];
+    quaternion: [number, number, number, number];
+    health: number;
+    score: number;
+    isDead: boolean;
+  }};
 }

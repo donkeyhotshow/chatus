@@ -60,6 +60,10 @@ export class RealtimeSnakeService {
     set(this.myPlayerRef, { ...data, userId: this.userId });
   }
 
+  updateOtherSnake(userId: string, data: Omit<SnakeData, "userId">) {
+    set(ref(this.db, `games/${this.roomId}/snake/players/${userId}`), { ...data, userId });
+  }
+
   updateFood(food: { x: number; y: number }) {
     set(ref(this.db, `games/${this.roomId}/snake/food`), food);
   }

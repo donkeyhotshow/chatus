@@ -199,11 +199,11 @@ export default function PhysicsWorld({ roomId, user, onGameEnd }: PhysicsWorldPr
     }
   }
 
-  const tools = [
-    { id: 'box' as const, icon: Square, label: 'Box' },
-    { id: 'circle' as const, icon: Circle, label: 'Ball' },
-    { id: 'drag' as const, icon: MousePointer2, label: 'Drag' },
-    { id: 'erase' as const, icon: Eraser, label: 'Erase' },
+  const tools: { id: 'box' | 'circle' | 'drag' | 'erase', icon: React.ComponentType<{ className?: string }>, label: string }[] = [
+    { id: 'box', icon: Square, label: 'Box' },
+    { id: 'circle', icon: Circle, label: 'Ball' },
+    { id: 'drag', icon: MousePointer2, label: 'Drag' },
+    { id: 'erase', icon: Eraser, label: 'Erase' },
   ];
 
   return (
@@ -265,7 +265,7 @@ export default function PhysicsWorld({ roomId, user, onGameEnd }: PhysicsWorldPr
             <div className="flex flex-col items-center justify-center h-full text-white text-center p-4">
               <h3 className="text-lg font-semibold mb-2">Physics Engine Failed to Load</h3>
               <p className="text-sm text-neutral-400 mb-4">There was an error initializing the physics simulation.</p>
-              <Button onClick={() => window.location.reload()} variant="default">
+              <Button onClick={() => window.location.reload()} variant="primary">
                 Reload Page
               </Button>
             </div>

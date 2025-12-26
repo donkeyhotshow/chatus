@@ -57,7 +57,7 @@ interface HistoryState {
 interface Tool {
     id: string;
     name: string;
-    icon: React.ElementType;
+    icon: React.ComponentType<{ className?: string }>;
     cursor: string;
 }
 

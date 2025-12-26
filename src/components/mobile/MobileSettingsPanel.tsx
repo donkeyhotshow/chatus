@@ -18,7 +18,8 @@ import {
     EyeOff,
     Download,
     Trash2,
-    Info
+    Info,
+    LucideIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -80,7 +81,7 @@ export function MobileSettingsPanel({
         onClick,
         danger = false
     }: {
-        icon: React.ElementType;
+        icon: LucideIcon;
         title: string;
         description?: string;
         children?: React.ReactNode;

@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { MessageCircle, Sparkles, ChevronRight } from 'lucide-react';
+import { LucideIcon, MessageCircle, Sparkles, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface OnboardingStep {
     title: string;
     description: string;
-    icon: React.ElementType;
+    icon: LucideIcon;
     features?: string[];
 }
 

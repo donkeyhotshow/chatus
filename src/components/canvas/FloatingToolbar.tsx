@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { PenTool, Eraser, Trash2, Brush, Tally1, Bot, Pen, Palette, Settings, Send } from 'lucide-react';
+import { LucideIcon, PenTool, Eraser, Trash2, Brush, Tally1, Bot, Pen, Palette, Settings, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Slider } from '../ui/slider';
 
@@ -29,7 +29,7 @@ const COLOR_NAMES: { [key: string]: string } = {
 
 type BrushType = 'normal' | 'neon' | 'dashed' | 'calligraphy';
 
-const BRUSHES: { id: BrushType, name: string, nameRu: string, icon: React.ElementType }[] = [
+const BRUSHES: { id: BrushType, name: string, nameRu: string, icon: LucideIcon }[] = [
     { id: 'normal', name: 'Normal', nameRu: 'Обычная кисть', icon: Pen },
     { id: 'neon', name: 'Neon', nameRu: 'Неоновая кисть', icon: Brush },
     { id: 'dashed', name: 'Dashed', nameRu: 'Пунктирная кисть', icon: Tally1 },

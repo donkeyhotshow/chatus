@@ -314,12 +314,15 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         type="button"
-                        onClick={() => setShowEmojiPicker(prev => !prev)}
+                        onPointerDown={(e) => {
+                            e.preventDefault();
+                            setShowEmojiPicker(prev => !prev);
+                        }}
                         disabled={disabled}
                         aria-label="Открыть эмодзи"
                         aria-expanded={showEmojiPicker}
                         className={cn(
-                            "p-2.5 rounded-xl transition-all duration-200 touch-target disabled:opacity-50 min-w-[44px] min-h-[44px]",
+                            "p-2.5 rounded-xl transition-all duration-200 touch-target disabled:opacity-50 min-w-[44px] min-h-[44px] relative z-[105]",
                             showEmojiPicker
                                 ? "text-violet-400 bg-violet-500/10"
                                 : "text-white/40 hover:text-white/70 hover:bg-white/[0.05]"
@@ -337,7 +340,7 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
-                                    className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                                    className="fixed inset-0 bg-black/50 z-[100] md:hidden"
                                     onClick={() => setShowEmojiPicker(false)}
                                 />
                                 <motion.div
@@ -345,7 +348,7 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, y: 20, scale: 0.95 }}
                                     className={cn(
-                                        "bg-black/95 border border-white/10 rounded-2xl shadow-2xl z-50 backdrop-blur-2xl",
+                                        "bg-black/95 border border-white/10 rounded-2xl shadow-2xl z-[110] backdrop-blur-2xl",
                                         // Desktop: absolute positioning
                                         "md:absolute md:bottom-full md:left-0 md:mb-2",
                                         // Mobile: fixed bottom sheet
@@ -446,10 +449,13 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         type="button"
-                        onClick={() => fileInputRef.current?.click()}
+                        onPointerDown={(e) => {
+                            e.preventDefault();
+                            fileInputRef.current?.click();
+                        }}
                         disabled={disabled}
                         aria-label="Прикрепить изображение"
-                        className="p-2.5 rounded-xl text-white/40 hover:text-white/70 hover:bg-white/[0.05] transition-all duration-200 touch-target disabled:opacity-50 min-w-[44px] min-h-[44px]"
+                        className="p-2.5 rounded-xl text-white/40 hover:text-white/70 hover:bg-white/[0.05] transition-all duration-200 touch-target disabled:opacity-50 min-w-[44px] min-h-[44px] relative z-[105]"
                     >
                         <ImageIcon className="w-5 h-5" aria-hidden="true" />
                     </motion.button>
@@ -461,11 +467,16 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                     whileHover={canSend && !isSending ? { scale: 1.05 } : {}}
                     whileTap={canSend && !isSending ? { scale: 0.95 } : {}}
                     ref={sendButtonRef}
-                    onClick={handleSend}
+                    onPointerDown={(e) => {
+                        if (canSend && !isSending) {
+                            e.preventDefault();
+                            handleSend();
+                        }
+                    }}
                     disabled={!canSend || isSending}
                     aria-label={isSending ? "Отправка..." : (canSend ? "Отправить сообщение" : "Введите сообщение для отправки")}
                     className={cn(
-                        "p-3 rounded-2xl transition-all duration-300 min-w-[48px] min-h-[48px] flex items-center justify-center",
+                        "p-3 rounded-2xl transition-all duration-300 min-w-[48px] min-h-[48px] flex items-center justify-center relative z-[105]",
                         canSend && !isSending
                             ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-[0_4px_15px_rgba(124,58,237,0.3)] hover:shadow-[0_6px_20px_rgba(124,58,237,0.4)]"
                             : "bg-white/[0.04] text-white/20 cursor-not-allowed"

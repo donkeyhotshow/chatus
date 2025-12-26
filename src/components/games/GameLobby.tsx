@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo, lazy, Suspense } from 'react';
 import { doc } from 'firebase/firestore';
-import { Gamepad, ArrowLeft, Dices, Hand, Swords, Car } from 'lucide-react';
+import { Gamepad, ArrowLeft, Dices, Hand, Swords, Car, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserProfile, GameType, GameState } from '@/lib/types';
 import { useChatService } from '@/hooks/useChatService';
@@ -16,12 +16,13 @@ const ClickWar = lazy(() => import('./ClickWar').then(m => ({ default: m.ClickWa
 const DiceRoll = lazy(() => import('./DiceRoll').then(m => ({ default: m.DiceRoll })));
 const CarRace = lazy(() => import('./CarRace').then(m => ({ default: m.CarRace })));
 const SnakeGame = lazy(() => import('./SnakeGame').then(m => ({ default: m.SnakeGame })));
+const VibeJet = lazy(() => import('./VibeJet'));
 
 type GameDefinition = {
   id: GameType;
   name: string;
   description: string;
-  icon: React.ElementType;
+  icon: React.ComponentType<any>;
   gradient: string;
 };
 
@@ -33,6 +34,7 @@ const gamesList: GameDefinition[] = [
   { id: 'click-war', name: 'Кликер', description: 'Кто быстрее?', icon: Swords, gradient: 'from-emerald-500 to-teal-600' },
   { id: 'car-race', name: 'Car Race', description: 'Гонки в реальном времени', icon: Car, gradient: 'from-blue-500 to-cyan-600' },
   { id: 'snake', name: 'Змейка', description: 'Классика на двоих', icon: Gamepad, gradient: 'from-emerald-600 to-green-700' },
+  { id: 'vibe-jet', name: 'Vibe Jet', description: 'Воздушный бой в 3D', icon: Zap, gradient: 'from-violet-500 to-fuchsia-600' },
 ];
 
 type GameLobbyProps = {
@@ -96,6 +98,7 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
       'dice-roll': { diceRoll: {}, hostId },
       'car-race': { carRacePlayers: {}, hostId },
       'snake': { snakeActive: false, hostId },
+      'vibe-jet': { vibeJetPlayers: {}, hostId },
     };
 
     const initialState: Partial<GameState> = { type: gameId, ...initialStates[gameId] };
@@ -136,15 +139,18 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
             <ArrowLeft className="w-4 h-4" />
             <span>Назад</span>
           </button>
-          {currentGame && (
-            <div className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r shadow-lg",
-              currentGame.gradient
-            )}>
-              <currentGame.icon className="w-4 h-4 text-white" />
-              <span className="font-semibold text-white text-sm">{currentGame.name}</span>
-            </div>
-          )}
+          {currentGame && (() => {
+            const GameIcon = currentGame.icon;
+            return (
+              <div className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r shadow-lg",
+                currentGame.gradient
+              )}>
+                <GameIcon className="w-4 h-4 text-white" />
+                <span className="font-semibold text-white text-sm">{currentGame.name}</span>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Game content */}
@@ -157,6 +163,7 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
               {activeGameId === 'dice-roll' && <DiceRoll {...commonProps} gameState={gameState} />}
               {activeGameId === 'car-race' && <CarRace {...commonProps} gameState={gameState} />}
               {activeGameId === 'snake' && <SnakeGame {...commonProps} gameState={gameState} />}
+              {activeGameId === 'vibe-jet' && <VibeJet {...commonProps} />}
             </Suspense>
           ) : (
             <GameLoading />

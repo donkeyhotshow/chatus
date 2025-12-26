@@ -233,7 +233,7 @@ export class ChatService {
             }
           }
         }, 3, 500); // Increased backoff for stability
-
+        
         this.hasJoined = true;
         this.initListeners();
       } catch (error) {
@@ -276,21 +276,21 @@ export class ChatService {
     }
   }
 
-  public async loadMoreMessages() {
+  public loadMoreMessages = async () => {
     return this.messageService.loadMoreMessages();
-  }
+  };
 
-  public async sendMessage(messageData: any, clientMessageId?: string) {
+  public sendMessage = async (messageData: any, clientMessageId?: string) => {
     return this.messageService.sendMessage(messageData, clientMessageId);
-  }
+  };
 
-  public async deleteMessage(messageId: string) {
+  public deleteMessage = async (messageId: string) => {
     return this.messageService.deleteMessage(messageId);
-  }
+  };
 
-  public async toggleReaction(messageId: string, emoji: string, user: UserProfile) {
+  public toggleReaction = async (messageId: string, emoji: string, user: UserProfile) => {
     return this.messageService.toggleReaction(messageId, emoji, user);
-  }
+  };
 
   public sendTyping() {
     this.presenceService.sendTyping();
@@ -356,6 +356,22 @@ export class ChatService {
       ...pathData,
       createdAt: serverTimestamp(),
     });
+  }
+
+  public async saveCanvasStrokes(sheetId: string, strokes: Omit<CanvasPath, 'id' | 'createdAt'>[]) {
+    const batch = writeBatch(this.firestore);
+    const pathsCollection = collection(this.firestore, 'rooms', this.roomId, 'canvasPaths');
+    
+    strokes.forEach(stroke => {
+      const docRef = doc(pathsCollection);
+      batch.set(docRef, {
+        ...stroke,
+        sheetId, // Ensure sheetId is set
+        createdAt: serverTimestamp(),
+      });
+    });
+    
+    await batch.commit();
   }
 
   public async clearCanvasSheet(sheetId: string) {

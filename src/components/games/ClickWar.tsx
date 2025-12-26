@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Swords, ArrowLeft, Trophy, Zap } from "lucide-react";
+import { Swords, ArrowLeft, Trophy, Zap, Bot } from "lucide-react";
 import { GameState, UserProfile } from "@/lib/types";
 import { useActionGuard, calculateTimeLeft, hapticFeedback } from "@/lib/game-utils";
 import { cn } from "@/lib/utils";
@@ -18,10 +18,13 @@ type ClickWarProps = {
 };
 
 const GAME_DURATION = 10; // seconds
+const AI_PLAYER_ID = '__AI_BOT__';
 
 export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUser }: ClickWarProps) {
   const myScore = gameState.scores?.[user.id] || 0;
-  const otherScore = otherUser ? gameState.scores?.[otherUser.id] || 0 : 0;
+  const isVsAI = !otherUser;
+  const opponentId = isVsAI ? AI_PLAYER_ID : otherUser?.id;
+  const otherScore = opponentId ? gameState.scores?.[opponentId] || 0 : 0;
   const isActive = !!gameState.active;
   
   const hasBeenPlayed = (
@@ -41,6 +44,7 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
 
   const clickBufferRef = useRef<number>(0);
   const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const aiIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const { guard } = useActionGuard();
   const animationFrameRef = useRef<number | undefined>(undefined);
 
@@ -77,6 +81,7 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
     setOptimisticScore(myScore);
   }, [myScore]);
 
+  // Sync player score
   useEffect(() => {
     if (!isActive) {
       if (clickBufferRef.current > 0) {
@@ -106,12 +111,40 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
     };
   }, [isActive, gameState.scores, myScore, updateGameState, user.id]);
 
+  // AI Logic
+  useEffect(() => {
+    if (!isActive || !isVsAI || user.id !== gameState.hostId) {
+        if (aiIntervalRef.current) clearInterval(aiIntervalRef.current);
+        return;
+    }
+
+    // AI clicks 6-10 times per second
+    aiIntervalRef.current = setInterval(() => {
+        if (Math.random() > 0.3) { // Randomize a bit
+            const currentScores = gameState.scores || {};
+            const currentAIScore = currentScores[AI_PLAYER_ID] || 0;
+            updateGameState({
+                scores: {
+                    ...currentScores,
+                    [AI_PLAYER_ID]: currentAIScore + 1
+                }
+            });
+        }
+    }, 100);
+
+    return () => {
+        if (aiIntervalRef.current) clearInterval(aiIntervalRef.current);
+    };
+  }, [isActive, isVsAI, gameState.scores, user.id, gameState.hostId, updateGameState]);
+
   const handleStart = guard(() => {
     if (user.id !== gameState.hostId && gameState.hostId) return;
 
     const scores: {[key: string]: number} = {[user.id]: 0};
     if (otherUser) {
         scores[otherUser.id] = 0;
+    } else {
+        scores[AI_PLAYER_ID] = 0;
     }
 
     const now = Date.now();
@@ -142,9 +175,9 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
 
   const getWinnerId = () => {
     const finalMyScore = gameState.scores?.[user.id] || 0;
-    const finalOtherScore = otherUser ? (gameState.scores?.[otherUser.id] || 0) : 0;
+    const finalOtherScore = opponentId ? (gameState.scores?.[opponentId] || 0) : 0;
     if (finalMyScore > finalOtherScore) return user.id;
-    if (finalOtherScore > finalMyScore) return otherUser?.id;
+    if (finalOtherScore > finalMyScore) return opponentId;
     return 'draw';
   }
 
@@ -154,7 +187,7 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
 
   let description = `Кликайте как можно быстрее ${GAME_DURATION} секунд!`;
   if(isActive) description = `Осталось: ${Math.ceil(timeLeft)} сек`;
-  if(!otherUser) description = "Ожидание соперника...";
+  if(!otherUser && !isVsAI) description = "Ожидание соперника...";
 
   return (
     <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-4">
@@ -185,6 +218,11 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
 
             <div className="flex flex-col items-center">
               <div className="text-white/20 font-black text-xl italic">VS</div>
+              {isVsAI && (
+                <div className="mt-1 flex items-center gap-1 text-[8px] text-violet-400 uppercase tracking-tighter font-bold">
+                    <Bot className="w-2 h-2" /> AI
+                </div>
+              )}
             </div>
 
             <motion.div 
@@ -192,8 +230,16 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
               className="flex flex-col items-center gap-2"
             >
               <Avatar className={cn("w-12 h-12 border-2", !isWinner && !isDraw && isGameOver ? "border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.5)]" : "border-white/10")}>
-                <AvatarImage src={otherUser?.avatar} alt={otherUser?.name} />
-                <AvatarFallback>{otherUser ? otherUser.name.charAt(0) : '?'}</AvatarFallback>
+                {isVsAI ? (
+                    <div className="w-full h-full bg-violet-500/20 flex items-center justify-center">
+                        <Bot className="w-6 h-6 text-violet-400" />
+                    </div>
+                ) : (
+                    <>
+                        <AvatarImage src={otherUser?.avatar} alt={otherUser?.name} />
+                        <AvatarFallback>{otherUser ? otherUser.name.charAt(0) : '?'}</AvatarFallback>
+                    </>
+                )}
               </Avatar>
               <span className="font-bold text-white/60 text-2xl">{otherScore}</span>
               <span className="text-[10px] uppercase tracking-widest text-white/40 font-semibold">ОППОНЕНТ</span>
@@ -241,7 +287,7 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
                       {isWinner ? "ПОБЕДА!" : "ПОРАЖЕНИЕ"}
                     </h2>
                     <p className="text-white/50 mb-6">
-                      {isWinner ? "Вы были быстрее молнии!" : "В следующий раз повезет!"}
+                      {isWinner ? "Вы были быстрее молнии!" : (isVsAI ? "Бот оказался быстрее!" : "В следующий раз повезет!")}
                     </p>
                   </>
                 )}
@@ -263,7 +309,7 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
             <PremiumButton
               onClick={handleStart}
               className="w-full"
-              disabled={!otherUser || (user.id !== gameState.hostId && !!gameState.hostId)}
+              disabled={user.id !== gameState.hostId && !!gameState.hostId}
               glow
             >
               {user.id === gameState.hostId ? "НАЧАТЬ ИГРУ" : "ЖДЕМ ХОСТА..."}
