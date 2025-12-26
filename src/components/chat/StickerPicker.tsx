@@ -52,9 +52,9 @@ export function StickerPicker({ onSelect, onClose }: StickerPickerProps) {
           <Smile className="w-5 h-5" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent 
-        side="top" 
-        align="end" 
+      <PopoverContent
+        side="top"
+        align="end"
         className="w-80 p-0 bg-[var(--bg-secondary)] border-[var(--border-primary)] shadow-xl"
       >
         <div className="p-3 border-b border-[var(--border-primary)] flex justify-between items-center">
@@ -62,13 +62,22 @@ export function StickerPicker({ onSelect, onClose }: StickerPickerProps) {
           {isLoading && <Loader2 className="w-4 h-4 animate-spin text-[var(--accent-primary)]" />}
         </div>
 
-        {packs.length === 0 && !isLoading ? (
+        {packs.length === 0 ? (
           <div className="p-8 text-center text-sm text-[var(--text-muted)]">
-            Нет загруженных стикеров.<br/>
-            Вставьте ссылку на пак в чат!
+            {isLoading ? (
+              <div className="flex flex-col items-center gap-2">
+                <Loader2 className="w-6 h-6 animate-spin text-[var(--accent-primary)]" />
+                <span>Загрузка стикеров...</span>
+              </div>
+            ) : (
+              <>
+                Нет загруженных стикеров.<br/>
+                Вставьте ссылку на пак в чат!
+              </>
+            )}
           </div>
         ) : (
-          <Tabs defaultValue={packs[0]?.shortName} className="w-full">
+          <Tabs defaultValue={packs[0].shortName} className="w-full">
             <ScrollArea className="h-72">
               {packs.map(pack => (
                 <TabsContent key={pack.shortName} value={pack.shortName} className="m-0 p-2">
@@ -96,24 +105,26 @@ export function StickerPicker({ onSelect, onClose }: StickerPickerProps) {
                 </TabsContent>
               ))}
             </ScrollArea>
-            
+
             <div className="border-t border-[var(--border-primary)] p-1 bg-[var(--bg-tertiary)]">
               <ScrollArea className="w-full">
                 <TabsList className="bg-transparent h-10 justify-start">
                   {packs.map(pack => (
-                    <TabsTrigger 
-                      key={pack.shortName} 
+                    <TabsTrigger
+                      key={pack.shortName}
                       value={pack.shortName}
                       className="px-2 py-1 data-[state=active]:bg-[var(--bg-secondary)]"
                     >
                       <div className="relative w-6 h-6">
-                        <Image
-                          src={pack.stickers[0]?.localPath}
-                          alt={pack.title}
-                          fill
-                          className="object-contain"
-                          unoptimized
-                        />
+                        {pack.stickers[0]?.localPath && (
+                          <Image
+                            src={pack.stickers[0].localPath}
+                            alt={pack.title}
+                            fill
+                            className="object-contain"
+                            unoptimized
+                          />
+                        )}
                       </div>
                     </TabsTrigger>
                   ))}
