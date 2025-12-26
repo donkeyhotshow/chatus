@@ -20,10 +20,10 @@
     --glass-bg: rgba(10, 10, 10, 0.85);
     --glass-border: rgba(255, 255, 255, 0.08);
 
-    /* Text Colors - White on Black */
+    /* Text Colors - White on Black (WCAG AA compliant) */
     --text-primary: #ffffff;
-    --text-secondary: #a1a1a1;
-    --text-muted: #666666;
+    --text-secondary: #b3b3b3;
+    --text-muted: #8a8a8a;
 
     /* Border Colors */
     --border-primary: rgba(255, 255, 255, 0.08);
@@ -140,6 +140,10 @@
     min-height: 100dvh;
     /* P1-001 FIX: Prevent iOS swipe-to-go-back */
     touch-action: pan-y pinch-zoom;
+    /* Safe area padding for notch devices */
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
   }
 
   ::selection {
@@ -194,6 +198,11 @@
     button {
       font-size: 16px !important;
     }
+  }
+
+  /* Prevent double-tap zoom on interactive elements */
+  input, button, a, textarea, select, [role="button"] {
+    touch-action: manipulation;
   }
 }
 
@@ -327,7 +336,7 @@
     max-width: 75%;
     padding: 12px 16px;
     border-radius: var(--radius-lg);
-    font-size: 15px;
+    font-size: 16px;
     line-height: 1.5;
     word-wrap: break-word;
   }
@@ -343,6 +352,29 @@
     background: var(--bg-tertiary);
     color: var(--text-primary);
     border-bottom-left-radius: 4px;
+  }
+
+  /* Mobile message typography */
+  @media (max-width: 768px) {
+    .message-bubble {
+      max-width: 85%;
+      font-size: 16px;
+    }
+
+    .message-username {
+      font-size: 14px;
+    }
+
+    .message-time {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .message-avatar {
+      display: flex !important;
+      width: 32px;
+      height: 32px;
+    }
   }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -538,11 +570,13 @@
   .h-screen-safe {
     height: 100vh;
     height: 100dvh;
+    height: calc(var(--vh, 1vh) * 100);
   }
 
   .min-h-screen-safe {
     min-height: 100vh;
     min-height: 100dvh;
+    min-height: calc(var(--vh, 1vh) * 100);
   }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -573,6 +607,34 @@
       min-width: 48px;
       min-height: 48px;
     }
+
+    /* Active state feedback for mobile */
+    button:active,
+    a:active,
+    [role="button"]:active {
+      transform: scale(0.97);
+      opacity: 0.9;
+    }
+
+    /* Highlight on press */
+    .press-highlight:active {
+      background-color: var(--accent-light) !important;
+    }
+  }
+
+  /* Active states for all devices */
+  .btn:active {
+    transform: scale(0.98);
+  }
+
+  .btn-icon:active {
+    transform: scale(0.95);
+    background: var(--bg-hover);
+  }
+
+  .nav-item:active {
+    transform: scale(0.95);
+    background: var(--accent-light);
   }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -721,6 +783,72 @@
     }
   }
 
+  /* Tablet breakpoint - collapsible sidebar */
+  @media (max-width: 1024px) {
+    :root {
+      --sidebar-width: 64px;
+      --sidebar-width-expanded: 200px;
+    }
+
+    .sidebar-collapsible {
+      width: var(--sidebar-width);
+      transition: width 0.2s ease;
+    }
+
+    .sidebar-collapsible:hover,
+    .sidebar-collapsible.expanded {
+      width: var(--sidebar-width-expanded);
+    }
+
+    .sidebar-collapsible .sidebar-label {
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .sidebar-collapsible:hover .sidebar-label,
+    .sidebar-collapsible.expanded .sidebar-label {
+      opacity: 1;
+    }
+  }
+
+  /* Tablet layout - sidebar becomes drawer */
+  @media (max-width: 768px) {
+    .sidebar-desktop {
+      display: none;
+    }
+
+    .mobile-drawer {
+      display: block;
+    }
+  }
+
+  /* Full mobile mode */
+  @media (max-width: 600px) {
+    :root {
+      --header-height: 52px;
+      --nav-height-mobile: 60px;
+    }
+
+    .sidebar-desktop {
+      display: none !important;
+    }
+
+    /* Stack form labels */
+    .form-group {
+      flex-direction: column;
+    }
+
+    .form-group label {
+      margin-bottom: 4px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+    }
+  }
+
   /* Compact mode for small screens */
   @media (max-width: 375px) {
     :root {
@@ -730,8 +858,48 @@
     }
 
     .message-bubble {
-      max-width: 85% !important;
+      max-width: 88% !important;
       padding: 10px 12px;
+    }
+
+    /* Smaller buttons text */
+    .btn {
+      font-size: 14px;
+    }
+  }
+
+  /* Extra small screens (320px) */
+  @media (max-width: 320px) {
+    :root {
+      --space-2: 6px;
+      --space-3: 8px;
+      --space-4: 10px;
+      --space-5: 14px;
+      --space-6: 18px;
+      --header-height: 48px;
+      --radius-md: 10px;
+      --radius-lg: 12px;
+    }
+
+    .message-bubble {
+      max-width: 92% !important;
+      padding: 8px 10px;
+      font-size: 14px;
+    }
+
+    .btn {
+      padding: 0 14px;
+      font-size: 13px;
+    }
+
+    .input {
+      padding: 10px 12px;
+      font-size: 16px; /* Keep 16px to prevent iOS zoom */
+    }
+
+    /* Hide non-essential UI */
+    .hide-xs {
+      display: none !important;
     }
   }
 
@@ -740,6 +908,28 @@
     :root {
       --header-height: 48px;
       --nav-height-mobile: 52px;
+    }
+
+    /* Hide non-essential elements in landscape */
+    .hide-landscape {
+      display: none !important;
+    }
+
+    /* Compact message bubbles in landscape */
+    .message-bubble {
+      padding: 8px 12px;
+      font-size: 14px;
+    }
+  }
+
+  /* Orientation change handling */
+  @media (orientation: landscape) and (max-width: 900px) {
+    .mobile-sidebar {
+      display: none;
+    }
+
+    .chat-container {
+      width: 100%;
     }
   }
 
@@ -807,6 +997,94 @@
   .android-landscape-keyboard input[type="text"] {
     max-height: 40px !important;
     padding: 8px 12px !important;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     MOBILE INPUT BAR - Keyboard Aware
+     ═══════════════════════════════════════════════════════════════ */
+  .chat-input-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-primary);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    transition: transform 0.2s ease-out;
+  }
+
+  /* When keyboard is visible, adjust position */
+  .chat-input-bar.keyboard-visible {
+    position: fixed;
+    bottom: 0;
+    transform: translateY(0);
+  }
+
+  /* Input bar buttons - ensure 44px touch targets */
+  .chat-input-bar button {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     MOBILE HAMBURGER MENU
+     ═══════════════════════════════════════════════════════════════ */
+  .mobile-menu-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 998;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+  }
+
+  .mobile-menu-overlay.open {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .mobile-menu-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    max-width: 85vw;
+    background: var(--bg-secondary);
+    z-index: 999;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+  }
+
+  .mobile-menu-drawer.open {
+    transform: translateX(0);
+  }
+
+  .hamburger-btn {
+    min-width: 44px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    transition: background 0.2s;
+  }
+
+  .hamburger-btn:hover {
+    background: var(--bg-tertiary);
   }
 
   /* ═══════════════════════════════════════════════════════════════

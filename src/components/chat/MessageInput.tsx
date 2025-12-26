@@ -11,6 +11,7 @@ import {
     createIOSViewportManager,
     ensureSendButtonVisible,
 } from '@/lib/ios-viewport-manager';
+import { isAndroid } from '@/lib/viewport-manager';
 
 interface MessageInputProps {
     onSendMessage: (text: string) => void;
@@ -41,6 +42,7 @@ export function MessageInput({
     const [isSending, setIsSending] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+    const [keyboardHeight, setKeyboardHeight] = useState(0);
 
     const draftKey = `chat-draft-${roomId}`;
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -103,11 +105,37 @@ export function MessageInput({
         const textarea = textareaRef.current;
         if (!textarea) return;
 
+        // Visual Viewport API handler for keyboard detection
+        const handleViewportResize = () => {
+            if (!window.visualViewport) return;
+
+            const viewportHeight = window.visualViewport.height;
+            const windowHeight = window.innerHeight;
+            const heightDiff = windowHeight - viewportHeight;
+
+            // Keyboard is visible if viewport shrunk by more than 150px
+            const keyboardVisible = heightDiff > 150;
+            setIsKeyboardVisible(keyboardVisible);
+            setKeyboardHeight(keyboardVisible ? heightDiff : 0);
+
+            // Adjust container position when keyboard is visible
+            if (keyboardVisible && containerRef.current) {
+                containerRef.current.style.transform = `translateY(-${Math.max(0, heightDiff - window.visualViewport.offsetTop)}px)`;
+            } else if (containerRef.current) {
+                containerRef.current.style.transform = '';
+            }
+        };
+
         const handleFocus = () => {
             // For iOS, use the iOS viewport manager
             if (isIOS() && iosViewportManagerRef.current) {
                 iosViewportManagerRef.current.handleFocus();
                 setIsKeyboardVisible(true);
+            } else if (isAndroid()) {
+                // Android: wait for keyboard and scroll into view
+                setTimeout(() => {
+                    textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 300);
             } else {
                 // Small delay to wait for keyboard to appear
                 setTimeout(() => {
@@ -121,29 +149,32 @@ export function MessageInput({
             if (isIOS() && iosViewportManagerRef.current) {
                 iosViewportManagerRef.current.handleBlur();
                 setIsKeyboardVisible(false);
-            }
-        };
-
-        // Use visualViewport API for better keyboard detection
-        const handleResize = () => {
-            if (document.activeElement === textarea) {
-                if (isIOS()) {
-                    // iOS uses Visual Viewport API through the manager
-                    ensureSendButtonVisible(textarea, sendButtonRef.current);
-                } else {
-                    textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setKeyboardHeight(0);
+            } else {
+                setIsKeyboardVisible(false);
+                setKeyboardHeight(0);
+                if (containerRef.current) {
+                    containerRef.current.style.transform = '';
                 }
             }
         };
 
         textarea.addEventListener('focus', handleFocus);
         textarea.addEventListener('blur', handleBlur);
-        window.visualViewport?.addEventListener('resize', handleResize);
+
+        // Use visualViewport API for better keyboard detection
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', handleViewportResize);
+            window.visualViewport.addEventListener('scroll', handleViewportResize);
+        }
 
         return () => {
             textarea.removeEventListener('focus', handleFocus);
             textarea.removeEventListener('blur', handleBlur);
-            window.visualViewport?.removeEventListener('resize', handleResize);
+            if (window.visualViewport) {
+                window.visualViewport.removeEventListener('resize', handleViewportResize);
+                window.visualViewport.removeEventListener('scroll', handleViewportResize);
+            }
         };
     }, []);
 
@@ -237,17 +268,16 @@ export function MessageInput({
         <div
             ref={containerRef}
             className={cn(
-                "relative bg-[var(--bg-secondary)] border-t border-[var(--border-primary)] safe-bottom",
- // iOS keyboard visible styles
-                isKeyboardVisible && isIOS() && "ios-keyboard-visible"
+                "chat-input-bar",
+                "relative bg-[var(--bg-secondary)] border-t border-[var(--border-primary)]",
+                // iOS keyboard visible styles
+                isKeyboardVisible && "keyboard-visible"
             )}
             style={{
-                // Ensure the container stays above the keyboard on iOS
-                ...(isKeyboardVisible && isIOS() ? {
-                    position: 'sticky' as const,
-                    bottom: 0,
-                    zIndex: 100,
-                } : {})
+                // Ensure the container stays above the keyboard
+                paddingBottom: isKeyboardVisible
+                    ? `max(${keyboardHeight}px, env(safe-area-inset-bottom, 0px))`
+                    : 'env(safe-area-inset-bottom, 0px)',
             }}
         >
             <div className="flex items-end gap-2 p-3">

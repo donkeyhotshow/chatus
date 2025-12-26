@@ -1,126 +1,98 @@
-'use client';
+"use client";
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import * as Sentry from "@sentry/nextjs";
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
+  componentName?: string;
 }
 
 interface State {
   hasError: boolean;
-  error?: Error;
-  errorInfo?: ErrorInfo;
+  error: Error | null;
+  errorInfo: ErrorInfo | null;
 }
 
+/**
+ * Error Boundary component for catching React errors
+ * Prevents white screen crashes and shows user-friendly error UI
+ */
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: null, errorInfo: null };
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    this.setState({
-      error,
-      errorInfo
-    });
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    this.setState({ errorInfo });
 
-    // Enhanced error handling
-    if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
-      console.error('ErrorBoundary caught an error:', error, errorInfo);
-    }
+    // Log error
+    console.error(`[ErrorBoundary${this.props.componentName ? ` - ${this.props.componentName}` : ''}]`, error, errorInfo);
 
-    // Check for infinite loop errors and handle them specially
-    if (error.message.includes('Maximum update depth exceeded')) {
-      // Force component remount after a delay
-      setTimeout(() => {
-        this.setState({ hasError: false, error: undefined, errorInfo: undefined });
-      }, 1000);
-    }
-
-    // In production, log to error reporting service
-    Sentry.captureException(error, { extra: { errorInfo } });
+    // Call custom error handler if provided
+    this.props.onError?.(error, errorInfo);
   }
 
-  private handleReset = (): void => {
-    this.setState({ hasError: false });
+  handleReset = () => {
+    this.setState({ hasError: false, error: null, errorInfo: null });
   };
 
-  private handleReload = (): void => {
+  handleReload = () => {
     window.location.reload();
   };
 
-  render(): ReactNode {
+  render() {
     if (this.state.hasError) {
-      // Custom fallback UI
       if (this.props.fallback) {
         return this.props.fallback;
       }
 
-      // Default error UI - використовуємо CSS variables для консистентності
       return (
-        <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)] px-4">
-          <div className="max-w-sm w-full bg-[var(--bg-elevated)] border border-[var(--border-primary)] rounded-2xl p-6 text-center">
-            <div className="mb-4">
-              <div className="mx-auto flex items-center justify-center h-14 w-14 rounded-xl bg-red-100 dark:bg-red-950/30">
-                <svg
-                  className="h-7 w-7 text-[var(--error)]"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                  />
-                </svg>
-              </div>
-            </div>
-
-            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
-              Щось пішло не так
-            </h2>
-
-            <p className="text-sm text-[var(--text-secondary)] mb-6">
-              Виникла несподівана помилка. Спробуйте оновити сторінку.
-            </p>
-
-            {process.env.NODE_ENV === 'development' && this.state.error && (
-              <details className="mb-4 text-left">
-                <summary className="cursor-pointer text-xs text-[var(--text-muted)] mb-2">
-                  Деталі помилки (тільки в розробці)
-                </summary>
-                <pre className="text-xs bg-[var(--bg-tertiary)] text-[var(--text-secondary)] p-2 rounded-lg overflow-auto max-h-32">
-                  {this.state.error.toString()}
-                  {this.state.errorInfo?.componentStack}
-                </pre>
-              </details>
-            )}
-
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={this.handleReset}
-                className="w-full py-3 bg-[var(--accent-primary)] text-[var(--accent-contrast)] font-medium rounded-xl hover:bg-[var(--accent-hover)] transition-colors"
-              >
-                Спробувати знову
-              </button>
-
-              <button
-                onClick={this.handleReload}
-                className="w-full py-3 bg-[var(--bg-tertiary)] text-[var(--text-primary)] font-medium rounded-xl hover:bg-[var(--border-primary)] transition-colors"
-              >
-                Оновити сторінку
-              </button>
-            </div>
+        <div className="flex flex-col items-center justify-center min-h-[200px] p-6 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-xl text-center">
+          <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-4">
+            <AlertTriangle className="w-8 h-8 text-red-500" />
           </div>
+          <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+            Что-то пошло не так
+          </h3>
+          <p className="text-sm text-[var(--text-muted)] mb-4 max-w-sm">
+            {this.props.componentName
+              ? `Произошла ошибка в компоненте "${this.props.componentName}"`
+              : 'Произошла непредвиденная ошибка'}
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={this.handleReset}
+              className="px-4 py-2 bg-[var(--bg-tertiary)] text-[var(--text-primary)] rounded-lg hover:bg-[var(--bg-hover)] transition-colors min-h-[44px]"
+            >
+              Попробовать снова
+            </button>
+            <button
+              onClick={this.handleReload}
+              className="px-4 py-2 bg-[var(--accent-primary)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors flex items-center gap-2 min-h-[44px]"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Перезагрузить
+            </button>
+          </div>
+          {process.env.NODE_ENV === 'development' && this.state.error && (
+            <details className="mt-4 text-left w-full max-w-md">
+              <summary className="text-xs text-[var(--text-muted)] cursor-pointer">
+                Детали ошибки (dev)
+              </summary>
+              <pre className="mt-2 p-3 bg-black/50 rounded text-xs text-red-400 overflow-auto max-h-32">
+                {this.state.error.toString()}
+                {this.state.errorInfo?.componentStack}
+              </pre>
+            </details>
+          )}
         </div>
       );
     }
@@ -129,17 +101,34 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-// Hook version for functional components
-export function useErrorHandler() {
-  return (error: Error, errorInfo?: ErrorInfo) => {
-    if (process.env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
-      console.error('Error caught by useErrorHandler:', error, errorInfo);
+/**
+ * Game-specific Error Boundary with game-themed UI
+ */
+export class GameErrorBoundary extends ErrorBoundary {
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full p-6 bg-black/90 text-center">
+          <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mb-6 animate-pulse">
+            <AlertTriangle className="w-10 h-10 text-red-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">Игра крашнулась</h2>
+          <p className="text-white/60 mb-6 max-w-sm">
+            Произошла ошибка. Попробуйте перезапустить игру.
+          </p>
+          <button
+            onClick={this.handleReload}
+            className="px-6 py-3 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg hover:shadow-violet-500/25 transition-all min-h-[48px] flex items-center gap-2"
+          >
+            <RefreshCw className="w-5 h-5" />
+            Перезапустить
+          </button>
+        </div>
+      );
     }
 
-    // In production, log to error reporting service
-    Sentry.captureException(error, { extra: { errorInfo } });
-  };
+    return this.props.children;
+  }
 }
 
 export default ErrorBoundary;

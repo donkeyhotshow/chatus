@@ -15,6 +15,7 @@ import { getMessageQueue } from "./MessageQueue";
 import { MessageService } from "./MessageService";
 import { PresenceService } from "./PresenceService";
 import { GameService } from "./GameService";
+import { rateLimiter } from "@/lib/rate-limiter";
 
 type ChatServiceListener = () => void;
 
@@ -233,7 +234,7 @@ export class ChatService {
             }
           }
         }, 3, 500); // Increased backoff for stability
-        
+
         this.hasJoined = true;
         this.initListeners();
       } catch (error) {
@@ -281,6 +282,13 @@ export class ChatService {
   };
 
   public sendMessage = async (messageData: any, clientMessageId?: string) => {
+    // Rate limiting: 10 messages per 10 seconds
+    const userId = this.currentUser?.id || 'anonymous';
+    if (!rateLimiter.tryPerform('message', userId)) {
+      const blockTime = rateLimiter.getBlockTimeRemaining('message', userId);
+      logger.warn(`[ChatService] Message rate limited for user ${userId}. Blocked for ${Math.ceil(blockTime / 1000)}s`);
+      throw new Error(`Слишком много сообщений. Подождите ${Math.ceil(blockTime / 1000)} секунд.`);
+    }
     return this.messageService.sendMessage(messageData, clientMessageId);
   };
 
@@ -361,7 +369,7 @@ export class ChatService {
   public async saveCanvasStrokes(sheetId: string, strokes: Omit<CanvasPath, 'id' | 'createdAt'>[]) {
     const batch = writeBatch(this.firestore);
     const pathsCollection = collection(this.firestore, 'rooms', this.roomId, 'canvasPaths');
-    
+
     strokes.forEach(stroke => {
       const docRef = doc(pathsCollection);
       batch.set(docRef, {
@@ -370,7 +378,7 @@ export class ChatService {
         createdAt: serverTimestamp(),
       });
     });
-    
+
     await batch.commit();
   }
 

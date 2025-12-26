@@ -376,6 +376,8 @@ export function ChatRoom({ roomId }: { roomId: string }) {
                             onMobileBack={handleMobileBack}
                             hideSearch={isMobile}
                             navigationState={currentState}
+                            onSettings={handleSettings}
+                            onLogout={handleLogout}
                         />
                     )}
 

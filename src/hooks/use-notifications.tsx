@@ -6,7 +6,7 @@ import { useToast } from './use-toast';
 interface NotificationOptions {
     title: string;
     body: string;
-    icon?
+    icon?: string;
     tag?: string;
     requireInteraction?: boolean;
     silent?: boolean;

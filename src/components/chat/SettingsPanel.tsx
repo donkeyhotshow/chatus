@@ -43,15 +43,29 @@ export function SettingsPanel({ isOpen, onClose, onClearChat }: SettingsPanelPro
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-            <div className="bg-black/95 rounded-2xl w-full max-w-md border border-white/[0.08] overflow-hidden shadow-2xl">
+        <div
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+            onClick={(e) => {
+                // Close on backdrop click
+                if (e.target === e.currentTarget) {
+                    onClose();
+                }
+            }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="settings-title"
+        >
+            <div
+                className="bg-black/95 rounded-2xl w-full max-w-md border border-white/[0.08] overflow-hidden shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+            >
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center">
                             <Settings className="w-5 h-5 text-white" />
                         </div>
-                        <h2 className="text-lg font-semibold text-white">Настройки</h2>
+                        <h2 id="settings-title" className="text-lg font-semibold text-white">Настройки</h2>
                     </div>
                     <button
                         onClick={onClose}

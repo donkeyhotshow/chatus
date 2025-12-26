@@ -31,6 +31,8 @@ interface ChatAreaProps {
     onMobileBack?: () => void;
     hideSearch?: boolean;
     navigationState?: NavigationState | null;
+    onSettings?: () => void;
+    onLogout?: () => void;
 }
 
 export const ChatArea = memo(function ChatArea({
@@ -39,6 +41,8 @@ export const ChatArea = memo(function ChatArea({
     onMobileBack,
     hideSearch = false,
     navigationState,
+    onSettings,
+    onLogout,
 }: ChatAreaProps) {
     const [replyTo, setReplyTo] = useState<Message | null>(null);
     const [showDoodlePad, setShowDoodlePad] = useState(false);
@@ -382,8 +386,12 @@ export const ChatArea = memo(function ChatArea({
                     isOnline={isOnline}
                     onBack={onMobileBack}
                     onSearchOpen={hideSearch ? undefined : handleSearchOpen}
+                    onSettings={onSettings}
+                    onLogout={onLogout}
                     navigationState={navigationState}
                     showBreadcrumb={true}
+                    currentUserName={user.name}
+                    currentUserAvatar={user.avatar}
                 />
 
                 {/* Messages */}
