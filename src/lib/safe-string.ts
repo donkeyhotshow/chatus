@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify';
 /**
  * SafeStringUtils - Безопасная обработка Unicode строк для поиска
  *
@@ -204,14 +205,25 @@ export function highlightMatches(text: string, query: string): string {
   }
 }
 
+
 /**
  * Санитизирует HTML для предотвращения XSS атак.
- *
+ * 
  * @param str - Строка для санитизации
  * @returns Безопасная HTML строка
  */
 function sanitizeHtml(str: string): string {
   if (!str) return '';
+  
+  // Use DOMPurify if window is available (client-side)
+  if (typeof window !== 'undefined') {
+    return DOMPurify.sanitize(str, {
+      ALLOWED_TAGS: ['mark', 'b', 'i', 'em', 'strong', 'span'],
+      ALLOWED_ATTR: ['class']
+    });
+  }
+  
+  // Fallback for server-side or if DOMPurify is not available
   return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -219,3 +231,4 @@ function sanitizeHtml(str: string): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+

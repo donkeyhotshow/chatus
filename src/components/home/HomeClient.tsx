@@ -2,14 +2,17 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { doc, getDoc } from 'firebase/firestore';
 import { ArrowRight, Plus, Menu, X, MessageCircle, PenTool, Gamepad2, User, Key, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/icons/logo';
 import { useToast } from '@/hooks/use-toast';
+import { useFirebase } from '@/components/firebase/FirebaseProvider';
 import { cn } from '@/lib/utils';
 import { isTestMode } from '@/lib/mock-services';
 import { isSafari, safariSafeClick, forceSafariButtonState } from '@/lib/safari-workarounds';
 import { logger } from '@/lib/logger';
+
 
 export function HomeClient() {
     const [roomCode, setRoomCode] = useState('');
@@ -52,37 +55,60 @@ export function HomeClient() {
                            /^[A-Z0-9]+$/.test(roomCode.trim());
     const isFormValid = isUsernameValid && isRoomCodeValid;
 
+    const { db } = useFirebase();
+
     const handleJoinRoom = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (isConnecting || !isFormValid) return;
+        if (isConnecting || !isFormValid || !db) return;
 
         const trimmedUsername = username.trim();
-        const trimmedRoomCode = roomCode.trim();
+        const trimmedRoomCode = roomCode.trim().toUpperCase();
 
         setIsConnecting(true);
         localStorage.setItem('chatUsername', trimmedUsername);
 
-        // Safari workaround: use setTimeout to ensure state is updated
-        const navigateToRoom = () => {
-            try {
-                router.push(`/chat/${trimmedRoomCode}`);
-            } catch (error) {
-                setIsConnecting(false);
-                logger.error('Failed to navigate to room', error as Error, { roomCode: trimmedRoomCode });
-                toast({
-                    title: "Ошибка",
-                    description: "Не удалось подключиться",
-                    variant: "destructive"
-                });
-            }
-        };
+        try {
+            // BUG-003 FIX: Check if room exists before navigating
+            const roomRef = doc(db, 'rooms', trimmedRoomCode);
+            const roomSnap = await getDoc(roomRef);
 
-        if (isSafari()) {
-            setTimeout(navigateToRoom, 10);
-        } else {
-            navigateToRoom();
+            if (!roomSnap.exists()) {
+                // If room doesn't exist, we'll create it in ChatService, 
+                // but we should at least log it or show a different message
+                logger.info('Room does not exist, will be created', { roomCode: trimmedRoomCode });
+            }
+
+            // Safari workaround: use setTimeout to ensure state is updated
+            const navigateToRoom = () => {
+                try {
+                    router.push(`/chat/${trimmedRoomCode}`);
+                } catch (error) {
+                    setIsConnecting(false);
+                    logger.error('Failed to navigate to room', error as Error, { roomCode: trimmedRoomCode });
+                    toast({
+                        title: "Ошибка",
+                        description: "Не удалось подключиться",
+                        variant: "destructive"
+                    });
+                }
+            };
+
+            if (isSafari()) {
+                setTimeout(navigateToRoom, 10);
+            } else {
+                navigateToRoom();
+            }
+        } catch (error) {
+            setIsConnecting(false);
+            logger.error('Error checking room existence', error as Error, { roomCode: trimmedRoomCode });
+            toast({
+                title: "Ошибка подключения",
+                description: "Проверьте интернет-соединение",
+                variant: "destructive"
+            });
         }
     };
+
 
     // Safari-safe create room handler with fallback
     const handleCreateRoom = useCallback(() => {

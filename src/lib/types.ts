@@ -90,7 +90,7 @@ export interface CanvasState {
 
 export type AppType = 'canvas' | 'games';
 
-export type GameType = 'tic-tac-toe' | 'rock-paper-scissors' | 'click-war' | 'dice-roll' | 'maze' | 'physics-sandbox' | 'tower-defense' | 'car-race';
+export type GameType = 'tic-tac-toe' | 'rock-paper-scissors' | 'click-war' | 'dice-roll' | 'maze' | 'physics-sandbox' | 'tower-defense' | 'car-race' | 'snake';
 
 // --- Tower Defense Specific Types ---
 export type TDNode = {
@@ -169,4 +169,15 @@ export interface GameState {
     rotation: number;
     color: number;
   }};
+  // Snake
+  snakePlayers?: { [userId: string]: {
+    id: string;
+    body: { x: number; y: number }[];
+    direction: { x: number; y: number };
+    score: number;
+    color: string;
+    isDead: boolean;
+  }};
+  snakeFood?: { x: number; y: number };
+  snakeActive?: boolean;
 }

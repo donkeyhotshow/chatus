@@ -1,13 +1,13 @@
-"use client";
-
-import { GameState, UserProfile } from "@/lib/types";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { Button } from "../ui/button";
-import { Progress } from "../ui/progress";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
-import { Swords, ArrowLeft } from "lucide-react";
-import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
+import { motion, AnimatePresence } from "framer-motion";
+import { Swords, ArrowLeft, Trophy, Zap } from "lucide-react";
+import { GameState, UserProfile } from "@/lib/types";
 import { useActionGuard, calculateTimeLeft, hapticFeedback } from "@/lib/game-utils";
+import { cn } from "@/lib/utils";
+import { PremiumButton } from "../ui/premium-button";
+import { PremiumCard, PremiumCardContent, PremiumCardDescription, PremiumCardHeader, PremiumCardTitle, PremiumCardFooter } from "../ui/premium-card";
+import { Progress } from "../ui/progress";
+import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 
 type ClickWarProps = {
   onGameEnd: () => void;
@@ -23,8 +23,7 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
   const myScore = gameState.scores?.[user.id] || 0;
   const otherScore = otherUser ? gameState.scores?.[otherUser.id] || 0 : 0;
   const isActive = !!gameState.active;
-  // BUG-007 FIX: Game is over only if it was actually played (has startTime AND is not active)
-  // Check that scores exist and at least one player has clicked
+  
   const hasBeenPlayed = (
     gameState.startTime !== null &&
     gameState.startTime !== undefined &&
@@ -35,21 +34,16 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
   const isGameOver = !isActive && hasBeenPlayed;
   const startTime = gameState.startTime || null;
 
-  // Оптимистичное состояние для UI
   const [optimisticScore, setOptimisticScore] = useState(myScore);
   const [timeLeft, setTimeLeft] = useState(() =>
     calculateTimeLeft(startTime, GAME_DURATION)
   );
 
-  // Буфер для быстрых кликов
   const clickBufferRef = useRef<number>(0);
-  const lastSyncRef = useRef<number>(Date.now());
   const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
   const { guard } = useActionGuard();
   const animationFrameRef = useRef<number | undefined>(undefined);
 
-  // Синхронизация таймера с сервером
   useEffect(() => {
     if (!isActive || !startTime) {
       setTimeLeft(0);
@@ -79,15 +73,12 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
     };
   }, [isActive, startTime, user.id, gameState.hostId, updateGameState]);
 
-  // Синхронизация оптимистичного счета с реальным
   useEffect(() => {
     setOptimisticScore(myScore);
   }, [myScore]);
 
-  // Периодическая синхронизация буфера кликов с сервером
   useEffect(() => {
     if (!isActive) {
-      // Очищаем буфер при завершении игры
       if (clickBufferRef.current > 0) {
         const finalScore = myScore + clickBufferRef.current;
         const newScores = { ...gameState.scores, [user.id]: finalScore };
@@ -97,7 +88,6 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
       return;
     }
 
-    // Синхронизируем буфер каждые 100ms для поддержки быстрых кликов
     syncIntervalRef.current = setInterval(() => {
       if (clickBufferRef.current > 0) {
         const bufferedClicks = clickBufferRef.current;
@@ -106,7 +96,6 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
         const newScore = (gameState.scores?.[user.id] || 0) + bufferedClicks;
         const newScores = { ...gameState.scores, [user.id]: newScore };
         updateGameState({ scores: newScores });
-        lastSyncRef.current = Date.now();
       }
     }, 100);
 
@@ -118,7 +107,6 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
   }, [isActive, gameState.scores, myScore, updateGameState, user.id]);
 
   const handleStart = guard(() => {
-    // Only the host can start the game
     if (user.id !== gameState.hostId && gameState.hostId) return;
 
     const scores: {[key: string]: number} = {[user.id]: 0};
@@ -130,27 +118,20 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
     updateGameState({
       scores,
       active: true,
-      startTime: now, // Синхронизируем время начала
+      startTime: now,
       hostId: user.id
     });
 
     hapticFeedback('medium');
   });
 
-  // Обработчик клика без throttle - все клики учитываются
   const handleClick = useCallback(() => {
     if (!isActive || timeLeft <= 0) return;
-
-    // Оптимистичное обновление UI - мгновенно
     setOptimisticScore(prev => prev + 1);
-
-    // Добавляем в буфер вместо немедленной отправки
     clickBufferRef.current += 1;
-
     hapticFeedback('light');
   }, [isActive, timeLeft]);
 
-  // Убираем throttle для поддержки быстрых кликов
   const handleClickGuarded = guard(() => {
     handleClick();
   });
@@ -159,76 +140,153 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
   const totalScore = displayScore + otherScore;
   const myProgress = totalScore > 0 ? (displayScore / totalScore) * 100 : 50;
 
-  const getWinnerName = () => {
+  const getWinnerId = () => {
     const finalMyScore = gameState.scores?.[user.id] || 0;
     const finalOtherScore = otherUser ? (gameState.scores?.[otherUser.id] || 0) : 0;
-    if (finalMyScore > finalOtherScore) return user.name;
-    if (finalOtherScore > finalMyScore) return otherUser?.name || 'Opponent';
-    return null;
+    if (finalMyScore > finalOtherScore) return user.id;
+    if (finalOtherScore > finalMyScore) return otherUser?.id;
+    return 'draw';
   }
 
-  const winnerName = getWinnerName();
-  const resultText = isGameOver ? (winnerName ? `${winnerName} победил!` : "Ничья!") : null;
+  const winnerId = getWinnerId();
+  const isDraw = winnerId === 'draw';
+  const isWinner = winnerId === user.id;
 
   let description = `Кликайте как можно быстрее ${GAME_DURATION} секунд!`;
   if(isActive) description = `Осталось: ${Math.ceil(timeLeft)} сек`;
-  if(resultText) description = `Результат: ${resultText}`;
   if(!otherUser) description = "Ожидание соперника...";
 
   return (
     <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-4">
-        <Card className="bg-black/90 border-white/[0.06] backdrop-blur-xl w-full max-w-sm">
-            <CardHeader>
-                <CardTitle className="font-headline text-2xl flex items-center justify-center gap-2 text-white"><Swords />Кликер</CardTitle>
-                <CardDescription className="text-white/50">{description}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center gap-4">
-                 <div className="w-full flex justify-between items-center gap-4 px-2">
-                    <div className="flex items-center gap-2">
-                        <Avatar className="w-8 h-8">
-                            <AvatarImage src={user.avatar} alt={user.name} />
-                            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <span className="font-bold text-white text-lg">{displayScore}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="font-bold text-white/40 text-lg">{otherScore}</span>
-                         <Avatar className="w-8 h-8">
-                            <AvatarImage src={otherUser?.avatar} alt={otherUser?.name} />
-                            <AvatarFallback>{otherUser ? otherUser.name.charAt(0) : '?'}</AvatarFallback>
-                        </Avatar>
-                    </div>
-                </div>
-                <Progress
-                  value={myProgress}
-                  className="h-3 w-full bg-white/5 [&>div]:bg-gradient-to-r [&>div]:from-violet-600 [&>div]:to-purple-600 transition-all duration-150"
-                />
+      <PremiumCard variant="glass" glow className="w-full max-w-sm overflow-visible">
+        <PremiumCardHeader>
+          <PremiumCardTitle className="flex items-center justify-center gap-2">
+            <Swords className="text-violet-500" />
+            Кликер
+          </PremiumCardTitle>
+          <PremiumCardDescription>{description}</PremiumCardDescription>
+        </PremiumCardHeader>
+        
+        <PremiumCardContent className="flex flex-col items-center gap-6">
+          {/* Score Board */}
+          <div className="w-full flex justify-between items-center gap-4 px-2">
+            <motion.div 
+              animate={isActive ? { scale: [1, 1.1, 1] } : {}}
+              transition={{ duration: 0.2 }}
+              className="flex flex-col items-center gap-2"
+            >
+              <Avatar className={cn("w-12 h-12 border-2", isWinner && isGameOver ? "border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.5)]" : "border-white/10")}>
+                <AvatarImage src={user.avatar} alt={user.name} />
+                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <span className="font-bold text-white text-2xl">{displayScore}</span>
+              <span className="text-[10px] uppercase tracking-widest text-white/40 font-semibold">ВЫ</span>
+            </motion.div>
 
-                {!isActive ? (
-                    <Button
-                      onClick={handleStart}
-                      className="w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:shadow-lg hover:shadow-violet-500/25 transition-all min-h-[48px]"
-                      disabled={!otherUser}
-                    >
-                        {isGameOver ? "Play Again" : "Start Game"}
-                    </Button>
+            <div className="flex flex-col items-center">
+              <div className="text-white/20 font-black text-xl italic">VS</div>
+            </div>
+
+            <motion.div 
+              animate={isActive ? { scale: [1, 1.05, 1] } : {}}
+              className="flex flex-col items-center gap-2"
+            >
+              <Avatar className={cn("w-12 h-12 border-2", !isWinner && !isDraw && isGameOver ? "border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.5)]" : "border-white/10")}>
+                <AvatarImage src={otherUser?.avatar} alt={otherUser?.name} />
+                <AvatarFallback>{otherUser ? otherUser.name.charAt(0) : '?'}</AvatarFallback>
+              </Avatar>
+              <span className="font-bold text-white/60 text-2xl">{otherScore}</span>
+              <span className="text-[10px] uppercase tracking-widest text-white/40 font-semibold">ОППОНЕНТ</span>
+            </motion.div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="w-full space-y-2">
+            <Progress
+              value={myProgress}
+              className="h-3 w-full bg-white/5 [&>div]:bg-gradient-to-r [&>div]:from-violet-600 [&>div]:to-purple-600 transition-all duration-300"
+            />
+            <div className="flex justify-between text-[10px] font-bold text-white/30 uppercase tracking-tighter">
+              <span>{Math.round(myProgress)}%</span>
+              <span>{Math.round(100 - myProgress)}%</span>
+            </div>
+          </div>
+
+          {/* Game Over Overlay */}
+          <AnimatePresence>
+            {isGameOver && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md rounded-2xl p-6"
+              >
+                {isDraw ? (
+                  <>
+                    <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mb-4">
+                      <Swords className="w-8 h-8 text-white/60" />
+                    </div>
+                    <h2 className="text-3xl font-black text-white mb-1">НИЧЬЯ!</h2>
+                    <p className="text-white/50 mb-6">Отличная битва, воины!</p>
+                  </>
                 ) : (
-                    <Button
-                      onClick={handleClickGuarded}
-                      className="w-full h-24 text-2xl font-bold transition-transform active:scale-95 bg-gradient-to-r from-rose-600 to-red-600 hover:shadow-lg hover:shadow-rose-500/25"
-                      variant="destructive"
+                  <>
+                    <motion.div 
+                      animate={{ rotate: [0, -10, 10, -10, 0] }}
+                      transition={{ repeat: Infinity, duration: 2 }}
+                      className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mb-4"
                     >
-                        CLICK!
-                    </Button>
+                      <Trophy className="w-8 h-8 text-yellow-500" />
+                    </motion.div>
+                    <h2 className="text-3xl font-black text-white mb-1">
+                      {isWinner ? "ПОБЕДА!" : "ПОРАЖЕНИЕ"}
+                    </h2>
+                    <p className="text-white/50 mb-6">
+                      {isWinner ? "Вы были быстрее молнии!" : "В следующий раз повезет!"}
+                    </p>
+                  </>
                 )}
-            </CardContent>
-            <CardFooter className="p-4">
-                 <Button onClick={onGameEnd} variant="ghost" size="sm" className="w-full text-white/40 hover:text-white min-h-[44px]">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Вернуться в лобби
-                </Button>
-            </CardFooter>
-        </Card>
+                
+                <PremiumButton 
+                  onClick={handleStart} 
+                  className="w-full"
+                  glow
+                  disabled={user.id !== gameState.hostId && !!gameState.hostId}
+                >
+                  {user.id === gameState.hostId ? "ИГРАТЬ СНОВА" : "ЖДЕМ ХОСТА..."}
+                </PremiumButton>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Action Button */}
+          {!isActive ? (
+            <PremiumButton
+              onClick={handleStart}
+              className="w-full"
+              disabled={!otherUser || (user.id !== gameState.hostId && !!gameState.hostId)}
+              glow
+            >
+              {user.id === gameState.hostId ? "НАЧАТЬ ИГРУ" : "ЖДЕМ ХОСТА..."}
+            </PremiumButton>
+          ) : (
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={handleClickGuarded}
+              className="w-full h-32 rounded-2xl text-3xl font-black transition-all bg-gradient-to-br from-rose-500 to-red-700 text-white shadow-[0_10px_30px_rgba(225,29,72,0.4)] flex flex-col items-center justify-center gap-2"
+            >
+              <Zap className="w-8 h-8 fill-current" />
+              ЖМИ!
+            </motion.button>
+          )}
+        </PremiumCardContent>
+
+        <PremiumCardFooter>
+          <PremiumButton onClick={onGameEnd} variant="ghost" size="sm" className="w-full opacity-50 hover:opacity-100">
+            <ArrowLeft className="w-4 h-4" />
+            Вернуться в лобби
+          </PremiumButton>
+        </PremiumCardFooter>
+      </PremiumCard>
     </div>
   );
 }

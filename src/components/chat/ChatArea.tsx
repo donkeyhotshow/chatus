@@ -16,13 +16,13 @@ import { useDoc } from '@/hooks/useDoc';
 import { useChatPersistence, useUserPreferences } from '@/hooks/use-chat-persistence';
 import { logger } from '@/lib/logger';
 import { NetworkConnectionStatus } from '@/components/ui/connection-status';
+import { getNotificationSound } from '@/lib/notification-sound';
 import { MobileErrorHandler } from '../mobile/MobileErrorHandler';
 import { ChatHeader } from './ChatHeader';
 import MessageList from './MessageList';
 import { NewMessageNotification } from './NewMessageNotification';
 import { TypingIndicator } from './TypingIndicator';
 import { EnhancedMessageInput } from './EnhancedMessageInput';
-import { getNotificationSound } from '@/lib/notification-sound';
 
 interface ChatAreaProps {
     user: UserProfile;
@@ -430,7 +430,7 @@ export const ChatArea = memo(function ChatArea({
                                 <p className="text-xs font-medium text-[var(--text-primary)]">
                                     Ответ для {replyTo.user.name}
                                 </p>
-                                <p className="text-xs text-[var(--text-muted)] truncate">
+                                <p className="text-xs text-white/60 truncate">
                                     {replyTo.imageUrl && !replyTo.text ? 'Изображение' : replyTo.text}
                                 </p>
                             </div>
@@ -496,7 +496,7 @@ function EmptyState({ onSend }: { onSend: (text: string) => void }) {
             <h3 className="text-2xl font-bold text-white mb-3">
                 Начните общение
             </h3>
-            <p className="text-sm text-white/40 mb-10 max-w-xs leading-relaxed">
+            <p className="text-sm text-white/60 mb-10 max-w-xs leading-relaxed">
                 Отправьте первое сообщение или выберите быстрый ответ ниже
             </p>
             <div className="flex flex-wrap justify-center gap-3 max-w-sm">

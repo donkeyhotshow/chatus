@@ -7,6 +7,7 @@ import { Message, UserProfile } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import DOMPurify from 'dompurify';
 import {
     sanitizeCyrillicInput,
     normalizeUnicode,
@@ -17,10 +18,8 @@ import { createSearchDebouncer } from '@/lib/search-debouncer';
 
 // Helper function to sanitize HTML to prevent XSS (kept for backward compatibility)
 function sanitizeHtml(str: string): string {
-    return str
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+    if (typeof window === 'undefined') return str;
+    return DOMPurify.sanitize(str);
 }
 
 // Helper to safely get date from message
@@ -371,10 +370,13 @@ export function ChatSearch({
                                             <div
                                                 className="text-sm text-neutral-300 line-clamp-2"
                                                 dangerouslySetInnerHTML={{
-                                                    __html: result.highlightedText.replace(
+                                                    __html: DOMPurify.sanitize(result.highlightedText.replace(
                                                         /<mark>/g,
                                                         '<mark class="bg-cyan-500/30 text-cyan-300 px-1 rounded">'
-                                                    )
+                                                    ), {
+                                                        ALLOWED_TAGS: ['mark'],
+                                                        ALLOWED_ATTR: ['class']
+                                                    })
                                                 }}
                                             />
 

@@ -102,7 +102,7 @@ export const ChatHeader = memo(function ChatHeader({
                                     )}
                                     <p className={cn(
                                         "text-xs truncate",
-                                        isOnline ? "text-emerald-400/80" : "text-white/40"
+                                        isOnline ? "text-emerald-400/80" : "text-white/60"
                                     )}>
                                         {isOnline ? 'В сети' : 'Не в сети'}
                                     </p>
@@ -186,7 +186,7 @@ export const CompactChatHeader = memo(function CompactChatHeader({
                         {title}
                     </h1>
                     {subtitle && (
-                        <p className="text-xs text-white/40 truncate">
+                        <p className="text-xs text-white/60 truncate">
                             {subtitle}
                         </p>
                     )}

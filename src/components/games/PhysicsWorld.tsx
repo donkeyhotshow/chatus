@@ -35,6 +35,7 @@ export default function PhysicsWorld({ roomId, user, onGameEnd }: PhysicsWorldPr
 
   const [selectedTool, setSelectedTool] = useState<'box' | 'circle' | 'drag' | 'erase'>('box');
   const [mouseConstraint, setMouseConstraint] = useState<Matter.MouseConstraint | null>(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current || !canvasRef.current) return;
@@ -137,20 +138,10 @@ export default function PhysicsWorld({ roomId, user, onGameEnd }: PhysicsWorldPr
       };
     } catch (error) {
       console.error('Failed to initialize Physics World:', error);
-      // Fallback: show error message instead of infinite loading
-      if (containerRef.current) {
-        containerRef.current.innerHTML = `
-          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: white; text-align: center;">
-            <h3>Physics Engine Failed to Load</h3>
-            <p>There was an error initializing the physics simulation.</p>
-            <button onclick="window.location.reload()" style="margin-top: 10px; padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer;">
-              Reload Page
-            </button>
-          </div>
-        `;
-      }
+      setError(true);
     }
   }, []);
+
 
   useEffect(() => {
     if (mouseConstraint) {
@@ -270,14 +261,26 @@ export default function PhysicsWorld({ roomId, user, onGameEnd }: PhysicsWorldPr
 
         </div>
         <div ref={containerRef} className="flex-1 relative overflow-hidden" style={{ cursor: getCursor() }}>
-          <canvas
-            ref={canvasRef}
-            onClick={handleCanvasClick}
-            className="absolute inset-0 w-full h-full touch-none block"
-          />
-          <div className="absolute bottom-2 left-0 right-0 text-center pointer-events-none opacity-20">
-            <span className="text-[9px] font-mono text-white uppercase tracking-[0.2em]">Physics Sandbox</span>
-          </div>
+          {error ? (
+            <div className="flex flex-col items-center justify-center h-full text-white text-center p-4">
+              <h3 className="text-lg font-semibold mb-2">Physics Engine Failed to Load</h3>
+              <p className="text-sm text-neutral-400 mb-4">There was an error initializing the physics simulation.</p>
+              <Button onClick={() => window.location.reload()} variant="default">
+                Reload Page
+              </Button>
+            </div>
+          ) : (
+            <>
+              <canvas
+                ref={canvasRef}
+                onClick={handleCanvasClick}
+                className="absolute inset-0 w-full h-full touch-none block"
+              />
+              <div className="absolute bottom-2 left-0 right-0 text-center pointer-events-none opacity-20">
+                <span className="text-[9px] font-mono text-white uppercase tracking-[0.2em]">Physics Sandbox</span>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </TooltipProvider>

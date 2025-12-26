@@ -1,6 +1,5 @@
-"use client";
-
 import { useState, useRef, useCallback, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Smile, Image as ImageIcon, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Message } from '@/lib/types';
@@ -8,7 +7,6 @@ import {
     isIOS,
     createIOSViewportManager,
 } from '@/lib/ios-viewport-manager';
-
 import { StickerPicker } from './StickerPicker';
 
 // Common emoji list for quick picker
@@ -265,7 +263,7 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
         <div
             ref={containerRef}
             className={cn(
-                "p-3 safe-bottom bg-black/95 backdrop-blur-2xl",
+                "p-3 safe-bottom bg-black/95 backdrop-blur-2xl border-t border-white/5",
                 isKeyboardVisible && isIOS() && "ios-keyboard-visible",
                 isKeyboardVisible && isAndroid() && isLandscape() && "android-landscape-keyboard",
                 className
@@ -283,29 +281,38 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
             }}
         >
             {/* Reply preview */}
-            {replyTo && (
-                <div className="mb-3 p-3 bg-white/[0.03] rounded-xl border-l-2 border-violet-500 flex items-center justify-between">
-                    <div className="min-w-0 flex-1">
-                        <p className="text-xs font-semibold text-violet-400">
-                            Ответ для {replyTo.user?.name}
-                        </p>
-                        <p className="text-xs text-white/50 truncate mt-0.5">
-                            {replyTo.text || 'Изображение'}
-                        </p>
-                    </div>
-                    {onCancelReply && (
-                        <button onClick={onCancelReply} className="p-2 text-white/40 hover:text-white rounded-lg hover:bg-white/[0.05] transition-colors">
-                            <X className="w-4 h-4" />
-                        </button>
-                    )}
-                </div>
-            )}
+            <AnimatePresence>
+                {replyTo && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="mb-3 p-3 bg-white/[0.03] rounded-xl border-l-2 border-violet-500 flex items-center justify-between"
+                    >
+                        <div className="min-w-0 flex-1">
+                            <p className="text-xs font-semibold text-violet-400">
+                                Ответ для {replyTo.user?.name}
+                            </p>
+                            <p className="text-xs text-white/50 truncate mt-0.5">
+                                {replyTo.text || 'Изображение'}
+                            </p>
+                        </div>
+                        {onCancelReply && (
+                            <button onClick={onCancelReply} className="p-2 text-white/40 hover:text-white rounded-lg hover:bg-white/[0.05] transition-colors">
+                                <X className="w-4 h-4" />
+                            </button>
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Input row */}
             <div className="flex items-end gap-2" role="group" aria-label="Ввод сообщения">
                 {/* Emoji button and picker */}
                 <div className="relative" ref={emojiPickerRef}>
-                    <button
+                    <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                         type="button"
                         onClick={() => setShowEmojiPicker(prev => !prev)}
                         disabled={disabled}
@@ -319,47 +326,59 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                         )}
                     >
                         <Smile className="w-5 h-5" aria-hidden="true" />
-                    </button>
+                    </motion.button>
 
                     {/* Emoji picker dropdown - Premium glass style with mobile adaptation */}
-                    {showEmojiPicker && (
-                        <>
-                            {/* Mobile backdrop */}
-                            <div
-                                className="fixed inset-0 bg-black/50 z-40 md:hidden"
-                                onClick={() => setShowEmojiPicker(false)}
-                            />
-                            <div className={cn(
-                                "bg-black/95 border border-white/10 rounded-2xl shadow-2xl z-50 backdrop-blur-2xl",
-                                // Desktop: absolute positioning
-                                "md:absolute md:bottom-full md:left-0 md:mb-2",
-                                // Mobile: fixed bottom sheet
-                                "fixed bottom-0 left-0 right-0 md:bottom-auto md:right-auto",
-                                "rounded-b-none md:rounded-2xl",
-                                "p-3 md:p-2"
-                            )}>
-                                {/* Mobile drag handle */}
-                                <div className="md:hidden flex justify-center pb-2">
-                                    <div className="w-10 h-1 bg-neutral-600 rounded-full" />
-                                </div>
-                                <div className="grid grid-cols-6 gap-1 md:gap-0.5">
-                                    {QUICK_EMOJIS.map((emoji) => (
-                                        <button
-                                            key={emoji}
-                                            type="button"
-                                            onClick={() => handleEmojiSelect(emoji)}
-                                            className="p-3 md:p-2.5 text-2xl md:text-xl hover:bg-white/10 active:bg-white/20 rounded-xl transition-all duration-150 active:scale-90 touch-target"
-                                            aria-label={`Вставить ${emoji}`}
-                                        >
-                                            {emoji}
-                                        </button>
-                                    ))}
-                                </div>
-                                {/* Safe area for mobile */}
-                                <div className="h-[env(safe-area-inset-bottom,0px)] md:hidden" />
-                            </div>
-                        </>
-                    )}
+                    <AnimatePresence>
+                        {showEmojiPicker && (
+                            <>
+                                {/* Mobile backdrop */}
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                                    onClick={() => setShowEmojiPicker(false)}
+                                />
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                                    className={cn(
+                                        "bg-black/95 border border-white/10 rounded-2xl shadow-2xl z-50 backdrop-blur-2xl",
+                                        // Desktop: absolute positioning
+                                        "md:absolute md:bottom-full md:left-0 md:mb-2",
+                                        // Mobile: fixed bottom sheet
+                                        "fixed bottom-0 left-0 right-0 md:bottom-auto md:right-auto",
+                                        "rounded-b-none md:rounded-2xl",
+                                        "p-3 md:p-2"
+                                    )}
+                                >
+                                    {/* Mobile drag handle */}
+                                    <div className="md:hidden flex justify-center pb-2">
+                                        <div className="w-10 h-1 bg-neutral-600 rounded-full" />
+                                    </div>
+                                    <div className="grid grid-cols-6 gap-1 md:gap-0.5">
+                                        {QUICK_EMOJIS.map((emoji) => (
+                                            <motion.button
+                                                key={emoji}
+                                                whileHover={{ scale: 1.2 }}
+                                                whileTap={{ scale: 0.8 }}
+                                                type="button"
+                                                onClick={() => handleEmojiSelect(emoji)}
+                                                className="p-3 md:p-2.5 text-2xl md:text-xl hover:bg-white/10 active:bg-white/20 rounded-xl transition-all duration-150 touch-target"
+                                                aria-label={`Вставить ${emoji}`}
+                                            >
+                                                {emoji}
+                                            </motion.button>
+                                        ))}
+                                    </div>
+                                    {/* Safe area for mobile */}
+                                    <div className="h-[env(safe-area-inset-bottom,0px)] md:hidden" />
+                                </motion.div>
+                            </>
+                        )}
+                    </AnimatePresence>
                 </div>
 
                 {/* Sticker Picker */}
@@ -423,7 +442,9 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
 
                 {/* Image button */}
                 {onFileUpload && (
-                    <button
+                    <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={disabled}
@@ -431,11 +452,14 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                         className="p-2.5 rounded-xl text-white/40 hover:text-white/70 hover:bg-white/[0.05] transition-all duration-200 touch-target disabled:opacity-50 min-w-[44px] min-h-[44px]"
                     >
                         <ImageIcon className="w-5 h-5" aria-hidden="true" />
-                    </button>
+                    </motion.button>
                 )}
 
                 {/* Send button - Premium gradient */}
-                <button
+                <motion.button
+                    layout
+                    whileHover={canSend && !isSending ? { scale: 1.05 } : {}}
+                    whileTap={canSend && !isSending ? { scale: 0.95 } : {}}
                     ref={sendButtonRef}
                     onClick={handleSend}
                     disabled={!canSend || isSending}
@@ -443,7 +467,7 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                     className={cn(
                         "p-3 rounded-2xl transition-all duration-300 min-w-[48px] min-h-[48px] flex items-center justify-center",
                         canSend && !isSending
-                            ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/30 hover:shadow-xl hover:shadow-violet-500/40 hover:scale-105 active:scale-95"
+                            ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-[0_4px_15px_rgba(124,58,237,0.3)] hover:shadow-[0_6px_20px_rgba(124,58,237,0.4)]"
                             : "bg-white/[0.04] text-white/20 cursor-not-allowed"
                     )}
                 >
@@ -452,7 +476,7 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                     ) : (
                         <Send className="w-5 h-5" aria-hidden="true" />
                     )}
-                </button>
+                </motion.button>
             </div>
         </div>
     );

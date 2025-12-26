@@ -3,10 +3,12 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, ArrowUp, ArrowDown, Calendar, User, MessageCircle } from 'lucide-react';
-import { Message, UserProfile } from '@/lib/types';
-import { cn } from '@/lib/utils';
+import DOMPurify from 'dompurify';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import { Message, UserProfile } from '@/lib/types';
+import { cn } from '@/lib/utils';
+
 
 // Helper function to escape regex special characters
 function escapeRegex(str: string): string {
@@ -15,11 +17,10 @@ function escapeRegex(str: string): string {
 
 // Helper function to sanitize HTML to prevent XSS
 function sanitizeHtml(str: string): string {
-    return str
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+    if (typeof window === 'undefined') return str;
+    return DOMPurify.sanitize(str);
 }
+
 
 // Helper to safely get date from message
 function getMessageDate(createdAt: unknown): Date {
@@ -291,10 +292,13 @@ export function MessageSearch({
                                             <div
                                                 className="text-sm text-neutral-300 line-clamp-2"
                                                 dangerouslySetInnerHTML={{
-                                                    __html: result.highlightedText.replace(
+                                                    __html: DOMPurify.sanitize(result.highlightedText.replace(
                                                         /<mark>/g,
                                                         '<mark class="bg-cyan-500/30 text-cyan-300 px-1 rounded">'
-                                                    )
+                                                    ), {
+                                                        ALLOWED_TAGS: ['mark'],
+                                                        ALLOWED_ATTR: ['class']
+                                                    })
                                                 }}
                                             />
 

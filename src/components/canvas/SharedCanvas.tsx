@@ -75,7 +75,8 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
   const [strokeWidth, setStrokeWidth] = useState(4);
   const [brushType, setBrushType] = useState<BrushType>('normal');
 
-  // Remote cursors state (IMP-002)
+  // Real-time paths from RTDB (BUG-004)
+  const [realtimePaths, setRealtimePaths] = useState<Map<string, CanvasPath>>(new Map());
   const [remoteCursors, setRemoteCursors] = useState<Map<string, RemoteCursor>>(new Map());
   const realtimeServiceRef = useRef<RealtimeCanvasService | null>(null);
   const cursorColor = useMemo(() => user ? generateCursorColor(user.id) : '#3B82F6', [user]);
@@ -127,13 +128,50 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
         setRemoteCursors(new Map(cursors));
       });
 
+      // BUG-004 FIX: Subscribe to real-time strokes
+      rtService.subscribeToStrokes(
+        (stroke) => {
+          if (!stroke.id) return;
+          
+          const path: CanvasPath = {
+            id: stroke.id,
+            sheetId: sheetId,
+            points: stroke.points,
+            color: stroke.color,
+            strokeWidth: stroke.width,
+            tool: stroke.tool,
+            brush: stroke.brush || 'normal',
+            createdAt: stroke.timestamp ? { seconds: Math.floor(stroke.timestamp / 1000), nanoseconds: 0 } : new Date(),
+            user: {
+              id: stroke.userId,
+              name: stroke.userName || 'Anonymous',
+              avatar: ''
+            }
+          };
+
+          setRealtimePaths(prev => {
+            const next = new Map(prev);
+            next.set(path.id, path);
+            return next;
+          });
+        },
+        (strokeId) => {
+          setRealtimePaths(prev => {
+            const next = new Map(prev);
+            next.delete(strokeId);
+            return next;
+          });
+        }
+      );
+
       realtimeServiceRef.current = rtService;
-      logger.info('RealtimeCanvasService initialized for cursors', { roomId, sheetId });
+      logger.info('RealtimeCanvasService initialized for cursors and strokes', { roomId, sheetId });
 
       return () => {
         rtService.destroy();
         realtimeServiceRef.current = null;
         setRemoteCursors(new Map());
+        setRealtimePaths(new Map());
       };
     } catch (error) {
       logger.error('Failed to initialize RealtimeCanvasService', error as Error);
@@ -356,13 +394,17 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
       }
     }
 
+    // Draw persistent paths from Firestore
     (paths || []).forEach(p => drawPath(ctx, p));
 
-  }, [getCanvasContext, drawPath, gameState, drawMaze, paths, isMazeActive]);
+    // Draw real-time paths from RTDB (BUG-004)
+    realtimePaths.forEach(p => drawPath(ctx, p));
+
+  }, [getCanvasContext, drawPath, gameState, drawMaze, paths, isMazeActive, realtimePaths]);
 
   useEffect(() => {
     redrawCanvas();
-  }, [paths, redrawCanvas]);
+  }, [paths, realtimePaths, redrawCanvas]);
 
   const checkMazeCollision = (x: number, y: number): boolean => {
     if (!isMazeActive || !gameState || gameState.type !== 'maze' || !gameState.maze) return false;
@@ -538,11 +580,21 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     stabilizerStateRef.current = clearPendingPoints(stabilizerStateRef.current);
 
     try {
-      // Use batcher for optimized sending
+      // BUG-004 FIX: Send to Realtime Database for immediate broadcast
+      if (realtimeServiceRef.current) {
+        realtimeServiceRef.current.addStroke({
+          points: points,
+          color: color,
+          width: stroke,
+          tool: tool,
+          brush: currentBrush
+        });
+      }
+
+      // Also save to Firestore for persistence
       if (batcherRef.current) {
         batcherRef.current.addStroke(finalPathData);
       } else if (service) {
-        // Fallback to direct save if batcher not ready
         await service.saveCanvasPath(finalPathData);
       }
     } catch (error) {
@@ -744,6 +796,11 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     if (!sheetId || !service) return;
 
     try {
+      // Clear RTDB strokes too
+      if (realtimeServiceRef.current) {
+        await realtimeServiceRef.current.clearCanvas();
+      }
+      
       await service.clearCanvasSheet(sheetId);
       toast({ title: "Canvas Cleared", description: "The current sheet has been cleared for everyone." });
     } catch (error) {
@@ -812,7 +869,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
             </button>
           </div>
 
-          {tool === 'pen' && !isMazeActive && (
+          {selectedTool === 'pen' && !isMazeActive && (
             <>
               <div className='px-2 pt-1 hidden md:block'>
                 <Slider
@@ -871,13 +928,19 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
           onSendToChat={handleSendToChat}
         />
       </div>
+      <RemoteCursors 
+        cursors={remoteCursors} 
+        scale={scale} 
+        translateX={translateX} 
+        translateY={translateY} 
+      />
       <canvas
         ref={canvasRef}
         width={800}
         height={600}
         className="w-full h-full block"
         style={{
-          cursor: tool === 'pen' ? 'crosshair' : 'cell',
+          cursor: selectedTool === 'pen' ? 'crosshair' : 'cell',
           transform: `translate(${translateX}px, ${translateY}px) scale(${scale})`,
           transformOrigin: '0 0',
           touchAction: 'none' // Prevent default touch behaviors

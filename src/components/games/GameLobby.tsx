@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useCallback, useMemo, lazy, Suspense } from 'react';
+import { doc } from 'firebase/firestore';
 import { Gamepad, ArrowLeft, Dices, Hand, Swords, Car } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { UserProfile, GameType, GameState } from '@/lib/types';
 import { useChatService } from '@/hooks/useChatService';
 import { useDoc } from '@/hooks/useDoc';
-import { doc } from 'firebase/firestore';
 import { useFirebase } from '../firebase/FirebaseProvider';
-import { cn } from '@/lib/utils';
 
 // Lazy load game components
 const TicTacToe = lazy(() => import('./TicTacToe').then(m => ({ default: m.TicTacToe })));
@@ -15,6 +15,7 @@ const RockPaperScissors = lazy(() => import('./RockPaperScissors').then(m => ({ 
 const ClickWar = lazy(() => import('./ClickWar').then(m => ({ default: m.ClickWar })));
 const DiceRoll = lazy(() => import('./DiceRoll').then(m => ({ default: m.DiceRoll })));
 const CarRace = lazy(() => import('./CarRace').then(m => ({ default: m.CarRace })));
+const SnakeGame = lazy(() => import('./SnakeGame').then(m => ({ default: m.SnakeGame })));
 
 type GameDefinition = {
   id: GameType;
@@ -31,6 +32,7 @@ const gamesList: GameDefinition[] = [
   { id: 'dice-roll', name: 'Кости', description: 'Бросьте кости', icon: Dices, gradient: 'from-amber-500 to-orange-600' },
   { id: 'click-war', name: 'Кликер', description: 'Кто быстрее?', icon: Swords, gradient: 'from-emerald-500 to-teal-600' },
   { id: 'car-race', name: 'Car Race', description: 'Гонки в реальном времени', icon: Car, gradient: 'from-blue-500 to-cyan-600' },
+  { id: 'snake', name: 'Змейка', description: 'Классика на двоих', icon: Gamepad, gradient: 'from-emerald-600 to-green-700' },
 ];
 
 type GameLobbyProps = {
@@ -55,7 +57,8 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
   const [activeGameId, setActiveGameId] = useState<GameType | null>(null);
   const [loadingGameId, setLoadingGameId] = useState<GameType | null>(null);
 
-  const { db } = useFirebase()!;
+  const firebase = useFirebase();
+  const db = firebase?.db;
   const { service } = useChatService(roomId, user);
 
   const gameDocRef = useMemo(() => {
@@ -92,6 +95,7 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
       'click-war': { scores: {}, active: false, startTime: null, hostId },
       'dice-roll': { diceRoll: {}, hostId },
       'car-race': { carRacePlayers: {}, hostId },
+      'snake': { snakeActive: false, hostId },
     };
 
     const initialState: Partial<GameState> = { type: gameId, ...initialStates[gameId] };
@@ -152,6 +156,7 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
               {activeGameId === 'click-war' && <ClickWar {...commonProps} gameState={gameState} />}
               {activeGameId === 'dice-roll' && <DiceRoll {...commonProps} gameState={gameState} />}
               {activeGameId === 'car-race' && <CarRace {...commonProps} gameState={gameState} />}
+              {activeGameId === 'snake' && <SnakeGame {...commonProps} gameState={gameState} />}
             </Suspense>
           ) : (
             <GameLoading />
