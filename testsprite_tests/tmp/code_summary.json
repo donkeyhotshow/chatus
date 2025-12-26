@@ -1,0 +1,100 @@
+{
+  "tech_stack": [
+    "TypeScript",
+    "Next.js 14",
+    "React 18",
+    "Firebase (Firestore, RTDB, Auth, Storage)",
+    "Tailwind CSS",
+    "Framer Motion",
+    "Three.js",
+    "Radix UI",
+    "Vitest"
+  ],
+  "features": [
+    {
+      "name": "HomeClient",
+      "description": "Landing page with login form, room code input, and room creation",
+      "files": ["src/components/home/HomeClient.tsx", "src/app/page.tsx"]
+    },
+    {
+      "name": "ChatRoom",
+      "description": "Main chat room component with messaging, navigation, and settings",
+      "files": ["src/components/chat/ChatRoom.tsx", "src/app/chat/[room]/page.tsx"]
+    },
+    {
+      "name": "ChatArea",
+      "description": "Message list, input field, and chat functionality",
+      "files": ["src/components/chat/ChatArea.tsx", "src/components/chat/MessageList.tsx", "src/components/chat/MessageInput.tsx"]
+    },
+    {
+      "name": "ProfileCreationDialog",
+      "description": "User profile creation with username and pixel avatar editor",
+      "files": ["src/components/chat/ProfileCreationDialog.tsx", "src/components/avatar/PixelAvatarEditor.tsx"]
+    },
+    {
+      "name": "SharedCanvas",
+      "description": "Collaborative drawing canvas with real-time sync",
+      "files": ["src/components/canvas/SharedCanvas.tsx", "src/components/canvas/FloatingToolbar.tsx", "src/components/canvas/RemoteCursors.tsx"]
+    },
+    {
+      "name": "MobileNavigation",
+      "description": "Bottom navigation for mobile with tabs: Chat, Canvas, Games",
+      "files": ["src/components/mobile/MobileNavigation.tsx", "src/components/mobile/MobileChatLayout.tsx"]
+    },
+    {
+      "name": "TicTacToe",
+      "description": "Multiplayer tic-tac-toe game",
+      "files": ["src/components/games/TicTacToe.tsx", "src/components/games/TicTacToe/AnimatedBoard.tsx"]
+    },
+    {
+      "name": "SnakeGame",
+      "description": "Snake game with real-time multiplayer",
+      "files": ["src/components/games/SnakeGame.tsx"]
+    },
+    {
+      "name": "CarRace",
+      "description": "Car racing game with joystick controls",
+      "files": ["src/components/games/CarRace.tsx"]
+    },
+    {
+      "name": "VibeJet",
+      "description": "3D flight game using Three.js",
+      "files": ["src/components/games/VibeJet.tsx"]
+    },
+    {
+      "name": "SettingsPanel",
+      "description": "User settings: theme, notifications, sound",
+      "files": ["src/components/chat/SettingsPanel.tsx"]
+    },
+    {
+      "name": "StickerPicker",
+      "description": "Sticker selection and sending",
+      "files": ["src/components/chat/StickerPicker.tsx"]
+    },
+    {
+      "name": "ChatService",
+      "description": "Firebase chat service for messages and rooms",
+      "files": ["src/services/ChatService.ts", "src/services/MessageService.ts", "src/services/RoomService.ts"]
+    },
+    {
+      "name": "RealtimeCanvasService",
+      "description": "Real-time canvas sync via Firebase RTDB",
+      "files": ["src/services/RealtimeCanvasService.ts"]
+    },
+    {
+      "name": "useCurrentUser",
+      "description": "Hook for current user state and profile",
+      "files": ["src/hooks/useCurrentUser.ts"]
+    },
+    {
+      "name": "useChatService",
+      "description": "Hook for chat service integration",
+      "files": ["src/hooks/useChatService.ts"]
+    },
+    {
+      "name": "useIsMobile",
+      "description": "Hook for mobile device detection",
+      "files": ["src/hooks/use-mobile.tsx"]
+    }
+  ]
+}

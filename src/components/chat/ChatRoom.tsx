@@ -131,7 +131,7 @@ export function ChatRoom({ roomId }: { roomId: string }) {
     const firebaseContext = useFirebase();
     const isMobile = useIsMobile();
     const connectionState = useConnectionStatus();
-    const { currentState, navigateTo, goBack, updateState } = useNavigationState({ roomId });
+    const { currentState, goBack, updateState } = useNavigationState({ roomId });
 
     const { user, isLoading, createProfile, error: userError } = useCurrentUser(roomId);
     const [isCreating, setIsCreating] = useState(false);
@@ -190,22 +190,31 @@ export function ChatRoom({ roomId }: { roomId: string }) {
         }
     }, [isMobile, activeTab, goBack, router, updateState]);
 
-    // Swipe gestures for mobile navigation
+    // Swipe gestures for mobile navigation with haptic feedback
     const swipeHandlers = useSwipe({
         onSwipedLeft: () => {
             if (isMobile && activeTab === 'chat') {
+                if ('vibrate' in navigator) navigator.vibrate(10);
                 setActiveTab('canvas');
+                updateState('canvas');
             } else if (isMobile && activeTab === 'canvas') {
+                if ('vibrate' in navigator) navigator.vibrate(10);
                 setActiveTab('games');
+                updateState('game');
             }
         },
         onSwipedRight: () => {
             if (isMobile && activeTab === 'games') {
+                if ('vibrate' in navigator) navigator.vibrate(10);
                 setActiveTab('canvas');
+                updateState('canvas');
             } else if (isMobile && activeTab === 'canvas') {
+                if ('vibrate' in navigator) navigator.vibrate(10);
                 setActiveTab('chat');
+                updateState('chat');
             }
         },
+        preventOnInteractive: true, // Don't trigger swipes on buttons, inputs, etc.
     });
 
     const roomDocRef = useMemo(() => {

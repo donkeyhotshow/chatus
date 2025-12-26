@@ -45,7 +45,13 @@ export function CollaborationSpace({
   mobileActiveTab,
 }: CollaborationSpaceProps) {
   const { service } = useChatService(roomId, user || undefined);
-  const [activeTab, setActiveTab] = useState<'games' | 'canvas' | 'users' | 'stats'>('games');
+  // BUG #15 FIX: Initialize activeTab based on mobileActiveTab prop
+  const [activeTab, setActiveTab] = useState<'games' | 'canvas' | 'users' | 'stats'>(() => {
+    if (mobileActiveTab === 'canvas') return 'canvas';
+    if (mobileActiveTab === 'games') return 'games';
+    if (mobileActiveTab === 'users') return 'users';
+    return 'games';
+  });
   const [canvasHeight, setCanvasHeight] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('collabspace-canvas-height');

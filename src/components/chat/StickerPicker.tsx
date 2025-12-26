@@ -75,11 +75,21 @@ export function StickerPicker({ onSelect, onClose }: StickerPickerProps) {
       {/* Trigger Button */}
       <button
         type="button"
-        onPointerDown={(e) => {
+        onClick={(e) => {
           e.preventDefault();
+          e.stopPropagation();
           handleToggle();
         }}
-        className="p-2.5 rounded-xl text-white/40 hover:text-white/70 hover:bg-white/[0.05] transition-all duration-200 min-w-[44px] min-h-[44px] relative z-[105]"
+        onTouchEnd={(e) => {
+          // Android fix: handle touch events explicitly
+          e.preventDefault();
+          e.stopPropagation();
+          handleToggle();
+        }}
+        className={cn(
+          "p-2.5 rounded-xl text-white/40 hover:text-white/70 hover:bg-white/[0.05] transition-all duration-200 min-w-[44px] min-h-[44px] relative z-[105]",
+          isOpen && "text-white/70 bg-white/[0.05]"
+        )}
         title="Стикеры"
         aria-label="Стикеры"
         aria-expanded={isOpen}

@@ -26,7 +26,7 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
   const opponentId = isVsAI ? AI_PLAYER_ID : otherUser?.id;
   const otherScore = opponentId ? gameState.scores?.[opponentId] || 0 : 0;
   const isActive = !!gameState.active;
-  
+
   const hasBeenPlayed = (
     gameState.startTime !== null &&
     gameState.startTime !== undefined &&
@@ -158,19 +158,21 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
     hapticFeedback('medium');
   });
 
-  const handleClick = useCallback(() => {
+  // Direct click handler without guard for maximum responsiveness
+  const handleClickDirect = useCallback((e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (!isActive || timeLeft <= 0) return;
+
+    // Immediate optimistic update
     setOptimisticScore(prev => prev + 1);
     clickBufferRef.current += 1;
     hapticFeedback('light');
   }, [isActive, timeLeft]);
 
-  const handleClickGuarded = guard(() => {
-    handleClick();
-  });
-
   const displayScore = isActive ? optimisticScore : myScore;
   const totalScore = displayScore + otherScore;
+  // Fix: show 50/50 when no clicks yet, otherwise calculate actual progress
   const myProgress = totalScore > 0 ? (displayScore / totalScore) * 100 : 50;
 
   const getWinnerId = () => {
@@ -199,11 +201,11 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
           </PremiumCardTitle>
           <PremiumCardDescription>{description}</PremiumCardDescription>
         </PremiumCardHeader>
-        
+
         <PremiumCardContent className="flex flex-col items-center gap-6">
           {/* Score Board */}
           <div className="w-full flex justify-between items-center gap-4 px-2">
-            <motion.div 
+            <motion.div
               animate={isActive ? { scale: [1, 1.1, 1] } : {}}
               transition={{ duration: 0.2 }}
               className="flex flex-col items-center gap-2"
@@ -225,7 +227,7 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
               )}
             </div>
 
-            <motion.div 
+            <motion.div
               animate={isActive ? { scale: [1, 1.05, 1] } : {}}
               className="flex flex-col items-center gap-2"
             >
@@ -276,7 +278,7 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
                   </>
                 ) : (
                   <>
-                    <motion.div 
+                    <motion.div
                       animate={{ rotate: [0, -10, 10, -10, 0] }}
                       transition={{ repeat: Infinity, duration: 2 }}
                       className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mb-4"
@@ -291,9 +293,9 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
                     </p>
                   </>
                 )}
-                
-                <PremiumButton 
-                  onClick={handleStart} 
+
+                <PremiumButton
+                  onClick={handleStart}
                   className="w-full"
                   glow
                   disabled={user.id !== gameState.hostId && !!gameState.hostId}
@@ -317,8 +319,12 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
           ) : (
             <motion.button
               whileTap={{ scale: 0.9 }}
-              onClick={handleClickGuarded}
-              className="w-full h-32 rounded-2xl text-3xl font-black transition-all bg-gradient-to-br from-rose-500 to-red-700 text-white shadow-[0_10px_30px_rgba(225,29,72,0.4)] flex flex-col items-center justify-center gap-2"
+              onClick={handleClickDirect}
+              onTouchStart={handleClickDirect}
+              onTouchEnd={(e) => e.preventDefault()}
+              onPointerDown={handleClickDirect}
+              className="w-full h-32 rounded-2xl text-3xl font-black transition-all bg-gradient-to-br from-rose-500 to-red-700 text-white shadow-[0_10px_30px_rgba(225,29,72,0.4)] flex flex-col items-center justify-center gap-2 select-none touch-none"
+              style={{ touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none' }}
             >
               <Zap className="w-8 h-8 fill-current" />
               ЖМИ!

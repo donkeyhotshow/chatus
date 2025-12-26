@@ -314,8 +314,15 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         type="button"
-                        onPointerDown={(e) => {
+                        onClick={(e) => {
                             e.preventDefault();
+                            e.stopPropagation();
+                            setShowEmojiPicker(prev => !prev);
+                        }}
+                        onTouchEnd={(e) => {
+                            // BUG #14 FIX: Handle touch events for mobile
+                            e.preventDefault();
+                            e.stopPropagation();
                             setShowEmojiPicker(prev => !prev);
                         }}
                         disabled={disabled}

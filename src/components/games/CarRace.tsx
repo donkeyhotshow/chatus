@@ -136,7 +136,7 @@ function normalizeAngle(angle: number): number {
     return angle;
 }
 
-export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser, roomId }: CarRaceProps) {
+export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser }: CarRaceProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const gameLoopRef = useRef<number | null>(null);
@@ -160,10 +160,10 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
     const { guard } = useActionGuard();
     const isMobile = useIsMobile();
 
-    // Joystick state for mobile
+    // Joystick state for mobile (reserved for future joystick implementation)
     const joystickRef = useRef<{ angle: number; force: number }>({ angle: 0, force: 0 });
     const joystickActiveRef = useRef(false);
-    const joystickCenterRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+    // joystickCenterRef reserved for future use
 
     // Responsive canvas sizing
     useEffect(() => {
@@ -267,6 +267,10 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
                 if (prev === null || prev <= 1) {
                     clearInterval(interval);
                     setRaceStartTime(performance.now());
+                    // BUG #8 FIX: Auto-focus canvas for keyboard input after countdown
+                    setTimeout(() => {
+                        canvasRef.current?.focus();
+                    }, 100);
                     return null;
                 }
                 hapticFeedback('light');
@@ -548,7 +552,6 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
             ai.rotation += turnDir * TURN_SPEED * 0.8 * dt;
 
             // Accelerate if facing target
-            const speed = Math.sqrt(ai.vx ** 2 + ai.vy ** 2);
             if (Math.abs(angleDiff) < 0.5) {
                 ai.vx += Math.cos(ai.rotation) * ACCELERATION * 0.7 * dt;
                 ai.vy += Math.sin(ai.rotation) * ACCELERATION * 0.7 * dt;
@@ -991,7 +994,11 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
                     ref={canvasRef}
                     width={canvasSize.width}
                     height={canvasSize.height}
-                    className="rounded-xl border-2 border-white/10 shadow-2xl"
+                    className="rounded-xl border-2 border-white/10 shadow-2xl outline-none focus:ring-2 focus:ring-violet-500/50"
+                    tabIndex={0}
+                    onClick={() => canvasRef.current?.focus()}
+                    onTouchStart={() => canvasRef.current?.focus()}
+                    style={{ cursor: 'default' }}
                 />
             </div>
 

@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GameState, UserProfile } from '@/lib/types';
 import { RealtimeSnakeService, SnakeGameState, SnakeData } from '@/services/RealtimeSnakeService';
 import { db as realtimeDb } from '@/lib/firebase';
-import { useToast } from '@/hooks/use-toast';
+// useToast removed - not currently used
 import { PremiumCard, PremiumCardContent, PremiumCardHeader, PremiumCardTitle, PremiumCardFooter } from '../ui/premium-card';
 import { PremiumButton } from '../ui/premium-button';
 import { Trophy, Zap, ArrowLeft, Gamepad2 } from 'lucide-react';
@@ -97,10 +97,14 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
     rtServiceRef.current.updateFood(newFood);
   }, []);
 
-  const handleStart = () => {
-    if (!rtServiceRef.current) return;
+  const handleStart = useCallback(() => {
+    // BUG #9 FIX: Check if service is ready before starting
+    if (!rtServiceRef.current) {
+      console.warn('[SnakeGame] Service not ready, cannot start');
+      return;
+    }
 
-    const isHost = user.id === gameState.hostId;
+    const isHost = user.id === gameState.hostId || !gameState.hostId;
     const startX = isHost ? 5 : 15;
     const startY = isHost ? 10 : 10;
     const startDir = isHost ? { x: 1, y: 0 } : { x: -1, y: 0 };
@@ -118,27 +122,26 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
     nextDirectionRef.current = startDir;
     setMySnake(initialSnake);
 
-    if (isHost) {
-      rtServiceRef.current.setGameState(true, Date.now());
-      spawnFood();
+    // Always set game state if we're starting (either as host or if no host exists)
+    rtServiceRef.current.setGameState(true, Date.now());
+    spawnFood();
 
-      // Spawn AI if no other user
-      if (!otherUser) {
-        const initialAiSnake = {
-            userName: 'AI Bot 🤖',
-            body: [{ x: 15, y: 10 }, { x: 16, y: 10 }, { x: 17, y: 10 }],
-            direction: { x: -1, y: 0 },
-            score: 0,
-            color: '#EC4899',
-            isDead: false
-        };
-        setAiSnake(initialAiSnake);
-        rtServiceRef.current.updateOtherSnake('ai-bot', initialAiSnake);
-      }
+    // Spawn AI if no other user
+    if (!otherUser) {
+      const initialAiSnake = {
+          userName: 'AI Bot 🤖',
+          body: [{ x: 15, y: 10 }, { x: 16, y: 10 }, { x: 17, y: 10 }],
+          direction: { x: -1, y: 0 },
+          score: 0,
+          color: '#EC4899',
+          isDead: false
+      };
+      setAiSnake(initialAiSnake);
+      rtServiceRef.current.updateOtherSnake('ai-bot', initialAiSnake);
     }
 
     hapticFeedback('medium');
-  };
+  }, [user.id, user.name, gameState.hostId, otherUser, spawnFood]);
 
   // Game Loop
   useEffect(() => {
@@ -444,7 +447,19 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
         </PremiumCardContent>
 
         <PremiumCardFooter>
-          <PremiumButton onClick={onGameEnd} variant="ghost" size="sm" className="w-full opacity-50 hover:opacity-100">
+          <PremiumButton
+            onClick={() => {
+              // BUG #10 FIX: Cleanup service before exiting to prevent timeout
+              if (rtServiceRef.current) {
+                rtServiceRef.current.destroy();
+                rtServiceRef.current = null;
+              }
+              onGameEnd();
+            }}
+            variant="ghost"
+            size="sm"
+            className="w-full opacity-50 hover:opacity-100"
+          >
             <ArrowLeft className="w-4 h-4" />
             Вернуться в лобби
           </PremiumButton>

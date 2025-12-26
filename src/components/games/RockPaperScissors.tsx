@@ -36,7 +36,7 @@ export function RockPaperScissors({ onGameEnd, updateGameState, gameState, user,
 
     const isVsAI = !otherUser;
     const opponent = otherUser || { id: AI_BOT_ID, name: 'AI Bot', avatar: '' };
-    
+
     const myMove = gameState.moves?.[user.id];
     const otherMove = gameState.moves?.[opponent.id];
     const { guard } = useActionGuard();
@@ -49,25 +49,30 @@ export function RockPaperScissors({ onGameEnd, updateGameState, gameState, user,
         }
     }, [gameState.moves]);
 
-    // AI Move Logic
+    // AI Move Logic - Fixed to prevent infinite loop
     useEffect(() => {
-        if (isVsAI && myMove && !otherMove && !gameState.result) {
-            const timer = setTimeout(() => {
-                const aiMove = choices[Math.floor(Math.random() * choices.length)].id;
-                const newMoves = { ...gameState.moves, [user.id]: myMove, [AI_BOT_ID]: aiMove };
-                const outcome = outcomes[myMove][aiMove];
-                
-                let resultText = "";
-                if (outcome === 'win') resultText = `${user.name} Wins!`;
-                else if (outcome === 'lose') resultText = `AI Bot Wins!`;
-                else resultText = "It's a Draw!";
-                
-                updateGameState({ moves: newMoves, result: resultText });
-                hapticFeedback('medium');
-            }, 1000 + Math.random() * 1000);
-            return () => clearTimeout(timer);
-        }
-    }, [isVsAI, myMove, otherMove, gameState.result, user.name, updateGameState]);
+        // Only run if: playing vs AI, player made move, AI hasn't moved, no result yet
+        if (!isVsAI || !myMove || otherMove || gameState.result) return;
+
+        const timer = setTimeout(() => {
+            const aiMove = choices[Math.floor(Math.random() * choices.length)].id;
+            const outcome = outcomes[myMove][aiMove];
+
+            let resultText = "";
+            if (outcome === 'win') resultText = `${user.name} Wins!`;
+            else if (outcome === 'lose') resultText = `AI Bot Wins!`;
+            else resultText = "It's a Draw!";
+
+            updateGameState({
+                moves: { ...gameState.moves, [AI_BOT_ID]: aiMove },
+                result: resultText
+            });
+            hapticFeedback('medium');
+        }, 1000 + Math.random() * 1000);
+
+        return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isVsAI, myMove, otherMove, gameState.result]);
 
     const handlePlay = guard((...args: unknown[]) => {
         const move = args[0] as 'rock' | 'paper' | 'scissors';

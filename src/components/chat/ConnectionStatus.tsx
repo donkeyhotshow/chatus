@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Wifi, WifiOff, RefreshCw, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getConnectionManager, ConnectionState } from '@/lib/connection-manager';
@@ -23,13 +23,16 @@ export function ConnectionStatus({ className }: ConnectionStatusProps) {
   const [showBanner, setShowBanner] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
+  const previousStatusRef = useRef<string>('online');
 
   useEffect(() => {
     const manager = getConnectionManager();
     if (!manager) return;
 
     const unsubscribe = manager.subscribe((state) => {
-      const wasOffline = connectionState.status !== 'online';
+      const wasOffline = previousStatusRef.current !== 'online';
+      previousStatusRef.current = state.status;
+
       setConnectionState(state);
 
       // Show banner for non-online states
@@ -48,12 +51,16 @@ export function ConnectionStatus({ className }: ConnectionStatusProps) {
       }
     });
 
-    setIsInitialized(true);
+    // Small delay before marking as initialized to avoid false "reconnected" on mount
+    const initTimer = setTimeout(() => {
+      setIsInitialized(true);
+    }, 1000);
 
     return () => {
       unsubscribe();
+      clearTimeout(initTimer);
     };
-  }, [isInitialized, connectionState.status]);
+  }, [isInitialized]);
 
   // Don't show anything if online and banner is hidden
   if (!showBanner && connectionState.status === 'online') {

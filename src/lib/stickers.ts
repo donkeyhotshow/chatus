@@ -1,7 +1,18 @@
 import data from './stickers.json';
 
 export type Sticker = {
-  src: string;
+  localPath: string;
+  emoji: string;
 };
 
-export const stickers: Sticker[] = data.stickers;
+export type StickerPack = {
+  shortName: string;
+  title: string;
+  stickerCount: number;
+  stickers: Sticker[];
+};
+
+export const stickerPacks: StickerPack[] = data.packs;
+
+// Flatten all stickers for backward compatibility
+export const stickers: Sticker[] = data.packs.flatMap(pack => pack.stickers);

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo, Suspense } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import {
     PerspectiveCamera,
@@ -58,6 +58,10 @@ function Aircraft({ modelUrl, isPlayer, position, quaternion, name, color }: {
     const copiedScene = useMemo(() => scene.clone(), [scene]);
     const groupRef = useRef<THREE.Group>(null);
 
+    // Reusable objects for interpolation to avoid GC pressure
+    const targetPosition = useMemo(() => new THREE.Vector3(), []);
+    const targetQuaternion = useMemo(() => new THREE.Quaternion(), []);
+
     useEffect(() => {
         copiedScene.traverse((child) => {
             if (child instanceof THREE.Mesh) {
@@ -69,12 +73,33 @@ function Aircraft({ modelUrl, isPlayer, position, quaternion, name, color }: {
                 }
             }
         });
+
+        // Cleanup cloned materials on unmount
+        return () => {
+            copiedScene.traverse((child) => {
+                if (child instanceof THREE.Mesh) {
+                    if (child.material) {
+                        if (Array.isArray(child.material)) {
+                            child.material.forEach(m => m.dispose());
+                        } else {
+                            child.material.dispose();
+                        }
+                    }
+                    if (child.geometry) {
+                        child.geometry.dispose();
+                    }
+                }
+            });
+        };
     }, [copiedScene, isPlayer, color]);
 
     useFrame(() => {
         if (!isPlayer && groupRef.current && position && quaternion) {
-            groupRef.current.position.lerp(new THREE.Vector3(...position), 0.1);
-            groupRef.current.quaternion.slerp(new THREE.Quaternion(...quaternion), 0.1);
+            // Reuse objects instead of creating new ones each frame
+            targetPosition.set(position[0], position[1], position[2]);
+            targetQuaternion.set(quaternion[0], quaternion[1], quaternion[2], quaternion[3]);
+            groupRef.current.position.lerp(targetPosition, 0.1);
+            groupRef.current.quaternion.slerp(targetQuaternion, 0.1);
         }
     });
 
@@ -107,6 +132,13 @@ function Terrain() {
         return geo;
     }, []);
 
+    // Cleanup geometry on unmount to prevent memory leaks
+    useEffect(() => {
+        return () => {
+            geometry.dispose();
+        };
+    }, [geometry]);
+
     return (
         <mesh ref={meshRef} geometry={geometry} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
             <meshStandardMaterial color="#1a1a1a" roughness={0.8} metalness={0.2} />
@@ -118,6 +150,8 @@ function Terrain() {
 function InstancedSkyscrapers({ count = 200 }) {
     const meshRef = useRef<THREE.InstancedMesh>(null);
     const tempObject = useMemo(() => new THREE.Object3D(), []);
+    const geometryRef = useRef<THREE.BoxGeometry | null>(null);
+    const materialRef = useRef<THREE.MeshStandardMaterial | null>(null);
 
     useEffect(() => {
         if (!meshRef.current) return;
@@ -135,6 +169,15 @@ function InstancedSkyscrapers({ count = 200 }) {
             meshRef.current.setMatrixAt(i, tempObject.matrix);
         }
         meshRef.current.instanceMatrix.needsUpdate = true;
+
+        // Store refs for cleanup
+        geometryRef.current = meshRef.current.geometry as THREE.BoxGeometry;
+        materialRef.current = meshRef.current.material as THREE.MeshStandardMaterial;
+
+        return () => {
+            geometryRef.current?.dispose();
+            materialRef.current?.dispose();
+        };
     }, [count, tempObject]);
 
     return (
@@ -148,6 +191,8 @@ function InstancedSkyscrapers({ count = 200 }) {
 function Trees({ count = 500 }) {
     const meshRef = useRef<THREE.InstancedMesh>(null);
     const tempObject = useMemo(() => new THREE.Object3D(), []);
+    const geometryRef = useRef<THREE.ConeGeometry | null>(null);
+    const materialRef = useRef<THREE.MeshStandardMaterial | null>(null);
 
     useEffect(() => {
         if (!meshRef.current) return;
@@ -162,6 +207,15 @@ function Trees({ count = 500 }) {
             meshRef.current.setMatrixAt(i, tempObject.matrix);
         }
         meshRef.current.instanceMatrix.needsUpdate = true;
+
+        // Store refs for cleanup
+        geometryRef.current = meshRef.current.geometry as THREE.ConeGeometry;
+        materialRef.current = meshRef.current.material as THREE.MeshStandardMaterial;
+
+        return () => {
+            geometryRef.current?.dispose();
+            materialRef.current?.dispose();
+        };
     }, [count, tempObject]);
 
     return (
@@ -205,25 +259,29 @@ function Castle() {
     );
 }
 
-function World() {
+function World({ isMobile }: { isMobile?: boolean }) {
     return (
         <>
             <Sky distance={450000} sunPosition={[0, 1, 0]} inclination={0} azimuth={0.25} />
-            <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
+            <Stars radius={100} depth={50} count={isMobile ? 2000 : 5000} factor={4} saturation={0} fade speed={1} />
             <Terrain />
-            <InstancedSkyscrapers />
-            <Trees />
+            <InstancedSkyscrapers count={isMobile ? 100 : 200} />
+            <Trees count={isMobile ? 200 : 500} />
             <Castle />
-            <Cloud position={[-1000, 1000, -1000]} speed={0.2} opacity={0.5} />
-            <Cloud position={[1000, 1200, 1000]} speed={0.2} opacity={0.5} />
-            <Cloud position={[0, 1500, 2000]} speed={0.2} opacity={0.5} />
+            {!isMobile && (
+                <>
+                    <Cloud position={[-1000, 1000, -1000]} speed={0.2} opacity={0.5} />
+                    <Cloud position={[1000, 1200, 1000]} speed={0.2} opacity={0.5} />
+                    <Cloud position={[0, 1500, 2000]} speed={0.2} opacity={0.5} />
+                </>
+            )}
             <Environment preset="night" />
             <ambientLight intensity={0.2} />
             <directionalLight
                 position={[100, 1000, 100]}
                 intensity={1.5}
-                castShadow
-                shadow-mapSize={[2048, 2048]}
+                castShadow={!isMobile}
+                shadow-mapSize={isMobile ? [512, 512] : [2048, 2048]}
             />
         </>
     );
@@ -238,7 +296,8 @@ export default function VibeJet({ onGameEnd, user, roomId }: {
 }) {
     const { rtdb } = useFirebase();
     const isMobile = useIsMobile();
-    const [_isStarted, _setIsStarted] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
     const [otherPlayers, setOtherPlayers] = useState<{ [userId: string]: VibeJetPlayerData }>({});
     const serviceRef = useRef<RealtimeVibeJetService | null>(null);
 
@@ -248,6 +307,39 @@ export default function VibeJet({ onGameEnd, user, roomId }: {
     const [projectiles, setProjectiles] = useState<{ id: string, position: THREE.Vector3, velocity: THREE.Vector3, createdAt: number }[]>([]);
     const [muzzleFlash, setMuzzleFlash] = useState<THREE.Vector3 | null>(null);
     const lastFireTimeRef = useRef(0);
+
+    // Reusable vectors for physics calculations to avoid GC pressure
+    const tempForward = useMemo(() => new THREE.Vector3(), []);
+    // tempPosition and tempVelocity reserved for future physics optimizations
+
+    // Projectile pool for object reuse
+    const projectilePoolRef = useRef<{ position: THREE.Vector3, velocity: THREE.Vector3 }[]>([]);
+    const MAX_PROJECTILES = 50;
+
+    // Handle model loading
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            if (isLoading) {
+                setLoadError('Завантаження займає занадто багато часу. Перевірте з\'єднання.');
+            }
+        }, 15000);
+        return () => clearTimeout(timeout);
+    }, [isLoading]);
+
+    // BUG #11 FIX: Check if Firebase RTDB is available
+    useEffect(() => {
+        if (!rtdb) {
+            console.warn('[VibeJet] Firebase RTDB not available');
+            // Don't set error immediately, give it time to initialize
+            const timeout = setTimeout(() => {
+                if (!rtdb) {
+                    setLoadError('Firebase не ініціалізовано. Спробуйте перезавантажити сторінку.');
+                    setIsLoading(false);
+                }
+            }, 5000);
+            return () => clearTimeout(timeout);
+        }
+    }, [rtdb]);
 
     // Controls
     const controlsRef = useRef({
@@ -260,6 +352,12 @@ export default function VibeJet({ onGameEnd, user, roomId }: {
         boost: false,
         fire: false
     });
+
+    // Handle canvas ready
+    const handleCanvasCreated = useCallback(() => {
+        setIsLoading(false);
+        setLoadError(null);
+    }, []);
 
     useEffect(() => {
         if (!rtdb) return;
@@ -279,6 +377,9 @@ export default function VibeJet({ onGameEnd, user, roomId }: {
         return () => {
             unsubscribe();
             service.destroy();
+            serviceRef.current = null;
+            // Clear projectile pool to free memory
+            projectilePoolRef.current = [];
         };
     }, [rtdb, roomId, user.id]);
 
@@ -339,10 +440,10 @@ export default function VibeJet({ onGameEnd, user, roomId }: {
         aircraft.rotateY(targetYaw * delta);
         aircraft.rotateZ(targetRoll * delta);
 
-        // Movement
+        // Movement - reuse tempForward vector
         const speed = PLAYER_SPEED * (controls.boost ? AFTERBURNER_MULTIPLIER : 1);
-        const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(aircraft.quaternion);
-        aircraft.position.add(forward.multiplyScalar(speed * delta));
+        tempForward.set(0, 0, 1).applyQuaternion(aircraft.quaternion);
+        aircraft.position.addScaledVector(tempForward, speed * delta);
 
         // Terrain Collision
         const terrainHeight = getTerrainHeight(aircraft.position.x, aircraft.position.z);
@@ -363,31 +464,52 @@ export default function VibeJet({ onGameEnd, user, roomId }: {
         // Fire
         if (controls.fire && Date.now() - lastFireTimeRef.current > 100 && stats.ammo > 0) {
             lastFireTimeRef.current = Date.now();
-            const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(aircraft.quaternion);
-            const pos = aircraft.position.clone().add(forward.clone().multiplyScalar(20));
-            const vel = forward.clone().multiplyScalar(1500);
 
-                setProjectiles(prev => [...prev, {
+            // Reuse vectors from pool or create new ones
+            let pooledObj = projectilePoolRef.current.pop();
+            if (!pooledObj) {
+                pooledObj = { position: new THREE.Vector3(), velocity: new THREE.Vector3() };
+            }
+
+            tempForward.set(0, 0, 1).applyQuaternion(aircraft.quaternion);
+            pooledObj.position.copy(aircraft.position).add(tempForward.clone().multiplyScalar(20));
+            pooledObj.velocity.copy(tempForward).multiplyScalar(1500);
+
+            setProjectiles(prev => {
+                // Limit max projectiles to prevent memory issues
+                const newProjectiles = prev.length >= MAX_PROJECTILES
+                    ? prev.slice(1)
+                    : prev;
+                return [...newProjectiles, {
                     id: Math.random().toString(36).substr(2, 9),
-                    position: pos,
-                    velocity: vel,
+                    position: pooledObj!.position,
+                    velocity: pooledObj!.velocity,
                     createdAt: Date.now()
-                }]);
-                setMuzzleFlash(pos);
-                setTimeout(() => setMuzzleFlash(null), 50);
-                setStats(prev => ({ ...prev, ammo: prev.ammo - 1 }));
+                }];
+            });
+            setMuzzleFlash(pooledObj.position.clone());
+            setTimeout(() => setMuzzleFlash(null), 50);
+            setStats(prev => ({ ...prev, ammo: prev.ammo - 1 }));
             hapticFeedback('light');
         }
 
-        // Update Projectiles
+        // Update Projectiles - optimized to avoid creating new objects
         setProjectiles(prev => {
             const now = Date.now();
-            return prev
-                .map(p => ({
-                    ...p,
-                    position: p.position.clone().add(p.velocity.clone().multiplyScalar(delta))
-                }))
-                .filter(p => now - p.createdAt < 3000);
+            const active: typeof prev = [];
+
+            for (const p of prev) {
+                if (now - p.createdAt < 3000) {
+                    // Update position in place instead of creating new Vector3
+                    p.position.addScaledVector(p.velocity, delta);
+                    active.push(p);
+                } else {
+                    // Return to pool for reuse
+                    projectilePoolRef.current.push({ position: p.position, velocity: p.velocity });
+                }
+            }
+
+            return active;
         });
 
         // Sync with Firebase
@@ -405,6 +527,33 @@ export default function VibeJet({ onGameEnd, user, roomId }: {
 
     return (
         <div className="relative w-full h-full bg-black overflow-hidden font-sans">
+            {/* Loading Overlay */}
+            {isLoading && (
+                <div className="absolute inset-0 z-30 bg-black flex flex-col items-center justify-center">
+                    <div className="w-12 h-12 border-2 border-white/10 border-t-violet-500 rounded-full animate-spin mb-4" />
+                    <p className="text-white/60 text-sm">Завантаження 3D моделей...</p>
+                </div>
+            )}
+
+            {/* Error Overlay */}
+            {loadError && (
+                <div className="absolute inset-0 z-30 bg-black flex flex-col items-center justify-center p-6 text-center">
+                    <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mb-4">
+                        <Gamepad2 className="w-8 h-8 text-red-500" />
+                    </div>
+                    <h2 className="text-xl font-bold text-white mb-2">Щось пішло не так</h2>
+                    <p className="text-white/60 mb-6 max-w-sm">{loadError}</p>
+                    <div className="flex gap-3">
+                        <Button onClick={() => window.location.reload()} variant="outline" className="border-white/20 text-white">
+                            Перезавантажити
+                        </Button>
+                        <Button onClick={onGameEnd} className="bg-violet-600 hover:bg-violet-700">
+                            Назад до ігор
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             {/* HUD */}
             <div className="absolute top-4 left-4 z-10 flex flex-col gap-2 pointer-events-none">
                 <div className="bg-black/60 backdrop-blur-md p-3 rounded-xl border border-white/10 shadow-2xl">
@@ -493,9 +642,23 @@ export default function VibeJet({ onGameEnd, user, roomId }: {
             )}
 
             {/* 3D Canvas */}
-            <Canvas shadows gl={{ antialias: true, powerPreference: "high-performance" }}>
+            <Canvas
+                shadows={!isMobile}
+                gl={{
+                    antialias: !isMobile,
+                    powerPreference: isMobile ? "low-power" : "high-performance",
+                    precision: isMobile ? "mediump" : "highp"
+                }}
+                dpr={isMobile ? [1, 1.5] : [1, 2]}
+                onCreated={handleCanvasCreated}
+                onError={(error) => {
+                    console.error('Canvas error:', error);
+                    setLoadError('Помилка ініціалізації 3D. Ваш браузер може не підтримувати WebGL.');
+                    setIsLoading(false);
+                }}
+            >
                 <Suspense fallback={null}>
-                    <World />
+                    <World isMobile={isMobile} />
 
                     {/* Player */}
                     <group ref={playerRef} position={[0, 500, 0]}>
@@ -540,22 +703,69 @@ export default function VibeJet({ onGameEnd, user, roomId }: {
 
             {/* Mobile Controls */}
             {isMobile && (
-                <div className="absolute bottom-8 right-8 z-10 flex flex-col gap-6">
-                    <button
-                        className="w-20 h-20 rounded-full bg-violet-500/30 backdrop-blur-xl border-2 border-white/10 flex items-center justify-center active:scale-90 transition-transform shadow-2xl"
-                        onPointerDown={() => controlsRef.current.boost = true}
-                        onPointerUp={() => controlsRef.current.boost = false}
-                    >
-                        <Zap className="w-10 h-10 text-white" />
-                    </button>
-                    <button
-                        className="w-20 h-20 rounded-full bg-red-500/30 backdrop-blur-xl border-2 border-white/10 flex items-center justify-center active:scale-90 transition-transform shadow-2xl"
-                        onPointerDown={() => controlsRef.current.fire = true}
-                        onPointerUp={() => controlsRef.current.fire = false}
-                    >
-                        <div className="w-6 h-6 bg-white rounded-full shadow-[0_0_20px_rgba(255,255,255,0.5)]" />
-                    </button>
-                </div>
+                <>
+                    {/* Left side - Direction controls */}
+                    <div className="absolute bottom-8 left-8 z-10 flex flex-col items-center gap-2">
+                        {/* Pitch Up */}
+                        <button
+                            className="w-16 h-16 rounded-xl bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center active:scale-90 active:bg-white/20 transition-all touch-none"
+                            onPointerDown={() => controlsRef.current.up = true}
+                            onPointerUp={() => controlsRef.current.up = false}
+                            onPointerLeave={() => controlsRef.current.up = false}
+                        >
+                            <div className="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-b-[15px] border-b-white/70" />
+                        </button>
+                        <div className="flex gap-2">
+                            {/* Roll Left */}
+                            <button
+                                className="w-16 h-16 rounded-xl bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center active:scale-90 active:bg-white/20 transition-all touch-none"
+                                onPointerDown={() => controlsRef.current.left = true}
+                                onPointerUp={() => controlsRef.current.left = false}
+                                onPointerLeave={() => controlsRef.current.left = false}
+                            >
+                                <div className="w-0 h-0 border-t-[10px] border-t-transparent border-b-[10px] border-b-transparent border-r-[15px] border-r-white/70" />
+                            </button>
+                            {/* Roll Right */}
+                            <button
+                                className="w-16 h-16 rounded-xl bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center active:scale-90 active:bg-white/20 transition-all touch-none"
+                                onPointerDown={() => controlsRef.current.right = true}
+                                onPointerUp={() => controlsRef.current.right = false}
+                                onPointerLeave={() => controlsRef.current.right = false}
+                            >
+                                <div className="w-0 h-0 border-t-[10px] border-t-transparent border-b-[10px] border-b-transparent border-l-[15px] border-l-white/70" />
+                            </button>
+                        </div>
+                        {/* Pitch Down */}
+                        <button
+                            className="w-16 h-16 rounded-xl bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center active:scale-90 active:bg-white/20 transition-all touch-none"
+                            onPointerDown={() => controlsRef.current.down = true}
+                            onPointerUp={() => controlsRef.current.down = false}
+                            onPointerLeave={() => controlsRef.current.down = false}
+                        >
+                            <div className="w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[15px] border-t-white/70" />
+                        </button>
+                    </div>
+
+                    {/* Right side - Action buttons */}
+                    <div className="absolute bottom-8 right-8 z-10 flex flex-col gap-4">
+                        <button
+                            className="w-20 h-20 rounded-full bg-violet-500/30 backdrop-blur-xl border-2 border-white/10 flex items-center justify-center active:scale-90 transition-transform shadow-2xl touch-none"
+                            onPointerDown={() => controlsRef.current.boost = true}
+                            onPointerUp={() => controlsRef.current.boost = false}
+                            onPointerLeave={() => controlsRef.current.boost = false}
+                        >
+                            <Zap className="w-10 h-10 text-white" />
+                        </button>
+                        <button
+                            className="w-20 h-20 rounded-full bg-red-500/30 backdrop-blur-xl border-2 border-white/10 flex items-center justify-center active:scale-90 transition-transform shadow-2xl touch-none"
+                            onPointerDown={() => controlsRef.current.fire = true}
+                            onPointerUp={() => controlsRef.current.fire = false}
+                            onPointerLeave={() => controlsRef.current.fire = false}
+                        >
+                            <div className="w-6 h-6 bg-white rounded-full shadow-[0_0_20px_rgba(255,255,255,0.5)]" />
+                        </button>
+                    </div>
+                </>
             )}
         </div>
     );

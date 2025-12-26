@@ -7,6 +7,17 @@ import { Reply, MoreHorizontal, Check, CheckCheck, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Message, UserProfile } from '@/lib/types';
 
+// XSS Protection: Sanitize text to prevent script injection
+function sanitizeText(text: string): string {
+    if (!text) return '';
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;');
+}
+
 interface MessageBubbleProps {
     message: Message;
     currentUser: UserProfile;
@@ -132,10 +143,11 @@ export const MessageBubble = memo(function MessageBubble({
                         </div>
                     )}
 
-                    {/* Message text */}
-                    <div className="text-[15px] leading-relaxed whitespace-pre-wrap">
-                        {message.text}
-                    </div>
+                    {/* Message text - XSS protected */}
+                    <div
+                        className="text-[15px] leading-relaxed whitespace-pre-wrap"
+                        dangerouslySetInnerHTML={{ __html: sanitizeText(message.text) }}
+                    />
 
                     {/* Own message timestamp with delivery status */}
                     {isOwn && (

@@ -131,11 +131,18 @@ class ConnectionManager {
 
     try {
       const start = Date.now();
+
+      // Use AbortController for better timeout handling (Vercel compatibility)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000); // Increased timeout for Vercel cold starts
+
       const response = await fetch('/api/health', {
         method: 'HEAD',
         cache: 'no-store',
-        signal: AbortSignal.timeout(5000),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
       const latency = Date.now() - start;
 
       if (response.ok) {
@@ -144,17 +151,31 @@ class ConnectionManager {
           this.state.rtt = latency;
         }
 
-        // Check if connection is slow based on latency
-        const isSlow = latency > 2000;
+        // Check if connection is slow based on latency (adjusted for Vercel)
+        // Vercel cold starts can take 2-3 seconds, so increase threshold
+        const isSlow = latency > 3000;
         if (isSlow !== this.state.isSlow) {
           this.state.isSlow = isSlow;
           this.state.status = isSlow ? 'slow' : 'online';
           this.notifyListeners();
         }
+
+        // If we were reconnecting and now got a response, mark as online
+        if (this.state.status === 'reconnecting') {
+          this.state.status = 'online';
+          this.state.reconnectAttempts = 0;
+          this.notifyListeners();
+        }
       }
-    } catch {
-      // Connection check failed - might be offline
-      logger.debug('[ConnectionManager] Connection check failed');
+    } catch (error) {
+      // Connection check failed - might be offline or Vercel cold start
+      logger.debug('[ConnectionManager] Connection check failed', { error: (error as Error).message });
+
+      // Don't immediately mark as offline - could be temporary
+      if (this.state.status === 'online' && this.state.reconnectAttempts === 0) {
+        // First failure - just log, don't change status yet
+        logger.debug('[ConnectionManager] First connection check failure, will retry');
+      }
     }
   }
 
@@ -173,12 +194,17 @@ class ConnectionManager {
       });
 
       try {
-        // Try to reach the server
+        // Try to reach the server with longer timeout for Vercel cold starts
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s for cold starts
+
         const response = await fetch('/api/health', {
           method: 'HEAD',
           cache: 'no-store',
-          signal: AbortSignal.timeout(5000),
+          signal: controller.signal,
         });
+
+        clearTimeout(timeoutId);
 
         if (response.ok) {
           // Successfully reconnected
@@ -189,17 +215,25 @@ class ConnectionManager {
           this.notifyListeners();
           return;
         }
-      } catch {
-        // Reconnection failed
+      } catch (error) {
+        // Reconnection failed - log for debugging
+        logger.debug('[ConnectionManager] Reconnection attempt failed', {
+          attempt: this.state.reconnectAttempts,
+          error: (error as Error).message
+        });
       }
 
-      // Schedule next attempt with exponential backoff
+      // Schedule next attempt with exponential backoff (max 30s delay)
       if (this.state.reconnectAttempts < this.maxReconnectAttempts) {
-        const delay = this.baseReconnectDelay * Math.pow(2, this.state.reconnectAttempts - 1);
+        const delay = Math.min(
+          this.baseReconnectDelay * Math.pow(2, this.state.reconnectAttempts - 1),
+          30000 // Cap at 30 seconds
+        );
+        logger.debug('[ConnectionManager] Scheduling next reconnect', { delay });
         this.reconnectTimer = setTimeout(attemptReconnect, delay);
       } else {
-        // Max attempts reached
-        logger.warn('[ConnectionManager] Max reconnection attempts reached');
+        // Max attempts reached - but don't give up completely
+        logger.warn('[ConnectionManager] Max reconnection attempts reached, will retry on user action');
         this.state.status = 'offline';
         this.stopReconnection();
         this.notifyListeners();
