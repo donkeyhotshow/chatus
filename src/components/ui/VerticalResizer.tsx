@@ -119,8 +119,8 @@ export function VerticalResizer({
     return (
         <div
             className={cn(
-                'relative h-1 bg-transparent hover:bg-cyan-400/50 cursor-row-resize group transition-colors touch-target',
-                isResizing && 'bg-cyan-400/70',
+                'relative h-1 bg-transparent hover:bg-violet-400/50 cursor-row-resize group transition-colors touch-target',
+                isResizing && 'bg-violet-400/70',
                 disabled && 'cursor-default hover:bg-transparent',
                 className
             )}
@@ -130,7 +130,7 @@ export function VerticalResizer({
             {/* Visual indicator */}
             <div className={cn(
                 'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-1 bg-white/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity',
-                isResizing && 'opacity-100 bg-cyan-400 shadow-lg shadow-cyan-400/50'
+                isResizing && 'opacity-100 bg-violet-400 shadow-lg shadow-violet-400/50'
             )} />
 
             {/* Resize dots indicator */}

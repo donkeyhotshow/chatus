@@ -26,7 +26,7 @@ export function ProgressBar({ steps, currentStep, className }: ProgressBarProps)
                 {/* Background track */}
                 <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
                     <motion.div
-                        className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full shadow-lg shadow-cyan-500/25"
+                        className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full shadow-lg shadow-violet-500/25"
                         initial={{ width: 0 }}
                         animate={{ width: `${progress}%` }}
                         transition={{ duration: 0.5, ease: "easeOut" }}
@@ -53,9 +53,9 @@ export function ProgressBar({ steps, currentStep, className }: ProgressBarProps)
                                     className={cn(
                                         "w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all duration-300",
                                         isCompleted || isPast
-                                            ? "bg-gradient-to-r from-cyan-500 to-blue-500 border-cyan-500 text-black shadow-lg shadow-cyan-500/25"
+                                            ? "bg-gradient-to-r from-violet-500 to-purple-500 border-violet-500 text-white shadow-lg shadow-violet-500/25"
                                             : isCurrent
-                                                ? "bg-slate-900 border-cyan-500 text-cyan-400 shadow-lg shadow-cyan-500/25"
+                                                ? "bg-slate-900 border-violet-500 text-violet-400 shadow-lg shadow-violet-500/25"
                                                 : "bg-slate-800 border-slate-600 text-slate-400"
                                     )}
                                 >
@@ -69,7 +69,7 @@ export function ProgressBar({ steps, currentStep, className }: ProgressBarProps)
                                 {/* Pulse effect for current step */}
                                 {isCurrent && (
                                     <motion.div
-                                        className="absolute inset-0 rounded-full border-2 border-cyan-400"
+                                        className="absolute inset-0 rounded-full border-2 border-violet-400"
                                         animate={{
                                             scale: [1, 1.5, 1],
                                             opacity: [0.5, 0, 0.5]
@@ -103,7 +103,7 @@ export function ProgressBar({ steps, currentStep, className }: ProgressBarProps)
                                 className={cn(
                                     "text-sm font-medium mb-1 transition-colors",
                                     isCompleted || isPast
-                                        ? "text-cyan-400"
+                                        ? "text-violet-400"
                                         : isCurrent
                                             ? "text-white"
                                             : "text-slate-500"
@@ -120,7 +120,7 @@ export function ProgressBar({ steps, currentStep, className }: ProgressBarProps)
                                     className={cn(
                                         "text-xs transition-colors",
                                         isCompleted || isPast
-                                            ? "text-cyan-300/70"
+                                            ? "text-violet-300/70"
                                             : isCurrent
                                                 ? "text-slate-300"
                                                 : "text-slate-600"

@@ -5,7 +5,7 @@ import { memo, useState, useEffect } from 'react';
 import type { Message } from '@/lib/types';
 import { EmojiRain } from './EmojiRain';
 import { format } from 'date-fns';
-import { Smile, Trash2, CornerUpLeft, Check, CheckCheck } from 'lucide-react';
+import { Heart, Trash2, CornerUpLeft, Check, CheckCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type MessageItemProps = {
@@ -21,21 +21,20 @@ type MessageItemProps = {
 const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, onReply, reactions = [] }: MessageItemProps) => {
   const [showEmojiRain, setShowEmojiRain] = useState(false);
   const [rainEmoji, setRainEmoji] = useState('');
-  const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [showActions, setShowActions] = useState(false);
 
+  // Reset emoji rain when message changes
   useEffect(() => {
     setShowEmojiRain(false);
     setRainEmoji('');
   }, [message.id]);
 
-  // Safe user access - fallback for malformed messages
   const user = message.user || { id: 'unknown', name: 'Неизвестный', avatar: '' };
 
   if (message.type === 'system') {
     return (
-      <div className="w-full flex justify-center my-6 opacity-50">
-        <div className="bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-full px-4 py-1 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest">
+      <div className="w-full flex justify-center my-6">
+        <div className="bg-white/[0.03] border border-white/[0.06] rounded-full px-4 py-1.5 text-[10px] font-semibold text-white/40 uppercase tracking-widest backdrop-blur-sm">
           {message.text}
         </div>
       </div>
@@ -44,17 +43,22 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
 
   const handleDoubleClick = () => {
     if (message.id.startsWith('temp_')) return;
+    if (!isOwn) return;
 
-    // Double-click reactions are only allowed on own messages (Requirements 3.1, 3.2)
-    if (!isOwn) {
-      // Ignore double-click on other users' messages
-      return;
-    }
-
-    const emoji = '🤍';
+    const emoji = '❤️';
     onReaction(message.id, emoji);
     setRainEmoji(emoji);
     setShowEmojiRain(true);
+    setTimeout(() => setShowEmojiRain(false), 2000);
+  };
+
+  const handleLike = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const emoji = '❤️';
+    onReaction(message.id, emoji);
+    setRainEmoji(emoji);
+    setShowEmojiRain(true);
+    if ('vibrate' in navigator) navigator.vibrate(10);
     setTimeout(() => setShowEmojiRain(false), 2000);
   };
 
@@ -77,7 +81,11 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
         <img
           src={message.imageUrl}
           alt={message.type === 'doodle' ? 'Doodle' : 'Uploaded content'}
-          className={`rounded-2xl max-w-xs max-h-80 object-cover cursor-pointer ${message.text ? 'mb-2' : ''}`}
+          className={cn(
+            "rounded-xl max-w-[280px] max-h-80 object-cover cursor-pointer",
+            "hover:opacity-95 transition-opacity",
+            message.text ? 'mb-2' : ''
+          )}
           onClick={() => onImageClick(message.imageUrl!)}
         />
       );
@@ -91,11 +99,11 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
       return (
         <div className="flex flex-col">
           {contentNode}
-          <p className="leading-relaxed whitespace-pre-wrap text-sm sm:text-[15px] font-medium break-words break-anywhere">
+          <p className="leading-relaxed whitespace-pre-wrap text-[15px] break-words">
             {message.text}
           </p>
         </div>
-      )
+      );
     }
 
     return contentNode;
@@ -106,30 +114,50 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
     : '...';
 
   const isSticker = message.type === 'sticker';
+  const hasLike = reactions.some(r => r.emoji === '❤️');
 
   return (
     <article
       role="article"
       aria-label={`${user.name} написал: ${message.text || 'изображение'}. ${formattedTime}`}
-      className={`group flex gap-3 max-w-[90%] sm:max-w-[80%] mb-4 ${isOwn ? 'ml-auto flex-row-reverse' : 'items-start'} animate-in fade-in slide-in-from-bottom-1 duration-300`}
+      className={cn(
+        "group flex gap-2.5 max-w-[85%] sm:max-w-[75%] mb-3",
+        isOwn ? "ml-auto flex-row-reverse" : "items-start",
+        "animate-in fade-in slide-in-from-bottom-2 duration-300"
+      )}
       onDoubleClick={handleDoubleClick}
     >
+      {/* Avatar */}
       {!isSticker && (
         <div className="flex-shrink-0 mt-1">
           <div
-            className="w-8 h-8 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-primary)] bg-center bg-cover"
-            style={{ backgroundImage: `url(${user.avatar})` }}
-          />
+            className={cn(
+              "w-9 h-9 rounded-xl bg-gradient-to-br from-white/[0.08] to-white/[0.02]",
+              "border border-white/[0.08] bg-center bg-cover",
+              "shadow-sm"
+            )}
+            style={{ backgroundImage: user.avatar ? `url(${user.avatar})` : undefined }}
+          >
+            {!user.avatar && (
+              <div className="w-full h-full flex items-center justify-center text-white/50 font-semibold text-sm">
+                {user.name?.charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
-      <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'} min-w-0 flex-1`}>
+      <div className={cn("flex flex-col min-w-0 flex-1", isOwn ? "items-end" : "items-start")}>
+        {/* Name & Time */}
         {!isSticker && (
-          <div className="mb-1 px-1 flex items-center gap-2">
-            <span className={`text-[11px] font-bold uppercase tracking-wider ${isOwn ? 'text-[var(--text-secondary)]' : 'text-[var(--accent-primary)]'}`}>
+          <div className="mb-1.5 px-1 flex items-center gap-2">
+            <span className={cn(
+              "text-[11px] font-semibold tracking-wide",
+              isOwn ? "text-white/50" : "text-violet-400"
+            )}>
               {user.name}
             </span>
-            <span className="text-[10px] text-[var(--text-muted)] font-mono">{formattedTime}</span>
+            <span className="text-[10px] text-white/30">{formattedTime}</span>
           </div>
         )}
 
@@ -137,88 +165,89 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
           <div
             onClick={() => setShowActions(!showActions)}
             className={cn(
-              "relative p-3.5 rounded-2xl transition-all duration-300 cursor-pointer",
-              // Premium message bubble styles
+              "relative px-4 py-3 rounded-2xl transition-all duration-200 cursor-pointer",
               isOwn
                 ? isSticker
                   ? "bg-transparent"
                   : [
-                      "bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600",
-                      "text-white rounded-tr-sm",
-                      "shadow-lg shadow-indigo-500/20",
+                      "bg-gradient-to-br from-violet-600 via-violet-600 to-purple-700",
+                      "text-white rounded-tr-md",
+                      "shadow-lg shadow-violet-600/20",
                     ]
                 : isSticker
                   ? "bg-transparent"
                   : [
-                      "bg-[var(--bg-tertiary)]/80 backdrop-blur-sm",
-                      "text-white border border-[var(--glass-border)]",
-                      "rounded-tl-sm",
+                      "bg-white/[0.06] backdrop-blur-sm",
+                      "text-white border border-white/[0.08]",
+                      "rounded-tl-md",
                     ],
               message.id.startsWith("temp_") && "opacity-50",
-              showActions && "ring-2 ring-[var(--accent-primary)]/30"
+              showActions && "ring-2 ring-violet-500/30"
             )}
           >
+            {/* Reply quote */}
             {message.replyTo && (
               <div className={cn(
-                "mb-3 p-2 rounded-lg text-[11px] border-l-2",
+                "mb-2.5 p-2.5 rounded-lg text-[12px] border-l-2",
                 isOwn
                   ? "bg-white/10 border-white/30 text-white/80"
-                  : "bg-[var(--bg-secondary)] border-[var(--accent-primary)]/50 text-[var(--text-secondary)]"
+                  : "bg-white/[0.04] border-violet-500/50 text-white/60"
               )}>
-                <span className="font-bold block">{message.replyTo.senderName}</span>
-                <span className="truncate block opacity-80">{message.replyTo.text}</span>
+                <span className="font-semibold block text-[11px]">{message.replyTo.senderName}</span>
+                <span className="truncate block opacity-80 mt-0.5">{message.replyTo.text}</span>
               </div>
             )}
 
             {renderContent()}
 
+            {/* Reactions */}
             {reactions.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-3">
+              <div className="flex flex-wrap gap-1.5 mt-2.5 -mb-1">
                 {reactions.map((reaction) => (
                   <button
                     key={reaction.emoji}
                     className={cn(
-                      "flex items-center gap-1 px-2 py-1 rounded-lg transition-all text-[11px]",
-                      isOwn
-                        ? "bg-white/20 border border-white/10 hover:bg-white/30"
-                        : "bg-[var(--bg-secondary)] border border-[var(--border-primary)] hover:bg-[var(--bg-tertiary)]"
+                      "flex items-center gap-1 px-2 py-1 rounded-full transition-all text-xs",
+                      "bg-white/10 hover:bg-white/20 active:scale-95"
                     )}
-                    onClick={() => onReaction(message.id, reaction.emoji)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onReaction(message.id, reaction.emoji);
+                    }}
                   >
                     <span>{reaction.emoji}</span>
-                    {reaction.count > 1 && <span className="font-bold">{reaction.count}</span>}
+                    {reaction.count > 1 && <span className="font-semibold text-[11px]">{reaction.count}</span>}
                   </button>
                 ))}
               </div>
             )}
 
-            {/* Action buttons - subtle floating bar */}
+            {/* Action buttons - floating bar */}
             <div className={cn(
-              "absolute -top-8 flex gap-1 p-1 bg-[var(--bg-secondary)]/80 backdrop-blur-md border border-[var(--border-primary)] rounded-full shadow-xl transition-all duration-200 z-10",
+              "absolute -top-10 flex items-center gap-0.5 p-1 bg-black/90 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl transition-all duration-200 z-10",
               isOwn ? "right-0" : "left-0",
-              "opacity-0 scale-90 pointer-events-none group-hover:opacity-100 group-hover:scale-100 group-hover:pointer-events-auto",
+              "opacity-0 scale-90 pointer-events-none",
+              "group-hover:opacity-100 group-hover:scale-100 group-hover:pointer-events-auto",
               showActions && "opacity-100 scale-100 pointer-events-auto"
             )}>
               <button
                 onClick={(e) => { e.stopPropagation(); onReply(message); setShowActions(false); }}
-                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-all"
                 title="Ответить"
               >
                 <CornerUpLeft className="w-4 h-4" />
               </button>
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowReactionPicker(!showReactionPicker);
-                  if ('vibrate' in navigator) navigator.vibrate(10);
-                }}
+                onClick={handleLike}
                 className={cn(
-                  "w-8 h-8 flex items-center justify-center rounded-full transition-colors",
-                  showReactionPicker ? "bg-[var(--accent-primary)] text-white" : "hover:bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                  "w-9 h-9 flex items-center justify-center rounded-lg transition-all",
+                  hasLike
+                    ? "text-red-500 hover:bg-red-500/10"
+                    : "text-white/50 hover:text-red-400 hover:bg-white/10"
                 )}
-                title="Реакция"
+                title="Нравится"
               >
-                <Smile className="w-4 h-4" />
+                <Heart className={cn("w-4 h-4", hasLike && "fill-current")} />
               </button>
               {isOwn && (
                 <button
@@ -228,50 +257,23 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
                     onDelete(message.id);
                     setShowActions(false);
                   }}
-                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-500/20 text-[var(--text-muted)] hover:text-red-400 transition-colors"
+                  className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-red-500/10 text-white/50 hover:text-red-400 transition-all"
                   title="Удалить"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
               )}
             </div>
-
-            {/* Emoji picker - premium glass style */}
-            {showReactionPicker && (
-              <div className={cn(
-                "flex flex-wrap gap-1 mt-2 p-2 rounded-xl",
-                "bg-[var(--glass-bg)] backdrop-blur-xl",
-                "border border-[var(--glass-border)]",
-                "shadow-lg",
-                isOwn ? "justify-end" : "justify-start"
-              )}>
-                {['👍', '❤️', '😂', '😮', '😢', '🔥', '🎉', '👏'].map((emoji) => (
-                  <button
-                    key={emoji}
-                    onClick={() => {
-                      onReaction(message.id, emoji);
-                      setShowReactionPicker(false);
-                      setRainEmoji(emoji);
-                      setShowEmojiRain(true);
-                      setTimeout(() => setShowEmojiRain(false), 2000);
-                      if ('vibrate' in navigator) navigator.vibrate(10);
-                    }}
-                    className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-white/10 active:bg-white/20 active:scale-95 transition-all text-lg"
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
         ) : null}
 
+        {/* Read status */}
         {isOwn && !isSticker && (
           <div className="mt-1 px-1 flex items-center gap-1">
             {message.seen ? (
-              <CheckCheck className="w-3 h-3 text-blue-500" />
+              <CheckCheck className="w-3.5 h-3.5 text-violet-400" />
             ) : (
-              <Check className="w-3 h-3 text-neutral-600" />
+              <Check className="w-3.5 h-3.5 text-white/30" />
             )}
           </div>
         )}

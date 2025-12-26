@@ -31,7 +31,7 @@ export const GameCard: React.FC<GameCardProps> = ({
     return (
         <motion.button
             className={cn(
-                "group relative flex flex-col w-full bg-neutral-900/40 border border-white/5 rounded-3xl overflow-hidden transition-all duration-500 hover:border-cyan-500/30 hover:shadow-2xl hover:shadow-cyan-500/10",
+                "group relative flex flex-col w-full bg-neutral-900/40 border border-white/5 rounded-3xl overflow-hidden transition-all duration-500 hover:border-violet-500/30 hover:shadow-2xl hover:shadow-violet-500/10",
                 isLoading && "opacity-50 cursor-wait",
                 className
             )}
@@ -46,7 +46,7 @@ export const GameCard: React.FC<GameCardProps> = ({
             {/* Top Visual Section */}
             <div className="relative h-32 w-full bg-gradient-to-br from-neutral-800 to-neutral-950 flex items-center justify-center overflow-hidden">
                 <div className="absolute inset-0 bg-grid-white/5 [mask-image:radial-gradient(white,transparent)]" />
-                <div className="relative z-10 p-4 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 text-cyan-400 group-hover:scale-110 transition-transform duration-500">
+                <div className="relative z-10 p-4 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 text-violet-400 group-hover:scale-110 transition-transform duration-500">
                     {icon}
                 </div>
 
@@ -65,7 +65,7 @@ export const GameCard: React.FC<GameCardProps> = ({
             {/* Content Section */}
             <div className="p-5 flex-1 flex flex-col text-left space-y-3">
                 <div className="space-y-1">
-                    <h3 className="text-lg font-bold text-white group-hover:text-cyan-400 transition-colors">{title}</h3>
+                    <h3 className="text-lg font-bold text-white group-hover:text-violet-400 transition-colors">{title}</h3>
                     <p className="text-xs text-neutral-500 line-clamp-2 leading-relaxed">{description}</p>
                 </div>
 
@@ -79,7 +79,7 @@ export const GameCard: React.FC<GameCardProps> = ({
                         </div>
                     </div>
 
-                    <div className="w-8 h-8 rounded-full bg-cyan-500/10 flex items-center justify-center text-cyan-400 group-hover:bg-cyan-500 group-hover:text-black transition-all">
+                    <div className="w-8 h-8 rounded-full bg-violet-500/10 flex items-center justify-center text-violet-400 group-hover:bg-violet-500 group-hover:text-black transition-all">
                         {isLoading ? (
                             <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                         ) : (
@@ -90,7 +90,7 @@ export const GameCard: React.FC<GameCardProps> = ({
             </div>
 
             {/* Hover Glow */}
-            <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
         </motion.button>
     );
 };

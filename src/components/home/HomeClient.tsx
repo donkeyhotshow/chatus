@@ -132,26 +132,28 @@ export function HomeClient() {
     return (
         <div className="min-h-screen w-full bg-[var(--bg-primary)]">
             {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-white/10">
+            <header className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-2xl border-b border-white/[0.06]">
                 <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <Logo className="w-7 h-7 text-[var(--text-primary)]" />
-                        <span className="font-semibold text-[var(--text-primary)]">ChatUs</span>
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center">
+                            <Logo className="w-4 h-4 text-white" />
+                        </div>
+                        <span className="font-semibold text-white">ChatUs</span>
                     </div>
 
                     {/* Desktop nav */}
                     <nav className="hidden md:flex items-center gap-6">
-                        <a href="#features" className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+                        <a href="#features" className="text-sm text-white/50 hover:text-white transition-colors">
                             Возможности
                         </a>
-                        <a href="#login" className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+                        <a href="#login" className="text-sm text-white/50 hover:text-white transition-colors">
                             Войти
                         </a>
                     </nav>
 
                     {/* Mobile menu button */}
                     <button
-                        className="md:hidden p-3 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors touch-manipulation"
+                        className="md:hidden p-3 text-white/50 hover:text-white transition-colors touch-manipulation"
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
                         aria-label={isMenuOpen ? "Закрыть меню" : "Открыть меню"}
                     >
@@ -163,7 +165,7 @@ export function HomeClient() {
             {/* Mobile menu */}
             {isMenuOpen && (
                 <div
-                    className="fixed inset-0 z-40 bg-[var(--bg-primary)] pt-14 md:hidden animate-in fade-in duration-200"
+                    className="fixed inset-0 z-40 bg-black pt-14 md:hidden animate-in fade-in duration-200"
                     role="dialog"
                     aria-modal="true"
                     aria-label="Мобильное меню"
@@ -172,14 +174,14 @@ export function HomeClient() {
                         <a
                             href="#features"
                             onClick={() => setIsMenuOpen(false)}
-                            className="text-xl text-[var(--text-primary)] hover:text-[var(--accent-primary)] transition-colors py-2"
+                            className="text-xl text-white hover:text-violet-400 transition-colors py-2"
                         >
                             Возможности
                         </a>
                         <a
                             href="#login"
                             onClick={() => setIsMenuOpen(false)}
-                            className="text-xl text-[var(--text-primary)] hover:text-[var(--accent-primary)] transition-colors py-2"
+                            className="text-xl text-white hover:text-violet-400 transition-colors py-2"
                         >
                             Войти
                         </a>
@@ -192,14 +194,14 @@ export function HomeClient() {
                 <section className="py-16 md:py-28 px-4">
                     <div className="max-w-2xl mx-auto text-center">
                         {/* Animated Logo */}
-                        <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] rounded-2xl flex items-center justify-center mx-auto mb-8 animate-fade-in-up animate-float shadow-lg" style={{ boxShadow: 'var(--shadow-glow)' }}>
-                            <Logo className="w-10 h-10 md:w-12 md:h-12 text-white" />
+                        <div className="w-24 h-24 md:w-28 md:h-28 bg-gradient-to-br from-violet-600 to-purple-700 rounded-3xl flex items-center justify-center mx-auto mb-8 animate-float shadow-2xl" style={{ boxShadow: '0 20px 60px rgba(124, 58, 237, 0.4)' }}>
+                            <Logo className="w-12 h-12 md:w-14 md:h-14 text-white" />
                         </div>
-                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[var(--text-primary)] mb-6 leading-tight animate-fade-in-up-delay-1">
+                        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
                             Приватный чат
                         </h1>
-                        <p className="text-lg sm:text-xl text-[var(--text-secondary)] mb-10 px-4 animate-fade-in-up-delay-2">
-                            Общайтесь, рисуйте и играйте вместе. Без регистрации.
+                        <p className="text-lg sm:text-xl text-white/40 mb-10 px-4 leading-relaxed">
+                            Общайтесь, рисуйте и играйте вместе.<br className="hidden sm:block" /> Без регистрации.
                         </p>
                     </div>
                 </section>
@@ -207,17 +209,17 @@ export function HomeClient() {
                 {/* Login Form */}
                 <section id="login" className="py-12 md:py-16 px-4">
                     <div className="max-w-md mx-auto">
-                        <div className="bg-[var(--bg-card)] rounded-2xl border border-[var(--glass-border)] p-6 md:p-8 shadow-xl backdrop-blur-sm animate-fade-in-up-delay-3">
-                            <h2 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] text-center mb-8">
+                        <div className="bg-white/[0.02] rounded-3xl border border-white/[0.08] p-6 md:p-8 shadow-2xl backdrop-blur-sm">
+                            <h2 className="text-2xl md:text-3xl font-bold text-white text-center mb-8">
                                 Войти в чат
                             </h2>
 
-                            <form onSubmit={handleJoinRoom} className="space-y-6">
+                            <form onSubmit={handleJoinRoom} className="space-y-5">
                                 {/* Username */}
-                                <div className="space-y-3">
+                                <div className="space-y-2">
                                     <label
                                         htmlFor="username"
-                                        className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2"
+                                        className="text-sm font-medium text-white/50 flex items-center gap-2 px-1"
                                     >
                                         <User className="w-4 h-4" />
                                         Ваш ник
@@ -232,17 +234,17 @@ export function HomeClient() {
                                             maxLength={20}
                                             autoComplete="username"
                                             className={cn(
-                                                "w-full px-4 py-4 bg-[var(--bg-secondary)] border-2 rounded-xl text-base",
-                                                "text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
-                                                "focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--accent-light)]",
-                                                "transition-all touch-manipulation",
-                                                isUsernameValid ? "border-[var(--success)]" : "border-[var(--glass-border)]"
+                                                "w-full px-4 py-4 bg-white/[0.04] border-2 rounded-xl text-base",
+                                                "text-white placeholder:text-white/30",
+                                                "focus:outline-none focus:border-violet-500/50 focus:bg-white/[0.06]",
+                                                "transition-all duration-200 touch-manipulation",
+                                                isUsernameValid ? "border-emerald-500/50" : "border-white/[0.08]"
                                             )}
                                             aria-describedby={isUsernameValid ? "username-valid" : undefined}
                                         />
                                         {isUsernameValid && (
                                             <Check
-                                                className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--success)]"
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-400"
                                                 aria-hidden="true"
                                             />
                                         )}
@@ -253,11 +255,11 @@ export function HomeClient() {
                                 </div>
 
                                 {/* Room Code */}
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between">
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between px-1">
                                         <label
                                             htmlFor="roomCode"
-                                            className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2"
+                                            className="text-sm font-medium text-white/50 flex items-center gap-2"
                                         >
                                             <Key className="w-4 h-4" />
                                             Код комнаты
@@ -266,7 +268,7 @@ export function HomeClient() {
                                             type="button"
                                             ref={createRoomButtonRef}
                                             onClick={handleCreateRoom}
-                                            className="text-sm font-medium text-[var(--primary-light)] hover:text-[var(--primary)] transition-colors flex items-center gap-1 py-2 px-3 rounded-lg min-h-[44px] min-w-[44px] touch-manipulation hover:bg-[var(--accent-light)]"
+                                            className="text-sm font-medium text-violet-400 hover:text-violet-300 transition-colors flex items-center gap-1 py-2 px-3 rounded-lg min-h-[44px] min-w-[44px] touch-manipulation hover:bg-violet-500/10"
                                             aria-label="Создать новую комнату"
                                         >
                                             <Plus className="w-4 h-4" aria-hidden="true" />
@@ -284,17 +286,17 @@ export function HomeClient() {
                                             autoComplete="off"
                                             inputMode="text"
                                             className={cn(
-                                                "w-full px-4 py-4 bg-[var(--bg-secondary)] border-2 rounded-xl text-center tracking-widest font-mono text-lg",
-                                                "text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
-                                                "focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--accent-light)]",
-                                                "transition-all touch-manipulation uppercase",
-                                                isRoomCodeValid ? "border-[var(--success)]" : "border-[var(--glass-border)]"
+                                                "w-full px-4 py-4 bg-white/[0.04] border-2 rounded-xl text-center tracking-[0.3em] font-mono text-lg",
+                                                "text-white placeholder:text-white/30",
+                                                "focus:outline-none focus:border-violet-500/50 focus:bg-white/[0.06]",
+                                                "transition-all duration-200 touch-manipulation uppercase",
+                                                isRoomCodeValid ? "border-emerald-500/50" : "border-white/[0.08]"
                                             )}
                                             aria-describedby={isRoomCodeValid ? "roomcode-valid" : undefined}
                                         />
                                         {isRoomCodeValid && (
                                             <Check
-                                                className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--success)]"
+                                                className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-400"
                                                 aria-hidden="true"
                                             />
                                         )}
@@ -313,8 +315,8 @@ export function HomeClient() {
                                     loadingText="Подключение..."
                                     className={cn(
                                         "w-full h-14 text-base font-semibold touch-manipulation min-h-[56px] rounded-xl",
-                                        "bg-gradient-to-r from-[var(--primary)] to-[var(--primary-dark)]",
-                                        "hover:shadow-lg hover:shadow-[var(--primary)]/25",
+                                        "bg-gradient-to-r from-violet-600 to-purple-600",
+                                        "hover:shadow-lg hover:shadow-violet-500/30",
                                         "transition-all duration-300"
                                     )}
                                     size="lg"
@@ -328,16 +330,16 @@ export function HomeClient() {
                 </section>
 
                 {/* Features */}
-                <section id="features" className="py-20 px-4 bg-[var(--bg-secondary)]">
+                <section id="features" className="py-20 px-4 bg-gradient-to-b from-black to-[#050505]">
                     <div className="max-w-4xl mx-auto">
-                        <h2 className="text-3xl font-bold text-[var(--text-primary)] text-center mb-4">
+                        <h2 className="text-3xl font-bold text-white text-center mb-3">
                             Возможности
                         </h2>
-                        <p className="text-[var(--text-secondary)] text-center mb-12 max-w-lg mx-auto">
+                        <p className="text-white/40 text-center mb-14 max-w-lg mx-auto">
                             Всё что нужно для общения в одном месте
                         </p>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                             {[
                                 {
                                     icon: MessageCircle,
@@ -348,38 +350,38 @@ export function HomeClient() {
                                 },
                                 {
                                     icon: PenTool,
-                                    title: "Рисование",
-                                    desc: "Совместный холст для творчества",
+                                    title: "Холст",
+                                    desc: "Совместное рисование и творчество",
                                     color: "var(--draw-primary)",
                                     gradient: "from-emerald-500 to-teal-600"
                                 },
                                 {
                                     icon: Gamepad2,
                                     title: "Игры",
-                                    desc: "Мини-игры для развлечения",
+                                    desc: "Мини-игры для развлечения вдвоём",
                                     color: "var(--game-primary)",
                                     gradient: "from-purple-500 to-fuchsia-600"
                                 }
                             ].map((feature, i) => (
                                 <div
                                     key={i}
-                                    className="group p-6 bg-[var(--bg-card)] rounded-2xl border border-[var(--glass-border)] transition-all duration-300 hover:border-[var(--primary)] hover:shadow-xl hover:shadow-[var(--primary)]/10 hover:-translate-y-1"
+                                    className="group p-6 bg-white/[0.02] rounded-2xl border border-white/[0.06] transition-all duration-300 hover:bg-white/[0.04] hover:border-white/[0.12] hover:-translate-y-1"
                                 >
                                     <div
                                         className={cn(
-                                            "w-12 h-12 rounded-xl flex items-center justify-center mb-5 transition-all duration-300",
+                                            "w-14 h-14 rounded-2xl flex items-center justify-center mb-5 transition-all duration-300",
                                             "bg-gradient-to-br",
                                             feature.gradient,
-                                            "group-hover:scale-110 group-hover:rotate-3"
+                                            "group-hover:scale-105 shadow-lg"
                                         )}
-                                        style={{ boxShadow: `0 4px 20px ${feature.color}40` }}
+                                        style={{ boxShadow: `0 8px 24px ${feature.color}30` }}
                                     >
-                                        <feature.icon className="w-6 h-6 text-white" />
+                                        <feature.icon className="w-7 h-7 text-white" />
                                     </div>
-                                    <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-2">
+                                    <h3 className="text-lg font-semibold text-white mb-2">
                                         {feature.title}
                                     </h3>
-                                    <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+                                    <p className="text-sm text-white/40 leading-relaxed">
                                         {feature.desc}
                                     </p>
                                 </div>
@@ -390,13 +392,13 @@ export function HomeClient() {
             </main>
 
             {/* Footer */}
-            <footer className="py-8 px-4 border-t border-[var(--border-primary)]">
+            <footer className="py-8 px-4 border-t border-white/[0.06]">
                 <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
-                        <Logo className="w-5 h-5 text-[var(--text-muted)]" />
-                        <span className="text-sm text-[var(--text-muted)]">ChatUs</span>
+                        <Logo className="w-5 h-5 text-white/30" />
+                        <span className="text-sm text-white/30">ChatUs</span>
                     </div>
-                    <p className="text-sm text-[var(--text-muted)]">
+                    <p className="text-sm text-white/30">
                         © 2025 ChatUs
                     </p>
                 </div>

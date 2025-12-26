@@ -497,27 +497,27 @@ export const ChatArea = memo(function ChatArea({
     );
 }, (prev, next) => prev.roomId === next.roomId && prev.user.id === next.user.id);
 
-// Empty state component - Dark Minimalism Theme
+// Empty state component - Premium Dark Theme
 function EmptyState({ onSend }: { onSend: (text: string) => void }) {
     const suggestions = ['Привет! 👋', 'Как дела?', 'Давай порисуем? 🎨', 'Сыграем? 🎮'];
 
     return (
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center mb-6 shadow-2xl shadow-violet-500/30 animate-float">
-                <MessageCircle className="w-10 h-10 text-white" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center mb-8 shadow-2xl shadow-violet-600/30 animate-float">
+                <MessageCircle className="w-12 h-12 text-white" />
             </div>
-            <h3 className="text-xl font-semibold text-white mb-2">
+            <h3 className="text-2xl font-bold text-white mb-3">
                 Начните общение
             </h3>
-            <p className="text-sm text-white/50 mb-8 max-w-xs">
-                Отправьте первое сообщение или выберите быстрый ответ
+            <p className="text-sm text-white/40 mb-10 max-w-xs leading-relaxed">
+                Отправьте первое сообщение или выберите быстрый ответ ниже
             </p>
-            <div className="flex flex-wrap justify-center gap-3">
+            <div className="flex flex-wrap justify-center gap-3 max-w-sm">
                 {suggestions.map((text, index) => (
                     <button
                         key={text}
                         onClick={() => onSend(text)}
-                        className="px-4 py-2.5 min-h-[44px] rounded-xl bg-white/5 border border-white/10 text-sm text-white/70 hover:text-white hover:bg-white/10 hover:border-violet-500/30 transition-all hover:-translate-y-0.5"
+                        className="px-5 py-3 min-h-[48px] rounded-2xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/60 hover:text-white hover:bg-white/[0.08] hover:border-violet-500/30 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/10 active:scale-95"
                         style={{ animationDelay: `${index * 0.1}s` }}
                     >
                         {text}

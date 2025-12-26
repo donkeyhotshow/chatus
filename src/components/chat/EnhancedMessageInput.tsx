@@ -238,20 +238,16 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
         <div
             ref={containerRef}
             className={cn(
-                "p-3 safe-bottom",
-                // iOS keyboard visible styles
+                "p-3 safe-bottom bg-black/95 backdrop-blur-2xl",
                 isKeyboardVisible && isIOS() && "ios-keyboard-visible",
-                // BUG-011 FIX: Android landscape keyboard styles
                 isKeyboardVisible && isAndroid() && isLandscape() && "android-landscape-keyboard",
                 className
             )}
             style={{
-                // Ensure the container stays above the keyboard
                 ...(isKeyboardVisible ? {
                     position: 'sticky' as const,
                     bottom: 0,
                     zIndex: 100,
-                    // BUG-011 FIX: Reduce padding on Android landscape to save space
                     ...(isAndroid() && isLandscape() ? {
                         paddingTop: '4px',
                         paddingBottom: '4px',
@@ -261,24 +257,24 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
         >
             {/* Reply preview */}
             {replyTo && (
-                <div className="mb-2 p-2 bg-[var(--bg-tertiary)] rounded-lg border-l-2 border-[var(--accent-primary)] flex items-center justify-between">
+                <div className="mb-3 p-3 bg-white/[0.03] rounded-xl border-l-2 border-violet-500 flex items-center justify-between">
                     <div className="min-w-0 flex-1">
-                        <p className="text-xs font-medium text-[var(--text-primary)]">
+                        <p className="text-xs font-semibold text-violet-400">
                             Ответ для {replyTo.user?.name}
                         </p>
-                        <p className="text-xs text-[var(--text-muted)] truncate">
+                        <p className="text-xs text-white/50 truncate mt-0.5">
                             {replyTo.text || 'Изображение'}
                         </p>
                     </div>
                     {onCancelReply && (
-                        <button onClick={onCancelReply} className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+                        <button onClick={onCancelReply} className="p-2 text-white/40 hover:text-white rounded-lg hover:bg-white/[0.05] transition-colors">
                             <X className="w-4 h-4" />
                         </button>
                     )}
                 </div>
             )}
 
-            {/* Input row - P1-001 FIX: Added ARIA labels */}
+            {/* Input row */}
             <div className="flex items-end gap-2" role="group" aria-label="Ввод сообщения">
                 {/* Emoji button and picker */}
                 <div className="relative" ref={emojiPickerRef}>
@@ -289,25 +285,25 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                         aria-label="Открыть эмодзи"
                         aria-expanded={showEmojiPicker}
                         className={cn(
-                            "p-2 rounded-lg transition-colors touch-target disabled:opacity-50 min-w-[44px] min-h-[44px]",
+                            "p-2.5 rounded-xl transition-all duration-200 touch-target disabled:opacity-50 min-w-[44px] min-h-[44px]",
                             showEmojiPicker
-                                ? "text-[var(--accent-primary)] bg-[var(--bg-tertiary)]"
-                                : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
+                                ? "text-violet-400 bg-violet-500/10"
+                                : "text-white/40 hover:text-white/70 hover:bg-white/[0.05]"
                         )}
                     >
                         <Smile className="w-5 h-5" aria-hidden="true" />
                     </button>
 
-                    {/* Emoji picker dropdown */}
+                    {/* Emoji picker dropdown - Premium glass style */}
                     {showEmojiPicker && (
-                        <div className="absolute bottom-full left-0 mb-2 p-3 bg-black/95 border border-white/10 rounded-xl shadow-2xl z-50 backdrop-blur-xl">
-                            <div className="grid grid-cols-6 gap-1">
+                        <div className="absolute bottom-full left-0 mb-2 p-2 bg-black/95 border border-white/10 rounded-2xl shadow-2xl z-50 backdrop-blur-2xl">
+                            <div className="grid grid-cols-6 gap-0.5">
                                 {QUICK_EMOJIS.map((emoji) => (
                                     <button
                                         key={emoji}
                                         type="button"
                                         onClick={() => handleEmojiSelect(emoji)}
-                                        className="p-2.5 text-xl hover:bg-white/10 rounded-lg transition-colors"
+                                        className="p-2.5 text-xl hover:bg-white/10 rounded-xl transition-all duration-150 active:scale-90"
                                         aria-label={`Вставить ${emoji}`}
                                     >
                                         {emoji}
@@ -323,7 +319,7 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                     <StickerPicker onSelect={onStickerSend} />
                 )}
 
-                {/* Text input */}
+                {/* Text input - Premium style */}
                 <div className="flex-1 relative">
                     <textarea
                         ref={textareaRef}
@@ -341,10 +337,11 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                         aria-label="Введите сообщение"
                         aria-describedby={message.length > 800 ? "char-count" : undefined}
                         className={cn(
-                            "w-full px-4 py-3 bg-white/5 border border-white/10 rounded-2xl",
+                            "w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-2xl",
                             "text-white placeholder:text-white/30",
                             "resize-none overflow-y-auto max-h-[120px] scrollbar-hide",
-                            "focus:outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20",
+                            "focus:outline-none focus:border-violet-500/40 focus:bg-white/[0.06]",
+                            "focus:ring-2 focus:ring-violet-500/20",
                             "transition-all duration-200",
                             "disabled:opacity-50"
                         )}
@@ -356,8 +353,8 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                         <span
                             id="char-count"
                             className={cn(
-                                "absolute right-3 bottom-2 text-xs",
-                                message.length > 1000 ? "text-[var(--error)]" : "text-[var(--text-muted)]"
+                                "absolute right-3 bottom-2 text-xs font-medium",
+                                message.length > 1000 ? "text-red-400" : "text-white/40"
                             )}
                             aria-live="polite"
                         >
@@ -383,23 +380,23 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                         onClick={() => fileInputRef.current?.click()}
                         disabled={disabled}
                         aria-label="Прикрепить изображение"
-                        className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors touch-target disabled:opacity-50 min-w-[44px] min-h-[44px]"
+                        className="p-2.5 rounded-xl text-white/40 hover:text-white/70 hover:bg-white/[0.05] transition-all duration-200 touch-target disabled:opacity-50 min-w-[44px] min-h-[44px]"
                     >
                         <ImageIcon className="w-5 h-5" aria-hidden="true" />
                     </button>
                 )}
 
-                {/* Send button - ref added for iOS viewport management */}
+                {/* Send button - Premium gradient */}
                 <button
                     ref={sendButtonRef}
                     onClick={handleSend}
                     disabled={!canSend || isSending}
                     aria-label={isSending ? "Отправка..." : (canSend ? "Отправить сообщение" : "Введите сообщение для отправки")}
                     className={cn(
-                        "p-3 rounded-full transition-all duration-200 min-w-[48px] min-h-[48px] flex items-center justify-center",
+                        "p-3 rounded-2xl transition-all duration-300 min-w-[48px] min-h-[48px] flex items-center justify-center",
                         canSend && !isSending
-                            ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/25 hover:shadow-xl hover:shadow-violet-500/30 hover:scale-105"
-                            : "bg-white/5 text-white/30 cursor-not-allowed"
+                            ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/30 hover:shadow-xl hover:shadow-violet-500/40 hover:scale-105 active:scale-95"
+                            : "bg-white/[0.04] text-white/20 cursor-not-allowed"
                     )}
                 >
                     {isSending ? (

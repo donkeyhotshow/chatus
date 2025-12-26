@@ -62,7 +62,7 @@ const EnhancedInput = React.forwardRef<HTMLInputElement, EnhancedInputProps>(
 
         const variantClasses = {
             default: "bg-background border-input hover:border-accent-foreground/50 focus:border-primary",
-            cyberpunk: "bg-black/50 border-cyan-500/30 hover:border-cyan-400/50 focus:border-cyan-400 focus:shadow-[0_0_20px_rgba(0,255,255,0.3)]",
+            cyberpunk: "bg-black/50 border-violet-500/30 hover:border-violet-400/50 focus:border-violet-400 focus:shadow-[0_0_20px_rgba(139,92,246,0.3)]",
             minimal: "bg-transparent border-0 border-b-2 border-neutral-300 hover:border-neutral-400 focus:border-primary rounded-none",
             glass: "bg-white/5 backdrop-blur-md border-white/10 hover:border-white/20 focus:border-white/30 focus:shadow-[0_0_30px_rgba(255,255,255,0.1)]"
         };
@@ -82,7 +82,7 @@ const EnhancedInput = React.forwardRef<HTMLInputElement, EnhancedInputProps>(
                     <motion.label
                         className={cn(
                             "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
-                            variant === 'cyberpunk' && "text-cyan-300",
+                            variant === 'cyberpunk' && "text-violet-300",
                             error && "text-destructive",
                             success && "text-green-500"
                         )}
@@ -192,7 +192,7 @@ const EnhancedInput = React.forwardRef<HTMLInputElement, EnhancedInputProps>(
                     {/* Focus Ring for Cyberpunk variant */}
                     {variant === 'cyberpunk' && isFocused && (
                         <motion.div
-                            className="absolute inset-0 rounded-md border-2 border-cyan-400 pointer-events-none"
+                            className="absolute inset-0 rounded-md border-2 border-violet-400 pointer-events-none"
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}

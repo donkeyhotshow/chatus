@@ -34,14 +34,14 @@ export function MobileProfileCreation({ onComplete }: MobileProfileCreationProps
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Ваше имя..."
-                        className="w-full px-4 py-3 bg-neutral-800 border border-neutral-600 rounded-xl text-white placeholder-neutral-400 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all duration-200"
+                        className="w-full px-4 py-3 bg-neutral-800 border border-neutral-600 rounded-xl text-white placeholder-neutral-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all duration-200"
                         maxLength={20}
                     />
 
                     <Button
                         onClick={handleComplete}
                         disabled={!name.trim()}
-                        className="w-full py-3 rounded-xl font-semibold text-lg bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white disabled:bg-neutral-700 disabled:text-neutral-400"
+                        className="w-full py-3 rounded-xl font-semibold text-lg bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white disabled:bg-neutral-700 disabled:text-neutral-400"
                     >
                         Войти в чат
                     </Button>

@@ -68,10 +68,10 @@ export function ValidatedInput({
                 className={cn(
                     "block text-sm font-medium mb-2 transition-colors",
                     isFocused || value
-                        ? "text-cyan-400"
+                        ? "text-violet-400"
                         : "text-slate-400"
                 )}
-                animate={{ color: isFocused || value ? "#22d3ee" : "#94a3b8" }}
+                animate={{ color: isFocused || value ? "#a78bfa" : "#94a3b8" }}
             >
                 {label}
             </motion.label>
@@ -94,7 +94,7 @@ export function ValidatedInput({
                                 ? "border-yellow-500/50 focus:border-yellow-400 focus:shadow-[0_0_20px_rgba(245,158,11,0.3)]"
                                 : isValid
                                     ? "border-green-500/50 focus:border-green-400 focus:shadow-[0_0_20px_rgba(34,197,94,0.3)]"
-                                    : "border-slate-600/50 focus:border-cyan-500 focus:shadow-[0_0_20px_rgba(6,182,212,0.3)]",
+                                    : "border-slate-600/50 focus:border-violet-500 focus:shadow-[0_0_20px_rgba(139,92,246,0.3)]",
                         // Padding for icons
                         type === 'password' ? "pr-12" : isValid || hasErrors || hasWarnings ? "pr-12" : ""
                     )}
@@ -106,7 +106,7 @@ export function ValidatedInput({
                     {/* Loading spinner */}
                     {isLoading && (
                         <motion.div
-                            className="w-5 h-5 border-2 border-slate-400 border-t-cyan-400 rounded-full"
+                            className="w-5 h-5 border-2 border-slate-400 border-t-violet-400 rounded-full"
                             animate={{ rotate: 360 }}
                             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                         />

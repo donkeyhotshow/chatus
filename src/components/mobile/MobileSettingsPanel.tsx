@@ -135,7 +135,7 @@ export function MobileSettingsPanel({
             disabled={disabled}
             className={cn(
                 "relative w-12 h-6 rounded-full transition-all duration-200 touch-target",
-                checked ? "bg-cyan-500" : "bg-neutral-600",
+                checked ? "bg-violet-500" : "bg-neutral-600",
                 disabled && "opacity-50 cursor-not-allowed"
             )}
         >
@@ -271,7 +271,7 @@ export function MobileSettingsPanel({
                                                         className={cn(
                                                             "w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200",
                                                             settings.theme === theme.id
-                                                                ? "bg-cyan-500/20 border border-cyan-500/30"
+                                                                ? "bg-violet-500/20 border border-violet-500/30"
                                                                 : "hover:bg-white/5"
                                                         )}
                                                     >
@@ -324,7 +324,7 @@ export function MobileSettingsPanel({
                                                     className={cn(
                                                         "w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200",
                                                         settings.language === language.code
-                                                            ? "bg-cyan-500/20 border border-cyan-500/30"
+                                                            ? "bg-violet-500/20 border border-violet-500/30"
                                                             : "hover:bg-white/5"
                                                     )}
                                                 >

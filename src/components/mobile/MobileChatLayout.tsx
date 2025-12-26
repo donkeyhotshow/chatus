@@ -130,7 +130,7 @@ export function MobileChatLayout({
                     className={cn(
                         "min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full transition-colors touch-target",
                         isCollabSpaceVisible
-                            ? "text-cyan-400 bg-cyan-400/20"
+                            ? "text-violet-400 bg-violet-400/20"
                             : "text-white hover:bg-white/10"
                     )}
                     aria-label={isCollabSpaceVisible ? "Закрыть меню" : "Открыть меню"}

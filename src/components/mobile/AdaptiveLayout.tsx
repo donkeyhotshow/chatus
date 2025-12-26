@@ -149,7 +149,7 @@ export function AdaptiveLayout({
                     animate={{ opacity: pullDistance > 0 ? 1 : 0 }}
                 >
                     <motion.div
-                        className="flex items-center gap-2 text-cyan-400"
+                        className="flex items-center gap-2 text-violet-400"
                         animate={{
                             rotate: isRefreshing ? 360 : 0,
                             scale: pullDistance > 60 ? 1.1 : 1

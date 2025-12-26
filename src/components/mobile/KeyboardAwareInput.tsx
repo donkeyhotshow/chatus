@@ -170,7 +170,7 @@ export const KeyboardAwareInput = forwardRef<HTMLInputElement, KeyboardAwareInpu
                     onFocus={handleFocus}
                     className={cn(
                         "w-full transition-all duration-300",
-                        isKeyboardVisible && "ring-2 ring-cyan-500/50",
+                        isKeyboardVisible && "ring-2 ring-violet-500/50",
                         className
                     )}
                     {...props}
@@ -178,7 +178,7 @@ export const KeyboardAwareInput = forwardRef<HTMLInputElement, KeyboardAwareInpu
 
                 {/* Keyboard indicator */}
                 {isKeyboardVisible && (
-                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
+                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-violet-400 rounded-full animate-pulse" />
                 )}
             </div>
         );

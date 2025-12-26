@@ -284,7 +284,7 @@ export function MobileChatInterface({
                         >
                             {/* Аватар */}
                             {!message.isOwn && (
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white text-xs font-bold mr-2 flex-shrink-0">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold mr-2 flex-shrink-0">
                                     {message.userAvatar ? (
                                         <Image
                                             src={message.userAvatar}
@@ -305,7 +305,7 @@ export function MobileChatInterface({
                                 className={cn(
                                     "rounded-2xl px-4 py-2 max-w-full",
                                     message.isOwn
-                                        ? "bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-br-md"
+                                        ? "bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-br-md"
                                         : "bg-neutral-800 text-white rounded-bl-md"
                                 )}
                             >
@@ -332,7 +332,7 @@ export function MobileChatInterface({
 
                             {/* Аватар для своих сообщений */}
                             {message.isOwn && (
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white text-xs font-bold ml-2 flex-shrink-0">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold ml-2 flex-shrink-0">
                                     {currentUser.avatar ? (
                                         <Image
                                             src={currentUser.avatar}
@@ -381,7 +381,7 @@ export function MobileChatInterface({
                             onKeyPress={handleKeyPress}
                             placeholder="Введите сообщение..."
                             autoFocus
-                            className="w-full min-h-[44px] max-h-32 px-4 py-3 bg-neutral-800 border border-neutral-600 rounded-2xl text-white placeholder-neutral-400 resize-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all duration-200"
+                            className="w-full min-h-[44px] max-h-32 px-4 py-3 bg-neutral-800 border border-neutral-600 rounded-2xl text-white placeholder-neutral-400 resize-none focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all duration-200"
                             rows={1}
                             style={{
                                 height: 'auto',
@@ -400,7 +400,7 @@ export function MobileChatInterface({
                         <button
                             onClick={handleSendMessage}
                             disabled={isSending}
-                            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:from-cyan-600 hover:to-blue-600 transition-all duration-200 touch-target disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-gradient-to-r from-violet-500 to-purple-600 text-white hover:from-violet-600 hover:to-purple-700 transition-all duration-200 touch-target disabled:opacity-50 disabled:cursor-not-allowed"
                             aria-label={isSending ? "Отправка..." : "Отправить"}
                         >
                             {isSending ? (
@@ -536,7 +536,7 @@ export function MobileChatInterface({
                                 {users.map((user) => (
                                     <div key={user.id} className="flex items-center gap-3">
                                         <div className="relative">
-                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white text-sm font-bold">
+                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold">
                                                 {user.avatar ? (
                                                     <Image
                                                         src={user.avatar}
@@ -607,7 +607,7 @@ export function MobileChatInterface({
                                     <div className="p-4 bg-neutral-800 rounded-xl">
                                         <h3 className="text-sm font-medium text-neutral-400 mb-2">Ваш профиль</h3>
                                         <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white font-bold">
+                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center text-white font-bold">
                                                 {currentUser.avatar ? (
                                                     <Image
                                                         src={currentUser.avatar}

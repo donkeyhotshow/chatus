@@ -350,7 +350,7 @@ export function MobileApp({ onDesktopFallback }: MobileAppProps) {
             <div className="fixed top-4 right-4 flex gap-2 z-30">
                 <button
                     onClick={() => setShowParticipants(true)}
-                    className="w-12 h-12 bg-cyan-500 text-white rounded-full flex items-center justify-center shadow-lg"
+                    className="w-12 h-12 bg-violet-500 text-white rounded-full flex items-center justify-center shadow-lg"
                 >
                     👥
                 </button>

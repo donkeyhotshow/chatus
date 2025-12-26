@@ -133,9 +133,9 @@ export function ResizablePanel({
             {!disabled && (
                 <div
                     className={cn(
-                        'absolute top-0 bottom-0 w-1 bg-transparent hover:bg-cyan-400/50 cursor-col-resize z-50 group transition-colors',
+                        'absolute top-0 bottom-0 w-1 bg-transparent hover:bg-violet-400/50 cursor-col-resize z-50 group transition-colors',
                         resizeHandle === 'left' ? '-left-0.5' : '-right-0.5',
-                        isResizing && 'bg-cyan-400/70'
+                        isResizing && 'bg-violet-400/70'
                     )}
                     onMouseDown={handleMouseDown}
                     onTouchStart={handleTouchStart}
@@ -144,7 +144,7 @@ export function ResizablePanel({
                     <div className={cn(
                         'absolute top-1/2 -translate-y-1/2 w-1 h-12 bg-white/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity',
                         resizeHandle === 'left' ? 'left-0' : 'right-0',
-                        isResizing && 'opacity-100 bg-cyan-400 shadow-lg shadow-cyan-400/50'
+                        isResizing && 'opacity-100 bg-violet-400 shadow-lg shadow-violet-400/50'
                     )} />
 
                     {/* Resize dots indicator */}

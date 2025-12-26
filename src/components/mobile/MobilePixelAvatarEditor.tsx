@@ -434,7 +434,7 @@ export function MobilePixelAvatarEditor({
                     className={cn(
                         "min-w-[48px] min-h-[48px] flex items-center justify-center rounded-xl transition-all duration-200 touch-target relative",
                         showPalette
-                            ? "bg-cyan-500 text-white shadow-lg shadow-cyan-500/25"
+                            ? "bg-violet-500 text-white shadow-lg shadow-violet-500/25"
                             : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
                     )}
                 >
@@ -454,7 +454,7 @@ export function MobilePixelAvatarEditor({
 
                 <button
                     onClick={handleSave}
-                    className="min-w-[48px] min-h-[48px] flex items-center justify-center bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:from-cyan-600 hover:to-blue-600 rounded-xl transition-all duration-200 touch-target active:scale-95 shadow-lg shadow-cyan-500/25"
+                    className="min-w-[48px] min-h-[48px] flex items-center justify-center bg-gradient-to-r from-violet-500 to-purple-600 text-white hover:from-violet-600 hover:to-purple-700 rounded-xl transition-all duration-200 touch-target active:scale-95 shadow-lg shadow-violet-500/25"
                 >
                     <Download className="w-5 h-5" />
                 </button>
@@ -492,7 +492,7 @@ export function MobilePixelAvatarEditor({
                                     className={cn(
                                         "w-12 h-12 rounded-xl transition-all duration-200 touch-target shadow-lg",
                                         selectedColor === color && !isErasing
-                                            ? "ring-4 ring-cyan-400 ring-offset-2 ring-offset-black scale-110 shadow-xl"
+                                            ? "ring-4 ring-violet-400 ring-offset-2 ring-offset-black scale-110 shadow-xl"
                                             : "hover:scale-105 active:scale-95"
                                     )}
                                     style={{ backgroundColor: color }}
