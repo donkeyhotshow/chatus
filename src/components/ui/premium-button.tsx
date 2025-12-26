@@ -21,6 +21,8 @@ export const PremiumButton = React.forwardRef<
   HTMLButtonElement,
   PremiumButtonProps
 >(
+  (
+    {
       variant = "primary",
       size = "md",
       isLoading = false,

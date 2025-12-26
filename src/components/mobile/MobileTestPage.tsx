@@ -56,7 +56,7 @@ export function MobileTestPage() {
         return (
             <div className="min-h-screen bg-black flex items-center justify-center p-4">
                 <div className="max-w-md mx-auto text-center">
-                    <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-2xl flex items-center justify-center">
+                    <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-violet-400 to-purple-500 rounded-2xl flex items-center justify-center">
                         <span className="text-3xl">📱</span>
                     </div>
 
@@ -130,7 +130,7 @@ export function MobileTestPage() {
                     <div className="flex items-center justify-between mb-6">
                         <button
                             onClick={() => setCurrentView('menu')}
-                            className="text-white hover:text-cyan-400 transition-colors"
+                            className="text-white hover:text-violet-400 transition-colors"
                         >
                             ← Назад
                         </button>
@@ -162,7 +162,7 @@ export function MobileTestPage() {
                 <div className="space-y-4">
                     <motion.button
                         onClick={() => setCurrentView('profile')}
-                        className="w-full p-6 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-2xl font-semibold text-lg shadow-lg"
+                        className="w-full p-6 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-2xl font-semibold text-lg shadow-lg"
                         whileTap={{ scale: 0.95 }}
                     >
                         🎨 Создать профиль

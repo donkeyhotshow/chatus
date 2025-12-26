@@ -48,9 +48,9 @@ const toastColors = {
         glow: 'shadow-[0_0_20px_rgba(59,130,246,0.3)]'
     },
     cyberpunk: {
-        bg: 'bg-black/90 border-cyan-500/50',
-        icon: 'text-cyan-400',
-        glow: 'shadow-[0_0_30px_rgba(0,255,255,0.4)]'
+        bg: 'bg-black/90 border-violet-500/50',
+        icon: 'text-violet-400',
+        glow: 'shadow-[0_0_30px_rgba(139,92,246,0.4)]'
     }
 };
 
@@ -262,7 +262,7 @@ export function EnhancedToast({
                         {/* Cyberpunk glow effect */}
                         {variant === 'cyberpunk' && type === 'cyberpunk' && (
                             <motion.div
-                                className="absolute inset-0 rounded-2xl border border-cyan-400/30 pointer-events-none"
+                                className="absolute inset-0 rounded-2xl border border-violet-400/30 pointer-events-none"
                                 animate={{
                                     boxShadow: [
                                         "0 0 20px rgba(0,255,255,0.3)",

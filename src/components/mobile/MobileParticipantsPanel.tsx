@@ -100,7 +100,7 @@ export function MobileParticipantsPanel({
                 className={cn(
                     "flex items-center gap-3 p-4 rounded-xl transition-all duration-200",
                     selectedUser === user.id
-                        ? "bg-cyan-500/20 border border-cyan-500/30"
+                        ? "bg-violet-500/20 border border-violet-500/30"
                         : "hover:bg-white/5 active:bg-white/10"
                 )}
                 whileTap={{ scale: 0.98 }}
@@ -114,7 +114,7 @@ export function MobileParticipantsPanel({
             >
                 {/* Аватар */}
                 <div className="relative flex-shrink-0">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white text-sm font-bold overflow-hidden">
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold overflow-hidden">
                         {user.avatar ? (
                             <img
                                 src={user.avatar}
@@ -228,7 +228,7 @@ export function MobileParticipantsPanel({
                                     placeholder="Поиск участников..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-3 bg-neutral-800 border border-neutral-600 rounded-xl text-white placeholder-neutral-400 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20 transition-all duration-200"
+                                    className="w-full pl-10 pr-4 py-3 bg-neutral-800 border border-neutral-600 rounded-xl text-white placeholder-neutral-400 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20 transition-all duration-200"
                                 />
                             </div>
                         </div>
@@ -238,7 +238,7 @@ export function MobileParticipantsPanel({
                             <div className="p-4 border-b border-white/10">
                                 <button
                                     onClick={onInviteUsers}
-                                    className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-xl hover:from-cyan-600 hover:to-blue-600 transition-all duration-200 touch-target"
+                                    className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-xl hover:from-violet-600 hover:to-purple-700 transition-all duration-200 touch-target"
                                 >
                                     <UserPlus className="w-5 h-5" />
                                     Пригласить участников

@@ -559,7 +559,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
             </div>
           ) : !isCanvasReady ? (
             <div className="bg-neutral-900/50 border border-white/10 rounded-lg p-6 text-center">
-              <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+              <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
               <p className="text-neutral-400">Загрузка игры...</p>
             </div>
           ) : (

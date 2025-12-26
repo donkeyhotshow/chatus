@@ -3,6 +3,7 @@
 import { memo, useCallback, useRef } from 'react';
 import { MessageCircle, Gamepad2, PenTool } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 export type MobileTab = 'chat' | 'games' | 'canvas' | 'users' | 'more' | 'stats';
 
@@ -15,11 +16,11 @@ interface MobileNavigationProps {
     className?: string;
 }
 
-// Упрощенная навигация - фокус на чате з функціональними кольорами
+// Premium navigation with gradient accents
 const tabs = [
-    { id: 'chat' as const, label: 'Чат', icon: MessageCircle, color: '#7C3AED' },
-    { id: 'canvas' as const, label: 'Рисовать', icon: PenTool, color: '#10B981' },
-    { id: 'games' as const, label: 'Игры', icon: Gamepad2, color: '#A855F7' },
+    { id: 'chat' as const, label: 'Чат', icon: MessageCircle, color: '#7C3AED', gradient: 'from-violet-500 to-purple-600' },
+    { id: 'canvas' as const, label: 'Холст', icon: PenTool, color: '#10B981', gradient: 'from-emerald-500 to-teal-600' },
+    { id: 'games' as const, label: 'Игры', icon: Gamepad2, color: '#A855F7', gradient: 'from-purple-500 to-fuchsia-600' },
 ];
 
 export const MobileNavigation = memo(function MobileNavigation({
@@ -30,7 +31,6 @@ export const MobileNavigation = memo(function MobileNavigation({
 }: MobileNavigationProps) {
     const navRef = useRef<HTMLDivElement>(null);
 
-    // BUG-016 FIX: Handle keyboard navigation between tabs
     const handleKeyDown = useCallback((e: React.KeyboardEvent, currentIndex: number) => {
         let newIndex = currentIndex;
 
@@ -50,7 +50,6 @@ export const MobileNavigation = memo(function MobileNavigation({
             return;
         }
 
-        // Focus the new tab button
         const buttons = navRef.current?.querySelectorAll('button[role="tab"]');
         if (buttons && buttons[newIndex]) {
             (buttons[newIndex] as HTMLButtonElement).focus();
@@ -61,15 +60,15 @@ export const MobileNavigation = memo(function MobileNavigation({
         <nav
             ref={navRef}
             className={cn(
-                "shrink-0 bg-black/90 backdrop-blur-xl border-b border-white/10",
+                "shrink-0 bg-black/95 backdrop-blur-2xl border-b border-white/[0.06]",
+                "shadow-[0_1px_0_0_rgba(255,255,255,0.02)]",
                 className
             )}
             role="navigation"
             aria-label="Основная навигация"
         >
-            {/* BUG-016 FIX: Added role="tablist" for proper keyboard navigation */}
             <div
-                className="flex items-center justify-around min-h-[56px] px-2"
+                className="flex items-center justify-around h-14 px-2 relative"
                 role="tablist"
                 aria-label="Вкладки навигации"
             >
@@ -93,40 +92,65 @@ export const MobileNavigation = memo(function MobileNavigation({
                             aria-label={tab.label}
                             aria-current={isActive ? 'page' : undefined}
                             className={cn(
-                                "relative flex flex-col items-center justify-center gap-1.5 flex-1",
-                                "min-w-[48px] min-h-[48px] py-3",
-                                "transition-all duration-200 touch-target",
-                                "focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-primary)] focus-visible:ring-offset-2",
-                                isActive ? "opacity-100" : "text-[var(--text-muted)] opacity-50"
+                                "relative flex flex-col items-center justify-center gap-1 flex-1",
+                                "min-w-[64px] min-h-[52px] py-2 rounded-xl mx-1",
+                                "transition-all duration-300 ease-out touch-target",
+                                "focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50",
+                                isActive
+                                    ? "bg-white/[0.04]"
+                                    : "text-white/40 hover:text-white/60 hover:bg-white/[0.02]"
                             )}
-                            style={isActive ? { color: tab.color } : undefined}
                         >
                             <div className="relative">
-                                <tab.icon
-                                    className={cn(
-                                        "w-6 h-6 transition-all duration-200",
-                                        isActive && "scale-110"
-                                    )}
-                                    aria-hidden="true"
-                                />
+                                <motion.div
+                                    animate={{
+                                        scale: isActive ? 1 : 0.9,
+                                        y: isActive ? -2 : 0
+                                    }}
+                                    transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                                >
+                                    <tab.icon
+                                        className={cn(
+                                            "w-[22px] h-[22px] transition-colors duration-300",
+                                            isActive ? "text-white" : ""
+                                        )}
+                                        style={isActive ? { color: tab.color } : undefined}
+                                        strokeWidth={isActive ? 2.5 : 2}
+                                        aria-hidden="true"
+                                    />
+                                </motion.div>
                                 {showBadge && (
-                                    <span
-                                        className="absolute -top-2 -right-2 min-w-[20px] h-[20px] px-1 bg-[var(--error)] text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg"
+                                    <motion.span
+                                        initial={{ scale: 0 }}
+                                        animate={{ scale: 1 }}
+                                        className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-gradient-to-r from-red-500 to-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg shadow-red-500/30"
                                         aria-label={`${unreadCount} непрочитанных сообщений`}
                                     >
                                         {unreadCount > 99 ? '99+' : unreadCount}
-                                    </span>
+                                    </motion.span>
                                 )}
                             </div>
-                            <span className="text-[11px] font-semibold tracking-tight">
+                            <span className={cn(
+                                "text-[10px] font-semibold tracking-wide transition-all duration-300",
+                                isActive ? "opacity-100" : "opacity-60"
+                            )}
+                            style={isActive ? { color: tab.color } : undefined}
+                            >
                                 {tab.label}
                             </span>
-                            {/* Active indicator - pill style сверху */}
+
+                            {/* Premium glow indicator */}
                             {isActive && (
-                                <div
-                                    className="absolute top-1 w-10 h-1 rounded-full shadow-sm"
-                                    style={{ backgroundColor: tab.color }}
-                                    aria-hidden="true"
+                                <motion.div
+                                    layoutId="activeTabIndicator"
+                                    className={cn(
+                                        "absolute -bottom-[1px] left-1/2 -translate-x-1/2 w-8 h-[3px] rounded-full",
+                                        "bg-gradient-to-r", tab.gradient
+                                    )}
+                                    style={{
+                                        boxShadow: `0 0 12px ${tab.color}60, 0 0 4px ${tab.color}40`
+                                    }}
+                                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
                                 />
                             )}
                         </button>

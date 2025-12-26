@@ -92,7 +92,7 @@ function AvatarEditor({
                         <img
                             src={avatar}
                             alt="Avatar preview"
-                            className="w-32 h-32 rounded-2xl border-4 border-cyan-500/50 shadow-2xl shadow-cyan-500/25"
+                            className="w-32 h-32 rounded-2xl border-4 border-violet-500/50 shadow-2xl shadow-violet-500/25"
                         />
                     ) : (
                         <div className="w-32 h-32 rounded-2xl border-4 border-slate-600 bg-slate-800 flex items-center justify-center">
@@ -129,7 +129,7 @@ function AvatarEditor({
                             key={color}
                             onClick={() => setSelectedColor(color)}
                             className={`w-12 h-12 rounded-xl transition-all duration-300 ${selectedColor === color
-                                ? 'ring-4 ring-cyan-400 ring-offset-2 ring-offset-slate-900 scale-110'
+                                ? 'ring-4 ring-violet-400 ring-offset-2 ring-offset-slate-900 scale-110'
                                 : 'hover:scale-105'
                                 }`}
                             style={{ backgroundColor: color }}
@@ -238,7 +238,7 @@ export function ProfileCreationWizard({ onComplete, onCancel }: ProfileCreationW
             >
                 {/* Header */}
                 <div className="p-8 border-b border-slate-700/50">
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent text-center mb-6">
+                    <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-400 to-purple-500 bg-clip-text text-transparent text-center mb-6">
                         Создание профиля
                     </h1>
 

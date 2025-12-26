@@ -298,7 +298,7 @@ export function CollaborationSpace({
               onResize={handleCanvasResize}
               minHeight={200}
               maxHeight={800}
-              className="mx-4 bg-white/5 hover:bg-cyan-400/30"
+              className="mx-4 bg-white/5 hover:bg-violet-400/30"
             />
           )}
 

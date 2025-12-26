@@ -57,8 +57,8 @@ export function GameContainer({ gameId, roomId, iframeSrc, players, onClose }: G
       <div className="flex-1 relative bg-[#0a0a0a]">
         {isLoading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-10 bg-black">
-            <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
-            <p className="text-xs text-cyan-500 font-mono animate-pulse">INITIALIZING GAME ENGINE...</p>
+            <div className="w-12 h-12 border-4 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
+            <p className="text-xs text-violet-500 font-mono animate-pulse">INITIALIZING GAME ENGINE...</p>
           </div>
         )}
         <iframe
@@ -73,7 +73,7 @@ export function GameContainer({ gameId, roomId, iframeSrc, players, onClose }: G
       <div className="px-4 py-2 bg-neutral-950 border-t border-white/5 flex items-center gap-4 overflow-x-auto scrollbar-hide">
         {players.map(player => (
           <div key={player.id} className="flex items-center gap-2 shrink-0">
-            <div className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
+            <div className="w-1.5 h-1.5 rounded-full bg-violet-500" />
             <span className="text-[10px] font-medium text-neutral-400">{player.name}</span>
             <span className="text-[10px] font-bold text-white">{player.score}</span>
           </div>

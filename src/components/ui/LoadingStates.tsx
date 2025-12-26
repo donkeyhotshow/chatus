@@ -25,7 +25,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
     return (
         <Loader2
             className={cn(
-                'animate-spin text-cyan-400',
+                'animate-spin text-violet-400',
                 sizeClasses[size],
                 className
             )}
@@ -85,8 +85,8 @@ export const MessageLoading: React.FC<MessageLoadingProps> = ({ count = 3 }) => 
 export const ChatLoading: React.FC = () => {
     return (
         <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-6">
-            <div className="w-20 h-20 bg-cyan-500/10 rounded-[32px] flex items-center justify-center">
-                <MessageCircle className="w-10 h-10 text-cyan-400 animate-pulse" />
+            <div className="w-20 h-20 bg-violet-500/10 rounded-[32px] flex items-center justify-center">
+                <MessageCircle className="w-10 h-10 text-violet-400 animate-pulse" />
             </div>
             <div className="space-y-2">
                 <h3 className="text-xl font-bold text-white">Подключение к чату...</h3>
@@ -110,7 +110,7 @@ export const UsersLoading: React.FC = () => {
 
 export const ImageUploadLoading: React.FC = () => {
     return (
-        <div className="flex items-center gap-2 text-cyan-400">
+        <div className="flex items-center gap-2 text-violet-400">
             <ImageIcon className="w-4 h-4 animate-pulse" />
             <span className="text-sm">Загрузка изображения...</span>
         </div>

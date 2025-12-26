@@ -1,12 +1,24 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { onSnapshot, Query, FirestoreError, DocumentReference, getDoc, getDocs } from 'firebase/firestore';
 import { logger } from '@/lib/logger';
 import { isDemoMode } from '@/lib/demo-mode';
 
 interface UseCollectionOptions {
   listen?: boolean;
+}
+
+// Stable query comparison helper
+function areQueriesEqual(a: Query | null, b: Query | null): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  // Compare query paths as a simple equality check
+  try {
+    return a.toString() === b.toString();
+  } catch {
+    return false;
+  }
 }
 
 export function useCollection<T>(
@@ -17,8 +29,32 @@ export function useCollection<T>(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
 
+  // Use ref to track previous query for stable comparison
+  const prevQueryRef = useRef<Query | null>(null);
+  const queryChanged = !areQueriesEqual(query, prevQueryRef.current);
+
+  // Update ref when query actually changes
+  useEffect(() => {
+    if (queryChanged) {
+      prevQueryRef.current = query;
+    }
+  }, [query, queryChanged]);
+
   // Memoize the query to prevent re-renders from creating new query objects
-  const memoizedQuery = useMemo(() => query, [query]);
+  const memoizedQuery = useMemo(() => query, [queryChanged ? query : prevQueryRef.current]);
+
+  // Stable error handler
+  const handleError = useCallback((err: FirestoreError) => {
+    // In demo mode, suppress offline errors
+    if (isDemoMode() && (err.message?.includes('client is offline') || err.message?.includes('Failed to get document') || err.code === 'unavailable')) {
+      setLoading(false);
+      setData([]);
+      return;
+    }
+    logger.error("useCollection error", err as Error);
+    setError(err);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     if (!memoizedQuery) {
@@ -44,18 +80,7 @@ export function useCollection<T>(
           setLoading(false);
           setError(null);
         },
-        (err) => {
-          const error = err as FirestoreError;
-          // In demo mode, suppress offline errors
-          if (isDemoMode() && (error.message?.includes('client is offline') || error.message?.includes('Failed to get document') || error.code === 'unavailable')) {
-            setLoading(false);
-            setData([]);
-            return;
-          }
-          logger.error("useCollection error", err as Error);
-          setError(err);
-          setLoading(false);
-        }
+        handleError
       );
       return () => unsubscribe();
     } else {
@@ -69,26 +94,26 @@ export function useCollection<T>(
           setLoading(false);
           setError(null);
         })
-        .catch((err) => {
-          const error = err as FirestoreError;
-          // In demo mode, suppress offline errors
-          if (isDemoMode() && (error.message?.includes('client is offline') || error.message?.includes('Failed to get document') || error.code === 'unavailable')) {
-            setLoading(false);
-            setData([]);
-            return;
-          }
-          logger.error("useCollection getDocs error", err as Error);
-          setError(err);
-          setLoading(false);
-        });
+        .catch(handleError);
     }
-  }, [memoizedQuery, options.listen]);
+  }, [memoizedQuery, options.listen, handleError]);
 
   return { data, loading, error };
 }
 
 interface UseDocOptions {
   listen?: boolean;
+}
+
+// Stable ref comparison helper
+function areRefsEqual(a: DocumentReference | null, b: DocumentReference | null): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  try {
+    return a.path === b.path;
+  } catch {
+    return false;
+  }
 }
 
 export function useDoc<T>(
@@ -99,7 +124,31 @@ export function useDoc<T>(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
 
-  const memoizedRef = useMemo(() => ref, [ref]);
+  // Use ref to track previous reference for stable comparison
+  const prevRefRef = useRef<DocumentReference | null>(null);
+  const refChanged = !areRefsEqual(ref, prevRefRef.current);
+
+  // Update ref when reference actually changes
+  useEffect(() => {
+    if (refChanged) {
+      prevRefRef.current = ref;
+    }
+  }, [ref, refChanged]);
+
+  const memoizedRef = useMemo(() => ref, [refChanged ? ref : prevRefRef.current]);
+
+  // Stable error handler
+  const handleError = useCallback((err: FirestoreError) => {
+    // In demo mode, suppress offline errors
+    if (isDemoMode() && (err.message?.includes('client is offline') || err.message?.includes('Failed to get document') || err.code === 'unavailable')) {
+      setLoading(false);
+      setData(null);
+      return;
+    }
+    logger.error("useDoc error", err as Error);
+    setError(err);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     if (!memoizedRef) {
@@ -122,18 +171,7 @@ export function useDoc<T>(
           setLoading(false);
           setError(null);
         },
-        (err) => {
-          const error = err as FirestoreError;
-          // In demo mode, suppress offline errors
-          if (isDemoMode() && (error.message?.includes('client is offline') || error.message?.includes('Failed to get document') || error.code === 'unavailable')) {
-            setLoading(false);
-            setData(null);
-            return;
-          }
-          logger.error("useDoc error", err as Error);
-          setError(err);
-          setLoading(false);
-        }
+        handleError
       );
       return () => unsubscribe();
     } else {
@@ -147,20 +185,9 @@ export function useDoc<T>(
           setLoading(false);
           setError(null);
         })
-        .catch((err) => {
-          const error = err as FirestoreError;
-          // In demo mode, suppress offline errors
-          if (isDemoMode() && (error.message?.includes('client is offline') || error.message?.includes('Failed to get document') || error.code === 'unavailable')) {
-            setLoading(false);
-            setData(null);
-            return;
-          }
-          logger.error("useDoc getDoc error", err as Error);
-          setError(err);
-          setLoading(false);
-        });
+        .catch(handleError);
     }
-  }, [memoizedRef, options.listen]);
+  }, [memoizedRef, options.listen, handleError]);
 
   return { data, loading, error };
 }

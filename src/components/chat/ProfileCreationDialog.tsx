@@ -183,31 +183,34 @@ export function ProfileCreationDialog({ isOpen, onProfileCreate, roomId, isCreat
     return (
         <Dialog open={isOpen} onOpenChange={() => { }}>
             <DialogContent
-                className="bg-black border border-white/10 p-0 max-w-md mx-4"
+                className="bg-black/95 backdrop-blur-2xl border border-white/[0.08] p-0 max-w-md mx-4 rounded-3xl shadow-2xl"
                 onInteractOutside={(e) => e.preventDefault()}
             >
                 <DialogTitle className="sr-only">Создание профиля</DialogTitle>
                 <DialogDescription className="sr-only">Введите имя и создайте аватар для входа в чат</DialogDescription>
-                <div className="p-6">
+                <div className="p-6 sm:p-8">
                     {/* Header */}
-                    <div className="text-center mb-6">
-                        <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-2">
+                    <div className="text-center mb-8">
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center shadow-lg shadow-violet-500/25">
+                            <User className="w-8 h-8 text-white" />
+                        </div>
+                        <h2 className="text-xl font-bold text-white mb-2">
                             Создайте профиль
                         </h2>
-                        <p className="text-sm text-[var(--text-secondary)]">
-                            Комната <span className="font-mono font-medium">{roomId.toUpperCase()}</span>
+                        <p className="text-sm text-white/40">
+                            Комната <span className="font-mono font-semibold text-violet-400">{roomId.toUpperCase()}</span>
                         </p>
                     </div>
 
                     {/* Avatar Editor */}
-                    <div className="flex justify-center mb-6">
+                    <div className="flex justify-center mb-8">
                         <PixelAvatarEditor onSave={setAvatarDataUrl} initialAvatar={avatarDataUrl} />
                     </div>
 
                     {/* Username Input */}
-                    <div className="space-y-4">
+                    <div className="space-y-5">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-[var(--text-secondary)] flex items-center gap-2">
+                            <label className="text-sm font-medium text-white/60 flex items-center gap-2 px-1">
                                 <User className="w-4 h-4" />
                                 Ваше имя
                             </label>
@@ -233,28 +236,28 @@ export function ProfileCreationDialog({ isOpen, onProfileCreate, roomId, isCreat
                                     aria-invalid={showError || !!lengthWarning}
                                     aria-required="true"
                                     className={cn(
-                                        "w-full px-4 py-3 bg-[var(--bg-secondary)] border rounded-lg",
-                                        "text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
-                                        "focus:outline-none focus:border-[var(--accent-primary)]",
-                                        "transition-colors disabled:opacity-50",
+                                        "w-full px-4 py-4 bg-white/[0.04] border-2 rounded-xl",
+                                        "text-white placeholder:text-white/30",
+                                        "focus:outline-none focus:bg-white/[0.06]",
+                                        "transition-all duration-200 disabled:opacity-50",
                                         showError
-                                            ? "border-[var(--error)] focus:border-[var(--error)]"
+                                            ? "border-red-500/50 focus:border-red-500/70"
                                             : isButtonEnabled && touched
-                                                ? "border-[var(--success)]"
-                                                : "border-[var(--border-primary)]"
+                                                ? "border-emerald-500/50 focus:border-emerald-500/70"
+                                                : "border-white/[0.08] focus:border-violet-500/50"
                                     )}
                                     style={{ fontSize: '16px' }}
                                 />
 
-                                {/* Character counter - shows remaining chars (Requirements 6.3) */}
+                                {/* Character counter */}
                                 <span
                                     className={cn(
-                                        "absolute right-3 top-1/2 -translate-y-1/2 text-xs",
+                                        "absolute right-4 top-1/2 -translate-y-1/2 text-xs font-medium",
                                         remainingChars < 0
-                                            ? "text-[var(--error)] font-medium"
+                                            ? "text-red-400"
                                             : remainingChars <= 5
-                                                ? "text-[var(--warning)]"
-                                                : "text-[var(--text-muted)]"
+                                                ? "text-amber-400"
+                                                : "text-white/30"
                                     )}
                                     aria-live="polite"
                                     aria-atomic="true"
@@ -265,23 +268,23 @@ export function ProfileCreationDialog({ isOpen, onProfileCreate, roomId, isCreat
 
                             {/* Error message */}
                             {showError && validationError && (
-                                <p id="username-error" className="text-xs text-[var(--error)] flex items-center gap-1" role="alert">
-                                    <AlertCircle className="w-3 h-3" aria-hidden="true" />
+                                <p id="username-error" className="text-xs text-red-400 flex items-center gap-1.5 px-1" role="alert">
+                                    <AlertCircle className="w-3.5 h-3.5" aria-hidden="true" />
                                     {validationError}
                                 </p>
                             )}
 
-                            {/* BUG-001: Length warning message (Requirements 6.1) */}
+                            {/* Length warning */}
                             {lengthWarning && (
-                                <p id="username-length-warning" className="text-xs text-[var(--error)] flex items-center gap-1" role="alert">
-                                    <AlertCircle className="w-3 h-3" aria-hidden="true" />
+                                <p id="username-length-warning" className="text-xs text-red-400 flex items-center gap-1.5 px-1" role="alert">
+                                    <AlertCircle className="w-3.5 h-3.5" aria-hidden="true" />
                                     {lengthWarning}
                                 </p>
                             )}
 
                             {/* Hint */}
                             {!showError && username.length === 0 && (
-                                <p id="username-hint" className="text-xs text-[var(--text-muted)]">
+                                <p id="username-hint" className="text-xs text-white/30 px-1">
                                     От {MIN_USERNAME_LENGTH} до {MAX_USERNAME_LENGTH} символов
                                 </p>
                             )}
@@ -295,11 +298,11 @@ export function ProfileCreationDialog({ isOpen, onProfileCreate, roomId, isCreat
                                         disabled={!isButtonEnabled || isCreating}
                                         isLoading={isCreating}
                                         loadingText="Вход..."
-                                        className="w-full"
+                                        className="w-full h-14 rounded-xl text-base"
                                         size="lg"
                                     >
                                         Присоединиться
-                                        <ArrowRight className="w-5 h-5" />
+                                        <ArrowRight className="w-5 h-5 ml-1" />
                                     </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
