@@ -456,7 +456,6 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     }
     lastMouseMoveTime.current = now;
 
-    const pos = getMousePos(e);
     const ctx = getCanvasContext();
     if (!ctx) return;
 

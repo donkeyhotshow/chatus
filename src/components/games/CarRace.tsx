@@ -49,7 +49,7 @@ function getRandomColor(): number {
 }
 
 export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser, roomId }: CarRaceProps) {
-    const canvasRefRef<HTMLCanvasElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
     const gameLoopRef = useRef<number | null>(null);
     const keysRef = useRef<Set<string>>(new Set());
     const playerRef = useRef<PlayerState | null>(null);
