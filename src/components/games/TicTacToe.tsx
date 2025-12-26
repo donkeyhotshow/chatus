@@ -292,19 +292,27 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
                             <span>Игра против AI</span>
                         </div>
                     )}
-                    <div className="grid grid-cols-3 gap-2 p-3 bg-white/[0.02] rounded-xl border border-white/[0.06]">
+                    {/* P1 Fix: Адаптивные touch-зоны для мобильных устройств */}
+                    <div className="grid grid-cols-3 gap-2 sm:gap-3 p-2 sm:p-3 bg-white/[0.02] rounded-xl border border-white/[0.06]">
                         {displayBoard?.map((cell, i) => (
                             <button
                                 key={i}
                                 onClick={() => handleClick(i)}
                                 className={`
-                                    h-20 w-20 bg-black rounded-xl flex items-center justify-center text-4xl font-bold
+                                    /* Адаптивные размеры: min 60px на мобильных, 80px на планшетах, 100px на десктопе */
+                                    h-[60px] w-[60px] sm:h-20 sm:w-20 md:h-[100px] md:w-[100px]
+                                    bg-black rounded-xl flex items-center justify-center text-3xl sm:text-4xl font-bold
                                     transition-all duration-200 hover:bg-white/5 disabled:cursor-not-allowed
                                     border border-white/[0.06]
+                                    /* Увеличенная область нажатия через relative positioning */
+                                    relative touch-target
+                                    /* Убираем tap highlight на мобильных */
+                                    [-webkit-tap-highlight-color:transparent]
                                     ${lastMoveIndex === i ? 'ring-2 ring-violet-500 ring-offset-2 ring-offset-black' : ''}
-                                    ${!cell && myTurn && !winner && !isAIThinking ? 'hover:scale-105 hover:border-violet-500/30' : ''}
+                                    ${!cell && myTurn && !winner && !isAIThinking ? 'hover:scale-105 hover:border-violet-500/30 active:scale-95' : ''}
                                 `}
                                 disabled={!!winner || !!displayBoard[i] || !myTurn || isAIThinking}
+                                aria-label={`Ячейка ${i + 1}${cell ? `, занята ${cell}` : ', пустая'}`}
                             >
                                 {cell === 'X' ? <XIcon /> : cell === 'O' ? <OIcon /> : null}
                             </button>

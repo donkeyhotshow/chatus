@@ -22,6 +22,7 @@ import MessageList from './MessageList';
 import { NewMessageNotification } from './NewMessageNotification';
 import { TypingIndicator } from './TypingIndicator';
 import { EnhancedMessageInput } from './EnhancedMessageInput';
+import { getNotificationSound } from '@/lib/notification-sound';
 
 interface ChatAreaProps {
     user: UserProfile;
@@ -78,7 +79,6 @@ export const ChatArea = memo(function ChatArea({
 
     const { isOnline } = usePresence(roomId, user?.id || null);
 
-    const audioRef = useRef<HTMLAudioElement | null>(null);
     const lastMessageCountRef = useRef<number>(0);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const messageListRef = useRef<any>(null);
@@ -116,7 +116,7 @@ export const ChatArea = memo(function ChatArea({
         setTypingUsers(serviceTypingUsers);
     }, [serviceTypingUsers]);
 
-    // Sound notification
+    // P3 Fix: Sound notification using Web Audio API
     useEffect(() => {
         if (isInitialLoad || persistedMessages.length === 0) {
             lastMessageCountRef.current = persistedMessages.length;
@@ -128,26 +128,13 @@ export const ChatArea = memo(function ChatArea({
             const hasNewFromOthers = newMessages.some(msg => msg.user?.id !== user.id && msg.type !== 'system');
 
             if (hasNewFromOthers) {
-                try {
-                    if (!audioRef.current) {
-                        audioRef.current = new Audio('/sounds/message.mp3');
-                        audioRef.current.volume = 0.3;
-                    }
-                    audioRef.current.play().catch(() => { });
-                } catch { }
+                // Use Web Audio API notification sound
+                const notifier = getNotificationSound();
+                notifier.play().catch(() => { });
             }
         }
         lastMessageCountRef.current = persistedMessages.length;
     }, [persistedMessages, isInitialLoad, user.id]);
-
-    useEffect(() => {
-        return () => {
-            if (audioRef.current) {
-                audioRef.current.pause();
-                audioRef.current = null;
-            }
-        };
-    }, []);
 
     const allMessages = useMemo(() => {
         const combined = [

@@ -151,11 +151,17 @@ export function HomeClient() {
                         </a>
                     </nav>
 
-                    {/* Mobile menu button */}
+                    {/* Mobile menu button - более заметная */}
                     <button
-                        className="md:hidden p-3 text-white/50 hover:text-white transition-colors touch-manipulation"
+                        className={cn(
+                            "md:hidden p-3 rounded-xl transition-all duration-200 touch-manipulation min-w-[48px] min-h-[48px] flex items-center justify-center",
+                            isMenuOpen
+                                ? "bg-violet-600 text-white"
+                                : "bg-white/[0.06] text-white/70 hover:text-white hover:bg-white/[0.1]"
+                        )}
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
                         aria-label={isMenuOpen ? "Закрыть меню" : "Открыть меню"}
+                        aria-expanded={isMenuOpen}
                     >
                         {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                     </button>

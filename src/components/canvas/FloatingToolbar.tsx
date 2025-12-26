@@ -110,7 +110,7 @@ export function FloatingToolbar({
                 {/* Expanded Tools */}
                 {isExpanded && (
                     <div className="flex flex-col gap-2 animate-in slide-in-from-bottom-2 duration-300">
-                        {/* Color Palette */}
+                        {/* Color Palette - P1 Fix: Увеличенные touch-зоны для цветов */}
                         {showColorPalette && !isMazeActive && selectedTool === 'pen' && (
                             <div
                                 className="bg-black/80 backdrop-blur-xl rounded-2xl p-3 border border-white/10 shadow-2xl animate-in slide-in-from-right-2 duration-200"
@@ -125,7 +125,7 @@ export function FloatingToolbar({
                                             aria-label={`Цвет: ${COLOR_NAMES[color] || color}`}
                                             aria-pressed={selectedColor === color}
                                             className={cn(
-                                                "w-8 h-8 rounded-full transition-all duration-200 border-2 active:scale-95",
+                                                "w-10 h-10 min-w-[40px] min-h-[40px] rounded-full transition-all duration-200 border-2 active:scale-95 touch-target",
                                                 selectedColor === color
                                                     ? "ring-2 ring-white scale-110 border-white"
                                                     : "hover:scale-105 border-white/20"
@@ -140,7 +140,7 @@ export function FloatingToolbar({
                             </div>
                         )}
 
-                        {/* Brush Types */}
+                        {/* Brush Types - P1 Fix: Увеличенные touch-зоны */}
                         {!isMazeActive && selectedTool === 'pen' && (
                             <div
                                 className="bg-black/80 backdrop-blur-xl rounded-2xl p-2 border border-white/10 shadow-2xl animate-in slide-in-from-right-2 duration-200"
@@ -155,7 +155,7 @@ export function FloatingToolbar({
                                             aria-label={brush.nameRu}
                                             aria-pressed={brushType === brush.id}
                                             className={cn(
-                                                "p-3 rounded-xl transition-all duration-200 flex items-center justify-center active:scale-95",
+                                                "p-3 min-w-[48px] min-h-[48px] rounded-xl transition-all duration-200 flex items-center justify-center active:scale-95 touch-target",
                                                 brushType === brush.id
                                                     ? "bg-white text-black"
                                                     : "bg-white/10 text-white hover:bg-white/20"
@@ -183,7 +183,7 @@ export function FloatingToolbar({
                             </div>
                         )}
 
-                        {/* Tool Buttons */}
+                        {/* Tool Buttons - P1 Fix: Увеличенные touch-зоны */}
                         <div
                             className="bg-black/80 backdrop-blur-xl rounded-2xl p-2 border border-white/10 shadow-2xl animate-in slide-in-from-right-2 duration-200"
                             role="toolbar"
@@ -196,7 +196,7 @@ export function FloatingToolbar({
                                     aria-label="Карандаш"
                                     aria-pressed={selectedTool === 'pen'}
                                     className={cn(
-                                        "p-3 rounded-xl transition-all duration-200 flex items-center justify-center active:scale-95",
+                                        "p-3 min-w-[48px] min-h-[48px] rounded-xl transition-all duration-200 flex items-center justify-center active:scale-95 touch-target",
                                         selectedTool === 'pen'
                                             ? "bg-white text-black"
                                             : "bg-white/10 text-white hover:bg-white/20",
@@ -212,7 +212,7 @@ export function FloatingToolbar({
                                     aria-label="Ластик"
                                     aria-pressed={selectedTool === 'eraser'}
                                     className={cn(
-                                        "p-3 rounded-xl transition-all duration-200 flex items-center justify-center active:scale-95",
+                                        "p-3 min-w-[48px] min-h-[48px] rounded-xl transition-all duration-200 flex items-center justify-center active:scale-95 touch-target",
                                         selectedTool === 'eraser'
                                             ? "bg-white text-black"
                                             : "bg-white/10 text-white hover:bg-white/20",
@@ -227,7 +227,7 @@ export function FloatingToolbar({
                                         onClick={() => setShowColorPalette(!showColorPalette)}
                                         aria-label="Выбрать цвет"
                                         aria-expanded={showColorPalette}
-                                        className="p-3 rounded-xl transition-all duration-200 flex items-center justify-center bg-white/10 text-white hover:bg-white/20 active:scale-95"
+                                        className="p-3 min-w-[48px] min-h-[48px] rounded-xl transition-all duration-200 flex items-center justify-center bg-white/10 text-white hover:bg-white/20 active:scale-95 touch-target"
                                     >
                                         <Palette className="w-5 h-5" aria-hidden="true" />
                                     </button>
@@ -236,7 +236,7 @@ export function FloatingToolbar({
                                 <button
                                     onClick={handleSend}
                                     aria-label="Отправить рисунок в чат"
-                                    className="p-3 rounded-xl transition-all duration-200 flex items-center justify-center bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 active:scale-95"
+                                    className="p-3 min-w-[48px] min-h-[48px] rounded-xl transition-all duration-200 flex items-center justify-center bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 active:scale-95 touch-target"
                                 >
                                     <Send className="w-5 h-5" aria-hidden="true" />
                                 </button>
@@ -244,7 +244,7 @@ export function FloatingToolbar({
                                 <button
                                     onClick={handleClear}
                                     aria-label="Очистить холст"
-                                    className="p-3 rounded-xl transition-all duration-200 flex items-center justify-center bg-red-500/20 text-red-400 hover:bg-red-500/30 active:scale-95"
+                                    className="p-3 min-w-[48px] min-h-[48px] rounded-xl transition-all duration-200 flex items-center justify-center bg-red-500/20 text-red-400 hover:bg-red-500/30 active:scale-95 touch-target"
                                 >
                                     <Trash2 className="w-5 h-5" aria-hidden="true" />
                                 </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 import { MessageCircle, PenTool, Gamepad2, Users, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { NavTab } from './UnifiedLayout';
@@ -19,11 +19,23 @@ const navItems = [
     { id: 'settings' as const, label: 'Ещё', icon: Settings, color: '#7C3AED' },
 ];
 
+/**
+ * UnifiedBottomNav - Нижняя навигация для мобильных устройств
+ * P1 Fix: Увеличенные touch-зоны (min 48x48px)
+ */
 export const UnifiedBottomNav = memo(function UnifiedBottomNav({
     activeTab,
     onTabChange,
     className
 }: UnifiedBottomNavProps) {
+    const handleTabClick = useCallback((tabId: NavTab) => {
+        // Haptic feedback
+        if ('vibrate' in navigator) {
+            navigator.vibrate(5);
+        }
+        onTabChange(tabId);
+    }, [onTabChange]);
+
     return (
         <nav
             className={cn(
@@ -41,20 +53,20 @@ export const UnifiedBottomNav = memo(function UnifiedBottomNav({
                     return (
                         <button
                             key={item.id}
-                            onClick={() => {
-                                if ('vibrate' in navigator) {
-                                    navigator.vibrate(5);
-                                }
-                                onTabChange(item.id);
-                            }}
+                            onClick={() => handleTabClick(item.id)}
                             aria-label={item.label}
                             aria-current={isActive ? 'page' : undefined}
                             className={cn(
-                                "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-all duration-150 touch-target",
-                                "min-w-[48px] min-h-[48px]",
+                                "flex flex-col items-center justify-center gap-0.5 flex-1 py-2 transition-all duration-150",
+                                // P1 Fix: Увеличенные touch-зоны
+                                "min-w-[48px] min-h-[48px] touch-target",
+                                // Убираем tap highlight
+                                "[-webkit-tap-highlight-color:transparent]",
                                 isActive
                                     ? "opacity-100"
-                                    : "text-[var(--text-muted)] opacity-60"
+                                    : "text-[var(--text-muted)] opacity-60",
+                                // Active state feedback
+                                "active:scale-95 active:opacity-80"
                             )}
                             style={isActive ? { color: item.color } : undefined}
                         >

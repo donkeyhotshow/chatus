@@ -4,9 +4,10 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { GameState, UserProfile } from '@/lib/types';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '../ui/card';
-import { ArrowLeft, Car, Users, Gamepad2, Trophy, Timer, Gauge, Heart } from 'lucide-react';
+import { ArrowLeft, Car, Users, Gamepad2, Trophy, Heart } from 'lucide-react';
 import { useActionGuard, hapticFeedback } from '@/lib/game-utils';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 type CarRaceProps = {
     onGameEnd: () => void;
@@ -41,9 +42,9 @@ type TireTrack = { x: number; y: number; rotation: number; alpha: number };
 type Particle = { x: number; y: number; vx: number; vy: number; life: number; color: string; size: number };
 type Spark = { x: number; y: number; vx: number; vy: number; life: number };
 
-// Game constants
-const GAME_WIDTH = 900;
-const GAME_HEIGHT = 600;
+// Game constants - адаптивные для мобильных
+const DESKTOP_WIDTH = 900;
+const DESKTOP_HEIGHT = 600;
 const CAR_WIDTH = 40;
 const CAR_HEIGHT = 20;
 const MAX_SPEED = 350;
@@ -77,10 +78,10 @@ const TRACK = {
         { x: 130, y: 370 }, { x: 130, y: 230 },
     ],
     checkpoints: [
-        { x1: 450, y1: 100, x2: 450, y2: 180 },  // Start/Finish
-        { x1: 850, y1: 300, x2: 770, y2: 300 },  // Right
-        { x1: 450, y1: 500, x2: 450, y2: 420 },  // Bottom
-        { x1: 50, y1: 300, x2: 130, y2: 300 },   // Left
+        { x1: 450, y1: 100, x2: 450, y2: 180 },
+        { x1: 850, y1: 300, x2: 770, y2: 300 },
+        { x1: 450, y1: 500, x2: 450, y2: 420 },
+        { x1: 50, y1: 300, x2: 130, y2: 300 },
     ],
     startPositions: [
         { x: 400, y: 140, rotation: 0 },
@@ -138,6 +139,7 @@ function normalizeAngle(angle: number): number {
 
 export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser, roomId }: CarRaceProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const gameLoopRef = useRef<number | null>(null);
     const keysRef = useRef<Set<string>>(new Set());
     const playerRef = useRef<PlayerState | null>(null);
@@ -145,14 +147,48 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
     const tireTracksRef = useRef<TireTrack[]>([]);
     const particlesRef = useRef<Particle[]>([]);
     const sparksRef = useRef<Spark[]>([]);
+
     const [isLoading, setIsLoading] = useState(true);
     const [isGameStarted, setIsGameStarted] = useState(false);
     const [countdown, setCountdown] = useState<number | null>(null);
     const [raceStartTime, setRaceStartTime] = useState<number>(0);
-    const [currentTime, setCurrentTime] = useState<number>(0);
+    const [canvasSize, setCanvasSize] = useState({ width: DESKTOP_WIDTH, height: DESKTOP_HEIGHT });
+    const [scale, setScale] = useState(1);
+
     const lastUpdateRef = useRef<number>(0);
     const prevPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
     const { guard } = useActionGuard();
+    const isMobile = useIsMobile();
+
+    // Joystick state for mobile
+    const joystickRef = useRef<{ angle: number; force: number }>({ angle: 0, force: 0 });
+    const joystickActiveRef = useRef(false);
+    const joystickCenterRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+    // Responsive canvas sizing
+    useEffect(() => {
+        const updateSize = () => {
+            if (!containerRef.current) return;
+            const container = containerRef.current;
+            const maxWidth = container.clientWidth - 16;
+            const maxHeight = container.clientHeight - 16;
+
+            // Calculate scale to fit
+            const scaleX = maxWidth / DESKTOP_WIDTH;
+            const scaleY = maxHeight / DESKTOP_HEIGHT;
+            const newScale = Math.min(scaleX, scaleY, 1);
+
+            setScale(newScale);
+            setCanvasSize({
+                width: Math.floor(DESKTOP_WIDTH * newScale),
+                height: Math.floor(DESKTOP_HEIGHT * newScale)
+            });
+        };
+
+        updateSize();
+        window.addEventListener('resize', updateSize);
+        return () => window.removeEventListener('resize', updateSize);
+    }, [isGameStarted]);
 
     // Initialize player
     useEffect(() => {
@@ -186,7 +222,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         });
     }, [isGameStarted, countdown, user.id, user.name, gameState.carRacePlayers, updateGameState]);
 
-    //r players
+    // Sync other players
     useEffect(() => {
         if (!gameState.carRacePlayers) return;
         Object.entries(gameState.carRacePlayers).forEach(([id, player]) => {
@@ -221,9 +257,9 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         return () => clearTimeout(timer);
     }, []);
 
-    // Keyboard
+    // Keyboard controls (desktop)
     useEffect(() => {
-        if (!isGameStarted || countdown !== null) return;
+        if (!isGameStarted || countdown !== null || isMobile) return;
         const handleKeyDown = (e: KeyboardEvent) => {
             const key = e.key.toLowerCase();
             if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd', ' ', 'shift'].includes(key)) {
@@ -238,43 +274,35 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
             window.removeEventListener('keydown', handleKeyDown);
             window.removeEventListener('keyup', handleKeyUp);
         };
-    }, [isGameStarted, countdown]);
+    }, [isGameStarted, countdown, isMobile]);
 
-    // Game loop
-    useEffect(() => {
-        if (!isGameStarted || countdown !== null || !canvasRef.current) return;
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        let lastTime = performance.now();
-
-        const gameLoop = (now: number) => {
-            const dt = Math.min((now - lastTime) / 1000, 0.05);
-            lastTime = now;
-            setCurrentTime(now);
-
-            if (playerRef.current && !playerRef.current.finished) {
-                updatePlayer(dt, now);
-            }
-            updateParticles(dt);
-            updateTireTracks(dt);
-            updateSparks(dt);
-            render(ctx, now);
-
-            gameLoopRef.current = requestAnimationFrame(gameLoop);
-        };
-
-        gameLoopRef.current = requestAnimationFrame(gameLoop);
-        return () => { if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current); };
-    }, [isGameStarted, countdown]);
-
+    // Update player physics
     const updatePlayer = useCallback((dt: number, now: number) => {
         const player = playerRef.current;
         if (!player) return;
 
         const keys = keysRef.current;
         const prevX = player.x, prevY = player.y;
+
+        // Mobile joystick input
+        let accelerating = false;
+        let braking = false;
+        let turnDir = 0;
+
+        if (isMobile && joystickActiveRef.current) {
+            const { angle, force } = joystickRef.current;
+            // Forward/backward based on joystick Y
+            const forwardForce = -Math.sin(angle) * force;
+            if (forwardForce > 0.3) accelerating = true;
+            if (forwardForce < -0.3) braking = true;
+            // Turn based on joystick X
+            turnDir = Math.cos(angle) * force;
+        } else {
+            // Desktop keyboard input
+            accelerating = keys.has('arrowup') || keys.has('w');
+            braking = keys.has('arrowdown') || keys.has('s');
+            turnDir = (keys.has('arrowleft') || keys.has('a')) ? -1 : (keys.has('arrowright') || keys.has('d')) ? 1 : 0;
+        }
 
         // Turbo
         const turboActive = keys.has('shift') && player.turbo > 0;
@@ -287,11 +315,11 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         const damageMultiplier = player.hp > 50 ? 1 : 0.5 + (player.hp / 100);
 
         // Acceleration
-        if (keys.has('arrowup') || keys.has('w')) {
+        if (accelerating) {
             player.vx += Math.cos(player.rotation) * ACCELERATION * dt * damageMultiplier;
             player.vy += Math.sin(player.rotation) * ACCELERATION * dt * damageMultiplier;
         }
-        if (keys.has('arrowdown') || keys.has('s')) {
+        if (braking) {
             if (speed > 20) {
                 player.vx -= Math.cos(player.rotation) * BRAKE_FORCE * dt;
                 player.vy -= Math.sin(player.rotation) * BRAKE_FORCE * dt;
@@ -303,11 +331,10 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
 
         // Turning with drift
         if (speed > 10) {
-            const turnDir = (keys.has('arrowleft') || keys.has('a')) ? -1 : (keys.has('arrowright') || keys.has('d')) ? 1 : 0;
             player.rotation += turnDir * TURN_SPEED * dt * Math.min(speed / 150, 1);
 
             // Drift mechanics
-            if (turnDir !== 0 && speed > 100) {
+            if (Math.abs(turnDir) > 0.3 && speed > 100) {
                 const driftAmount = Math.abs(turnDir) * (speed / MAX_SPEED) * 0.3;
                 player.turbo = Math.min(MAX_TURBO, player.turbo + TURBO_GAIN_DRIFT * driftAmount * dt);
 
@@ -329,7 +356,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         player.vx *= friction;
         player.vy *= friction;
 
-        // Drift factor - velocity aligns with rotation
+        // Drift factor
         const velAngle = Math.atan2(player.vy, player.vx);
         const angleDiff = normalizeAngle(player.rotation - velAngle);
         const driftFactor = DRIFT_FACTOR + (1 - DRIFT_FACTOR) * Math.abs(Math.cos(angleDiff));
@@ -384,8 +411,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
             player.vx *= 0.8;
             player.vy *= 0.8;
 
-            // Push back to track
-            const pushAngle = Math.atan2(player.y - GAME_HEIGHT / 2, player.x - GAME_WIDTH / 2);
+            const pushAngle = Math.atan2(player.y - DESKTOP_HEIGHT / 2, player.x - DESKTOP_WIDTH / 2);
             const inInner = pointInPolygon(player.x, player.y, TRACK.innerPath);
             if (inInner) {
                 player.x += Math.cos(pushAngle) * 5;
@@ -395,7 +421,6 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
                 player.y -= Math.sin(pushAngle) * 5;
             }
 
-            // Sparks
             for (let i = 0; i < 3; i++) {
                 sparksRef.current.push({
                     x: player.x, y: player.y,
@@ -429,7 +454,6 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
             }
         });
 
-        // Clamp HP
         player.hp = Math.max(0, Math.min(100, player.hp));
 
         // Respawn if destroyed
@@ -449,8 +473,6 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         const nextCheckpoint = player.checkpoint % TRACK.checkpoints.length;
         if (checkCheckpoint(prevX, prevY, player.x, player.y, TRACK.checkpoints[nextCheckpoint])) {
             player.checkpoint++;
-
-            // Lap complete
             if (nextCheckpoint === 0 && player.checkpoint > TRACK.checkpoints.length) {
                 player.lap++;
                 const lapTime = (now - player.currentLapStart) / 1000;
@@ -460,7 +482,6 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
                 player.currentLapStart = now;
                 hapticFeedback('medium');
 
-                // Race finished
                 if (player.lap >= TOTAL_LAPS) {
                     player.finished = true;
                     player.finishTime = now - raceStartTime;
@@ -471,14 +492,13 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
 
         prevPosRef.current = { x: player.x, y: player.y };
 
-        // Broadcast
         if (now - lastUpdateRef.current > 33) {
             lastUpdateRef.current = now;
             updateGameState({
                 carRacePlayers: { ...gameState.carRacePlayers, [user.id]: { ...player } },
             });
         }
-    }, [gameState.carRacePlayers, updateGameState, user.id, raceStartTime]);
+    }, [gameState.carRacePlayers, updateGameState, user.id, raceStartTime, isMobile]);
 
     const updateParticles = (dt: number) => {
         particlesRef.current = particlesRef.current.filter(p => {
@@ -509,14 +529,41 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         });
     };
 
-    const render = useCallback((ctx: CanvasRenderingContext2D, now: number) => {
-        // Background
-        ctx.fillStyle = '#1a1a2e';
-        ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    // Game loop
+    useEffect(() => {
+        if (!isGameStarted || countdown !== null || !canvasRef.current) return;
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
 
-        // Grass
+        let lastTime = performance.now();
+
+        const gameLoop = (now: number) => {
+            const dt = Math.min((now - lastTime) / 1000, 0.05);
+            lastTime = now;
+
+            if (playerRef.current && !playerRef.current.finished) {
+                updatePlayer(dt, now);
+            }
+            updateParticles(dt);
+            updateTireTracks(dt);
+            updateSparks(dt);
+            render(ctx, now);
+
+            gameLoopRef.current = requestAnimationFrame(gameLoop);
+        };
+
+        gameLoopRef.current = requestAnimationFrame(gameLoop);
+        return () => { if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current); };
+    }, [isGameStarted, countdown, updatePlayer, scale]);
+
+    const render = useCallback((ctx: CanvasRenderingContext2D, now: number) => {
+        ctx.save();
+        ctx.scale(scale, scale);
+
+        // Background grass
         ctx.fillStyle = '#2d5a27';
-        ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        ctx.fillRect(0, 0, DESKTOP_WIDTH, DESKTOP_HEIGHT);
 
         // Track (asphalt)
         ctx.fillStyle = '#3a3a4a';
@@ -550,8 +597,6 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         ctx.stroke();
 
         // Start/Finish line
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(445, 100, 10, 80);
         for (let i = 0; i < 8; i++) {
             ctx.fillStyle = i % 2 === 0 ? '#000000' : '#ffffff';
             ctx.fillRect(445, 100 + i * 10, 10, 10);
@@ -591,12 +636,14 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         // Current player
         if (playerRef.current) drawCar(ctx, playerRef.current, true);
 
-        // Mini-map
-        drawMiniMap(ctx);
+        // Mini-map (only on desktop or larger screens)
+        if (!isMobile) drawMiniMap(ctx);
 
         // HUD
         if (playerRef.current) drawHUD(ctx, playerRef.current, now);
-    }, []);
+
+        ctx.restore();
+    }, [scale, isMobile]);
 
     const drawCar = (ctx: CanvasRenderingContext2D, player: PlayerState, isCurrent: boolean) => {
         ctx.save();
@@ -617,16 +664,6 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
             const damageAlpha = (100 - player.hp) / 200;
             ctx.fillStyle = `rgba(0,0,0,${damageAlpha})`;
             ctx.fillRect(-CAR_WIDTH/2, -CAR_HEIGHT/2, CAR_WIDTH, CAR_HEIGHT);
-
-            // Scratches
-            ctx.strokeStyle = '#333';
-            ctx.lineWidth = 1;
-            for (let i = 0; i < Math.floor((100 - player.hp) / 20); i++) {
-                ctx.beginPath();
-                ctx.moveTo(-CAR_WIDTH/2 + Math.random() * CAR_WIDTH, -CAR_HEIGHT/2);
-                ctx.lineTo(-CAR_WIDTH/2 + Math.random() * CAR_WIDTH, CAR_HEIGHT/2);
-                ctx.stroke();
-            }
         }
 
         // Windshield
@@ -667,87 +704,85 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
     };
 
     const drawMiniMap = (ctx: CanvasRenderingContext2D) => {
-        const scale = 0.12;
-        const offsetX = GAME_WIDTH - 120;
+        const mapScale = 0.12;
+        const offsetX = DESKTOP_WIDTH - 120;
         const offsetY = 10;
 
         ctx.fillStyle = 'rgba(0,0,0,0.7)';
-        ctx.fillRect(offsettY - 5, 115, 80);
+        ctx.fillRect(offsetX - 5, offsetY - 5, 115, 80);
 
         ctx.strokeStyle = '#555';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(offsetX + TRACK.outerPath[0].x * scale, offsetY + TRACK.outerPath[0].y * scale);
-        TRACK.outerPath.forEach(p => ctx.lineTo(offsetX + p.x * scale, offsetY + p.y * scale));
+        ctx.moveTo(offsetX + TRACK.outerPath[0].x * mapScale, offsetY + TRACK.outerPath[0].y * mapScale);
+        TRACK.outerPath.forEach(p => ctx.lineTo(offsetX + p.x * mapScale, offsetY + p.y * mapScale));
         ctx.closePath();
         ctx.stroke();
 
         ctx.beginPath();
-        ctx.moveTo(offsetX + TRACK.innerPath[0].x * scale, offsetY + TRACK.innerPath[0].y * scale);
-        TRACK.innerPath.forEach(p => ctx.lineTo(offsetX + p.x * scale, offsetY + p.y * scale));
+        ctx.moveTo(offsetX + TRACK.innerPath[0].x * mapScale, offsetY + TRACK.innerPath[0].y * mapScale);
+        TRACK.innerPath.forEach(p => ctx.lineTo(offsetX + p.x * mapScale, offsetY + p.y * mapScale));
         ctx.closePath();
         ctx.stroke();
 
-        // Players on minimap
         otherPlayersRef.current.forEach(p => {
             ctx.fillStyle = `#${p.color.toString(16).padStart(6, '0')}`;
             ctx.beginPath();
-            ctx.arc(offsetX + p.x * scale, offsetY + p.y * scale, 3, 0, Math.PI * 2);
+            ctx.arc(offsetX + p.x * mapScale, offsetY + p.y * mapScale, 3, 0, Math.PI * 2);
             ctx.fill();
         });
 
         if (playerRef.current) {
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
-            ctx.arc(offsetX + playerRef.current.x * scale, offsetY + playerRef.current.y * scale, 4, 0, Math.PI * 2);
+            ctx.arc(offsetX + playerRef.current.x * mapScale, offsetY + playerRef.current.y * mapScale, 4, 0, Math.PI * 2);
             ctx.fill();
         }
     };
 
     const drawHUD = (ctx: CanvasRenderingContext2D, player: PlayerState, now: number) => {
+        const hudScale = isMobile ? 0.8 : 1;
+
         // Lap counter
         ctx.fillStyle = 'rgba(0,0,0,0.7)';
-        ctx.fillRect(10, 10, 100, 60);
+        ctx.fillRect(10, 10, 100 * hudScale, 50 * hudScale);
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 14px sans-serif';
+        ctx.font = `bold ${14 * hudScale}px sans-serif`;
         ctx.textAlign = 'left';
-        ctx.fillText(`Круг ${Math.min(player.lap + 1, TOTAL_LAPS)}/${TOTAL_LAPS}`, 20, 32);
+        ctx.fillText(`Круг ${Math.min(player.lap + 1, TOTAL_LAPS)}/${TOTAL_LAPS}`, 15, 28 * hudScale);
 
         const raceTime = raceStartTime > 0 ? (now - raceStartTime) / 1000 : 0;
-        ctx.font = '12px sans-serif';
-        ctx.fillText(`Время: ${raceTime.toFixed(1)}s`, 20, 50);
-        if (player.bestLapTime < Infinity) {
-            ctx.fillText(`Лучший: ${player.bestLapTime.toFixed(1)}s`, 20, 65);
-        }
+        ctx.font = `${12 * hudScale}px sans-serif`;
+        ctx.fillText(`${raceTime.toFixed(1)}s`, 15, 45 * hudScale);
 
         // Turbo bar
         ctx.fillStyle = 'rgba(0,0,0,0.7)';
-        ctx.fillRect(10, 80, 100, 20);
+        ctx.fillRect(10, 55 * hudScale, 100 * hudScale, 18 * hudScale);
         ctx.fillStyle = '#f97316';
-        ctx.fillRect(12, 82, 96 * (player.turbo / MAX_TURBO), 16);
+        ctx.fillRect(12, 57 * hudScale, 96 * hudScale * (player.turbo / MAX_TURBO), 14 * hudScale);
         ctx.fillStyle = '#fff';
-        ctx.font = '10px sans-serif';
-        ctx.fillText('TURBO', 40, 94);
+        ctx.font = `${9 * hudScale}px sans-serif`;
+        ctx.fillText('TURBO', 35, 68 * hudScale);
 
         // Speed
         const speed = Math.sqrt(player.vx ** 2 + player.vy ** 2);
         ctx.fillStyle = 'rgba(0,0,0,0.7)';
-        ctx.fillRect(10, 110, 100, 25);
+        ctx.fillRect(10, 78 * hudScale, 100 * hudScale, 22 * hudScale);
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 16px sans-serif';
-        ctx.fillText(`${Math.round(speed)} km/h`, 20, 128);
+        ctx.font = `bold ${14 * hudScale}px sans-serif`;
+        ctx.fillText(`${Math.round(speed)} km/h`, 15, 94 * hudScale);
 
         // Finish overlay
         if (player.finished) {
             ctx.fillStyle = 'rgba(0,0,0,0.8)';
-            ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+            ctx.fillRect(0, 0, DESKTOP_WIDTH, DESKTOP_HEIGHT);
             ctx.fillStyle = '#22c55e';
             ctx.font = 'bold 48px sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText('🏁 ФИНИШ!', GAME_WIDTH/2, GAME_HEIGHT/2 - 30);
+            ctx.fillText('🏁 ФИНИШ!', DESKTOP_WIDTH/2, DESKTOP_HEIGHT/2 - 30);
             ctx.fillStyle = '#fff';
             ctx.font = '24px sans-serif';
-            ctx.fillText(`Время: ${(player.finishTime / 1000).toFixed(2)}s`, GAME_WIDTH/2, GAME_HEIGHT/2 + 20);
+            ctx.fillText(`Время: ${(player.finishTime / 1000).toFixed(2)}s`, DESKTOP_WIDTH/2, DESKTOP_HEIGHT/2 + 20);
         }
     };
 
@@ -795,11 +830,19 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
                             <h4 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
                                 <Gamepad2 className="w-4 h-4" /> Управление
                             </h4>
-                            <ul className="text-xs text-white/60 space-y-1">
-                                <li>↑/W — Газ • ↓/S — Тормоз/Назад</li>
-                                <li>←/A →/D — Поворот</li>
-                                <li>SHIFT — Турбо (копится при дрифте)</li>
-                            </ul>
+                            {isMobile ? (
+                                <ul className="text-xs text-white/60 space-y-1">
+                                    <li>🕹️ Джойстик слева — Газ/Тормоз/Поворот</li>
+                                    <li>🔥 Кнопка справа — Турбо</li>
+                                    <li>💨 Дрифт копит турбо!</li>
+                                </ul>
+                            ) : (
+                                <ul className="text-xs text-white/60 space-y-1">
+                                    <li>↑/W — Газ • ↓/S — Тормоз/Назад</li>
+                                    <li>←/A →/D — Поворот</li>
+                                    <li>SHIFT — Турбо (копится при дрифте)</li>
+                                </ul>
+                            )}
                         </div>
                         <div className="flex items-center justify-center gap-2 text-sm text-white/50">
                             <Users className="w-4 h-4" />
@@ -827,8 +870,9 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
 
     return (
         <div className="flex flex-col h-full bg-black">
-            <div className="p-2 border-b border-white/10 bg-black/80 backdrop-blur-xl flex items-center justify-between">
-                <button onClick={handleBack} className="flex items-center gap-2 px-3 py-2 text-sm text-white/70 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all">
+            {/* Header */}
+            <div className="p-2 border-b border-white/10 bg-black/80 backdrop-blur-xl flex items-center justify-between shrink-0">
+                <button onClick={handleBack} className="flex items-center gap-2 px-3 py-2 text-sm text-white/70 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all min-h-[44px]">
                     <ArrowLeft className="w-4 h-4" /> Выход
                 </button>
                 <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-red-600 shadow-lg">
@@ -840,7 +884,8 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
                 </div>
             </div>
 
-            <div className="flex-1 flex items-center justify-center p-2 overflow-hidden relative">
+            {/* Game area */}
+            <div ref={containerRef} className="flex-1 flex items-center justify-center p-2 overflow-hidden relative">
                 {countdown !== null && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/70 z-10">
                         <div className="text-8xl font-bold text-white animate-pulse">
@@ -850,40 +895,145 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
                 )}
                 <canvas
                     ref={canvasRef}
-                    width={GAME_WIDTH}
-                    height={GAME_HEIGHT}
-                    className={cn("rounded-xl border-2 border-white/10 shadow-2xl max-w-full max-h-full")}
+                    width={canvasSize.width}
+                    height={canvasSize.height}
+                    className="rounded-xl border-2 border-white/10 shadow-2xl"
                 />
             </div>
 
-            <div className="md:hidden p-3 border-t border-white/10 bg-black/80">
-                <div className="flex justify-between items-center max-w-sm mx-auto">
-                    <div className="flex gap-1">
-                        <MobileBtn k="arrowleft" keysRef={keysRef}>←</MobileBtn>
-                        <MobileBtn k="arrowright" keysRef={keysRef}>→</MobileBtn>
-                    </div>
-                    <MobileBtn k="shift" keysRef={keysRef} className="bg-orange-600">🔥</MobileBtn>
-                    <div className="flex gap-1">
-                        <MobileBtn k="arrowdown" keysRef={keysRef}>⬇</MobileBtn>
-                        <MobileBtn k="arrowup" keysRef={keysRef} className="bg-green-600">⬆</MobileBtn>
-                    </div>
-                </div>
-            </div>
+            {/* Mobile Controls */}
+            {isMobile && (
+                <MobileControls
+                    keysRef={keysRef}
+                    joystickRef={joystickRef}
+                    joystickActiveRef={joystickActiveRef}
+                    joystickCenterRef={joystickCenterRef}
+                />
+            )}
         </div>
     );
 }
 
-function MobileBtn({ children, k, keysRef, className }: { children: React.ReactNode; k: string; keysRef: React.RefObject<Set<string>>; className?: string }) {
+// Mobile Controls Component with Virtual Joystick
+function MobileControls({
+    keysRef,
+    joystickRef,
+    joystickActiveRef,
+    joystickCenterRef
+}: {
+    keysRef: React.RefObject<Set<string>>;
+    joystickRef: React.RefObject<{ angle: number; force: number }>;
+    joystickActiveRef: React.RefObject<boolean>;
+    joystickCenterRef: React.RefObject<{ x: number; y: number }>;
+}) {
+    const joystickAreaRef = useRef<HTMLDivElement>(null);
+    const [joystickPos, setJoystickPos] = useState({ x: 0, y: 0 });
+    const [isJoystickActive, setIsJoystickActive] = useState(false);
+
+    const handleJoystickStart = useCallback((e: React.TouchEvent) => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = joystickAreaRef.current?.getBoundingClientRect();
+        if (!rect) return;
+
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        joystickCenterRef.current = { x: centerX, y: centerY };
+        joystickActiveRef.current = true;
+        setIsJoystickActive(true);
+
+        updateJoystick(touch.clientX, touch.clientY, centerX, centerY);
+        hapticFeedback('light');
+    }, [joystickCenterRef, joystickActiveRef]);
+
+    const handleJoystickMove = useCallback((e: React.TouchEvent) => {
+        e.preventDefault();
+        if (!joystickActiveRef.current) return;
+
+        const touch = e.touches[0];
+        const { x: centerX, y: centerY } = joystickCenterRef.current;
+        updateJoystick(touch.clientX, touch.clientY, centerX, centerY);
+    }, [joystickActiveRef, joystickCenterRef]);
+
+    const handleJoystickEnd = useCallback((e: React.TouchEvent) => {
+        e.preventDefault();
+        joystickActiveRef.current = false;
+        setIsJoystickActive(false);
+        setJoystickPos({ x: 0, y: 0 });
+        joystickRef.current = { angle: 0, force: 0 };
+    }, [joystickActiveRef, joystickRef]);
+
+    const updateJoystick = (touchX: number, touchY: number, centerX: number, centerY: number) => {
+        const maxRadius = 50;
+        let dx = touchX - centerX;
+        let dy = touchY - centerY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist > maxRadius) {
+            dx = (dx / dist) * maxRadius;
+            dy = (dy / dist) * maxRadius;
+        }
+
+        setJoystickPos({ x: dx, y: dy });
+
+        const angle = Math.atan2(dy, dx);
+        const force = Math.min(dist / maxRadius, 1);
+        joystickRef.current = { angle, force };
+    };
+
     return (
-        <button
-            onTouchStart={(e) => { e.preventDefault(); keysRef.current?.add(k); hapticFeedback('light'); }}
-            onTouchEnd={(e) => { e.preventDefault(); keysRef.current?.delete(k); }}
-            onMouseDown={() => keysRef.current?.add(k)}
-            onMouseUp={() => keysRef.current?.delete(k)}
-            onMouseLeave={() => keysRef.current?.delete(k)}
-            className={cn("w-14 h-14 rounded-xl bg-white/10 border border-white/20 text-white text-xl font-bold flex items-center justify-center active:scale-95 transition-transform touch-manipulation select-none", className)}
-        >
-            {children}
-        </button>
+        <div className="p-3 border-t border-white/10 bg-black/90 backdrop-blur-xl shrink-0">
+            <div className="flex justify-between items-center max-w-lg mx-auto gap-4">
+                {/* Virtual Joystick */}
+                <div
+                    ref={joystickAreaRef}
+                    className="relative w-32 h-32 rounded-full bg-white/5 border-2 border-white/20 touch-none"
+                    onTouchStart={handleJoystickStart}
+                    onTouchMove={handleJoystickMove}
+                    onTouchEnd={handleJoystickEnd}
+                    onTouchCancel={handleJoystickEnd}
+                >
+                    {/* Joystick base */}
+                    <div className="absolute inset-4 rounded-full bg-white/10 border border-white/10" />
+
+                    {/* Joystick knob */}
+                    <div
+                        className={cn(
+                            "absolute w-14 h-14 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg transition-transform",
+                            isJoystickActive ? "scale-110" : "scale-100"
+                        )}
+                        style={{
+                            left: '50%',
+                            top: '50%',
+                            transform: `translate(calc(-50% + ${joystickPos.x}px), calc(-50% + ${joystickPos.y}px))`,
+                        }}
+                    />
+
+                    {/* Direction indicators */}
+                    <div className="absolute top-1 left-1/2 -translate-x-1/2 text-white/30 text-xs">▲</div>
+                    <div className="absolute bottom-1 left-1/2 -translate-x-1/2 text-white/30 text-xs">▼</div>
+                    <div className="absolute left-1 top-1/2 -translate-y-1/2 text-white/30 text-xs">◀</div>
+                    <div className="absolute right-1 top-1/2 -translate-y-1/2 text-white/30 text-xs">▶</div>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex flex-col gap-3">
+                    {/* Turbo button */}
+                    <button
+                        onTouchStart={(e) => { e.preventDefault(); keysRef.current?.add('shift'); hapticFeedback('medium'); }}
+                        onTouchEnd={(e) => { e.preventDefault(); keysRef.current?.delete('shift'); }}
+                        className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-500 to-red-600 text-white text-2xl font-bold flex items-center justify-center active:scale-95 transition-transform touch-none select-none shadow-lg shadow-orange-500/30"
+                    >
+                        🔥
+                    </button>
+                    <span className="text-center text-xs text-white/50">TURBO</span>
+                </div>
+            </div>
+
+            {/* Instructions */}
+            <div className="mt-2 text-center text-xs text-white/40">
+                Джойстик: вверх = газ, вниз = тормоз, влево/вправо = поворот
+            </div>
+        </div>
     );
 }

@@ -157,15 +157,42 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
         textareaRef.current?.focus();
     }, []);
 
+    // Track if we just opened the picker to prevent immediate close
+    const justOpenedRef = useRef(false);
+
     // Close emoji picker when clicking outside
     useEffect(() => {
-        const handleClickOutside = (e: MouseEvent) => {
-            if (showEmojiPicker && emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
+        if (!showEmojiPicker) {
+            justOpenedRef.current = false;
+            return;
+        }
+
+        // Mark that we just opened
+        justOpenedRef.current = true;
+
+        const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+            // Skip if we just opened (prevents the opening click from closing)
+            if (justOpenedRef.current) {
+                justOpenedRef.current = false;
+                return;
+            }
+
+            const target = e.target as Node;
+
+            // Check if click is inside emoji picker container (includes button and dropdown)
+            if (emojiPickerRef.current && !emojiPickerRef.current.contains(target)) {
                 setShowEmojiPicker(false);
             }
         };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+
+        // Add listeners immediately but use the justOpenedRef flag to skip first click
+        document.addEventListener('click', handleClickOutside, true);
+        document.addEventListener('touchend', handleClickOutside, true);
+
+        return () => {
+            document.removeEventListener('click', handleClickOutside, true);
+            document.removeEventListener('touchend', handleClickOutside, true);
+        };
     }, [showEmojiPicker]);
 
     useEffect(() => {
@@ -280,7 +307,7 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                 <div className="relative" ref={emojiPickerRef}>
                     <button
                         type="button"
-                        onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                        onClick={() => setShowEmojiPicker(prev => !prev)}
                         disabled={disabled}
                         aria-label="Открыть эмодзи"
                         aria-expanded={showEmojiPicker}
@@ -294,23 +321,44 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                         <Smile className="w-5 h-5" aria-hidden="true" />
                     </button>
 
-                    {/* Emoji picker dropdown - Premium glass style */}
+                    {/* Emoji picker dropdown - Premium glass style with mobile adaptation */}
                     {showEmojiPicker && (
-                        <div className="absolute bottom-full left-0 mb-2 p-2 bg-black/95 border border-white/10 rounded-2xl shadow-2xl z-50 backdrop-blur-2xl">
-                            <div className="grid grid-cols-6 gap-0.5">
-                                {QUICK_EMOJIS.map((emoji) => (
-                                    <button
-                                        key={emoji}
-                                        type="button"
-                                        onClick={() => handleEmojiSelect(emoji)}
-                                        className="p-2.5 text-xl hover:bg-white/10 rounded-xl transition-all duration-150 active:scale-90"
-                                        aria-label={`Вставить ${emoji}`}
-                                    >
-                                        {emoji}
-                                    </button>
-                                ))}
+                        <>
+                            {/* Mobile backdrop */}
+                            <div
+                                className="fixed inset-0 bg-black/50 z-40 md:hidden"
+                                onClick={() => setShowEmojiPicker(false)}
+                            />
+                            <div className={cn(
+                                "bg-black/95 border border-white/10 rounded-2xl shadow-2xl z-50 backdrop-blur-2xl",
+                                // Desktop: absolute positioning
+                                "md:absolute md:bottom-full md:left-0 md:mb-2",
+                                // Mobile: fixed bottom sheet
+                                "fixed bottom-0 left-0 right-0 md:bottom-auto md:right-auto",
+                                "rounded-b-none md:rounded-2xl",
+                                "p-3 md:p-2"
+                            )}>
+                                {/* Mobile drag handle */}
+                                <div className="md:hidden flex justify-center pb-2">
+                                    <div className="w-10 h-1 bg-neutral-600 rounded-full" />
+                                </div>
+                                <div className="grid grid-cols-6 gap-1 md:gap-0.5">
+                                    {QUICK_EMOJIS.map((emoji) => (
+                                        <button
+                                            key={emoji}
+                                            type="button"
+                                            onClick={() => handleEmojiSelect(emoji)}
+                                            className="p-3 md:p-2.5 text-2xl md:text-xl hover:bg-white/10 active:bg-white/20 rounded-xl transition-all duration-150 active:scale-90 touch-target"
+                                            aria-label={`Вставить ${emoji}`}
+                                        >
+                                            {emoji}
+                                        </button>
+                                    ))}
+                                </div>
+                                {/* Safe area for mobile */}
+                                <div className="h-[env(safe-area-inset-bottom,0px)] md:hidden" />
                             </div>
-                        </div>
+                        </>
                     )}
                 </div>
 

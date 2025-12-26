@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Smile, Loader2, X } from 'lucide-react';
 import { StickerPack } from '@/lib/telegram/types';
 import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 interface StickerPickerProps {
   onSelect: (imageUrl: string) => void;
@@ -83,23 +84,41 @@ export function StickerPicker({ onSelect, onClose }: StickerPickerProps) {
         <Smile className="w-5 h-5" />
       </button>
 
-      {/* Dropdown Panel */}
+      {/* Dropdown Panel - Mobile adapted */}
       {isOpen && (
-        <div className="absolute bottom-full right-0 mb-2 w-80 bg-black/95 border border-white/10 rounded-2xl shadow-2xl z-50 backdrop-blur-2xl overflow-hidden">
-          {/* Header */}
-          <div className="p-3 border-b border-white/10 flex justify-between items-center">
-            <span className="text-sm font-semibold text-white">Стикеры</span>
-            <div className="flex items-center gap-2">
-              {isLoading && <Loader2 className="w-4 h-4 animate-spin text-violet-400" />}
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="p-1 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
+        <>
+          {/* Mobile backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={() => setIsOpen(false)}
+          />
+          <div className={cn(
+            "bg-black/95 border border-white/10 rounded-2xl shadow-2xl z-50 backdrop-blur-2xl overflow-hidden",
+            // Desktop: absolute positioning
+            "md:absolute md:bottom-full md:right-0 md:mb-2 md:w-80",
+            // Mobile: fixed bottom sheet
+            "fixed bottom-0 left-0 right-0 md:bottom-auto md:left-auto",
+            "rounded-b-none md:rounded-2xl",
+            "w-full md:w-80"
+          )}>
+            {/* Mobile drag handle */}
+            <div className="md:hidden flex justify-center pt-2">
+              <div className="w-10 h-1 bg-neutral-600 rounded-full" />
             </div>
-          </div>
+            {/* Header */}
+            <div className="p-3 border-b border-white/10 flex justify-between items-center">
+              <span className="text-sm font-semibold text-white">Стикеры</span>
+              <div className="flex items-center gap-2">
+                {isLoading && <Loader2 className="w-4 h-4 animate-spin text-violet-400" />}
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors touch-target"
+                >
+                  <X className="w-5 h-5 md:w-4 md:h-4" />
+                </button>
+              </div>
+            </div>
 
           {/* Content */}
           {packs.length === 0 ? (
@@ -175,7 +194,10 @@ export function StickerPicker({ onSelect, onClose }: StickerPickerProps) {
               )}
             </div>
           )}
+          {/* Safe area for mobile */}
+          <div className="h-[env(safe-area-inset-bottom,0px)] md:hidden" />
         </div>
+        </>
       )}
     </div>
   );

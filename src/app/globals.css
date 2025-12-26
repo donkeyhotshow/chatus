@@ -400,6 +400,42 @@
     100% { background-position: -200% 0; }
   }
 
+  /* P2 Fix: Улучшенные skeleton-загрузчики */
+  .skeleton-pulse {
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes skeleton-pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+  }
+
+  .skeleton-wave {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .skeleton-wave::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.08) 50%,
+      transparent 100%
+    );
+    animation: skeleton-wave 1.5s infinite;
+  }
+
+  @keyframes skeleton-wave {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
   /* ═══════════════════════════════════════════════════════════════
      MODAL / DIALOG
      ═══════════════════════════════════════════════════════════════ */
@@ -474,11 +510,25 @@
     min-width: 44px;
   }
 
+  /* P1 Fix: Увеличенные touch-зоны для мобильных устройств */
   @media (pointer: coarse) {
     button:not(.btn-icon),
     a:not(.text-link),
     [role="button"] {
       min-height: 44px;
+    }
+
+    /* Игровые ячейки - минимум 60px */
+    .game-cell,
+    .tictactoe-cell {
+      min-width: 60px;
+      min-height: 60px;
+    }
+
+    /* Инструменты рисования - минимум 48px */
+    .tool-button {
+      min-width: 48px;
+      min-height: 48px;
     }
   }
 

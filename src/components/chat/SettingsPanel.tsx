@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from 'react';
-import { X, Moon, Sun, Bell, Volume2, Trash2, Settings } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Moon, Sun, Bell, Volume2, Trash2, Settings, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
+import { getNotificationSound } from '@/lib/notification-sound';
 
 interface SettingsPanelProps {
     isOpen: boolean;
@@ -17,7 +18,27 @@ interface SettingsPanelProps {
 export function SettingsPanel({ isOpen, onClose, onClearChat }: SettingsPanelProps) {
     const [darkMode, setDarkMode] = useState(true);
     const [notifications, setNotifications] = useState(true);
+    const [soundEnabled, setSoundEnabled] = useState(true);
     const [soundVolume, setSoundVolume] = useState([50]);
+
+    // P3 Fix: Загрузка настроек звуковых уведомлений
+    useEffect(() => {
+        const notifier = getNotificationSound();
+        setSoundEnabled(notifier.isEnabled());
+    }, []);
+
+    // P3 Fix: Обработчик изменения настройки звука
+    const handleSoundToggle = (enabled: boolean) => {
+        setSoundEnabled(enabled);
+        const notifier = getNotificationSound();
+        notifier.setEnabled(enabled);
+    };
+
+    // P3 Fix: Тестовое воспроизведение звука
+    const handleTestSound = async () => {
+        const notifier = getNotificationSound();
+        await notifier.testSound();
+    };
 
     if (!isOpen) return null;
 
@@ -78,27 +99,38 @@ export function SettingsPanel({ isOpen, onClose, onClearChat }: SettingsPanelPro
                         <Switch id="notifications" checked={notifications} onCheckedChange={setNotifications} />
                     </div>
 
-                    {/* Volume */}
+                    {/* P3 Fix: Sound Notifications */}
                     <div className={cn(
-                        "p-4 rounded-xl space-y-4",
+                        "p-4 rounded-xl space-y-3",
                         "bg-white/[0.02] border border-white/[0.06]"
                     )}>
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-white/[0.06] flex items-center justify-center">
-                                <Volume2 className="h-5 w-5 text-blue-400" />
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-white/[0.06] flex items-center justify-center">
+                                    <Volume2 className={cn("h-5 w-5", soundEnabled ? "text-blue-400" : "text-white/40")} />
+                                </div>
+                                <div>
+                                    <Label htmlFor="sound-notifications" className="text-white font-medium">Звук сообщений</Label>
+                                    <p className="text-xs text-white/40 mt-0.5">Звуковые уведомления</p>
+                                </div>
                             </div>
-                            <div>
-                                <Label className="text-white font-medium">Громкость звуков</Label>
-                                <p className="text-xs text-white/40 mt-0.5">{soundVolume[0]}%</p>
-                            </div>
+                            <Switch
+                                id="sound-notifications"
+                                checked={soundEnabled}
+                                onCheckedChange={handleSoundToggle}
+                            />
                         </div>
-                        <Slider
-                            value={soundVolume}
-                            onValueChange={setSoundVolume}
-                            max={100}
-                            step={1}
-                            className="mt-2"
-                        />
+
+                        {/* Test sound button */}
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleTestSound}
+                            className="w-full h-9 text-xs text-white/60 hover:text-white hover:bg-white/[0.06]"
+                        >
+                            <Play className="h-3 w-3 mr-2" />
+                            Проверить звук
+                        </Button>
                     </div>
 
                     {/* Clear chat */}

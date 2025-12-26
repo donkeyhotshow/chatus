@@ -1,10 +1,15 @@
 /**
  * Lazy-loaded components for bundle optimization (Requirements: 16.3)
  * These components are loaded only when needed to reduce initial bundle size
+ *
+ * P2 Fix: Добавлены skeleton-загрузчики для улучшения UX при загрузке
  */
 
 import { lazy, Suspense } from 'react';
 import { LoadingSpinner } from '@/components/ui/LoadingStates';
+import { ChatSkeleton } from '@/components/chat/ChatSkeleton';
+import { GamesSkeleton, TicTacToeSkeleton } from '@/components/ui/skeletons/GamesSkeleton';
+import { CanvasSkeleton } from '@/components/ui/skeletons/CanvasSkeleton';
 
 // Lazy load heavy components
 export const LazyDoodlePad = lazy(() => import('@/components/chat/DoodlePad'));
@@ -65,27 +70,13 @@ export const PixelAvatarEditor: React.FC<any> = (props) => (
 );
 
 export const GameLobby: React.FC<any> = (props) => (
-    <LazyWrapper fallback={
-        <div className="flex items-center justify-center p-8">
-            <div className="text-center space-y-3">
-                <LoadingSpinner size="lg" />
-                <p className="text-sm text-neutral-400">Загрузка игр...</p>
-            </div>
-        </div>
-    }>
+    <LazyWrapper fallback={<GamesSkeleton />}>
         <LazyGameLobby {...props} />
     </LazyWrapper>
 );
 
 export const TicTacToe: React.FC<any> = (props) => (
-    <LazyWrapper fallback={
-        <div className="flex items-center justify-center p-4">
-            <div className="text-center space-y-2">
-                <LoadingSpinner />
-                <p className="text-xs text-neutral-400">Загрузка крестиков-ноликов...</p>
-            </div>
-        </div>
-    }>
+    <LazyWrapper fallback={<TicTacToeSkeleton />}>
         <LazyTicTacToe {...props} />
     </LazyWrapper>
 );
@@ -104,27 +95,13 @@ export const RockPaperScissors: React.FC<any> = (props) => (
 );
 
 export const CollaborationSpace: React.FC<any> = (props) => (
-    <LazyWrapper fallback={
-        <div className="flex items-center justify-center p-8">
-            <div className="text-center space-y-3">
-                <LoadingSpinner size="lg" />
-                <p className="text-sm text-neutral-400">Загрузка пространства совместной работы...</p>
-            </div>
-        </div>
-    }>
+    <LazyWrapper fallback={<ChatSkeleton />}>
         <LazyCollaborationSpace {...props} />
     </LazyWrapper>
 );
 
 export const SharedCanvas: React.FC<any> = (props) => (
-    <LazyWrapper fallback={
-        <div className="flex items-center justify-center p-8">
-            <div className="text-center space-y-3">
-                <LoadingSpinner size="lg" />
-                <p className="text-sm text-neutral-400">Загрузка редактора холста...</p>
-            </div>
-        </div>
-    }>
+    <LazyWrapper fallback={<CanvasSkeleton />}>
         <LazySharedCanvas {...props} />
     </LazyWrapper>
 );
@@ -142,13 +119,17 @@ export const MessageSearch: React.FC<any> = (props) => (
     </LazyWrapper>
 );
 
-// Preload functions for better UX
+// Preload functions for better UX - P2 Fix
 export const preloadDoodlePad = () => import('@/components/chat/DoodlePad');
 export const preloadPixelAvatarEditor = () => import('@/components/avatar/PixelAvatarEditor');
 export const preloadGameLobby = () => import('@/components/games/GameLobby');
 export const preloadCollaborationSpace = () => import('@/components/chat/CollaborationSpace');
+export const preloadSharedCanvas = () => import('@/components/canvas/SharedCanvas');
+export const preloadTicTacToe = () => import('@/components/games/TicTacToe');
 
-// Preload on user interaction
+/**
+ * P2 Fix: Предзагрузка компонентов при наведении для ускорения переключения вкладок
+ */
 export const preloadOnHover = (componentName: string) => {
     switch (componentName) {
         case 'doodle':
@@ -156,9 +137,13 @@ export const preloadOnHover = (componentName: string) => {
         case 'avatar':
             return preloadPixelAvatarEditor;
         case 'games':
-            return preloadGameLobby;
+            // Предзагружаем и лобби игр и TicTacToe
+            return () => Promise.all([preloadGameLobby(), preloadTicTacToe()]);
         case 'collaboration':
-            return preloadCollaborationSpace;
+            // Предзагружаем CollaborationSpace и SharedCanvas
+            return () => Promise.all([preloadCollaborationSpace(), preloadSharedCanvas()]);
+        case 'canvas':
+            return () => Promise.all([preloadCollaborationSpace(), preloadSharedCanvas()]);
         default:
             return () => Promise.resolve();
     }
