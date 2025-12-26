@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Smile, Loader2, X } from 'lucide-react';
 import { StickerPack } from '@/lib/telegram/types';
 import Image from 'next/image';
@@ -16,31 +16,32 @@ export function StickerPicker({ onSelect, onClose }: StickerPickerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const hasFetchedRef = useRef(false);
 
-  const fetchPacks = useCallback(async () => {
-    if (isLoading) return;
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/stickers');
-      const data = await response.json();
-      if (Array.isArray(data)) {
-        setPacks(data);
-        if (data.length > 0 && !selectedPack) {
-          setSelectedPack(data[0].shortName);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch sticker packs:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isLoading, selectedPack]);
-
+  // Fetch packs only once when opened
   useEffect(() => {
-    if (isOpen && packs.length === 0) {
-      fetchPacks();
-    }
-  }, [isOpen, packs.length, fetchPacks]);
+    if (!isOpen || hasFetchedRef.current || isLoading) return;
+
+    hasFetchedRef.current = true;
+    setIsLoading(true);
+
+    fetch('/api/stickers')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setPacks(data);
+          if (data.length > 0) {
+            setSelectedPack(data[0].shortName);
+          }
+        }
+      })
+      .catch(error => {
+        console.error('Failed to fetch sticker packs:', error);
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, [isOpen, isLoading]);
 
   // Close on click outside
   useEffect(() => {
