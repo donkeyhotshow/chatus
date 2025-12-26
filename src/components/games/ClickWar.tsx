@@ -23,8 +23,15 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
   const myScore = gameState.scores?.[user.id] || 0;
   const otherScore = otherUser ? gameState.scores?.[otherUser.id] || 0 : 0;
   const isActive = !!gameState.active;
-  // Fix BUG-004: Game is over only if it was started (has scores with values > 0 or startTime was set)
-  const hasBeenPlayed = gameState.startTime !== null && gameState.startTime !== undefined;
+  // BUG-007 FIX: Game is over only if it was actually played (has startTime AND is not active)
+  // Check that scores exist and at least one player has clicked
+  const hasBeenPlayed = (
+    gameState.startTime !== null &&
+    gameState.startTime !== undefined &&
+    gameState.scores !== null &&
+    gameState.scores !== undefined &&
+    (myScore > 0 || otherScore > 0)
+  );
   const isGameOver = !isActive && hasBeenPlayed;
   const startTime = gameState.startTime || null;
 
@@ -170,10 +177,10 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
 
   return (
     <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-4">
-        <Card className="bg-neutral-950/80 border-white/10 backdrop-blur-sm w-full max-w-sm">
+        <Card className="bg-black/90 border-white/[0.06] backdrop-blur-xl w-full max-w-sm">
             <CardHeader>
-                <CardTitle className="font-headline text-2xl flex items-center justify-center gap-2"><Swords />Кликер</CardTitle>
-                <CardDescription className="text-neutral-400">{description}</CardDescription>
+                <CardTitle className="font-headline text-2xl flex items-center justify-center gap-2 text-white"><Swords />Кликер</CardTitle>
+                <CardDescription className="text-white/50">{description}</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-4">
                  <div className="w-full flex justify-between items-center gap-4 px-2">
@@ -185,7 +192,7 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
                         <span className="font-bold text-white text-lg">{displayScore}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="font-bold text-neutral-400 text-lg">{otherScore}</span>
+                        <span className="font-bold text-white/40 text-lg">{otherScore}</span>
                          <Avatar className="w-8 h-8">
                             <AvatarImage src={otherUser?.avatar} alt={otherUser?.name} />
                             <AvatarFallback>{otherUser ? otherUser.name.charAt(0) : '?'}</AvatarFallback>
@@ -194,13 +201,13 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
                 </div>
                 <Progress
                   value={myProgress}
-                  className="h-3 w-full bg-neutral-800 [&>div]:bg-gradient-to-r [&>div]:from-white [&>div]:to-cyan-400 transition-all duration-150"
+                  className="h-3 w-full bg-white/5 [&>div]:bg-gradient-to-r [&>div]:from-violet-600 [&>div]:to-purple-600 transition-all duration-150"
                 />
 
                 {!isActive ? (
                     <Button
                       onClick={handleStart}
-                      className="w-full bg-white text-black hover:bg-neutral-200 transition-all"
+                      className="w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:shadow-lg hover:shadow-violet-500/25 transition-all min-h-[48px]"
                       disabled={!otherUser}
                     >
                         {isGameOver ? "Play Again" : "Start Game"}
@@ -208,7 +215,7 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
                 ) : (
                     <Button
                       onClick={handleClickGuarded}
-                      className="w-full h-24 text-2xl font-bold transition-transform active:scale-95"
+                      className="w-full h-24 text-2xl font-bold transition-transform active:scale-95 bg-gradient-to-r from-rose-600 to-red-600 hover:shadow-lg hover:shadow-rose-500/25"
                       variant="destructive"
                     >
                         CLICK!
@@ -216,7 +223,7 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
                 )}
             </CardContent>
             <CardFooter className="p-4">
-                 <Button onClick={onGameEnd} variant="ghost" size="sm" className="w-full text-neutral-400 hover:text-white">
+                 <Button onClick={onGameEnd} variant="ghost" size="sm" className="w-full text-white/40 hover:text-white min-h-[44px]">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Вернуться в лобби
                 </Button>

@@ -71,8 +71,8 @@ export const MessageBubble = memo(function MessageBubble({
 
     const getAvatarColor = (username: string) => {
         const colors = [
-            'bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-pink-500',
-            'bg-indigo-500', 'bg-yellow-500', 'bg-red-500', 'bg-teal-500'
+            'bg-violet-600', 'bg-emerald-600', 'bg-purple-600', 'bg-pink-600',
+            'bg-indigo-600', 'bg-amber-600', 'bg-rose-600', 'bg-teal-600'
         ];
         let hash = 0;
         for (let i = 0; i < username.length; i++) {
@@ -83,14 +83,14 @@ export const MessageBubble = memo(function MessageBubble({
 
     return (
         <div className={cn(
-            "group flex gap-3 px-4 py-2 hover:bg-[var(--bg-tertiary)]/50 transition-colors duration-200",
+            "group flex gap-3 px-4 py-1.5 hover:bg-white/[0.02] transition-colors duration-150",
             isOwn ? "flex-row-reverse" : "flex-row",
             className
         )}>
             {/* Avatar */}
             {!isOwn && (
                 <div className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium shrink-0 mt-1",
+                    "w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-semibold shrink-0 mt-1 shadow-lg",
                     getAvatarColor(user.name)
                 )}>
                     {getAvatarText(user.name)}
@@ -99,16 +99,16 @@ export const MessageBubble = memo(function MessageBubble({
 
             {/* Message Content */}
             <div className={cn(
-                "flex flex-col max-w-[70%] min-w-0",
+                "flex flex-col max-w-[75%] min-w-0",
                 isOwn ? "items-end" : "items-start"
             )}>
                 {/* Username and timestamp */}
                 {!isOwn && (
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-medium text-[var(--text-primary)]">
+                    <div className="flex items-center gap-2 mb-1 px-1">
+                        <span className="text-sm font-semibold text-white">
                             {user.name}
                         </span>
-                        <span className="text-xs text-[var(--text-muted)]">
+                        <span className="text-[11px] text-white/40">
                             {formatDistanceToNow(timestamp, { addSuffix: true, locale: ru })}
                         </span>
                     </div>
@@ -116,30 +116,30 @@ export const MessageBubble = memo(function MessageBubble({
 
                 {/* Message bubble */}
                 <div className={cn(
-                    "relative px-3 py-2 rounded-2xl break-words",
+                    "relative px-4 py-2.5 rounded-2xl break-words shadow-sm",
                     isOwn
-                        ? "bg-[var(--chat-primary)] text-white rounded-br-md"
-                        : "bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-primary)] rounded-bl-md"
+                        ? "bg-gradient-to-br from-violet-600 to-purple-700 text-white rounded-br-md"
+                        : "bg-white/[0.08] text-white border border-white/[0.06] rounded-bl-md"
                 )}>
                     {/* Reply indicator */}
                     {message.replyTo && (
                         <div className={cn(
-                            "text-xs opacity-75 mb-1 pb-1 border-b border-current/20",
-                            isOwn ? "text-white/80" : "text-[var(--text-secondary)]"
+                            "text-xs opacity-70 mb-2 pb-2 border-b",
+                            isOwn ? "border-white/20 text-white/80" : "border-white/10 text-white/60"
                         )}>
                             <Reply className="w-3 h-3 inline mr-1" />
-                            Ответ на: {message.replyTo.text.slice(0, 30)}...
+                            Ответ: {message.replyTo.text.slice(0, 30)}...
                         </div>
                     )}
 
                     {/* Message text */}
-                    <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                    <div className="text-[15px] leading-relaxed whitespace-pre-wrap">
                         {message.text}
                     </div>
 
                     {/* Own message timestamp with delivery status */}
                     {isOwn && (
-                        <div className="flex items-center justify-end gap-1 text-xs text-white/70 mt-1">
+                        <div className="flex items-center justify-end gap-1.5 text-[11px] text-white/60 mt-1.5">
                             <span>{formatDistanceToNow(timestamp, { addSuffix: true, locale: ru })}</span>
                             <DeliveryStatus status={(message as Message & { status?: string }).status as 'sending' | 'sent' | 'delivered' | 'read' | undefined} />
                         </div>
@@ -148,13 +148,13 @@ export const MessageBubble = memo(function MessageBubble({
 
                 {/* Message actions */}
                 <div className={cn(
-                    "flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200",
+                    "flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150",
                     isOwn ? "flex-row-reverse" : "flex-row"
                 )}>
                     {onReply && (
                         <button
                             onClick={() => onReply(message)}
-                            className="p-1 rounded-md hover:bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors touch-target"
+                            className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
                             title="Ответить"
                         >
                             <Reply className="w-4 h-4" />
@@ -164,7 +164,7 @@ export const MessageBubble = memo(function MessageBubble({
                     {isOwn && onEdit && (
                         <button
                             onClick={() => onEdit(message)}
-                            className="p-1 rounded-md hover:bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors touch-target"
+                            className="p-1.5 rounded-lg hover:bg-white/10 text-white/40 hover:text-white/80 transition-colors"
                             title="Редактировать"
                         >
                             <MoreHorizontal className="w-4 h-4" />
@@ -175,7 +175,7 @@ export const MessageBubble = memo(function MessageBubble({
 
             {/* Own avatar */}
             {isOwn && (
-                <div className="w-8 h-8 rounded-full bg-[var(--accent-primary)] flex items-center justify-center text-white text-sm font-medium shrink-0 mt-1">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center text-white text-sm font-semibold shrink-0 mt-1 shadow-lg">
                     {getAvatarText(currentUser.name)}
                 </div>
             )}
@@ -193,10 +193,10 @@ export const SystemMessage = memo(function SystemMessage({
 }) {
     return (
         <div className={cn(
-            "flex justify-center py-2 px-4",
+            "flex justify-center py-3 px-4",
             className
         )}>
-            <div className="bg-[var(--bg-tertiary)] text-[var(--text-muted)] text-xs px-3 py-1 rounded-full">
+            <div className="bg-white/5 text-white/50 text-xs px-4 py-1.5 rounded-full border border-white/5">
                 {message}
             </div>
         </div>

@@ -183,7 +183,7 @@ export function ProfileCreationDialog({ isOpen, onProfileCreate, roomId, isCreat
     return (
         <Dialog open={isOpen} onOpenChange={() => { }}>
             <DialogContent
-                className="bg-[var(--bg-primary)] border border-[var(--border-primary)] p-0 max-w-md mx-4"
+                className="bg-black border border-white/10 p-0 max-w-md mx-4"
                 onInteractOutside={(e) => e.preventDefault()}
             >
                 <DialogTitle className="sr-only">Создание профиля</DialogTitle>

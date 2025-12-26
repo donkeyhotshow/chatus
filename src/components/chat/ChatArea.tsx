@@ -503,13 +503,13 @@ function EmptyState({ onSend }: { onSend: (text: string) => void }) {
 
     return (
         <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center animate-fade-in">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--primary-dark)] flex items-center justify-center mb-6 shadow-[var(--shadow-glow)] animate-float">
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center mb-6 shadow-2xl shadow-violet-500/30 animate-float">
                 <MessageCircle className="w-10 h-10 text-white" />
             </div>
-            <h3 className="text-xl font-semibold text-[var(--text-primary)] mb-2">
+            <h3 className="text-xl font-semibold text-white mb-2">
                 Начните общение
             </h3>
-            <p className="text-sm text-[var(--text-secondary)] mb-8 max-w-xs">
+            <p className="text-sm text-white/50 mb-8 max-w-xs">
                 Отправьте первое сообщение или выберите быстрый ответ
             </p>
             <div className="flex flex-wrap justify-center gap-3">
@@ -517,7 +517,7 @@ function EmptyState({ onSend }: { onSend: (text: string) => void }) {
                     <button
                         key={text}
                         onClick={() => onSend(text)}
-                        className="px-4 py-2.5 min-h-[44px] rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] backdrop-blur-sm text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--primary)]/50 hover:shadow-[var(--shadow-glow)] transition-all hover:-translate-y-0.5"
+                        className="px-4 py-2.5 min-h-[44px] rounded-xl bg-white/5 border border-white/10 text-sm text-white/70 hover:text-white hover:bg-white/10 hover:border-violet-500/30 transition-all hover:-translate-y-0.5"
                         style={{ animationDelay: `${index * 0.1}s` }}
                     >
                         {text}

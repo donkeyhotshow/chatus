@@ -45,7 +45,8 @@ export function HomeClient() {
     }, []);
 
     // Form validation - using useMemo for better reactivity
-    const isUsernameValid = username.trim().length >= 2 && username.trim().length <= 20;
+    // BUG-006 FIX: Minimum 3 characters as per specification
+    const isUsernameValid = username.trim().length >= 3 && username.trim().length <= 20;
     const isRoomCodeValid = roomCode.trim().length >= 3 &&
                            roomCode.trim().length <= 6 &&
                            /^[A-Z0-9]+$/.test(roomCode.trim());
@@ -131,7 +132,7 @@ export function HomeClient() {
     return (
         <div className="min-h-screen w-full bg-[var(--bg-primary)]">
             {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 bg-[var(--bg-primary)]/80 backdrop-blur-sm border-b border-[var(--border-primary)]">
+            <header className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-white/10">
                 <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Logo className="w-7 h-7 text-[var(--text-primary)]" />
@@ -343,7 +344,7 @@ export function HomeClient() {
                                     title: "Чат",
                                     desc: "Приватное общение в реальном времени",
                                     color: "var(--chat-primary)",
-                                    gradient: "from-indigo-500 to-purple-600"
+                                    gradient: "from-violet-600 to-purple-700"
                                 },
                                 {
                                     icon: PenTool,
@@ -357,7 +358,7 @@ export function HomeClient() {
                                     title: "Игры",
                                     desc: "Мини-игры для развлечения",
                                     color: "var(--game-primary)",
-                                    gradient: "from-amber-500 to-orange-600"
+                                    gradient: "from-purple-500 to-fuchsia-600"
                                 }
                             ].map((feature, i) => (
                                 <div

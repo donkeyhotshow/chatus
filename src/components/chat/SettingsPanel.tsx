@@ -21,10 +21,10 @@ export function SettingsPanel({ isOpen, onClose, onClearChat }: SettingsPanelPro
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
             {/* BUG-017 FIX: Prevent horizontal scroll on small screens */}
-            <div className="bg-[var(--bg-secondary)] rounded-xl w-full max-w-md border border-[var(--border-primary)] overflow-hidden">
-                <div className="flex items-center justify-between p-4 border-b border-[var(--border-primary)]">
+            <div className="bg-black rounded-xl w-full max-w-md border border-white/10 overflow-hidden">
+                <div className="flex items-center justify-between p-4 border-b border-white/10">
                     <h2 className="text-lg font-semibold text-[var(--text-primary)]">Настройки</h2>
                     <Button variant="ghost" size="icon" onClick={onClose} className="min-w-[44px] min-h-[44px]">
                         <X className="h-5 w-5" />

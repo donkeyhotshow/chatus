@@ -147,10 +147,10 @@ export function DiceRoll({ onGameEnd, updateGameState, gameState, user, otherUse
 
     return (
         <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-4">
-            <Card className="bg-neutral-950/80 border-white/10 backdrop-blur-sm w-full max-w-sm">
+            <Card className="bg-black/90 border-white/[0.06] backdrop-blur-xl w-full max-w-sm">
                 <CardHeader>
-                    <CardTitle className="font-headline text-2xl flex items-center justify-center gap-2"><Dices />Кости</CardTitle>
-                    <CardDescription className="text-neutral-400">{resultText}</CardDescription>
+                    <CardTitle className="font-headline text-2xl flex items-center justify-center gap-2 text-white"><Dices />Кости</CardTitle>
+                    <CardDescription className="text-white/50">{resultText}</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-6">
                     <div className="flex justify-around w-full items-center">
@@ -163,7 +163,7 @@ export function DiceRoll({ onGameEnd, updateGameState, gameState, user, otherUse
                             h-24 w-24 text-8xl flex items-center justify-center text-white p-2
                             transition-all duration-300
                             ${isRolling ? 'animate-spin scale-110' : ''}
-                            ${myRoll ? 'ring-2 ring-cyan-400 ring-offset-2 ring-offset-neutral-950' : ''}
+                            ${myRoll ? 'ring-2 ring-violet-500 ring-offset-2 ring-offset-black' : ''}
                         `}>
                                 {isRolling && rollingValue ? (
                                     diceIcons[rollingValue - 1]
@@ -175,20 +175,20 @@ export function DiceRoll({ onGameEnd, updateGameState, gameState, user, otherUse
                             </div>
                             <span className="font-bold text-white">{user.name}</span>
                         </div>
-                        <span className="font-bold text-2xl text-neutral-500">VS</span>
+                        <span className="font-bold text-2xl text-white/30">VS</span>
                         <div className="flex flex-col items-center gap-2">
                             <Avatar>
                                 <AvatarImage src={otherUser?.avatar} alt={otherUser?.name} />
                                 <AvatarFallback>{otherUser?.name?.charAt(0) || '?'}</AvatarFallback>
                             </Avatar>
                             <div className={`
-                            h-24 w-24 text-8xl flex items-center justify-center text-neutral-400 p-2
+                            h-24 w-24 text-8xl flex items-center justify-center text-white/40 p-2
                             transition-all duration-300
-                            ${otherRoll ? 'ring-2 ring-purple-400 ring-offset-2 ring-offset-neutral-950' : ''}
+                            ${otherRoll ? 'ring-2 ring-purple-500 ring-offset-2 ring-offset-black' : ''}
                         `}>
                                 {otherRoll ? diceIcons[otherRoll - 1] : <Dices />}
                             </div>
-                            <span className="font-bold text-neutral-400">{otherUser?.name || "Opponent"}</span>
+                            <span className="font-bold text-white/40">{otherUser?.name || "Opponent"}</span>
                         </div>
                     </div>
 
@@ -196,7 +196,7 @@ export function DiceRoll({ onGameEnd, updateGameState, gameState, user, otherUse
                         <Button
                             onClick={handleRoll}
                             disabled={isRolling || !!myRoll || !otherUser}
-                            className="w-full bg-white text-black hover:bg-neutral-200 transition-all disabled:opacity-50"
+                            className="w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:shadow-lg hover:shadow-violet-500/25 transition-all disabled:opacity-50 min-h-[48px]"
                         >
                             {isRolling ? 'Rolling...' : (myRoll ? 'Waiting...' : 'Roll Dice')}
                         </Button>
@@ -205,14 +205,14 @@ export function DiceRoll({ onGameEnd, updateGameState, gameState, user, otherUse
                     {bothHaveRolled && (
                         <Button
                             onClick={handleReset}
-                            className="w-full bg-white text-black hover:bg-neutral-200 transition-all"
+                            className="w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:shadow-lg hover:shadow-violet-500/25 transition-all min-h-[48px]"
                         >
                             Играть снова
                         </Button>
                     )}
                 </CardContent>
                 <CardFooter className="p-4 pt-0">
-                    <Button onClick={onGameEnd} variant="ghost" size="sm" className="w-full text-neutral-400 hover:text-white">
+                    <Button onClick={onGameEnd} variant="ghost" size="sm" className="w-full text-white/40 hover:text-white min-h-[44px]">
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Вернуться в лобби
                     </Button>
