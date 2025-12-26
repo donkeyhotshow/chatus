@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Send, Smile, Image as ImageIcon } from 'lucide-react';
+import { Send, Image as ImageIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StickerPicker } from './StickerPicker';
 import { useDebouncedCallback } from 'use-debounce';
@@ -38,7 +38,6 @@ export function MessageInput({
     disabled = false
 }: MessageInputProps) {
     const [text, setText] = useState('');
-    const [showStickerPicker, setShowStickerPicker] = useState(false);
     const [isSending, setIsSending] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
@@ -251,27 +250,13 @@ export function MessageInput({
                 } : {})
             }}
         >
-            {/* Sticker Picker */}
-            {showStickerPicker && (
+            <div className="flex items-end gap-2 p-3">
+                {/* Sticker Picker - now self-contained with its own button */}
                 <StickerPicker
                     onSelect={(url) => {
                         onStickerSend(url);
-                        setShowStickerPicker(false);
                     }}
                 />
-            )}
-
-            <div className="flex items-end gap-2 p-3">
-                {/* Emoji/Sticker button */}
-                <button
-                    onClick={() => setShowStickerPicker(p => !p)}
-                    disabled={disabled}
-                    className="p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors touch-target disabled:opacity-50"
-                    aria-label="Открыть стикеры"
-                    aria-expanded={showStickerPicker}
-                >
-                    <Smile className="w-5 h-5" aria-hidden="true" />
-                </button>
 
                 {/* Input container */}
                 <div className="flex-1 relative">
