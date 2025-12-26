@@ -42,7 +42,7 @@ export const ChatHeader = memo(function ChatHeader({
 
     return (
         <header className={cn(
-            "flex items-center justify-between h-14 px-4 bg-[var(--bg-secondary)] border-b border-[var(--border-primary)] safe-top shrink-0 relative z-40",
+            "flex items-center justify-between h-14 px-4 bg-black/90 backdrop-blur-xl border-b border-white/10 safe-top shrink-0 relative z-40",
             className
         )}>
             {/* Left section */}
@@ -136,7 +136,7 @@ export const CompactChatHeader = memo(function CompactChatHeader({
 }) {
     return (
         <header className={cn(
-            "flex items-center justify-between h-12 px-3 bg-[var(--bg-secondary)] border-b border-[var(--border-primary)] safe-top shrink-0",
+            "flex items-center justify-between h-12 px-3 bg-black/90 backdrop-blur-xl border-b border-white/10 safe-top shrink-0",
             className
         )}>
             <div className="flex items-center gap-2 min-w-0 flex-1">

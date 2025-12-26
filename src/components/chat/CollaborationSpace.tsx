@@ -237,19 +237,19 @@ export function CollaborationSpace({
 
         {/* CANVAS TAB */}
         <div className={`flex-1 flex flex-col h-full ${activeTab === 'canvas' ? 'flex' : 'hidden'}`}>
-          <div className={`p-2 sm:p-4 border-b border-white/5 shrink-0 z-10 bg-neutral-950/90 backdrop-blur-sm flex justify-between items-center ${isMobile ? 'gap-2' : ''}`}>
-            <div className="flex items-center gap-1 sm:gap-2 bg-neutral-900 rounded-lg p-1 border border-white/5">
-              <button onClick={() => navigateSheet('prev')} disabled={!sheets || sheets.length <= 1 || activeGame?.type === 'maze'} className="p-1 hover:text-white text-neutral-500 disabled:opacity-30 touch-target">
+          <div className={`p-2 sm:p-4 border-b border-white/[0.06] shrink-0 z-10 bg-black/90 backdrop-blur-xl flex justify-between items-center ${isMobile ? 'gap-2' : ''}`}>
+            <div className="flex items-center gap-1 sm:gap-2 bg-white/[0.03] rounded-xl p-1 border border-white/[0.06]">
+              <button onClick={() => navigateSheet('prev')} disabled={!sheets || sheets.length <= 1 || activeGame?.type === 'maze'} className="p-2 hover:text-white text-white/40 disabled:opacity-30 touch-target rounded-lg hover:bg-white/5 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <span className="text-xs font-mono font-bold w-12 sm:w-16 text-center text-white truncate">
                 {activeGame?.type === 'maze' ? 'MAZE' : (activeSheet?.name || '...')}
               </span>
-              <button onClick={() => navigateSheet('next')} disabled={!sheets || sheets.length <= 1 || activeGame?.type === 'maze'} className="p-1 hover:text-white text-neutral-500 disabled:opacity-30 touch-target">
+              <button onClick={() => navigateSheet('next')} disabled={!sheets || sheets.length <= 1 || activeGame?.type === 'maze'} className="p-2 hover:text-white text-white/40 disabled:opacity-30 touch-target rounded-lg hover:bg-white/5 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
                 <ChevronRight className="w-4 h-4" />
               </button>
               <div className="w-[1px] h-4 bg-white/10 mx-1"></div>
-              <button onClick={handleCreateNewSheet} disabled={activeGame?.type === 'maze'} className="p-1 hover:text-green-400 text-neutral-500 disabled:opacity-30 touch-target" title="New Sheet">
+              <button onClick={handleCreateNewSheet} disabled={activeGame?.type === 'maze'} className="p-2 hover:text-emerald-400 text-white/40 disabled:opacity-30 touch-target rounded-lg hover:bg-emerald-500/10 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center" title="New Sheet">
                 <Plus className="w-4 h-4" />
               </button>
             </div>
@@ -257,7 +257,7 @@ export function CollaborationSpace({
             {!isMobile && (
               <button
                 onClick={handleFullscreenToggle}
-                className="p-2.5 rounded-xl bg-neutral-800 text-white hover:bg-neutral-700 transition-colors touch-target"
+                className="p-2.5 rounded-xl bg-white/5 text-white/60 hover:text-white hover:bg-white/10 transition-all min-w-[44px] min-h-[44px] flex items-center justify-center border border-white/[0.06]"
                 title={isFullscreen ? "Exit Fullscreen" : "Toggle Fullscreen"}
               >
                 {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
@@ -267,7 +267,7 @@ export function CollaborationSpace({
 
           {/* Canvas area with resizable height on desktop */}
           <div
-            className={`bg-[#0d0d0d] relative overflow-hidden ${!isFullscreen && !isMobile ? 'm-4 rounded-2xl border border-white/10' : isMobile ? 'm-2 rounded-xl border border-white/10' : ''}`}
+            className={`bg-black relative overflow-hidden ${!isFullscreen && !isMobile ? 'm-4 rounded-2xl border border-white/[0.06]' : isMobile ? 'm-2 rounded-xl border border-white/[0.06]' : ''}`}
             style={{
               height: isMobile || isFullscreen ? 'auto' : `${canvasHeight}px`,
               minHeight: isMobile || isFullscreen ? 'auto' : '200px',
@@ -304,7 +304,7 @@ export function CollaborationSpace({
 
           {/* Additional content area below canvas */}
           <div className="flex-1 min-h-0 p-4">
-            <div className="text-xs text-neutral-500 text-center">
+            <div className="text-xs text-white/30 text-center">
               {!isMobile && 'Перетащите границы для изменения размера • '}
               {isMobile ? 'Используйте два пальца для масштабирования холста' : 'Используйте колесо мыши для масштабирования холста'}
             </div>
@@ -312,7 +312,7 @@ export function CollaborationSpace({
         </div>
 
         {/* GAMES TAB */}
-        <div className={`flex-1 relative bg-neutral-950 h-full ${activeTab === 'games' ? 'flex flex-col' : 'hidden'}`}>
+        <div className={`flex-1 relative bg-black h-full ${activeTab === 'games' ? 'flex flex-col' : 'hidden'}`}>
           {user && (
             <Suspense fallback={<div className="h-full w-full flex items-center justify-center"><div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full"></div></div>}>
               <GameLobby roomId={roomId} user={user} otherUser={otherUser} />

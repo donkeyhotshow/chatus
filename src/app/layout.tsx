@@ -11,7 +11,7 @@ export const viewport = {
   maximumScale: 1,
   userScalable: false,
   interactiveWidget: 'resizes-content',
-  themeColor: '#2563eb',
+  themeColor: '#7C3AED',
   viewportFit: 'cover',
   height: 'device-height',
 };
@@ -75,7 +75,7 @@ export const metadata: Metadata = {
       { url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
     other: [
-      { rel: "mask-icon", url: "/icons/safari-pinned-tab.svg", color: "#2563eb" },
+      { rel: "mask-icon", url: "/icons/safari-pinned-tab.svg", color: "#7C3AED" },
     ],
   },
 };
@@ -89,7 +89,7 @@ export default function RootLayout({
     <html lang="ru">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#2563eb" />
+        <meta name="theme-color" content="#7C3AED" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

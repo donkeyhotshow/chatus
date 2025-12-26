@@ -32,6 +32,9 @@ import {
   cleanupCanvasResources,
   createThrottledDrawHandler,
 } from '@/lib/canvas-stabilizer';
+import { db as realtimeDb } from '@/lib/firebase';
+import { RealtimeCanvasService, RemoteCursor } from '@/services/RealtimeCanvasService';
+import { RemoteCursors, generateCursorColor } from './RemoteCursors';
 
 const NEON_COLORS = [
   '#FFFFFF', '#EF4444', '#F97316', '#F59E0B',
@@ -72,6 +75,11 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
   const [strokeWidth, setStrokeWidth] = useState(4);
   const [brushType, setBrushType] = useState<BrushType>('normal');
 
+  // Remote cursors state (IMP-002)
+  const [remoteCursors, setRemoteCursors] = useState<Map<string, RemoteCursor>>(new Map());
+  const realtimeServiceRef = useRef<RealtimeCanvasService | null>(null);
+  const cursorColor = useMemo(() => user ? generateCursorColor(user.id) : '#3B82F6', [user]);
+
   // Touch and zoom state
   const [scale, setScale] = useState(1);
   const [translateX, setTranslateX] = useState(0);
@@ -100,6 +108,37 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
       }
     };
   }, [service]);
+
+  // Initialize RealtimeCanvasService for remote cursors (IMP-002) and fast sync (BUG-004)
+  useEffect(() => {
+    if (!realtimeDb || !user || !roomId || !sheetId) return;
+
+    try {
+      const rtService = new RealtimeCanvasService(
+        realtimeDb,
+        roomId,
+        sheetId,
+        user.id,
+        user.name || 'Anonymous'
+      );
+
+      // Subscribe to remote cursors
+      rtService.subscribeToCursors((cursors) => {
+        setRemoteCursors(new Map(cursors));
+      });
+
+      realtimeServiceRef.current = rtService;
+      logger.info('RealtimeCanvasService initialized for cursors', { roomId, sheetId });
+
+      return () => {
+        rtService.destroy();
+        realtimeServiceRef.current = null;
+        setRemoteCursors(new Map());
+      };
+    } catch (error) {
+      logger.error('Failed to initialize RealtimeCanvasService', error as Error);
+    }
+  }, [realtimeDb, user, roomId, sheetId]);
 
   // Initialize canvas stabilizer for smooth drawing
   useEffect(() => {
@@ -401,6 +440,13 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
   const MOUSE_MOVE_THROTTLE = 16; // ms (~60 FPS)
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const pos = getMousePos(e);
+
+    // Update remote cursor position (IMP-002)
+    if (realtimeServiceRef.current && user) {
+      realtimeServiceRef.current.updateCursor(pos.x, pos.y, cursorColor);
+    }
+
     if (!stabilizerStateRef.current?.isDrawing || !user || !canvasRef.current) return;
 
     // Throttle mouse move events using rAF timing

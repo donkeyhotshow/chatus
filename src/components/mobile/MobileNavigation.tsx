@@ -17,9 +17,9 @@ interface MobileNavigationProps {
 
 // Упрощенная навигация - фокус на чате з функціональними кольорами
 const tabs = [
-    { id: 'chat' as const, label: 'Чат', icon: MessageCircle, color: 'var(--chat-primary)' },
-    { id: 'canvas' as const, label: 'Рисовать', icon: PenTool, color: 'var(--draw-primary)' },
-    { id: 'games' as const, label: 'Игры', icon: Gamepad2, color: 'var(--game-primary)' },
+    { id: 'chat' as const, label: 'Чат', icon: MessageCircle, color: '#7C3AED' },
+    { id: 'canvas' as const, label: 'Рисовать', icon: PenTool, color: '#10B981' },
+    { id: 'games' as const, label: 'Игры', icon: Gamepad2, color: '#A855F7' },
 ];
 
 export const MobileNavigation = memo(function MobileNavigation({
@@ -61,7 +61,7 @@ export const MobileNavigation = memo(function MobileNavigation({
         <nav
             ref={navRef}
             className={cn(
-                "shrink-0 bg-[var(--bg-secondary)] border-b border-[var(--border-primary)]",
+                "shrink-0 bg-black/90 backdrop-blur-xl border-b border-white/10",
                 className
             )}
             role="navigation"

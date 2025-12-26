@@ -12,11 +12,11 @@ interface UnifiedBottomNavProps {
 }
 
 const navItems = [
-    { id: 'chat' as const, label: 'Чат', icon: MessageCircle, color: 'var(--chat-primary)' },
-    { id: 'canvas' as const, label: 'Холст', icon: PenTool, color: 'var(--draw-primary)' },
-    { id: 'games' as const, label: 'Игры', icon: Gamepad2, color: 'var(--game-primary)' },
-    { id: 'users' as const, label: 'Люди', icon: Users, color: 'var(--accent-primary)' },
-    { id: 'settings' as const, label: 'Ещё', icon: Settings, color: 'var(--accent-primary)' },
+    { id: 'chat' as const, label: 'Чат', icon: MessageCircle, color: '#7C3AED' },
+    { id: 'canvas' as const, label: 'Холст', icon: PenTool, color: '#10B981' },
+    { id: 'games' as const, label: 'Игры', icon: Gamepad2, color: '#A855F7' },
+    { id: 'users' as const, label: 'Люди', icon: Users, color: '#7C3AED' },
+    { id: 'settings' as const, label: 'Ещё', icon: Settings, color: '#7C3AED' },
 ];
 
 export const UnifiedBottomNav = memo(function UnifiedBottomNav({
@@ -27,7 +27,8 @@ export const UnifiedBottomNav = memo(function UnifiedBottomNav({
     return (
         <nav
             className={cn(
-                "fixed bottom-0 left-0 right-0 z-50 bg-[var(--bg-secondary)] border-t border-[var(--border-primary)]",
+                "fixed bottom-0 left-0 right-0 z-50",
+                "bg-black/90 backdrop-blur-xl border-t border-white/10",
                 className
             )}
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}

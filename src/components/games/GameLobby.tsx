@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useMemo, lazy, Suspense } from 'react';
-import { Gamepad, ArrowLeft, Dices, Hand, Swords } from 'lucide-react';
+import { Gamepad, ArrowLeft, Dices, Hand, Swords, Car } from 'lucide-react';
 import { UserProfile, GameType, GameState } from '@/lib/types';
 import { useChatService } from '@/hooks/useChatService';
 import { useDoc } from '@/hooks/useDoc';
@@ -14,21 +14,23 @@ const TicTacToe = lazy(() => import('./TicTacToe').then(m => ({ default: m.TicTa
 const RockPaperScissors = lazy(() => import('./RockPaperScissors').then(m => ({ default: m.RockPaperScissors })));
 const ClickWar = lazy(() => import('./ClickWar').then(m => ({ default: m.ClickWar })));
 const DiceRoll = lazy(() => import('./DiceRoll').then(m => ({ default: m.DiceRoll })));
+const CarRace = lazy(() => import('./CarRace').then(m => ({ default: m.CarRace })));
 
 type GameDefinition = {
   id: GameType;
   name: string;
   description: string;
   icon: React.ElementType;
-  color: string;
+  gradient: string;
 };
 
 // Список игр для двоих
 const gamesList: GameDefinition[] = [
-  { id: 'tic-tac-toe', name: 'Крестики-нолики', description: 'Классическая игра', icon: Gamepad, color: 'var(--game-primary)' },
-  { id: 'rock-paper-scissors', name: 'Камень-ножницы-бумага', description: 'Кто победит?', icon: Hand, color: 'var(--game-primary)' },
-  { id: 'dice-roll', name: 'Кости', description: 'Бросьте кости', icon: Dices, color: 'var(--game-primary)' },
-  { id: 'click-war', name: 'Кликер', description: 'Кто быстрее?', icon: Swords, color: 'var(--game-primary)' },
+  { id: 'tic-tac-toe', name: 'Крестики-нолики', description: 'Классическая игра', icon: Gamepad, gradient: 'from-violet-600 to-purple-700' },
+  { id: 'rock-paper-scissors', name: 'Камень-ножницы-бумага', description: 'Кто победит?', icon: Hand, gradient: 'from-pink-600 to-rose-700' },
+  { id: 'dice-roll', name: 'Кости', description: 'Бросьте кости', icon: Dices, gradient: 'from-amber-500 to-orange-600' },
+  { id: 'click-war', name: 'Кликер', description: 'Кто быстрее?', icon: Swords, gradient: 'from-emerald-500 to-teal-600' },
+  { id: 'car-race', name: 'Car Race', description: 'Гонки в реальном времени', icon: Car, gradient: 'from-blue-500 to-cyan-600' },
 ];
 
 type GameLobbyProps = {
@@ -40,10 +42,10 @@ type GameLobbyProps = {
 // Минималистичный loading - Dark Minimalism Theme
 function GameLoading() {
   return (
-    <div className="h-full w-full flex items-center justify-center bg-[var(--bg-primary)]">
-      <div className="flex flex-col items-center gap-4 p-8 rounded-2xl bg-[var(--glass-bg)] border border-[var(--glass-border)] backdrop-blur-xl animate-fade-in">
-        <div className="w-10 h-10 border-2 border-[var(--glass-border)] border-t-[var(--game-primary)] rounded-full animate-spin" />
-        <span className="text-sm text-[var(--text-secondary)] font-medium">Загрузка...</span>
+    <div className="h-full w-full flex items-center justify-center bg-black">
+      <div className="flex flex-col items-center gap-4 p-8 rounded-2xl bg-white/[0.02] border border-white/[0.06] animate-fade-in">
+        <div className="w-10 h-10 border-2 border-white/10 border-t-violet-500 rounded-full animate-spin" />
+        <span className="text-sm text-white/50 font-medium">Загрузка...</span>
       </div>
     </div>
   );
@@ -89,6 +91,7 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
       'rock-paper-scissors': { moves: {}, result: null, hostId },
       'click-war': { scores: {}, active: false, startTime: null, hostId },
       'dice-roll': { diceRoll: {}, hostId },
+      'car-race': { carRacePlayers: {}, hostId },
     };
 
     const initialState: Partial<GameState> = { type: gameId, ...initialStates[gameId] };
@@ -118,21 +121,24 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
     };
 
     return (
-      <div className="flex flex-col h-full bg-[var(--bg-primary)]">
+      <div className="flex flex-col h-full bg-black">
         {/* Back button with game title - Glass effect */}
-        <div className="p-3 border-b border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-xl flex items-center justify-between">
+        <div className="p-3 border-b border-white/10 bg-black/80 backdrop-blur-xl flex items-center justify-between">
           <button
             onClick={handleEndGame}
-            className="flex items-center gap-2 px-4 py-2.5 min-h-[44px] text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] border border-[var(--glass-border)] rounded-xl transition-all hover:-translate-y-0.5"
+            className="flex items-center gap-2 px-4 py-2.5 min-h-[44px] text-sm text-white/70 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all hover:-translate-y-0.5"
             aria-label="Вернуться к списку игр"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Назад</span>
           </button>
           {currentGame && (
-            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--game-primary)]/10 border border-[var(--game-primary)]/20">
-              <currentGame.icon className="w-4 h-4" style={{ color: 'var(--game-primary)' }} />
-              <span className="font-semibold text-[var(--text-primary)]">{currentGame.name}</span>
+            <div className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r shadow-lg",
+              currentGame.gradient
+            )}>
+              <currentGame.icon className="w-4 h-4 text-white" />
+              <span className="font-semibold text-white text-sm">{currentGame.name}</span>
             </div>
           )}
         </div>
@@ -145,6 +151,7 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
               {activeGameId === 'rock-paper-scissors' && <RockPaperScissors {...commonProps} gameState={gameState} />}
               {activeGameId === 'click-war' && <ClickWar {...commonProps} gameState={gameState} />}
               {activeGameId === 'dice-roll' && <DiceRoll {...commonProps} gameState={gameState} />}
+              {activeGameId === 'car-race' && <CarRace {...commonProps} gameState={gameState} />}
             </Suspense>
           ) : (
             <GameLoading />
@@ -156,18 +163,16 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
 
   // Лобі - Dark Minimalism Theme
   return (
-    <div className="flex flex-col h-full bg-[var(--bg-primary)]">
+    <div className="flex flex-col h-full bg-black">
       {/* Header - Glass effect */}
-      <div className="p-4 border-b border-[var(--glass-border)] bg-[var(--glass-bg)] backdrop-blur-xl">
+      <div className="p-4 border-b border-white/10 bg-black/80 backdrop-blur-xl">
         <div className="flex items-center gap-4">
-          <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-[var(--game-primary)] to-[var(--warning)] shadow-[0_0_20px_rgba(245,158,11,0.3)]"
-          >
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-purple-600 to-fuchsia-700 shadow-lg shadow-purple-500/25">
             <Gamepad className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-[var(--text-primary)]">Игры</h2>
-            <p className="text-xs text-[var(--text-muted)]">Выберите игру для двоих</p>
+            <h2 className="text-lg font-semibold text-white">Игры</h2>
+            <p className="text-xs text-white/50">Выберите игру для двоих</p>
           </div>
         </div>
       </div>
@@ -185,9 +190,9 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
                 onClick={() => handleStartGame(game.id)}
                 disabled={isLoading}
                 className={cn(
-                  "flex flex-col items-center gap-3 p-5 rounded-2xl border transition-all min-h-[140px]",
-                  "bg-[var(--bg-card)] border-[var(--glass-border)]",
-                  "hover:bg-[var(--bg-tertiary)] hover:border-[var(--game-primary)]/40 hover:shadow-[0_0_20px_rgba(245,158,11,0.15)]",
+                  "flex flex-col items-center gap-3 p-5 rounded-2xl border transition-all duration-300 min-h-[140px]",
+                  "bg-white/[0.02] border-white/[0.06]",
+                  "hover:bg-white/[0.05] hover:border-white/10 hover:shadow-xl hover:shadow-purple-500/5",
                   "hover:-translate-y-1",
                   "active:scale-[0.98]",
                   isLoading && "opacity-50 pointer-events-none",
@@ -195,9 +200,10 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
                 )}
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
-                <div
-                  className="w-14 h-14 rounded-xl flex items-center justify-center bg-gradient-to-br from-[var(--game-primary)] to-[var(--warning)] shadow-[0_4px_12px_rgba(245,158,11,0.25)] transition-transform group-hover:scale-110"
-                >
+                <div className={cn(
+                  "w-14 h-14 rounded-xl flex items-center justify-center bg-gradient-to-br shadow-lg transition-transform group-hover:scale-110",
+                  game.gradient
+                )}>
                   {isLoading ? (
                     <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   ) : (
@@ -205,8 +211,8 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
                   )}
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-semibold text-[var(--text-primary)]">{game.name}</p>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">{game.description}</p>
+                  <p className="text-sm font-semibold text-white">{game.name}</p>
+                  <p className="text-xs text-white/40 mt-1">{game.description}</p>
                 </div>
               </button>
             );
@@ -214,10 +220,10 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
         </div>
 
         {/* Hint - Glass card */}
-        <div className="mt-6 p-4 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] backdrop-blur-sm">
-          <p className="text-xs text-[var(--text-secondary)] text-center flex items-center justify-center gap-2">
+        <div className="mt-6 p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+          <p className="text-xs text-white/40 text-center flex items-center justify-center gap-2">
             <span className="text-base">💡</span>
-            Игры синхронизируются в реальном времени с вашим собеседником
+            Игры синхронизируются в реальном времени
           </p>
         </div>
       </div>

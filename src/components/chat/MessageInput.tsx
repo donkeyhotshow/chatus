@@ -150,6 +150,7 @@ export function MessageInput({
 
     const handleSend = useCallback(async () => {
         const trimmedText = text.trim();
+        // BUG-005 FIX: Prevent double-tap by checking isSending state
         if (!trimmedText || isSending || trimmedText.length > MAX_MESSAGE_LENGTH) return;
 
         setIsSending(true);
@@ -166,7 +167,10 @@ export function MessageInput({
                 variant: "destructive",
             });
         } finally {
-            setIsSending(false);
+            // BUG-005 FIX: Add debounce delay to prevent rapid double-tap
+            setTimeout(() => {
+                setIsSending(false);
+            }, 300);
         }
     }, [text, isSending, onSendMessage, toast]);
 

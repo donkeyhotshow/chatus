@@ -44,10 +44,10 @@ export function useToast() {
 }
 
 const toastConfig = {
-    success: { icon: CheckCircle, bg: 'bg-green-50 dark:bg-green-950/50', border: 'border-green-200 dark:border-green-800', text: 'text-green-800 dark:text-green-200' },
-    error: { icon: AlertCircle, bg: 'bg-red-50 dark:bg-red-950/50', border: 'border-red-200 dark:border-red-800', text: 'text-red-800 dark:text-red-200' },
-    warning: { icon: AlertTriangle, bg: 'bg-yellow-50 dark:bg-yellow-950/50', border: 'border-yellow-200 dark:border-yellow-800', text: 'text-yellow-800 dark:text-yellow-200' },
-    info: { icon: Info, bg: 'bg-blue-50 dark:bg-blue-950/50', border: 'border-blue-200 dark:border-blue-800', text: 'text-blue-800 dark:text-blue-200' }
+    success: { icon: CheckCircle, bg: 'bg-emerald-950/90', border: 'border-emerald-500/30', text: 'text-emerald-400' },
+    error: { icon: AlertCircle, bg: 'bg-red-950/90', border: 'border-red-500/30', text: 'text-red-400' },
+    warning: { icon: AlertTriangle, bg: 'bg-amber-950/90', border: 'border-amber-500/30', text: 'text-amber-400' },
+    info: { icon: Info, bg: 'bg-blue-950/90', border: 'border-blue-500/30', text: 'text-blue-400' }
 };
 
 function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) => void }) {
@@ -63,7 +63,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
 
     return (
         <div className={cn(
-            "relative overflow-hidden rounded-lg border shadow-md max-w-sm w-full animate-slide-up",
+            "relative overflow-hidden rounded-xl border shadow-lg max-w-sm w-full animate-slide-up backdrop-blur-xl",
             config.bg, config.border
         )}>
             <div className="p-3">

@@ -79,7 +79,7 @@ function getAIMove(board: (string | null)[], aiSymbol: 'X' | 'O'): number {
 }
 
 const XIcon = () => <X className="w-10 h-10 text-white animate-in fade-in zoom-in-50 duration-300" />;
-const OIcon = () => <Circle className="w-10 h-10 text-cyan-400 animate-in fade-in zoom-in-50 duration-300" />;
+const OIcon = () => <Circle className="w-10 h-10 text-violet-400 animate-in fade-in zoom-in-50 duration-300" />;
 
 // AI player constant
 const AI_PLAYER_ID = '__AI__';
@@ -130,21 +130,32 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
         }
     }, [board]);
 
-    // AI Move Logic - BUG-001 FIX
+    // AI Move Logic - BUG-001 FIX: Use ref to avoid stale closure
+    const boardRef = useRef(board);
+    boardRef.current = board;
+
     const makeAIMove = useCallback(() => {
-        if (!board || winner || !isVsAI) return;
+        const currentBoard = boardRef.current;
+        if (!currentBoard || winner || !isVsAI || isAIThinking) return;
 
         const aiSymbol = playerSymbols[AI_PLAYER_ID];
         if (!aiSymbol) return;
 
-        const moveIndex = getAIMove(board, aiSymbol);
+        const moveIndex = getAIMove(currentBoard, aiSymbol);
         if (moveIndex === -1) return;
 
         setIsAIThinking(true);
 
         // Add delay for better UX
         aiMoveTimeoutRef.current = setTimeout(() => {
-            const newBoard = board.slice();
+            // Re-check current board state to avoid race conditions
+            const latestBoard = boardRef.current;
+            if (!latestBoard || latestBoard[moveIndex] !== null) {
+                setIsAIThinking(false);
+                return;
+            }
+
+            const newBoard = latestBoard.slice();
             newBoard[moveIndex] = aiSymbol;
 
             const newWinner = calculateWinner(newBoard);
@@ -159,12 +170,17 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
             setIsAIThinking(false);
             hapticFeedback('light');
         }, 500 + Math.random() * 500); // 500-1000ms delay
-    }, [board, winner, isVsAI, playerSymbols, updateGameState, user.id]);
+    }, [winner, isVsAI, isAIThinking, playerSymbols, updateGameState, user.id]);
 
     // Trigger AI move when it's AI's turn
     useEffect(() => {
-        if (isAITurn && !winner && !isDraw && board) {
-            makeAIMove();
+        // Only trigger if it's AI's turn and game is active
+        if (isAITurn && !winner && !isDraw && board && !isAIThinking) {
+            const timeoutId = setTimeout(() => {
+                makeAIMove();
+            }, 100); // Small delay to ensure state is settled
+
+            return () => clearTimeout(timeoutId);
         }
 
         return () => {
@@ -172,7 +188,7 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
                 clearTimeout(aiMoveTimeoutRef.current);
             }
         };
-    }, [isAITurn, winner, isDraw, board, makeAIMove]);
+    }, [isAITurn, winner, isDraw, board, isAIThinking, makeAIMove]);
 
     const { guard } = useActionGuard();
 
@@ -254,38 +270,39 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
                     gravity={0.3}
                 />
             )}
-            <Card className="bg-neutral-950/80 border-white/10 backdrop-blur-sm w-full max-w-sm">
+            <Card className="bg-black/90 border-white/[0.06] backdrop-blur-xl w-full max-w-sm">
                 <CardHeader className="text-center relative">
                     <Button
                         onClick={onGameEnd}
                         variant="ghost"
                         size="sm"
-                        className="absolute top-4 left-4 text-neutral-400 hover:text-white z-10"
+                        className="absolute top-4 left-4 text-white/40 hover:text-white z-10 min-w-[44px] min-h-[44px]"
                         title="Вернуться в лобби"
                     >
                         <ArrowLeft className="h-4 w-4" />
                     </Button>
-                    <CardTitle className="font-headline text-2xl">Крестики-нолики</CardTitle>
-                    <CardTitle className="text-sm font-medium text-neutral-400 pt-2">{getStatus()}</CardTitle>
+                    <CardTitle className="font-headline text-2xl text-white">Крестики-нолики</CardTitle>
+                    <CardTitle className="text-sm font-medium text-white/50 pt-2">{getStatus()}</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-4">
                     {/* VS AI indicator */}
                     {isVsAI && (
-                        <div className="flex items-center gap-2 text-sm text-cyan-400 bg-cyan-400/10 px-3 py-1 rounded-full">
+                        <div className="flex items-center gap-2 text-sm text-violet-400 bg-violet-500/10 px-3 py-1.5 rounded-full border border-violet-500/20">
                             <Bot className="w-4 h-4" />
                             <span>Игра против AI</span>
                         </div>
                     )}
-                    <div className="grid grid-cols-3 gap-2 p-2 bg-black/30 rounded-lg">
+                    <div className="grid grid-cols-3 gap-2 p-3 bg-white/[0.02] rounded-xl border border-white/[0.06]">
                         {displayBoard?.map((cell, i) => (
                             <button
                                 key={i}
                                 onClick={() => handleClick(i)}
                                 className={`
-                                    h-20 w-20 bg-neutral-900 rounded-lg flex items-center justify-center text-4xl font-bold
-                                    transition-all duration-200 hover:bg-neutral-800 disabled:cursor-not-allowed
-                                    ${lastMoveIndex === i ? 'ring-2 ring-cyan-400 ring-offset-2 ring-offset-neutral-950' : ''}
-                                    ${!cell && myTurn && !winner && !isAIThinking ? 'hover:scale-105' : ''}
+                                    h-20 w-20 bg-black rounded-xl flex items-center justify-center text-4xl font-bold
+                                    transition-all duration-200 hover:bg-white/5 disabled:cursor-not-allowed
+                                    border border-white/[0.06]
+                                    ${lastMoveIndex === i ? 'ring-2 ring-violet-500 ring-offset-2 ring-offset-black' : ''}
+                                    ${!cell && myTurn && !winner && !isAIThinking ? 'hover:scale-105 hover:border-violet-500/30' : ''}
                                 `}
                                 disabled={!!winner || !!displayBoard[i] || !myTurn || isAIThinking}
                             >
@@ -298,12 +315,12 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
                     {(winner || isDraw) && (
                         <Button
                             onClick={handleReset}
-                            className="w-full bg-white text-black hover:bg-neutral-200 transition-all"
+                            className="w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:shadow-lg hover:shadow-violet-500/25 transition-all min-h-[48px]"
                         >
                             Играть снова
                         </Button>
                     )}
-                    <Button onClick={onGameEnd} variant="ghost" size="sm" className="w-full text-neutral-400 hover:text-white">
+                    <Button onClick={onGameEnd} variant="ghost" size="sm" className="w-full text-white/40 hover:text-white min-h-[44px]">
                         <ArrowLeft className="mr-2 h-4 w-4" />
                         Вернуться в лобби
                     </Button>

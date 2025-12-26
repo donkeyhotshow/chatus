@@ -35,13 +35,13 @@ export const UnifiedSidebar = memo(function UnifiedSidebar({
             onMouseEnter={() => onExpandedChange(true)}
             onMouseLeave={() => onExpandedChange(false)}
             className={cn(
-                "flex flex-col h-full bg-[var(--bg-secondary)] border-r border-[var(--border-primary)] transition-all duration-200 z-40",
+                "flex flex-col h-full bg-black border-r border-white/10 transition-all duration-200 z-40",
                 expanded ? "w-[var(--sidebar-width-expanded)]" : "w-[var(--sidebar-width)]",
                 className
             )}
         >
             {/* Logo */}
-            <div className="h-16 flex items-center px-4 border-b border-[var(--border-primary)]">
+            <div className="h-16 flex items-center px-4 border-b border-white/10">
                 <div className="flex items-center gap-3">
                     <Logo className="w-7 h-7 text-[var(--text-primary)] shrink-0" />
                     {expanded && (
@@ -79,7 +79,7 @@ export const UnifiedSidebar = memo(function UnifiedSidebar({
             </nav>
 
             {/* Bottom Actions */}
-            <div className="px-2 py-4 space-y-1 border-t border-[var(--border-primary)]">
+            <div className="px-2 py-4 space-y-1 border-t border-white/10">
                 <button
                     onClick={() => onTabChange('settings')}
                     className={cn(

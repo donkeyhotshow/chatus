@@ -300,14 +300,14 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
 
                     {/* Emoji picker dropdown */}
                     {showEmojiPicker && (
-                        <div className="absolute bottom-full left-0 mb-2 p-2 bg-[var(--bg-secondary)] border border-[var(--border-primary)] rounded-lg shadow-lg z-50">
+                        <div className="absolute bottom-full left-0 mb-2 p-3 bg-black/95 border border-white/10 rounded-xl shadow-2xl z-50 backdrop-blur-xl">
                             <div className="grid grid-cols-6 gap-1">
                                 {QUICK_EMOJIS.map((emoji) => (
                                     <button
                                         key={emoji}
                                         type="button"
                                         onClick={() => handleEmojiSelect(emoji)}
-                                        className="p-2 text-xl hover:bg-[var(--bg-tertiary)] rounded transition-colors"
+                                        className="p-2.5 text-xl hover:bg-white/10 rounded-lg transition-colors"
                                         aria-label={`Вставить ${emoji}`}
                                     >
                                         {emoji}
@@ -341,14 +341,14 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                         aria-label="Введите сообщение"
                         aria-describedby={message.length > 800 ? "char-count" : undefined}
                         className={cn(
-                            "w-full px-4 py-2.5 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-2xl",
-                            "text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
+                            "w-full px-4 py-3 bg-white/5 border border-white/10 rounded-2xl",
+                            "text-white placeholder:text-white/30",
                             "resize-none overflow-y-auto max-h-[120px] scrollbar-hide",
-                            "focus:outline-none focus:border-[var(--accent-primary)]",
-                            "transition-colors duration-150",
+                            "focus:outline-none focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/20",
+                            "transition-all duration-200",
                             "disabled:opacity-50"
                         )}
-                        style={{ fontSize: '16px', minHeight: '44px' }}
+                        style={{ fontSize: '16px', minHeight: '48px' }}
                     />
 
                     {/* Character count */}
@@ -396,14 +396,14 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                     disabled={!canSend || isSending}
                     aria-label={isSending ? "Отправка..." : (canSend ? "Отправить сообщение" : "Введите сообщение для отправки")}
                     className={cn(
-                        "p-2.5 rounded-full transition-all duration-150 touch-target min-w-[44px] min-h-[44px] flex items-center justify-center",
+                        "p-3 rounded-full transition-all duration-200 min-w-[48px] min-h-[48px] flex items-center justify-center",
                         canSend && !isSending
-                            ? "bg-[var(--accent-primary)] text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)]"
-                            : "bg-[var(--bg-tertiary)] text-[var(--text-muted)] cursor-not-allowed"
+                            ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/25 hover:shadow-xl hover:shadow-violet-500/30 hover:scale-105"
+                            : "bg-white/5 text-white/30 cursor-not-allowed"
                     )}
                 >
                     {isSending ? (
-                        <div className="w-5 h-5 border-2 border-[var(--text-muted)] border-t-[var(--accent-contrast)] rounded-full animate-spin" />
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
                         <Send className="w-5 h-5" aria-hidden="true" />
                     )}

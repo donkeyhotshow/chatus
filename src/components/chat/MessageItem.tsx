@@ -108,7 +108,9 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
   const isSticker = message.type === 'sticker';
 
   return (
-    <div
+    <article
+      role="article"
+      aria-label={`${user.name} написал: ${message.text || 'изображение'}. ${formattedTime}`}
       className={`group flex gap-3 max-w-[90%] sm:max-w-[80%] mb-4 ${isOwn ? 'ml-auto flex-row-reverse' : 'items-start'} animate-in fade-in slide-in-from-bottom-1 duration-300`}
       onDoubleClick={handleDoubleClick}
     >
@@ -132,18 +134,37 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
         )}
 
         {hasContent ? (
-          <div 
+          <div
             onClick={() => setShowActions(!showActions)}
-            className={`relative p-3.5 rounded-2xl transition-all duration-300 cursor-pointer
-            ${isOwn
-              ? `${isSticker ? 'bg-transparent' : 'bg-white text-black rounded-tr-sm'}`
-              : `${isSticker ? 'bg-transparent' : 'bg-white/5 text-white border border-white/5 rounded-tl-sm'}`
-            }
-            ${message.id.startsWith('temp_') ? 'opacity-50' : ''}
-            ${showActions ? 'ring-2 ring-[var(--accent-primary)]/30' : ''}
-          `}>
+            className={cn(
+              "relative p-3.5 rounded-2xl transition-all duration-300 cursor-pointer",
+              // Premium message bubble styles
+              isOwn
+                ? isSticker
+                  ? "bg-transparent"
+                  : [
+                      "bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600",
+                      "text-white rounded-tr-sm",
+                      "shadow-lg shadow-indigo-500/20",
+                    ]
+                : isSticker
+                  ? "bg-transparent"
+                  : [
+                      "bg-[var(--bg-tertiary)]/80 backdrop-blur-sm",
+                      "text-white border border-[var(--glass-border)]",
+                      "rounded-tl-sm",
+                    ],
+              message.id.startsWith("temp_") && "opacity-50",
+              showActions && "ring-2 ring-[var(--accent-primary)]/30"
+            )}
+          >
             {message.replyTo && (
-              <div className={`mb-3 p-2 rounded-lg text-[11px] border-l-2 ${isOwn ? 'bg-black/5 border-black/20 text-black/60' : 'bg-white/5 border-white/20 text-white/60'}`}>
+              <div className={cn(
+                "mb-3 p-2 rounded-lg text-[11px] border-l-2",
+                isOwn
+                  ? "bg-white/10 border-white/30 text-white/80"
+                  : "bg-[var(--bg-secondary)] border-[var(--accent-primary)]/50 text-[var(--text-secondary)]"
+              )}>
                 <span className="font-bold block">{message.replyTo.senderName}</span>
                 <span className="truncate block opacity-80">{message.replyTo.text}</span>
               </div>
@@ -156,7 +177,12 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
                 {reactions.map((reaction) => (
                   <button
                     key={reaction.emoji}
-                    className="flex items-center gap-1 px-2 py-1 rounded-lg bg-black/5 border border-black/5 hover:bg-black/10 transition-all text-[11px]"
+                    className={cn(
+                      "flex items-center gap-1 px-2 py-1 rounded-lg transition-all text-[11px]",
+                      isOwn
+                        ? "bg-white/20 border border-white/10 hover:bg-white/30"
+                        : "bg-[var(--bg-secondary)] border border-[var(--border-primary)] hover:bg-[var(--bg-tertiary)]"
+                    )}
                     onClick={() => onReaction(message.id, reaction.emoji)}
                   >
                     <span>{reaction.emoji}</span>
@@ -210,9 +236,15 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
               )}
             </div>
 
-            {/* Emoji picker - works on all devices */}
+            {/* Emoji picker - premium glass style */}
             {showReactionPicker && (
-              <div className={`flex flex-wrap gap-1 mt-2 p-2 rounded-lg bg-neutral-800/80 border border-white/10 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+              <div className={cn(
+                "flex flex-wrap gap-1 mt-2 p-2 rounded-xl",
+                "bg-[var(--glass-bg)] backdrop-blur-xl",
+                "border border-[var(--glass-border)]",
+                "shadow-lg",
+                isOwn ? "justify-end" : "justify-start"
+              )}>
                 {['👍', '❤️', '😂', '😮', '😢', '🔥', '🎉', '👏'].map((emoji) => (
                   <button
                     key={emoji}
@@ -224,7 +256,7 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
                       setTimeout(() => setShowEmojiRain(false), 2000);
                       if ('vibrate' in navigator) navigator.vibrate(10);
                     }}
-                    className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 active:bg-white/20 transition-all text-lg"
+                    className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-white/10 active:bg-white/20 active:scale-95 transition-all text-lg"
                   >
                     {emoji}
                   </button>
@@ -245,7 +277,7 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
         )}
       </div>
       {showEmojiRain && <EmojiRain emoji={rainEmoji} />}
-    </div>
+    </article>
   );
 });
 
