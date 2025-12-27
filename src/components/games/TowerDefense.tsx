@@ -251,11 +251,12 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
       // --- ОТРИСОВКА ---
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Сетка
+      // Сетка - используем динамический cellSize
+      const currentCellSize = canvas.width / GRID_W;
       for (let x = 0; x < GRID_W; x++) {
         for (let y = 0; y < GRID_H; y++) {
           ctx.fillStyle = isPath(x, y) ? '#555' : '#1a3';
-          ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1);
+          ctx.fillRect(x * currentCellSize, y * currentCellSize, currentCellSize - 1, currentCellSize - 1);
         }
       }
 
@@ -328,20 +329,20 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
     if (tdStatus !== 'waiting' && tdStatus !== 'in-progress') return;
     if (isPath(x, y)) return;
 
-    // Проверка, нет ли уже башни на этой клетке
-    if (tdTowers.some(t => Math.floor(t.x / CELL_SIZE) === x && Math.floor(t.y / CELL_SIZE) === y)) return;
+    // Проверка, нет ли уже башни на этой клетке - используем cellSize
+    if (tdTowers.some(t => Math.floor(t.x / cellSize) === x && Math.floor(t.y / cellSize) === y)) return;
 
     const towerSpec = TOWER_SPECS[towerTypeToBuild];
     if (tdResources < towerSpec.cost) return;
 
     const newTower: TDTower = {
       id: `tower_${x}_${y}_${Date.now()}`,
-      x: x * CELL_SIZE + CELL_SIZE / 2,
-      y: y * CELL_SIZE + CELL_SIZE / 2,
+      x: x * cellSize + cellSize / 2,
+      y: y * cellSize + cellSize / 2,
       type: towerTypeToBuild,
       level: 1,
       cost: towerSpec.cost,
-      range: towerSpec.range,
+      range: towerSpec.range * (cellSize / CELL_SIZE), // Scale range with cell size
       damage: towerSpec.damage,
       fireRate: towerSpec.fireRate,
       lastFired: 0,
@@ -352,7 +353,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
       tdTowers: [...tdTowers, newTower],
       tdResources: tdResources - towerSpec.cost
     });
-  }, [tdStatus, tdTowers, tdResources, towerTypeToBuild, user.id, updateGameState]);
+  }, [tdStatus, tdTowers, tdResources, towerTypeToBuild, user.id, updateGameState, cellSize]);
 
   // Апгрейд башни
   const handleUpgradeTower = useCallback(() => {
@@ -385,12 +386,15 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    const x = Math.floor((e.clientX - rect.left) / CELL_SIZE);
-    const y = Math.floor((e.clientY - rect.top) / CELL_SIZE);
+    // Учитываем масштабирование canvas
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = Math.floor((e.clientX - rect.left) * scaleX / cellSize);
+    const y = Math.floor((e.clientY - rect.top) * scaleY / cellSize);
 
     // Проверяем, есть ли башня на этой клетке
     const tower = tdTowers.find(t =>
-      Math.floor(t.x / CELL_SIZE) === x && Math.floor(t.y / CELL_SIZE) === y
+      Math.floor(t.x / cellSize) === x && Math.floor(t.y / cellSize) === y
     );
 
     if (tower) {
@@ -403,7 +407,7 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
       setSelectedTowerId(null);
       updateGameState({ tdSelectedTower: null });
     }
-  }, [tdTowers, handleBuildTower, updateGameState]);
+  }, [tdTowers, handleBuildTower, updateGameState, cellSize]);
 
   // Запуск волны (улучшенная версия)
   const handleStartWave = useCallback(() => {
@@ -441,9 +445,9 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
         type: enemyType,
         health,
         maxHealth: health,
-        speed: spec.speed,
+        speed: spec.speed * (cellSize / CELL_SIZE), // Scale speed with cell size
         pathIndex: 0,
-        position: { x: 0, y: lane * CELL_SIZE + CELL_SIZE / 2 },
+        position: { x: 0, y: lane * cellSize + cellSize / 2 },
         value: spec.value,
       };
 
