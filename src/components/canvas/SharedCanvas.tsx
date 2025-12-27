@@ -389,10 +389,16 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
       clientY = (e as React.MouseEvent).clientY;
     }
 
-    // Adjust for scale and translation
+    // getBoundingClientRect already includes CSS transform (scale/translate)
+    // So we just need to map from screen coords to canvas coords
+    // rect.width/height = canvas display size (with CSS transform applied)
+    // canvas.width/height = actual canvas resolution
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+
     return {
-      x: (clientX - rect.left - translateX) / scale,
-      y: (clientY - rect.top - translateY) / scale,
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY,
       timestamp: Date.now()
     };
   };
