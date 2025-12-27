@@ -890,7 +890,12 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         const color = `#${player.color.toString(16).padStart(6, '0')}`;
         ctx.fillStyle = color;
         ctx.beginPath();
-        ctx.roundRect(-CAR_WIDTH/2, -CAR_HEIGHT/2, CAR_WIDTH, CAR_HEIGHT, 6);
+        // roundRect fallback for older browsers
+        if (ctx.roundRect) {
+            ctx.roundRect(-CAR_WIDTH/2, -CAR_HEIGHT/2, CAR_WIDTH, CAR_HEIGHT, 6);
+        } else {
+            ctx.rect(-CAR_WIDTH/2, -CAR_HEIGHT/2, CAR_WIDTH, CAR_HEIGHT);
+        }
         ctx.fill();
 
         // Damage overlay
