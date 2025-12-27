@@ -191,7 +191,7 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
 
       {/* Games list - Dark Minimalism cards */}
       <div className="flex-1 overflow-y-auto mobile-scroll-y game-lobby-content p-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="games-grid">
           {gamesList.map((game, index) => {
             const isLoading = loadingGameId === game.id;
             const Icon = game.icon;

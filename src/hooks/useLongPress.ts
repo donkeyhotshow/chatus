@@ -1,4 +1,4 @@
-"use clien
+"use client";
 
 import { useCallback, useRef, useState } from 'react';
 import { hapticFeedback } from '@/lib/game-utils';

@@ -21,6 +21,9 @@ import { useSwipe } from '@/hooks/use-swipe';
 const SharedCanvas = lazy(() => import('../canvas/SharedCanvas').then(m => ({ default: m.SharedCanvas })));
 const GameLobby = lazy(() => import('../games/GameLobby').then(m => ({ default: m.GameLobby })));
 
+// P2 UX-5: Import CanvasSkeleton for loading state
+import { CanvasSkeleton } from '../ui/skeletons/CanvasSkeleton';
+
 type CanvasSheet = {
   id: string;
   name: string;
@@ -45,12 +48,15 @@ export function CollaborationSpace({
   mobileActiveTab,
 }: CollaborationSpaceProps) {
   const { service } = useChatService(roomId, user || undefined);
-  // BUG #15 FIX: Initialize activeTab based on mobileActiveTab prop
+  // BUG #15 FIX + P0-1 FIX: Initialize activeTab based on mobileActiveTab prop
+  // P0-1: Ensure canvas view renders correctly when navigating via URL or tab
   const [activeTab, setActiveTab] = useState<'games' | 'canvas' | 'users' | 'stats'>(() => {
+    // Priority: mobileActiveTab prop > default to canvas for better UX
     if (mobileActiveTab === 'canvas') return 'canvas';
     if (mobileActiveTab === 'games') return 'games';
     if (mobileActiveTab === 'users') return 'users';
-    return 'games';
+    if (mobileActiveTab === 'stats') return 'stats';
+    return 'canvas'; // P0-1 FIX: Default to canvas instead of games
   });
   const [canvasHeight, setCanvasHeight] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -67,12 +73,15 @@ export function CollaborationSpace({
   const { db } = useFirebase()!;
   const isMobile = useIsMobile();
 
-  // Sync with mobile active tab
+  // P0-1 FIX: Sync with mobile active tab - always sync, not just on mobile
   useEffect(() => {
-    if (isMobile && mobileActiveTab && mobileActiveTab !== 'chat' && mobileActiveTab !== 'stats') {
-      setActiveTab(mobileActiveTab as 'games' | 'canvas' | 'users');
+    if (mobileActiveTab && mobileActiveTab !== 'chat') {
+      const newTab = mobileActiveTab === 'stats' ? 'users' : mobileActiveTab as 'games' | 'canvas' | 'users';
+      if (newTab !== activeTab) {
+        setActiveTab(newTab);
+      }
     }
-  }, [isMobile, mobileActiveTab]);
+  }, [mobileActiveTab, activeTab]);
 
 
   // Subscribe to game state for maze
@@ -281,7 +290,7 @@ export function CollaborationSpace({
             }}
           >
             {activeSheetId && user && (
-              <Suspense fallback={<div className="h-full w-full flex items-center justify-center"><div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full"></div></div>}>
+              <Suspense fallback={<CanvasSkeleton />}>
                 <SharedCanvas
                   key={activeSheetId}
                   roomId={roomId}

@@ -312,14 +312,16 @@ export function MessageInput({
                         aria-describedby={text.length > MAX_MESSAGE_LENGTH * 0.8 ? "message-char-count" : undefined}
                         aria-invalid={text.length > MAX_MESSAGE_LENGTH}
                         className={cn(
-                            "w-full px-4 py-2.5 bg-[var(--bg-tertiary)] border border-[var(--border-primary)] rounded-2xl",
-                            "text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
+                            "w-full px-4 py-3 bg-[#1A1A1C] border border-white/[0.08] rounded-2xl",
+                            "text-white placeholder:text-[#727278]",
                             "resize-none overflow-y-auto max-h-[120px] scrollbar-hide",
                             "focus:outline-none focus:border-[var(--accent-primary)]",
-                            "transition-colors duration-150",
+                            "focus:shadow-[0_0_0_3px_rgba(124,58,237,0.1),0_0_0_1px_rgba(124,58,237,0.3)]",
+                            "hover:border-[rgba(124,58,237,0.3)] hover:bg-[#212127]",
+                            "transition-all duration-200",
                             "disabled:opacity-50"
                         )}
-                        style={{ fontSize: '16px' }}
+                        style={{ fontSize: '16px', minHeight: '48px' }}
                     />
 
                     {/* Character count */}
@@ -367,16 +369,17 @@ export function MessageInput({
                     )}
                 </button>
 
-                {/* Send button - ref added for iOS viewport management */}
+                {/* Send button - Mobile Audit: Enhanced styling with shadow */}
                 <button
                     ref={sendButtonRef}
                     onClick={handleSend}
                     disabled={!canSend}
                     className={cn(
-                        "p-2.5 rounded-full transition-all duration-150 touch-target",
+                        "rounded-xl transition-all duration-200 touch-target flex-shrink-0",
+                        "w-[44px] h-[44px] flex items-center justify-center",
                         canSend
-                            ? "bg-[var(--accent-primary)] text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)]"
-                            : "bg-[var(--bg-tertiary)] text-[var(--text-muted)]",
+                            ? "bg-[var(--accent-primary)] text-white shadow-[0_2px_8px_rgba(124,58,237,0.2)] hover:bg-[#A78BFA] hover:shadow-[0_4px_12px_rgba(124,58,237,0.3)] hover:scale-105 active:scale-95 active:bg-[#6D28D9]"
+                            : "bg-[#727278] text-white/50 opacity-50",
                         "disabled:cursor-not-allowed"
                     )}
                     aria-label={isSending ? "Отправка..." : "Отправить сообщение"}

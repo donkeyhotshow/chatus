@@ -5,38 +5,50 @@
 @layer base {
   :root {
     /* ═══════════════════════════════════════════════════════════════
-       CHATSU V5.0 — PURE BLACK MINIMALISM + DARK VIOLET ACCENTS
+       CHATSU V6.0 — REFINED DARK THEME + IMPROVED ACCESSIBILITY
+       Этап 1: Критические исправления дизайн-системы
        ═══════════════════════════════════════════════════════════════ */
 
-    /* Background Colors - Pure Black */
-    --bg-primary: #000000;
-    --bg-secondary: #0a0a0a;
-    --bg-tertiary: #141414;
-    --bg-elevated: #0a0a0a;
-    --bg-hover: #1a1a1a;
-    --bg-card: #0a0a0a;
+    /* Background Colors - Softer Dark (не чистый черный) */
+    --bg-primary: #0D0D0D;
+    --bg-secondary: #121214;
+    --bg-tertiary: #1A1A1C;
+    --bg-elevated: #1A1A1C;
+    --bg-hover: #242426;
+    --bg-card: #1A1A1C;
+
+    /* Subtle gradient background */
+    --bg-gradient: linear-gradient(180deg, #0D0D0D 0%, #141416 100%);
 
     /* Glass Effect - Dark */
-    --glass-bg: rgba(10, 10, 10, 0.85);
-    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-bg: rgba(26, 26, 28, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.1);
 
-    /* Text Colors - White on Black (WCAG AA compliant) */
-    --text-primary: #ffffff;
-    --text-secondary: #b3b3b3;
-    --text-muted: #8a8a8a;
+    /* ═══════════════════════════════════════════════════════════════
+       TEXT COLORS - MOBILE AUDIT V2: Improved contrast
+       ═══════════════════════════════════════════════════════════════ */
+    /* Text Colors - 5 оттенков серого (WCAG AA compliant) */
+    --text-primary: #FFFFFF;
+    --text-secondary: #D4D4D8; /* Mobile Audit: 85% instead of 80% */
+    --text-tertiary: #A1A1A6; /* Mobile Audit: Solid color for timestamps */
+    --text-muted: #727278; /* Mobile Audit: Darker for better hierarchy */
+    --text-disabled: rgba(255, 255, 255, 0.4);
+
+    /* Username accent color */
+    --text-username: #A78BFA; /* Mobile Audit: Lighter purple for usernames */
 
     /* Border Colors */
-    --border-primary: rgba(255, 255, 255, 0.08);
-    --border-secondary: rgba(255, 255, 255, 0.04);
-    --border-hover: rgba(139, 92, 246, 0.5);
+    --border-primary: rgba(255, 255, 255, 0.1);
+    --border-secondary: rgba(255, 255, 255, 0.06);
+    --border-hover: rgba(124, 58, 237, 0.5);
 
-    /* Primary Accent - Dark Violet */
-    --primary: #7c3aed;
-    --primary-light: #8b5cf6;
-    --primary-dark: #6d28d9;
-    --accent-primary: #7c3aed;
-    --accent-hover: #6d28d9;
-    --accent-muted: #5b21b6;
+    /* Primary Accent - Refined Violet (снижена яркость) */
+    --primary: #7C3AED;
+    --primary-light: #8B5CF6;
+    --primary-dark: #6D28D9;
+    --accent-primary: #7C3AED;
+    --accent-hover: #6D28D9;
+    --accent-muted: #5B21B6;
     --accent-contrast: #ffffff;
     --accent-light: rgba(124, 58, 237, 0.15);
 
@@ -93,10 +105,11 @@
       rgba(255, 255, 255, 0.02) 100%
     );
 
-    /* Transitions */
+    /* Transitions - улучшенные для интерактивности */
     --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
 
     /* Layout */
     --header-height: 56px;
@@ -130,11 +143,13 @@
   body {
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI",
       Roboto, sans-serif;
-    background: var(--bg-primary);
+    background: var(--bg-gradient, var(--bg-primary));
     color: var(--text-primary);
     line-height: 1.5;
+    font-size: 16px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
     overscroll-behavior: none;
     min-height: 100vh;
     min-height: 100dvh;
@@ -151,7 +166,7 @@
     color: var(--accent-contrast);
   }
 
-  /* Focus Visible - Accessibility */
+  /* Focus Visible - Accessibility (P1-4 FIX: Enhanced focus indicators) */
   :focus-visible {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
@@ -159,6 +174,80 @@
 
   :focus:not(:focus-visible) {
     outline: none;
+  }
+
+  /* P1-4 FIX: Focus-visible for all interactive elements */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible,
+  [role="button"]:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px var(--accent-light);
+  }
+
+  /* P1-1 FIX: Enhanced message hover effects */
+  .message-hover-effect:hover {
+    background: rgba(255, 255, 255, 0.03);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.08);
+  }
+
+  /* Mobile Audit: Message container with hover actions */
+  .message-container {
+    position: relative;
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 16px;
+    padding: 8px 0;
+  }
+
+  .message-container:hover {
+    background: rgba(124, 58, 237, 0.05);
+  }
+
+  .message-actions {
+    position: absolute;
+    right: -50px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 200ms, transform 200ms;
+    pointer-events: none;
+  }
+
+  .message-container:hover .message-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .message-action-button {
+    width: 36px;
+    height: 36px;
+    background: var(--accent-primary);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 150ms;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.2);
+  }
+
+  .message-action-button:hover {
+    background: #A78BFA;
+    transform: scale(1.15);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+  }
+
+  .message-action-button:active {
+    transform: scale(0.9);
   }
 
   /* Scrollbar - Minimal Premium */
@@ -208,7 +297,7 @@
 
 @layer components {
   /* ═══════════════════════════════════════════════════════════
-     BUTTONS - Modern & Accessible
+     BUTTONS - Modern & Accessible (Этап 1: улучшенная интерактивность)
      ═══════════════════════════════════════════════════════════════ */
   .btn {
     display: inline-flex;
@@ -216,6 +305,7 @@
     justify-content: center;
     gap: 8px;
     min-height: 44px;
+    min-width: 44px;
     padding: 0 20px;
     font-size: 14px;
     font-weight: 600;
@@ -224,6 +314,13 @@
     cursor: pointer;
     transition: all var(--transition);
     white-space: nowrap;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .btn:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
   }
 
   .btn-primary {
@@ -233,12 +330,14 @@
   }
 
   .btn-primary:hover {
-    transform: translateY(-2px);
+    transform: scale(1.02) translateY(-1px);
+    filter: brightness(1.1);
     box-shadow: 0 6px 20px rgba(124, 58, 237, 0.35), var(--shadow-glow);
   }
 
   .btn-primary:active {
-    transform: translateY(0);
+    transform: scale(0.98);
+    filter: brightness(0.95);
   }
 
   .btn-secondary {
@@ -248,8 +347,13 @@
   }
 
   .btn-secondary:hover {
+    transform: scale(1.02);
     background: var(--bg-hover);
     border-color: var(--border-hover);
+  }
+
+  .btn-secondary:active {
+    transform: scale(0.98);
   }
 
   .btn-ghost {
@@ -258,8 +362,13 @@
   }
 
   .btn-ghost:hover {
+    transform: scale(1.02);
     background: var(--bg-tertiary);
     color: var(--text-primary);
+  }
+
+  .btn-ghost:active {
+    transform: scale(0.98);
   }
 
   .btn-icon {
@@ -276,37 +385,178 @@
   }
 
   .btn-icon:hover {
+    transform: scale(1.05);
     background: var(--bg-tertiary);
     color: var(--text-primary);
   }
 
+  .btn-icon:active {
+    transform: scale(0.95);
+  }
+
+  /* Ripple effect для мобильных кнопок */
+  .btn-ripple {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-ripple::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+    transform: scale(0);
+    opacity: 0;
+    transition: transform 0.4s ease-out, opacity 0.3s ease-out;
+  }
+
+  .btn-ripple:active::after {
+    transform: scale(2.5);
+    opacity: 1;
+    transition: transform 0s, opacity 0s;
+  }
+
   /* ═══════════════════════════════════════════════════════════════
-     INPUTS - Clean & Functional
+     INPUTS - Clean & Functional (Mobile Audit V2: Enhanced visibility)
      ═══════════════════════════════════════════════════════════════ */
   .input {
     width: 100%;
     min-height: 48px;
     padding: 12px 16px;
     font-size: 16px;
+    line-height: 1.5;
     color: var(--text-primary);
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: var(--radius-md);
-    transition: all var(--transition);
+    background: #1A1A1C;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .input::placeholder {
+    color: #727278;
+  }
+
+  .input:hover:not(:focus) {
+    border-color: rgba(124, 58, 237, 0.3);
+    background: #212127;
   }
 
   .input:focus {
     outline: none;
     border-color: var(--accent-primary);
-    box-shadow: 0 0 0 3px var(--accent-light);
+    background: #1A1A1C;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1),
+                0 0 0 1px rgba(124, 58, 237, 0.3);
   }
 
-  .input::placeholder {
-    color: var(--text-muted);
+  /* Mobile Audit: Chat input specific styles */
+  .chat-input {
+    background: #1A1A1C;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 12px 16px;
+    color: var(--text-primary);
+    font-size: 15px;
+    line-height: 1.5;
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    min-height: 48px;
+  }
+
+  .chat-input::placeholder {
+    color: #727278;
+  }
+
+  .chat-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    background: #1A1A1C;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1),
+                0 0 0 1px rgba(124, 58, 237, 0.3);
+  }
+
+  .chat-input:hover:not(:focus) {
+    border-color: rgba(124, 58, 237, 0.3);
+    background: #212127;
+  }
+
+  /* Mobile Audit: Send button with shadow and states */
+  .send-button {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    background: var(--accent-primary);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.2);
+  }
+
+  .send-button:hover:not(:disabled) {
+    background: #A78BFA;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+  }
+
+  .send-button:active:not(:disabled) {
+    transform: scale(0.95);
+    background: #6D28D9;
+  }
+
+  .send-button:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+  }
+
+  .send-button:disabled {
+    background: #727278;
+    cursor: not-allowed;
+    opacity: 0.5;
+    box-shadow: none;
+  }
+
+  /* Mobile Audit: Quick reply buttons */
+  .quick-reply-button {
+    width: 44px;
+    height: 44px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    color: #D4D4D8;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .quick-reply-button:hover {
+    background: rgba(124, 58, 237, 0.15);
+    border-color: rgba(124, 58, 237, 0.3);
+    color: #A78BFA;
+    transform: scale(1.1);
+  }
+
+  .quick-reply-button:active {
+    transform: scale(0.95);
+    background: rgba(124, 58, 237, 0.25);
+  }
+
+  .quick-reply-button:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: -2px;
   }
 
   /* ═══════════════════════════════════════════════════════════════
-     CARDS - Glass Effect
+     CARDS - Glass Effect (Этап 1: улучшенный фон карточек)
      ═══════════════════════════════════════════════════════════════ */
   .card {
     background: var(--bg-card);
@@ -317,7 +567,7 @@
   }
 
   .card-hover:hover {
-    transform: translateY(-4px);
+    transform: translateY(-4px) scale(1.01);
     border-color: var(--accent-primary);
     box-shadow: var(--shadow-lg), var(--shadow-glow);
   }
@@ -330,7 +580,7 @@
   }
 
   /* ═══════════════════════════════════════════════════════════════
-     MESSAGES - Chat Bubbles
+     MESSAGES - Chat Bubbles (Mobile Audit V2: Enhanced styling)
      ═══════════════════════════════════════════════════════════════ */
   .message-bubble {
     max-width: 75%;
@@ -339,19 +589,96 @@
     font-size: 16px;
     line-height: 1.5;
     word-wrap: break-word;
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
+  /* Mobile Audit: Sent message with semi-transparent purple + border */
   .message-sent {
-    background: var(--gradient-primary);
+    background: rgba(124, 58, 237, 0.2);
+    border: 1px solid rgba(124, 58, 237, 0.4);
     color: white;
     border-bottom-right-radius: 4px;
     margin-left: auto;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.1);
+    backdrop-filter: blur(4px);
   }
 
+  .message-sent:hover {
+    background: rgba(124, 58, 237, 0.3);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);
+  }
+
+  /* Mobile Audit: Received message with lighter background */
   .message-received {
-    background: var(--bg-tertiary);
+    background: #2D2D35;
+    border: 1px solid rgba(255, 255, 255, 0.06);
     color: var(--text-primary);
     border-bottom-left-radius: 4px;
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.02);
+  }
+
+  .message-received:hover {
+    background: #353540;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.04);
+  }
+
+  /* Mobile Audit: Timestamps with solid color for better readability */
+  .message-time {
+    font-size: 12px;
+    color: #A1A1A6;
+    font-weight: 400;
+    letter-spacing: 0.3px;
+  }
+
+  .message-sent .message-time {
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  /* Mobile Audit: Username with accent color */
+  .message-username {
+    color: #A78BFA;
+    font-weight: 500;
+    font-size: 13px;
+  }
+
+  /* Mobile Audit V2: Enhanced Date Separator with gradient lines */
+  .date-separator,
+  .date-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 20px 0;
+    gap: 12px;
+  }
+
+  .date-separator::before,
+  .date-separator::after,
+  .date-divider::before,
+  .date-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(124, 58, 237, 0.2),
+      transparent
+    );
+  }
+
+  .date-separator-text,
+  .date-divider-text {
+    background: rgba(124, 58, 237, 0.15);
+    border: 1px solid rgba(124, 58, 237, 0.25);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: #A78BFA;
+    font-weight: 500;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.1);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
 
   /* Mobile message typography */
@@ -359,26 +686,28 @@
     .message-bubble {
       max-width: 85%;
       font-size: 16px;
+      padding: 12px 16px;
     }
 
     .message-username {
       font-size: 14px;
+      font-weight: 600;
     }
 
     .message-time {
       font-size: 12px;
-      color: rgba(255, 255, 255, 0.7);
+      color: var(--text-tertiary);
     }
 
     .message-avatar {
       display: flex !important;
-      width: 32px;
-      height: 32px;
+      width: 36px;
+      height: 36px;
     }
   }
 
   /* ═══════════════════════════════════════════════════════════════
-     NAVIGATION - Bottom Nav & Sidebar
+     NAVIGATION - Bottom Nav & Sidebar (Mobile Audit V2)
      ═══════════════════════════════════════════════════════════════ */
   .nav-item {
     display: flex;
@@ -389,17 +718,20 @@
     min-width: 44px;
     min-height: 44px;
     padding: 8px;
-    color: var(--text-muted);
-    transition: all var(--transition-fast);
+    color: #727278;
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    text-decoration: none;
+    position: relative;
+    cursor: pointer;
   }
 
-  .nav-item:hover,
+  .nav-item:hover {
+    color: #A78BFA;
+    background: rgba(124, 58, 237, 0.1);
+  }
+
   .nav-item.active {
     color: var(--accent-primary);
-  }
-
-  .nav-item.active {
-    position: relative;
   }
 
   .nav-item.active::after {
@@ -412,6 +744,119 @@
     height: 3px;
     background: var(--accent-primary);
     border-radius: 0 0 3px 3px;
+  }
+
+  .nav-icon {
+    font-size: 20px;
+  }
+
+  .nav-label {
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  /* Mobile Audit: Bottom navigation bar */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #0D0D0D;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    height: 56px;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+    background-color: rgba(13, 13, 13, 0.9);
+  }
+
+  /* Mobile Audit: Nav badge for unread messages */
+  .nav-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: var(--error);
+    color: white;
+    font-size: 10px;
+    width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     GAME CARDS - Mobile Audit V2
+     ═══════════════════════════════════════════════════════════════ */
+  .game-card {
+    background: #1A1A1C;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 16px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 160px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .game-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(124, 58, 237, 0.1), transparent);
+    opacity: 0;
+    transition: opacity 200ms;
+    pointer-events: none;
+  }
+
+  .game-card:hover {
+    background: #252530;
+    border-color: rgba(124, 58, 237, 0.3);
+    box-shadow: 0 8px 24px rgba(124, 58, 237, 0.15);
+    transform: translateY(-4px);
+  }
+
+  .game-card:hover::before {
+    opacity: 1;
+  }
+
+  .game-card:active {
+    transform: scale(0.98);
+    background: #1A1A1C;
+  }
+
+  .game-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    background: rgba(124, 58, 237, 0.1);
+    border: 1px solid rgba(124, 58, 237, 0.2);
+  }
+
+  .game-title {
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .game-description {
+    color: #A1A1A6;
+    font-size: 12px;
+    line-height: 1.4;
   }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -622,9 +1067,81 @@
     }
   }
 
-  /* Active states for all devices */
+  /* Mobile Audit: Remove hover effects on touch devices */
+  @media (hover: none) and (pointer: coarse) {
+    .message-sent:hover,
+    .message-received:hover {
+      background: inherit;
+      box-shadow: inherit;
+      transform: none;
+    }
+
+    .message-sent:active {
+      background: rgba(124, 58, 237, 0.25);
+    }
+
+    .message-received:active {
+      background: #353540;
+    }
+
+    .quick-reply-button:hover {
+      background: transparent;
+      border-color: rgba(255, 255, 255, 0.12);
+      transform: none;
+    }
+
+    .quick-reply-button:active {
+      background: rgba(124, 58, 237, 0.2);
+      border-color: rgba(124, 58, 237, 0.3);
+    }
+
+    .send-button:hover:not(:disabled) {
+      transform: none;
+      background: var(--accent-primary);
+    }
+
+    .send-button:active:not(:disabled) {
+      transform: scale(0.95);
+      background: #6D28D9;
+    }
+
+    .game-card:hover {
+      transform: none;
+      box-shadow: none;
+    }
+
+    .game-card:active {
+      transform: scale(0.98);
+      background: #252530;
+    }
+
+    .btn:hover {
+      transform: none;
+      filter: none;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-icon:hover {
+      transform: none;
+    }
+
+    .card-hover:hover {
+      transform: none;
+      box-shadow: none;
+    }
+  }
+
+  /* Active states for all devices - P2 UX-6 FIX: Button press animations */
   .btn:active {
     transform: scale(0.98);
+  }
+
+  .btn:hover {
+    transform: scale(1.02);
+    filter: brightness(1.1);
   }
 
   .btn-icon:active {
@@ -632,9 +1149,30 @@
     background: var(--bg-hover);
   }
 
+  .btn-icon:hover {
+    transform: scale(1.05);
+  }
+
   .nav-item:active {
     transform: scale(0.95);
     background: var(--accent-light);
+  }
+
+  /* P2 UX-4: Game card click feedback */
+  .game-card:active {
+    transform: scale(0.95);
+    opacity: 0.9;
+  }
+
+  .game-card:hover {
+    transform: scale(1.02);
+  }
+
+  /* P2 UX-6: Universal button press animation */
+  button:active:not(:disabled),
+  [role="button"]:active:not(:disabled) {
+    transform: scale(0.98);
+    transition: transform 0.1s ease-out;
   }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -720,6 +1258,36 @@
     }
   }
 
+  /* Typing indicator dots animation - Этап 2 */
+  @keyframes typing-dot {
+    0%, 60%, 100% {
+      transform: translateY(0);
+      opacity: 0.4;
+    }
+    30% {
+      transform: translateY(-4px);
+      opacity: 1;
+    }
+  }
+
+  .animate-typing-dot {
+    animation: typing-dot 1.2s ease-in-out infinite;
+  }
+
+  /* Pull-to-refresh animation - Этап 2 */
+  @keyframes pull-rotate {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .animate-pull-rotate {
+    animation: pull-rotate 1s linear infinite;
+  }
+
   .animate-fade-in {
     animation: fadeIn 0.3s ease-out;
   }
@@ -761,6 +1329,82 @@
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     DESKTOP LAYOUT - 3-Column Grid (Этап 4)
+     Sidebar(240px) + Main(flex-1) + Right panel(280px)
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* Desktop 3-column layout container */
+  .desktop-layout {
+    display: flex;
+    flex-direction: row;
+    height: 100vh;
+    height: 100dvh;
+    max-width: 1440px;
+    margin: 0 auto;
+  }
+
+  /* Desktop sidebar - 240px */
+  .desktop-sidebar {
+    width: 240px;
+    min-width: 240px;
+    flex-shrink: 0;
+    height: 100%;
+    border-right: 1px solid var(--border-primary);
+    background: var(--bg-secondary);
+  }
+
+  /* Desktop main content - flex-1 */
+  .desktop-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  /* Desktop right panel - 280px (optional) */
+  .desktop-right-panel {
+    width: 280px;
+    min-width: 280px;
+    flex-shrink: 0;
+    height: 100%;
+    border-left: 1px solid var(--border-primary);
+    background: var(--bg-secondary);
+  }
+
+  /* Message max-width responsive - Layout Guide */
+  @media (min-width: 768px) {
+    .message-bubble {
+      max-width: 60%;
+    }
+  }
+
+  @media (min-width: 1440px) {
+    .message-bubble {
+      max-width: 50%;
+    }
+  }
+
+  /* Games grid responsive columns */
+  .games-grid {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: repeat(2, 1fr); /* Mobile: 2 columns */
+  }
+
+  @media (min-width: 768px) {
+    .games-grid {
+      grid-template-columns: repeat(3, 1fr); /* Tablet: 3 columns */
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .games-grid {
+      grid-template-columns: repeat(4, 1fr); /* Desktop: 4 columns */
     }
   }
 

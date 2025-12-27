@@ -7,6 +7,7 @@ import Confetti from 'react-confetti';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { ArrowLeft, Circle, X, Bot } from "lucide-react";
 import { useActionGuard, hapticFeedback } from "@/lib/game-utils";
+import { ExitButton } from "../ui/ExitButton";
 
 type TicTacToeProps = {
     onGameEnd: () => void;
@@ -272,15 +273,14 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
             )}
             <Card className="bg-black/90 border-white/[0.06] backdrop-blur-xl w-full max-w-sm">
                 <CardHeader className="text-center relative">
-                    <Button
-                        onClick={onGameEnd}
-                        variant="ghost"
+                    <ExitButton
+                        view="game"
+                        hasUnsavedChanges={!winner && board.some(cell => cell !== null)}
+                        onExit={onGameEnd}
+                        variant="icon"
                         size="sm"
-                        className="absolute top-4 left-4 text-white/40 hover:text-white z-10 min-w-[44px] min-h-[44px]"
-                        title="Вернуться в лобби"
-                    >
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
+                        className="absolute top-4 left-4 text-white/40 hover:text-white z-10"
+                    />
                     <CardTitle className="font-headline text-2xl text-white">Крестики-нолики</CardTitle>
                     <CardTitle className="text-sm font-medium text-white/50 pt-2">{getStatus()}</CardTitle>
                 </CardHeader>

@@ -6,6 +6,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { hapticFeedback } from '@/lib/game-utils';
 import { Button } from '../ui/button';
 import { ArrowLeft, Gamepad2, Trophy, Zap, Heart, Star, Pause } from 'lucide-react';
+import { ExitButton } from '../ui/ExitButton';
 
 // --- Constants ---
 const CANVAS_WIDTH = 900;
@@ -198,9 +199,10 @@ export default function VibeJet({ onGameEnd }: {
     }, [gameState, handleJump]);
 
     const startGame = useCallback(() => {
-        playerYRef.current = CANVAS_HEIGHT / 2;
+        // P0 FIX: Start player in safe zone (middle of screen, slightly above center)
+        playerYRef.current = CANVAS_HEIGHT * 0.4; // Start higher to avoid immediate ground collision
         playerTiltRef.current = 0;
-        velocityRef.current = 0;
+        velocityRef.current = -2; // Small upward velocity to give player time to react
         obstaclesRef.current = [];
         particlesRef.current = [];
         gameSpeedRef.current = GAME_SPEED_INITIAL;
@@ -278,8 +280,9 @@ export default function VibeJet({ onGameEnd }: {
                 return;
             }
 
-            // Spawn obstacles
-            if (frameRef.current % 90 === 0) {
+            // Spawn obstacles - P0 FIX: Delay first obstacle spawn
+            // Don't spawn obstacles in first 2 seconds (120 frames at 60fps)
+            if (frameRef.current > 120 && frameRef.current % 90 === 0) {
                 const gapY = 100 + Math.random() * (CANVAS_HEIGHT - 250 - OBSTACLE_GAP);
                 obstaclesRef.current.push({ x: CANVAS_WIDTH + 100, gapY, passed: false, z: 1 });
             }
@@ -296,11 +299,27 @@ export default function VibeJet({ onGameEnd }: {
                     hapticFeedback('light');
                 }
 
-                // Collision
+                // P0 FIX: Improved collision detection with grace period and smaller hitbox
+                // Give player a few frames of invincibility at start
+                if (frameRef.current < 30) return obs.x > -OBSTACLE_WIDTH;
+
                 const px = 100, py = playerYRef.current;
-                const pw = PLAYER_WIDTH * 0.7, ph = PLAYER_HEIGHT * 0.7;
-                if (px + pw > obs.x && px < obs.x + OBSTACLE_WIDTH) {
-                    if (py < obs.gapY || py + ph > obs.gapY + OBSTACLE_GAP) {
+                // Reduced hitbox for more forgiving gameplay (60% of visual size)
+                const pw = PLAYER_WIDTH * 0.6, ph = PLAYER_HEIGHT * 0.5;
+                // Add horizontal offset to center the hitbox
+                const hitboxOffsetX = (PLAYER_WIDTH - pw) / 2;
+                const hitboxOffsetY = (PLAYER_HEIGHT - ph) / 2;
+
+                const playerLeft = px - PLAYER_WIDTH / 2 + hitboxOffsetX;
+                const playerRight = playerLeft + pw;
+                const playerTop = py + hitboxOffsetY;
+                const playerBottom = playerTop + ph;
+
+                // Check if player overlaps with obstacle
+                if (playerRight > obs.x && playerLeft < obs.x + OBSTACLE_WIDTH) {
+                    // Player is horizontally within obstacle bounds
+                    // Check if player is outside the gap (collision)
+                    if (playerTop < obs.gapY || playerBottom > obs.gapY + OBSTACLE_GAP) {
                         collided = true;
                     }
                 }
@@ -560,10 +579,14 @@ export default function VibeJet({ onGameEnd }: {
     return (
         <div ref={containerRef} className="relative w-full h-full bg-[#0a0a1a] flex flex-col">
             <div className="absolute top-3 left-3 z-20">
-                <Button variant="ghost" size="icon" onClick={onGameEnd}
-                    className="bg-black/50 hover:bg-white/10 text-white rounded-xl border border-white/10">
-                    <ArrowLeft className="w-5 h-5" />
-                </Button>
+                <ExitButton
+                    view="game"
+                    hasUnsavedChanges={gameState === 'playing'}
+                    onExit={onGameEnd}
+                    variant="icon"
+                    size="md"
+                    className="bg-black/50 hover:bg-white/10 text-white rounded-xl border border-white/10"
+                />
             </div>
 
             <div className="flex-1 flex items-center justify-center p-4">

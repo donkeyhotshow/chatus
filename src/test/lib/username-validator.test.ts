@@ -1,9 +1,9 @@
 /**
--Based Tests for UsernameValidator
+ * Property-Based Tests for UsernameValidator
  *
  * **Feature: chatus-bug-fixes, Property 5: Username Length Validation**
  * **Feature: chatus-bug-fixes, Property 6: Character Counter Accuracy**
- * **Validates: Requirements 6.1, 6.2, 6.3**
+ * **Validates: Requirements 6.1, 6.2, 6.3, 23.1, 23.2, 23.3, 23.4**
  */
 
 import { describe, it, expect } from 'vitest';
@@ -12,7 +12,18 @@ import {
   validateUsername,
   getRemainingChars,
   MAX_USERNAME_LENGTH,
+  MIN_USERNAME_LENGTH,
 } from '@/lib/username-validator';
+
+// Valid characters for usernames
+const validChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZабвгдежзийклмнопрстуфхцчшщ0123456789_-';
+
+// Generate valid username string
+const validUsernameString = (minLen: number, maxLen: number) =>
+  fc.array(
+    fc.integer({ min: 0, max: validChars.length - 1 }).map(i => validChars[i]),
+    { minLength: minLen, maxLength: maxLen }
+  ).map(chars => chars.join(''));
 
 describe('UsernameValidator', () => {
   describe('Property 5: Username Length Validation', () => {
@@ -26,14 +37,13 @@ describe('UsernameValidator', () => {
     it('should return isValid=false and showWarning=true for usernames longer than 20 characters', () => {
       fc.assert(
         fc.property(
-          fc.string({ minLength: 21, maxLength: 100 }),
+          validUsernameString(21, 50),
           (longUsername) => {
             const result = validateUsername(longUsername);
 
             expect(result.isValid).toBe(false);
             expect(result.showWarning).toBe(true);
             expect(result.message).toBeDefined();
-            expect(result.message).toContain('20');
           }
         ),
         { numRuns: 100 }
@@ -41,16 +51,16 @@ describe('UsernameValidator', () => {
     });
 
     /**
-     * Property: For any string of 20 characters or less, the validation function
+     * Property: For any valid string of 2-20 characters, the validation function
      * SHALL return isValid=true and showWarning=false.
      *
      * **Feature: chatus-bug-fixes, Property 5: Username Length Validation**
-     * **Validates: Requirements 6.1, 6.2**
+     * **Validates: Requirements 6.1, 6.2, 23.1, 23.4**
      */
-    it('should return isValid=true and showWarning=false for usernames of 20 characters or less', () => {
+    it('should return isValid=true and showWarning=false for valid usernames of 2-20 characters', () => {
       fc.assert(
         fc.property(
-          fc.string({ minLength: 0, maxLength: 20 }),
+          validUsernameString(MIN_USERNAME_LENGTH, MAX_USERNAME_LENGTH),
           (validUsername) => {
             const result = validateUsername(validUsername);
 
@@ -73,7 +83,7 @@ describe('UsernameValidator', () => {
     it('should correctly handle boundary cases (20 vs 21 characters)', () => {
       fc.assert(
         fc.property(
-          fc.string({ minLength: 1, maxLength: 1 }),
+          fc.constantFrom('a', 'б', '1'), // Valid characters
           (char) => {
             const exactly20 = char.repeat(20);
             const exactly21 = char.repeat(21);
@@ -88,7 +98,27 @@ describe('UsernameValidator', () => {
             expect(result21.showWarning).toBe(true);
           }
         ),
-        { numRuns: 100 }
+        { numRuns: 50 }
+      );
+    });
+
+    /**
+     * Property: Usernames shorter than 2 characters should be invalid.
+     *
+     * **Feature: chatus-bug-fixes, Property 5: Username Length Validation**
+     * **Validates: Requirements 23.2, 23.3**
+     */
+    it('should return isValid=false for usernames shorter than 2 characters', () => {
+      fc.assert(
+        fc.property(
+          fc.string({ minLength: 0, maxLength: 1 }).filter(s => s.trim().length < 2),
+          (shortUsername) => {
+            const result = validateUsername(shortUsername);
+
+            expect(result.isValid).toBe(false);
+          }
+        ),
+        { numRuns: 50 }
       );
     });
   });

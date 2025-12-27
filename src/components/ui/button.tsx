@@ -13,11 +13,11 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const buttonVariants = {
-    primary: "bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:from-violet-500 hover:to-purple-500 shadow-lg shadow-violet-500/25",
-    secondary: "bg-white/5 text-white border border-white/10 hover:bg-white/10 hover:border-white/20",
-    ghost: "bg-transparent text-white/70 hover:bg-white/5 hover:text-white",
-    outline: "bg-transparent text-white border border-white/20 hover:bg-white/5 hover:border-white/30",
-    destructive: "bg-red-600 text-white hover:bg-red-500 shadow-lg shadow-red-500/25"
+    primary: "bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:from-violet-500 hover:to-purple-500 shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 hover:scale-[1.02] hover:brightness-110",
+    secondary: "bg-[var(--bg-tertiary)] text-white border border-white/10 hover:bg-[var(--bg-hover)] hover:border-white/20 hover:scale-[1.02]",
+    ghost: "bg-transparent text-white/70 hover:bg-white/5 hover:text-white hover:scale-[1.02]",
+    outline: "bg-transparent text-white border border-white/20 hover:bg-white/5 hover:border-white/30 hover:scale-[1.02]",
+    destructive: "bg-red-600 text-white hover:bg-red-500 shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:scale-[1.02]"
 };
 
 const sizeVariants = {
@@ -43,10 +43,12 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
         <button
             ref={ref}
             className={cn(
-                "relative inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
-                "disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none",
-                "active:scale-[0.98]",
+                "relative inline-flex items-center justify-center gap-2 rounded-xl font-semibold",
+                "transition-all duration-200 ease-out",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)]",
+                "disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none disabled:transform-none",
+                "active:scale-[0.98] active:brightness-95",
+                "-webkit-tap-highlight-color-transparent select-none",
                 buttonVariants[variant],
                 sizeVariants[size],
                 className

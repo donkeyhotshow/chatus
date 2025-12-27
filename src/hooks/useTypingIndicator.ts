@@ -1,6 +1,7 @@
-"use clie
-ort { useState, useEffect, useCallback, useRef } from 'react';
-import { ref, set, onValue, serverTimestamp, remove } from 'firebase/database';
+"use client";
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { ref, set, onValue, remove } from 'firebase/database';
 import { db as realtimeDb } from '@/lib/firebase';
 
 interface TypingUser {
@@ -11,7 +12,7 @@ interface TypingUser {
 
 interface UseTypingIndicatorOptions {
     roomId: string;
-    userId: string;
+    oderId: string;
     userName: string;
     enabled?: boolean;
 }
@@ -23,7 +24,7 @@ const TYPING_TIMEOUT = 3000; // 3 seconds
  */
 export function useTypingIndicator({
     roomId,
-    userId,
+    oderId,
     userName,
     enabled = true,
 }: UseTypingIndicatorOptions) {
@@ -63,13 +64,13 @@ export function useTypingIndicator({
         });
 
         return () => unsubscribe();
-    }, [roomId, userId, enabled]);
+    }, [roomId, oderId, enabled]);
 
     // Set typing status
     const setTyping = useCallback(async (isTyping: boolean) => {
         if (!realtimeDb || !roomId || !enabled) return;
 
-        const userTypingRef = ref(realtimeDb, `rooms/${roomId}/typing/${userId}`);
+        const userTypingRef = ref(realtimeDb, `rooms/${roomId}/typing/${oderId}`);
 
         try {
             if (isTyping) {
@@ -85,7 +86,7 @@ export function useTypingIndicator({
         } catch (error) {
             console.error('[TypingIndicator] Error setting typing status:', error);
         }
-    }, [roomId, userId, userName, enabled]);
+    }, [roomId, oderId, userName, enabled]);
 
     // Handle input change - debounced typing indicator
     const handleInputChange = useCallback(() => {
@@ -123,11 +124,11 @@ export function useTypingIndicator({
                 clearTimeout(typingTimeoutRef.current);
             }
             if (isTypingRef.current && realtimeDb && roomId) {
-                const userTypingRef = ref(realtimeDb, `rooms/${roomId}/typing/${userId}`);
+                const userTypingRef = ref(realtimeDb, `rooms/${roomId}/typing/${oderId}`);
                 remove(userTypingRef).catch(() => {});
             }
         };
-    }, [roomId, userId]);
+    }, [roomId, oderId]);
 
     // Format typing text
     const typingText = typingUsers.length > 0

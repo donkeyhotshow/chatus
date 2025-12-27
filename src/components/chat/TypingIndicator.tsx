@@ -9,6 +9,10 @@ interface TypingIndicatorProps {
     hideDelay?: number;
 }
 
+/**
+ * TypingIndicator - Индикатор "печатает..." с плавной анимацией
+ * Этап 2: Улучшенная анимация пульсации точек
+ */
 export const TypingIndicator = memo(function TypingIndicator({
     users,
     className,
@@ -54,26 +58,45 @@ export const TypingIndicator = memo(function TypingIndicator({
     };
 
     return (
-        <div className={cn(
-            "flex items-center gap-2 px-4 py-2 transition-all duration-300",
-            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2",
-            className
-        )}>
+        <div
+            className={cn(
+                "flex items-center gap-2 px-4 py-2 transition-all duration-300 ease-out",
+                isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2",
+                className
+            )}
+            role="status"
+            aria-live="polite"
+            aria-label={getTypingText()}
+        >
             {/* Typing bubble */}
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.04] border border-white/[0.06] rounded-full">
-                {/* Animated dots */}
-                <div className="flex gap-1">
-                    <div className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '0ms', animationDuration: '0.6s' }} />
-                    <div className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '150ms', animationDuration: '0.6s' }} />
-                    <div className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '300ms', animationDuration: '0.6s' }} />
+            <div className="flex items-center gap-2.5 px-3.5 py-2 bg-[var(--bg-tertiary)] border border-white/[0.08] rounded-2xl shadow-sm">
+                {/* Animated dots - улучшенная пульсирующая анимация */}
+                <div className="flex items-center gap-1" aria-hidden="true">
+                    <span
+                        className="w-2 h-2 bg-[var(--accent-primary)] rounded-full animate-typing-dot"
+                        style={{ animationDelay: '0ms' }}
+                    />
+                    <span
+                        className="w-2 h-2 bg-[var(--accent-primary)] rounded-full animate-typing-dot"
+                        style={{ animationDelay: '160ms' }}
+                    />
+                    <span
+                        className="w-2 h-2 bg-[var(--accent-primary)] rounded-full animate-typing-dot"
+                        style={{ animationDelay: '320ms' }}
+                    />
                 </div>
-                <span className="text-xs text-white/50 font-medium">{getTypingText()}</span>
+                <span className="text-xs text-[var(--text-tertiary)] font-medium">
+                    {getTypingText()}
+                </span>
             </div>
         </div>
     );
 });
 
-// Compact version for mobile
+/**
+ * CompactTypingIndicator - Компактная версия для мобильных устройств
+ * Этап 2: Улучшенная анимация
+ */
 export const CompactTypingIndicator = memo(function CompactTypingIndicator({
     users,
     className,
@@ -108,22 +131,40 @@ export const CompactTypingIndicator = memo(function CompactTypingIndicator({
 
     if (!isVisible || visibleUsers.length === 0) return null;
 
+    const typingText = visibleUsers.length === 1
+        ? `${visibleUsers[0]} печатает`
+        : `${visibleUsers.length} печатают`;
+
     return (
-        <div className={cn(
-            "flex items-center justify-center py-1.5 transition-all duration-300",
-            isVisible ? "opacity-100" : "opacity-0",
-            className
-        )}>
-            <div className="flex items-center gap-2 px-3 py-1 bg-white/[0.04] border border-white/[0.06] rounded-full">
-                <div className="flex gap-0.5">
-                    <div className="w-1 h-1 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '0ms', animationDuration: '0.6s' }} />
-                    <div className="w-1 h-1 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '150ms', animationDuration: '0.6s' }} />
-                    <div className="w-1 h-1 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '300ms', animationDuration: '0.6s' }} />
+        <div
+            className={cn(
+                "flex items-center justify-center py-1.5 transition-all duration-300 ease-out",
+                isVisible ? "opacity-100" : "opacity-0",
+                className
+            )}
+            role="status"
+            aria-live="polite"
+            aria-label={typingText}
+        >
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--bg-tertiary)] border border-white/[0.08] rounded-full">
+                <div className="flex gap-0.5" aria-hidden="true">
+                    <span
+                        className="w-1.5 h-1.5 bg-[var(--accent-primary)] rounded-full animate-typing-dot"
+                        style={{ animationDelay: '0ms' }}
+                    />
+                    <span
+                        className="w-1.5 h-1.5 bg-[var(--accent-primary)] rounded-full animate-typing-dot"
+                        style={{ animationDelay: '160ms' }}
+                    />
+                    <span
+                        className="w-1.5 h-1.5 bg-[var(--accent-primary)] rounded-full animate-typing-dot"
+                        style={{ animationDelay: '320ms' }}
+                    />
                 </div>
-                <span className="text-[11px] text-white/40 font-medium">
-                    {visibleUsers.length === 1 ? `${visibleUsers[0]} печатает` : `${visibleUsers.length} печатают`}
+                <span className="text-[11px] text-[var(--text-muted)] font-medium">
+                    {typingText}
                 </span>
             </div>
         </div>
     );
-});;
+});

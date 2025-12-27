@@ -108,7 +108,7 @@ export function GameCardSkeleton() {
     return (
         <div className="p-4 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-primary)]">
             <Skeleton variant="rounded" width="100%" height={120} className="mb-4" />
-            <Skeleton widtheight={20} className="mb-2" />
+            <Skeleton width="100%" height={20} className="mb-2" />
             <Skeleton width="50%" height={14} />
         </div>
     );

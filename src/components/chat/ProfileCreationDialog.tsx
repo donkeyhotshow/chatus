@@ -19,6 +19,7 @@ import {
     validateUsername as validateUsernameLength,
     getRemainingChars,
     MAX_USERNAME_LENGTH as USERNAME_MAX_LENGTH,
+    VALIDATION_RULES,
 } from '@/lib/username-validator';
 
 interface ProfileCreationDialogProps {
@@ -282,10 +283,10 @@ export function ProfileCreationDialog({ isOpen, onProfileCreate, roomId, isCreat
                                 </p>
                             )}
 
-                            {/* Hint */}
-                            {!showError && username.length === 0 && (
+                            {/* Hint - show validation rules */}
+                            {!showError && !lengthWarning && username.length === 0 && (
                                 <p id="username-hint" className="text-xs text-white/30 px-1">
-                                    От {MIN_USERNAME_LENGTH} до {MAX_USERNAME_LENGTH} символов
+                                    {VALIDATION_RULES}
                                 </p>
                             )}
                         </div>

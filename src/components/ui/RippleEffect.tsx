@@ -1,6 +1,6 @@
 "use client";
 
-im { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
 interface Ripple {

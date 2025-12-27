@@ -3,14 +3,14 @@ const CACHE_NAME = 'chatus-v1';
 const STATIC_CACHE = 'chatus-static-v1';
 const DYNAMIC_CACHE = 'chatus-dynamic-v1';
 
-// Ресурсы для кэширования
+// Ресурсы для кэширования (P0-3 FIX: только гарантированно существующие)
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png',
   '/badge-72.png',
-  '/_next/static/css/app/layout.css',
+  // Removed dynamic CSS path - it changes on each build
 ];
 
 // Firebase imports
@@ -29,17 +29,41 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Install event - cache static assets
+// Install event - cache static assets with error handling (P0-3 FIX)
 self.addEventListener('install', (event) => {
   console.log('[SW] Installing...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
         console.log('[SW] Caching static assets');
-        return cache.addAll(STATIC_ASSETS);
+        // P0-3 FIX: Cache assets individually with error handling
+        // This prevents one failed request from breaking the entire cache
+        return Promise.allSettled(
+          STATIC_ASSETS.map(async (url) => {
+            try {
+              const response = await fetch(url, { cache: 'no-cache' });
+              if (response.ok) {
+                await cache.put(url, response);
+                return { url, status: 'cached' };
+              }
+              console.warn(`[SW] Failed to cache ${url}: ${response.status}`);
+              return { url, status: 'failed', reason: response.status };
+            } catch (error) {
+              console.warn(`[SW] Failed to fetch ${url}:`, error.message);
+              return { url, status: 'failed', reason: error.message };
+            }
+          })
+        );
       })
-      .then(() => {
+      .then((results) => {
+        const cached = results.filter(r => r.status === 'fulfilled' && r.value?.status === 'cached').length;
+        console.log(`[SW] Cached ${cached}/${STATIC_ASSETS.length} assets`);
         console.log('[SW] Skip waiting');
+        return self.skipWaiting();
+      })
+      .catch((error) => {
+        console.error('[SW] Install failed:', error);
+        // Still skip waiting even if caching fails
         return self.skipWaiting();
       })
   );
