@@ -1092,14 +1092,14 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
 }
 
 // Mobile Controls Component with Buttons
-function MobileControls({ keysRef }: { keysRef: React.RefObject<Set<string>> }) {
+function MobileControls({ keysRef }: { keysRef: React.MutableRefObject<Set<string>> }) {
     const handleTouchStart = (key: string) => {
-        keysRef.current?.add(key);
+        keysRef.current.add(key);
         hapticFeedback('light');
     };
 
     const handleTouchEnd = (key: string) => {
-        keysRef.current?.delete(key);
+        keysRef.current.delete(key);
     };
 
     return (

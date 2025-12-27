@@ -301,7 +301,8 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     const point = getEventPoint(e);
     if (!point) return;
 
-    startDrawing(stabilizerStateRef.current, point);
+    // BUG FIX: Assign the returned state back to the ref
+    stabilizerStateRef.current = startDrawing(stabilizerStateRef.current, point);
 
     // Update cursor position in RTDB
     if (realtimeServiceRef.current) {
@@ -322,7 +323,8 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     const point = getEventPoint(e);
     if (!point) return;
 
-    processDrawEvent(stabilizerStateRef.current, point);
+    // BUG FIX: Assign the returned state back to the ref
+    stabilizerStateRef.current = processDrawEvent(stabilizerStateRef.current, point);
 
     // Update cursor
     if (realtimeServiceRef.current) {
@@ -363,8 +365,9 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
       }
     }
 
-    stopDrawing(stabilizerStateRef.current);
-    clearPendingPoints(stabilizerStateRef.current);
+    // BUG FIX: Assign the returned state back to the ref
+    stabilizerStateRef.current = stopDrawing(stabilizerStateRef.current);
+    stabilizerStateRef.current = clearPendingPoints(stabilizerStateRef.current);
   };
 
   const getEventPoint = (e: React.MouseEvent | React.TouchEvent): Point | null => {

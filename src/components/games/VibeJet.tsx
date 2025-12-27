@@ -152,6 +152,11 @@ export default function VibeJet({ onGameEnd }: {
         setScore(0);
         setGameState('playing');
         hapticFeedback('medium');
+
+        // Auto-focus canvas for keyboard input
+        setTimeout(() => {
+            canvasRef.current?.focus();
+        }, 100);
     };
 
     const pauseGame = () => {
@@ -483,10 +488,22 @@ export default function VibeJet({ onGameEnd }: {
                         ref={canvasRef}
                         width={CANVAS_WIDTH}
                         height={CANVAS_HEIGHT}
-                        className="max-w-full h-auto rounded-xl border border-white/10"
-                        style={{ maxHeight: '70vh' }}
-                        onClick={gameState === 'playing' ? handleJump : undefined}
-                        onTouchStart={gameState === 'playing' ? (e) => { e.preventDefault(); handleJump(); } : undefined}
+                        className="max-w-full h-auto rounded-xl border border-white/10 outline-none focus:ring-2 focus:ring-violet-500/50"
+                        style={{ maxHeight: '70vh', touchAction: 'none' }}
+                        tabIndex={0}
+                        onClick={() => {
+                            if (gameState === 'playing') {
+                                handleJump();
+                            }
+                            canvasRef.current?.focus();
+                        }}
+                        onTouchStart={(e) => {
+                            e.preventDefault();
+                            if (gameState === 'playing') {
+                                handleJump();
+                            }
+                            canvasRef.current?.focus();
+                        }}
                     />
                     {renderOverlay()}
                 </div>
