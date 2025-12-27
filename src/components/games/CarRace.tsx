@@ -793,7 +793,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
     };
 
     // Render
-    const render = useCallback((ctx: CanvasRenderingContext2D, now: number) => {
+    const render = (ctx: CanvasRenderingContext2D, now: number) => {
         // Background
         ctx.fillStyle = currentTrack.bgColor;
         ctx.fillRect(0, 0, DESKTOP_WIDTH, DESKTOP_HEIGHT);
@@ -874,7 +874,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
 
         // HUD
         if (playerRef.current) drawHUD(ctx, playerRef.current, now);
-    }, [isMobile, currentTrack]);
+    };
 
     // Draw car - УВЕЛИЧЕННЫЙ РАЗМЕР
     const drawCar = (ctx: CanvasRenderingContext2D, player: PlayerState, isCurrent: boolean) => {
@@ -1082,7 +1082,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
                 gameLoopRef.current = null;
             }
         };
-    }, [isGameStarted, countdown, updatePlayer, updateAI, otherUser, render]);
+    }, [isGameStarted, countdown, updatePlayer, updateAI, otherUser, currentTrack, isMobile, raceStartTime]);
 
     const handleStart = guard(() => {
         setIsGameStarted(true);
