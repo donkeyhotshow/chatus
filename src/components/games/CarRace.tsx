@@ -794,9 +794,6 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
 
     // Render
     const render = useCallback((ctx: CanvasRenderingContext2D, now: number) => {
-        ctx.save();
-        ctx.scale(scale, scale);
-
         // Background
         ctx.fillStyle = currentTrack.bgColor;
         ctx.fillRect(0, 0, DESKTOP_WIDTH, DESKTOP_HEIGHT);
@@ -877,9 +874,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
 
         // HUD
         if (playerRef.current) drawHUD(ctx, playerRef.current, now);
-
-        ctx.restore();
-    }, [scale, isMobile, currentTrack]);
+    }, [isMobile, currentTrack]);
 
     // Draw car - УВЕЛИЧЕННЫЙ РАЗМЕР
     const drawCar = (ctx: CanvasRenderingContext2D, player: PlayerState, isCurrent: boolean) => {
@@ -1196,7 +1191,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
 
     // Main game render
     return (
-        <div ref={containerRef} className="flex flex-col ijustify-center h-full w-full bg-black/95 relative overflow-hidden">
+        <div ref={containerRef} className="flex flex-col items-center justify-center h-full w-full bg-black/95 relative overflow-hidden">
             {/* Landscape hint overlay */}
             {showLandscapeHint && isPortrait && (
                 <div
@@ -1216,11 +1211,16 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
             {/* Canvas */}
             <canvas
                 ref={canvasRef}
-                width={canvasSize.width}
-                height={canvasSize.height}
+                width={DESKTOP_WIDTH}
+                height={DESKTOP_HEIGHT}
                 className="rounded-lg shadow-2xl"
-                style={{ touchAction: 'none' }}
+                style={{
+                    touchAction: 'none',
+                    width: canvasSize.width,
+                    height: canvasSize.height
+                }}
                 tabIndex={0}
+                onClick={() => canvasRef.current?.focus()}
             />
 
             {/* Countdown overlay */}

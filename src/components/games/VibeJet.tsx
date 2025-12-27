@@ -7,31 +7,57 @@ import { hapticFeedback } from '@/lib/game-utils';
 import { Button } from '../ui/button';
 import { ArrowLeft, Gamepad2, Trophy, Zap, Heart, Star, Pause } from 'lucide-react';
 
-// --- Game Constants ---
-const CANVAS_WIDTH = 800;
+// --- Constants ---
+const CANVAS_WIDTH = 900;
 const CANVAS_HEIGHT = 600;
-const PLAYER_SIZE = 40;
-const OBSTACLE_WIDTH = 60;
-const OBSTACLE_GAP = 180;
-const GRAVITY = 0.35;
-const JUMP_FORCE = -7.5;
-const GAME_SPEED_INITIAL = 3.5;
-const GAME_SPEED_INCREMENT = 0.0008;
-const MAX_VELOCITY = 12;
+const PLAYER_WIDTH = 60;
+const PLAYER_HEIGHT = 40;
+const OBSTACLE_WIDTH = 80;
+const OBSTACLE_GAP = 200;
+const GRAVITY = 0.32;
+const JUMP_FORCE = -7;
+const GAME_SPEED_INITIAL = 4;
+const GAME_SPEED_INCREMENT = 0.0006;
+const MAX_VELOCITY = 10;
+
+// 3D-like perspective constants
+const HORIZON_Y = CANVAS_HEIGHT * 0.35;
+const GROUND_Y = CANVAS_HEIGHT * 0.85;
+const PERSPECTIVE_SCALE = 0.7;
 
 interface Obstacle {
     x: number;
     gapY: number;
     passed: boolean;
+    z: number; // depth for 3D effect
 }
 
 interface Particle {
     x: number;
     y: number;
+    z: number;
     vx: number;
     vy: number;
+    vz: number;
     life: number;
     color: string;
+    size: number;
+}
+
+interface Cloud {
+    x: number;
+    y: number;
+    z: number;
+    size: number;
+    speed: number;
+}
+
+interface Building {
+    x: number;
+    width: number;
+    height: number;
+    color: string;
+    z: number;
 }
 
 type GameState = 'loading' | 'menu' | 'playing' | 'paused' | 'gameover';
@@ -45,42 +71,57 @@ export default function VibeJet({ onGameEnd }: {
     const containerRef = useRef<HTMLDivElement>(null);
     const isMobile = useIsMobile();
 
-    // Game state
     const [gameState, setGameState] = useState<GameState>('loading');
     const [score, setScore] = useState(0);
     const [highScore, setHighScore] = useState(0);
     const [canvasScale, setCanvasScale] = useState(1);
 
-    // Refs for game loop
+    // Game refs
     const playerYRef = useRef(CANVAS_HEIGHT / 2);
+    const playerTiltRef = useRef(0);
     const velocityRef = useRef(0);
     const obstaclesRef = useRef<Obstacle[]>([]);
     const particlesRef = useRef<Particle[]>([]);
+    const cloudsRef = useRef<Cloud[]>([]);
+    const buildingsRef = useRef<Building[]>([]);
     const gameSpeedRef = useRef(GAME_SPEED_INITIAL);
     const scoreRef = useRef(0);
     const frameRef = useRef(0);
     const gameLoopRef = useRef<number | null>(null);
     const lastJumpTimeRef = useRef(0);
     const isPausedRef = useRef(false);
-    const starsRef = useRef<{x: number, y: number}[]>([]);
 
-    // Generate stars once
+    // Initialize clouds and buildings
     useEffect(() => {
-        const stars = [];
-        for (let i = 0; i < 50; i++) {
-            stars.push({
-                x: Math.random() * CANVAS_WIDTH,
-                y: Math.random() * CANVAS_HEIGHT
+        const clouds: Cloud[] = [];
+        for (let i = 0; i < 8; i++) {
+            clouds.push({
+                x: Math.random() * CANVAS_WIDTH * 1.5,
+                y: HORIZON_Y * 0.3 + Math.random() * HORIZON_Y * 0.5,
+                z: 0.3 + Math.random() * 0.5,
+                size: 30 + Math.random() * 50,
+                speed: 0.3 + Math.random() * 0.5
             });
         }
-        starsRef.current = stars;
+        cloudsRef.current = clouds;
+
+        const buildings: Building[] = [];
+        const colors = ['#1a1a2e', '#16213e', '#0f3460', '#1a1a3e'];
+        for (let i = 0; i < 15; i++) {
+            buildings.push({
+                x: i * 120 - 200,
+                width: 60 + Math.random() * 80,
+                height: 80 + Math.random() * 150,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                z: 0.5 + Math.random() * 0.3
+            });
+        }
+        buildingsRef.current = buildings;
     }, []);
 
-    // Loading state
+    // Loading
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setGameState('menu');
-        }, 300);
+        const timer = setTimeout(() => setGameState('menu'), 400);
         return () => clearTimeout(timer);
     }, []);
 
@@ -89,20 +130,16 @@ export default function VibeJet({ onGameEnd }: {
         try {
             const saved = localStorage.getItem('vibejet-highscore');
             if (saved) setHighScore(parseInt(saved, 10) || 0);
-        } catch {
-            // localStorage not available
-        }
+        } catch { /* ignore */ }
     }, []);
 
     // Responsive canvas
     useEffect(() => {
         const updateScale = () => {
             if (!containerRef.current) return;
-            const containerWidth = containerRef.current.clientWidth - 32;
-            const containerHeight = containerRef.current.clientHeight - 32;
-            const scaleX = containerWidth / CANVAS_WIDTH;
-            const scaleY = containerHeight / CANVAS_HEIGHT;
-            setCanvasScale(Math.min(scaleX, scaleY, 1));
+            const w = containerRef.current.clientWidth - 32;
+            const h = containerRef.current.clientHeight - 32;
+            setCanvasScale(Math.min(w / CANVAS_WIDTH, h / CANVAS_HEIGHT, 1));
         };
         updateScale();
         window.addEventListener('resize', updateScale);
@@ -111,63 +148,58 @@ export default function VibeJet({ onGameEnd }: {
 
     // Pause on visibility change
     useEffect(() => {
-        const handleVisibility = () => {
+        const handler = () => {
             if (document.hidden && gameState === 'playing') {
                 isPausedRef.current = true;
                 setGameState('paused');
             }
         };
-        document.addEventListener('visibilitychange', handleVisibility);
-        return () => document.removeEventListener('visibilitychange', handleVisibility);
+        document.addEventListener('visibilitychange', handler);
+        return () => document.removeEventListener('visibilitychange', handler);
     }, [gameState]);
 
-    // Jump handler with debounce
     const handleJump = useCallback(() => {
         if (gameState !== 'playing' || isPausedRef.current) return;
-
         const now = Date.now();
         if (now - lastJumpTimeRef.current < 80) return;
         lastJumpTimeRef.current = now;
 
         velocityRef.current = JUMP_FORCE;
+        playerTiltRef.current = -15;
         hapticFeedback('light');
 
         // Thrust particles
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < 6; i++) {
             particlesRef.current.push({
-                x: 80,
-                y: playerYRef.current + PLAYER_SIZE / 2,
-                vx: -Math.random() * 3 - 1,
-                vy: (Math.random() - 0.5) * 2,
+                x: 100, y: playerYRef.current + PLAYER_HEIGHT / 2, z: 1,
+                vx: -Math.random() * 4 - 2,
+                vy: (Math.random() - 0.5) * 3,
+                vz: (Math.random() - 0.5) * 0.5,
                 life: 1,
-                color: `hsl(${280 + Math.random() * 40}, 100%, 60%)`
+                color: `hsl(${20 + Math.random() * 30}, 100%, 60%)`,
+                size: 4 + Math.random() * 4
             });
         }
     }, [gameState]);
 
-    // Keyboard controls
+    // Keyboard
     useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
+        const handleKey = (e: KeyboardEvent) => {
             if (e.code === 'Space' || e.code === 'ArrowUp') {
                 e.preventDefault();
-                if (gameState === 'menu' || gameState === 'gameover') {
-                    startGame();
-                } else if (gameState === 'paused') {
-                    resumeGame();
-                } else if (gameState === 'playing') {
-                    handleJump();
-                }
+                if (gameState === 'menu' || gameState === 'gameover') startGame();
+                else if (gameState === 'paused') resumeGame();
+                else if (gameState === 'playing') handleJump();
             }
-            if (e.code === 'Escape' && gameState === 'playing') {
-                pauseGame();
-            }
+            if (e.code === 'Escape' && gameState === 'playing') pauseGame();
         };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        window.addEventListener('keydown', handleKey);
+        return () => window.removeEventListener('keydown', handleKey);
     }, [gameState, handleJump]);
 
     const startGame = useCallback(() => {
         playerYRef.current = CANVAS_HEIGHT / 2;
+        playerTiltRef.current = 0;
         velocityRef.current = 0;
         obstaclesRef.current = [];
         particlesRef.current = [];
@@ -180,7 +212,6 @@ export default function VibeJet({ onGameEnd }: {
         setScore(0);
         setGameState('playing');
         hapticFeedback('medium');
-
         setTimeout(() => canvasRef.current?.focus(), 50);
     }, []);
 
@@ -201,34 +232,28 @@ export default function VibeJet({ onGameEnd }: {
             cancelAnimationFrame(gameLoopRef.current);
             gameLoopRef.current = null;
         }
-
         setGameState('gameover');
         hapticFeedback('heavy');
 
         if (scoreRef.current > highScore) {
             setHighScore(scoreRef.current);
-            try {
-                localStorage.setItem('vibejet-highscore', scoreRef.current.toString());
-            } catch {
-                // localStorage not available
-            }
+            try { localStorage.setItem('vibejet-highscore', scoreRef.current.toString()); } catch { /* ignore */ }
         }
     }, [highScore]);
 
     // Game loop
     useEffect(() => {
         if (gameState !== 'playing') return;
-
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        let isRunning = true;
+        let running = true;
 
-        const gameLoop = () => {
-            if (!isRunning || isPausedRef.current) {
-                gameLoopRef.current = requestAnimationFrame(gameLoop);
+        const loop = () => {
+            if (!running || isPausedRef.current) {
+                gameLoopRef.current = requestAnimationFrame(loop);
                 return;
             }
 
@@ -236,26 +261,27 @@ export default function VibeJet({ onGameEnd }: {
 
             // Physics
             velocityRef.current += GRAVITY;
-            if (velocityRef.current > MAX_VELOCITY) velocityRef.current = MAX_VELOCITY;
-            if (velocityRef.current < -MAX_VELOCITY) velocityRef.current = -MAX_VELOCITY;
+            velocityRef.current = Math.max(-MAX_VELOCITY, Math.min(MAX_VELOCITY, velocityRef.current));
             playerYRef.current += velocityRef.current;
 
-            // Top boundary
-            if (playerYRef.current < 0) {
-                playerYRef.current = 0;
+            // Tilt animation
+            playerTiltRef.current += (velocityRef.current * 2 - playerTiltRef.current) * 0.1;
+            playerTiltRef.current = Math.max(-25, Math.min(25, playerTiltRef.current));
+
+            // Boundaries
+            if (playerYRef.current < 50) {
+                playerYRef.current = 50;
                 velocityRef.current = 0;
             }
-
-            // Bottom boundary - game over
-            if (playerYRef.current > CANVAS_HEIGHT - PLAYER_SIZE) {
+            if (playerYRef.current > GROUND_Y - PLAYER_HEIGHT) {
                 endGame();
                 return;
             }
 
             // Spawn obstacles
-            if (frameRef.current % 100 === 0) {
-                const gapY = 80 + Math.random() * (CANVAS_HEIGHT - 160 - OBSTACLE_GAP);
-                obstaclesRef.current.push({ x: CANVAS_WIDTH, gapY, passed: false });
+            if (frameRef.current % 90 === 0) {
+                const gapY = 100 + Math.random() * (CANVAS_HEIGHT - 250 - OBSTACLE_GAP);
+                obstaclesRef.current.push({ x: CANVAS_WIDTH + 100, gapY, passed: false, z: 1 });
             }
 
             // Update obstacles
@@ -263,8 +289,7 @@ export default function VibeJet({ onGameEnd }: {
             obstaclesRef.current = obstaclesRef.current.filter(obs => {
                 obs.x -= gameSpeedRef.current;
 
-                // Score
-                if (!obs.passed && obs.x + OBSTACLE_WIDTH < 60) {
+                if (!obs.passed && obs.x + OBSTACLE_WIDTH < 100) {
                     obs.passed = true;
                     scoreRef.current++;
                     setScore(scoreRef.current);
@@ -272,13 +297,10 @@ export default function VibeJet({ onGameEnd }: {
                 }
 
                 // Collision
-                const playerLeft = 60;
-                const playerRight = 60 + PLAYER_SIZE;
-                const playerTop = playerYRef.current;
-                const playerBottom = playerYRef.current + PLAYER_SIZE;
-
-                if (playerRight > obs.x && playerLeft < obs.x + OBSTACLE_WIDTH) {
-                    if (playerTop < obs.gapY || playerBottom > obs.gapY + OBSTACLE_GAP) {
+                const px = 100, py = playerYRef.current;
+                const pw = PLAYER_WIDTH * 0.7, ph = PLAYER_HEIGHT * 0.7;
+                if (px + pw > obs.x && px < obs.x + OBSTACLE_WIDTH) {
+                    if (py < obs.gapY || py + ph > obs.gapY + OBSTACLE_GAP) {
                         collided = true;
                     }
                 }
@@ -286,110 +308,244 @@ export default function VibeJet({ onGameEnd }: {
                 return obs.x > -OBSTACLE_WIDTH;
             });
 
-            if (collided) {
-                endGame();
-                return;
-            }
+            if (collided) { endGame(); return; }
+
+            // Update clouds
+            cloudsRef.current.forEach(c => {
+                c.x -= c.speed * gameSpeedRef.current * 0.3;
+                if (c.x < -c.size * 2) c.x = CANVAS_WIDTH + c.size;
+            });
+
+            // Update buildings
+            buildingsRef.current.forEach(b => {
+                b.x -= gameSpeedRef.current * b.z * 0.5;
+                if (b.x < -b.width) b.x = CANVAS_WIDTH + 50;
+            });
 
             // Update particles
             particlesRef.current = particlesRef.current.filter(p => {
-                p.x += p.vx;
-                p.y += p.vy;
-                p.life -= 0.04;
+                p.x += p.vx; p.y += p.vy; p.z += p.vz;
+                p.life -= 0.04; p.size *= 0.96;
                 return p.life > 0;
             });
+            if (particlesRef.current.length > 60) particlesRef.current = particlesRef.current.slice(-40);
 
-            if (particlesRef.current.length > 50) {
-                particlesRef.current = particlesRef.current.slice(-30);
+            // Engine particles
+            if (frameRef.current % 3 === 0) {
+                particlesRef.current.push({
+                    x: 100 - PLAYER_WIDTH / 2,
+                    y: playerYRef.current + PLAYER_HEIGHT / 2 + (Math.random() - 0.5) * 10,
+                    z: 1,
+                    vx: -2 - Math.random() * 2,
+                    vy: (Math.random() - 0.5) * 1,
+                    vz: 0,
+                    life: 0.6,
+                    color: `hsl(${280 + Math.random() * 40}, 100%, 60%)`,
+                    size: 3 + Math.random() * 3
+                });
             }
 
-            // Speed increase
             gameSpeedRef.current += GAME_SPEED_INCREMENT;
-
-            // Render
             render(ctx);
-
-            gameLoopRef.current = requestAnimationFrame(gameLoop);
+            gameLoopRef.current = requestAnimationFrame(loop);
         };
 
-        gameLoopRef.current = requestAnimationFrame(gameLoop);
-
-        return () => {
-            isRunning = false;
-            if (gameLoopRef.current) {
-                cancelAnimationFrame(gameLoopRef.current);
-                gameLoopRef.current = null;
-            }
-        };
+        gameLoopRef.current = requestAnimationFrame(loop);
+        return () => { running = false; if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current); };
     }, [gameState, endGame]);
 
     const render = (ctx: CanvasRenderingContext2D) => {
-        // Background
-        ctx.fillStyle = '#0a0a1a';
+        // Sky gradient
+        const skyGrad = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
+        skyGrad.addColorStop(0, '#0a0a1a');
+        skyGrad.addColorStop(0.4, '#1a1a3a');
+        skyGrad.addColorStop(1, '#2a1a4a');
+        ctx.fillStyle = skyGrad;
         ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
         // Stars
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-        starsRef.current.forEach((star, i) => {
-            const x = (star.x - frameRef.current * 0.3 * ((i % 3) + 1) * 0.3) % CANVAS_WIDTH;
-            ctx.fillRect(x < 0 ? x + CANVAS_WIDTH : x, star.y, 2, 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        for (let i = 0; i < 30; i++) {
+            const sx = (i * 137 + frameRef.current * 0.1) % CANVAS_WIDTH;
+            const sy = (i * 97) % (HORIZON_Y * 0.8);
+            ctx.fillRect(sx, sy, 1.5, 1.5);
+        }
+
+        // Clouds (background)
+        cloudsRef.current.forEach(c => {
+            ctx.globalAlpha = 0.3 * c.z;
+            ctx.fillStyle = '#4a4a6a';
+            drawCloud(ctx, c.x, c.y, c.size * c.z);
         });
+        ctx.globalAlpha = 1;
+
+        // Buildings (parallax background)
+        buildingsRef.current.forEach(b => {
+            const scale = b.z * PERSPECTIVE_SCALE;
+            const h = b.height * scale;
+            const w = b.width * scale;
+            const y = GROUND_Y - h;
+
+            ctx.fillStyle = b.color;
+            ctx.fillRect(b.x, y, w, h);
+
+            // Windows
+            ctx.fillStyle = 'rgba(255,200,100,0.3)';
+            for (let wy = y + 10; wy < GROUND_Y - 10; wy += 20) {
+                for (let wx = b.x + 8; wx < b.x + w - 8; wx += 15) {
+                    if (Math.random() > 0.3) ctx.fillRect(wx, wy, 6, 8);
+                }
+            }
+        });
+
+        // Ground
+        const groundGrad = ctx.createLinearGradient(0, GROUND_Y, 0, CANVAS_HEIGHT);
+        groundGrad.addColorStop(0, '#1a1a2e');
+        groundGrad.addColorStop(1, '#0a0a1a');
+        ctx.fillStyle = groundGrad;
+        ctx.fillRect(0, GROUND_Y, CANVAS_WIDTH, CANVAS_HEIGHT - GROUND_Y);
+
+        // Ground line
+        ctx.strokeStyle = '#3a3a5a';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(0, GROUND_Y);
+        ctx.lineTo(CANVAS_WIDTH, GROUND_Y);
+        ctx.stroke();
 
         // Particles
         particlesRef.current.forEach(p => {
             ctx.globalAlpha = p.life;
             ctx.fillStyle = p.color;
             ctx.beginPath();
-            ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
             ctx.fill();
         });
         ctx.globalAlpha = 1;
 
-        // Obstacles
+        // Obstacles (3D pillars)
         obstaclesRef.current.forEach(obs => {
-            ctx.fillStyle = '#7c3aed';
-            ctx.fillRect(obs.x, 0, OBSTACLE_WIDTH, obs.gapY);
-            ctx.fillRect(obs.x, obs.gapY + OBSTACLE_GAP, OBSTACLE_WIDTH, CANVAS_HEIGHT - obs.gapY - OBSTACLE_GAP);
-
-            // Border
-            ctx.strokeStyle = '#a855f7';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(obs.x, 0, OBSTACLE_WIDTH, obs.gapY);
-            ctx.strokeRect(obs.x, obs.gapY + OBSTACLE_GAP, OBSTACLE_WIDTH, CANVAS_HEIGHT - obs.gapY - OBSTACLE_GAP);
+            drawPillar(ctx, obs.x, 0, OBSTACLE_WIDTH, obs.gapY, true);
+            drawPillar(ctx, obs.x, obs.gapY + OBSTACLE_GAP, OBSTACLE_WIDTH, CANVAS_HEIGHT - obs.gapY - OBSTACLE_GAP, false);
         });
 
         // Player jet
-        const playerX = 60;
-        const playerY = playerYRef.current;
+        drawJet(ctx, 100, playerYRef.current, playerTiltRef.current);
+
+        // HUD
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 24px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(`${scoreRef.current}`, 25, 40);
+
+        // Speed indicator
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.font = '12px sans-serif';
+        ctx.fillText(`${(gameSpeedRef.current * 50).toFixed(0)} km/h`, 25, 60);
+    };
+
+    const drawCloud = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number) => {
+        ctx.beginPath();
+        ctx.arc(x, y, size * 0.5, 0, Math.PI * 2);
+        ctx.arc(x + size * 0.4, y - size * 0.2, size * 0.4, 0, Math.PI * 2);
+        ctx.arc(x + size * 0.8, y, size * 0.45, 0, Math.PI * 2);
+        ctx.fill();
+    };
+
+    const drawPillar = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, isTop: boolean) => {
+        // Main pillar
+        const grad = ctx.createLinearGradient(x, 0, x + w, 0);
+        grad.addColorStop(0, '#5b21b6');
+        grad.addColorStop(0.5, '#7c3aed');
+        grad.addColorStop(1, '#4c1d95');
+        ctx.fillStyle = grad;
+        ctx.fillRect(x, y, w, h);
+
+        // 3D edge
+        ctx.fillStyle = '#3b0764';
+        ctx.fillRect(x + w - 8, y, 8, h);
+
+        // Glow
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#7c3aed';
+        ctx.strokeStyle = '#a855f7';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x, y, w, h);
+        ctx.shadowBlur = 0;
+
+        // Cap
+        const capH = 15;
+        ctx.fillStyle = '#a855f7';
+        if (isTop) {
+            ctx.fillRect(x - 5, y + h - capH, w + 10, capH);
+        } else {
+            ctx.fillRect(x - 5, y, w + 10, capH);
+        }
+    };
+
+    const drawJet = (ctx: CanvasRenderingContext2D, x: number, y: number, tilt: number) => {
+        ctx.save();
+        ctx.translate(x, y + PLAYER_HEIGHT / 2);
+        ctx.rotate(tilt * Math.PI / 180);
+
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.beginPath();
+        ctx.ellipse(5, PLAYER_HEIGHT / 2 + 5, PLAYER_WIDTH / 2, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
 
         // Body
         ctx.fillStyle = '#8b5cf6';
         ctx.beginPath();
-        ctx.moveTo(playerX + PLAYER_SIZE, playerY + PLAYER_SIZE / 2);
-        ctx.lineTo(playerX, playerY);
-        ctx.lineTo(playerX + 10, playerY + PLAYER_SIZE / 2);
-        ctx.lineTo(playerX, playerY + PLAYER_SIZE);
+        ctx.moveTo(PLAYER_WIDTH / 2, 0);
+        ctx.lineTo(-PLAYER_WIDTH / 2, -PLAYER_HEIGHT / 3);
+        ctx.lineTo(-PLAYER_WIDTH / 3, 0);
+        ctx.lineTo(-PLAYER_WIDTH / 2, PLAYER_HEIGHT / 3);
         ctx.closePath();
         ctx.fill();
 
-        // Engine flame
-        const flameSize = 8 + Math.sin(frameRef.current * 0.5) * 4;
+        // Cockpit
+        ctx.fillStyle = '#1e3a5f';
+        ctx.beginPath();
+        ctx.ellipse(PLAYER_WIDTH / 6, 0, 12, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Wings
+        ctx.fillStyle = '#6d28d9';
+        ctx.beginPath();
+        ctx.moveTo(-5, -5);
+        ctx.lineTo(-20, -PLAYER_HEIGHT / 2 - 5);
+        ctx.lineTo(-25, -5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(-5, 5);
+        ctx.lineTo(-20, PLAYER_HEIGHT / 2 + 5);
+        ctx.lineTo(-25, 5);
+        ctx.closePath();
+        ctx.fill();
+
+        // Engine glow
+        const flameSize = 15 + Math.sin(frameRef.current * 0.3) * 5;
         ctx.fillStyle = '#f97316';
         ctx.beginPath();
-        ctx.moveTo(playerX, playerY + PLAYER_SIZE / 2 - 4);
-        ctx.lineTo(playerX - flameSize, playerY + PLAYER_SIZE / 2);
-        ctx.lineTo(playerX, playerY + PLAYER_SIZE / 2 + 4);
+        ctx.moveTo(-PLAYER_WIDTH / 2, -5);
+        ctx.lineTo(-PLAYER_WIDTH / 2 - flameSize, 0);
+        ctx.lineTo(-PLAYER_WIDTH / 2, 5);
         ctx.closePath();
         ctx.fill();
 
-        // Score
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 20px sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText(`${scoreRef.current}`, 20, 35);
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.moveTo(-PLAYER_WIDTH / 2, -3);
+        ctx.lineTo(-PLAYER_WIDTH / 2 - flameSize * 0.6, 0);
+        ctx.lineTo(-PLAYER_WIDTH / 2, 3);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
     };
 
-    // Loading screen
     if (gameState === 'loading') {
         return (
             <div className="relative w-full h-full bg-[#0a0a1a] flex items-center justify-center">
@@ -403,85 +559,51 @@ export default function VibeJet({ onGameEnd }: {
 
     return (
         <div ref={containerRef} className="relative w-full h-full bg-[#0a0a1a] flex flex-col">
-            {/* Header */}
             <div className="absolute top-3 left-3 z-20">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={onGameEnd}
-                    className="bg-black/50 hover:bg-white/10 text-white rounded-xl border border-white/10"
-                >
+                <Button variant="ghost" size="icon" onClick={onGameEnd}
+                    className="bg-black/50 hover:bg-white/10 text-white rounded-xl border border-white/10">
                     <ArrowLeft className="w-5 h-5" />
                 </Button>
             </div>
 
-            {/* Canvas */}
             <div className="flex-1 flex items-center justify-center p-4">
                 <div className="relative">
-                    <canvas
-                        ref={canvasRef}
-                        width={CANVAS_WIDTH}
-                        height={CANVAS_HEIGHT}
+                    <canvas ref={canvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT}
                         className="rounded-xl border border-white/10 outline-none"
-                        style={{
-                            width: CANVAS_WIDTH * canvasScale,
-                            height: CANVAS_HEIGHT * canvasScale,
-                            touchAction: 'none'
-                        }}
+                        style={{ width: CANVAS_WIDTH * canvasScale, height: CANVAS_HEIGHT * canvasScale, touchAction: 'none' }}
                         tabIndex={0}
-                        onClick={() => {
-                            if (gameState === 'playing') handleJump();
-                            canvasRef.current?.focus();
-                        }}
-                        onTouchStart={(e) => {
-                            e.preventDefault();
-                            if (gameState === 'playing') handleJump();
-                        }}
+                        onClick={() => { if (gameState === 'playing') handleJump(); canvasRef.current?.focus(); }}
+                        onTouchStart={(e) => { e.preventDefault(); if (gameState === 'playing') handleJump(); }}
                     />
 
-                    {/* Menu Overlay */}
                     {gameState === 'menu' && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 rounded-xl z-10">
                             <div className="w-16 h-16 bg-violet-500/20 rounded-full flex items-center justify-center mb-4">
                                 <Gamepad2 className="w-8 h-8 text-violet-400" />
                             </div>
-                            <h1 className="text-3xl font-black text-white mb-1">VIBE JET</h1>
-                            <p className="text-white/50 text-sm mb-6">
-                                {isMobile ? 'Тапните для полёта' : 'Пробел для полёта'}
-                            </p>
-                            <Button
-                                onClick={startGame}
-                                className="bg-violet-600 hover:bg-violet-700 text-white px-6 py-5 text-base"
-                            >
-                                <Zap className="w-4 h-4 mr-2" />
-                                ИГРАТЬ
+                            <h1 className="text-3xl font-black text-white mb-1">VIBE JET 3D</h1>
+                            <p className="text-white/50 text-sm mb-6">{isMobile ? 'Тапните для полёта' : 'Пробел для полёта'}</p>
+                            <Button onClick={startGame} className="bg-violet-600 hover:bg-violet-700 text-white px-6 py-5 text-base">
+                                <Zap className="w-4 h-4 mr-2" /> ИГРАТЬ
                             </Button>
                             {highScore > 0 && (
                                 <div className="mt-3 flex items-center gap-2 text-yellow-400 text-sm">
-                                    <Trophy className="w-4 h-4" />
-                                    <span>Рекорд: {highScore}</span>
+                                    <Trophy className="w-4 h-4" /><span>Рекорд: {highScore}</span>
                                 </div>
                             )}
                         </div>
                     )}
 
-                    {/* Pause Overlay */}
                     {gameState === 'paused' && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 rounded-xl z-10">
                             <div className="w-16 h-16 bg-violet-500/20 rounded-full flex items-center justify-center mb-4">
                                 <Pause className="w-8 h-8 text-violet-400" />
                             </div>
                             <h2 className="text-2xl font-black text-white mb-4">ПАУЗА</h2>
-                            <Button
-                                onClick={resumeGame}
-                                className="bg-violet-600 hover:bg-violet-700 text-white px-6 py-5"
-                            >
-                                ПРОДОЛЖИТЬ
-                            </Button>
+                            <Button onClick={resumeGame} className="bg-violet-600 hover:bg-violet-700 text-white px-6 py-5">ПРОДОЛЖИТЬ</Button>
                         </div>
                     )}
 
-                    {/* Game Over Overlay */}
                     {gameState === 'gameover' && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 rounded-xl z-10">
                             {score >= highScore && score > 0 ? (
@@ -500,34 +622,21 @@ export default function VibeJet({ onGameEnd }: {
                                 </>
                             )}
                             <p className="text-xl text-violet-400 font-bold mb-4">Счёт: {score}</p>
-                            <Button
-                                onClick={startGame}
-                                className="bg-violet-600 hover:bg-violet-700 text-white px-6 py-5"
-                            >
-                                ИГРАТЬ СНОВА
-                            </Button>
+                            <Button onClick={startGame} className="bg-violet-600 hover:bg-violet-700 text-white px-6 py-5">ИГРАТЬ СНОВА</Button>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* Mobile Jump Button */}
             {isMobile && gameState === 'playing' && (
                 <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20">
-                    <button
-                        onTouchStart={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleJump();
-                        }}
-                        className="w-20 h-20 rounded-full bg-violet-500/40 border-2 border-white/30 flex items-center justify-center active:scale-90 transition-transform"
-                    >
+                    <button onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); handleJump(); }}
+                        className="w-20 h-20 rounded-full bg-violet-500/40 border-2 border-white/30 flex items-center justify-center active:scale-90 transition-transform">
                         <Zap className="w-10 h-10 text-white" />
                     </button>
                 </div>
             )}
 
-            {/* Desktop hint */}
             {gameState === 'playing' && !isMobile && (
                 <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-white/30 text-xs">
                     ПРОБЕЛ для полёта • ESC пауза

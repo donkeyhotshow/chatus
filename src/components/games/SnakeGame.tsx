@@ -284,12 +284,13 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
           y: prev.body[0].y + directionRef.current.y
         };
 
-        // Wall collision
-        if (head.x < 0 || head.x >= CANVAS_SIZE / GRID_SIZE || head.y < 0 || head.y >= CANVAS_SIZE / GRID_SIZE) {
-          hapticFeedback('heavy');
-          addParticles(prev.body[0].x, prev.body[0].y, '#ef4444', 15);
-          return { ...prev, isDead: true };
-        }
+        // Wall wrapping - проход сквозь стены
+        const gridWidth = CANVAS_SIZE / GRID_SIZE;
+        const gridHeight = CANVAS_SIZE / GRID_SIZE;
+        if (head.x < 0) head.x = gridWidth - 1;
+        if (head.x >= gridWidth) head.x = 0;
+        if (head.y < 0) head.y = gridHeight - 1;
+        if (head.y >= gridHeight) head.y = 0;
 
         // Self collision
         if (prev.body.some(part => part.x === head.x && part.y === head.y)) {
@@ -405,17 +406,18 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
 
           const newAiHead = { x: head.x + nextDir.x, y: head.y + nextDir.y };
 
+          // Wall wrapping for AI
+          if (newAiHead.x < 0) newAiHead.x = 19;
+          if (newAiHead.x >= 20) newAiHead.x = 0;
+          if (newAiHead.y < 0) newAiHead.y = 19;
+          if (newAiHead.y >= 20) newAiHead.y = 0;
+
           if (prev.body.some(part => part.x === newAiHead.x && part.y === newAiHead.y)) {
             return { ...prev, isDead: true };
           }
 
           const newAiBody = [newAiHead, ...prev.body];
           let newAiScore = prev.score;
-          let isAiDead = false;
-
-          if (newAiHead.x < 0 || newAiHead.x >= 20 || newAiHead.y < 0 || newAiHead.y >= 20) {
-            isAiDead = true;
-          }
 
           if (food && newAiHead.x === food.x && newAiHead.y === food.y) {
             newAiScore += food.type === 'golden' ? 3 : 1;
@@ -424,7 +426,7 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
             newAiBody.pop();
           }
 
-          const updatedAi = { ...prev, body: newAiBody, score: newAiScore, direction: nextDir, isDead: isAiDead };
+          const updatedAi = { ...prev, body: newAiBody, score: newAiScore, direction: nextDir };
           rtServiceRef.current?.updateOtherSnake('ai-bot', updatedAi);
           return updatedAi;
         });
