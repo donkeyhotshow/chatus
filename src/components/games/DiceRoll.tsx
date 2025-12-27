@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useActionGuard, hapticFeedback } from "@/lib/game-utils";
 import { AnimationQueue, createAnimationQueue } from "@/lib/animation-queue";
 import { logger } from "@/lib/logger";
+import { ExitButton } from "../ui/ExitButton";
 
 type DiceRollProps = {
     onGameEnd: () => void;
@@ -267,10 +268,14 @@ export function DiceRoll({ onGameEnd, updateGameState, gameState, user, otherUse
                     )}
                 </CardContent>
                 <CardFooter className="p-4 pt-0">
-                    <Button onClick={onGameEnd} variant="ghost" size="sm" className="w-full text-white/40 hover:text-white min-h-[44px]">
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Вернуться в лобби
-                    </Button>
+                    <ExitButton
+                        view="game"
+                        hasUnsavedChanges={isRolling || isAiRolling}
+                        onExit={onGameEnd}
+                        variant="text"
+                        buttonText="Вернуться в лобби"
+                        className="w-full text-white/40 hover:text-white"
+                    />
                 </CardFooter>
             </Card>
         </div>

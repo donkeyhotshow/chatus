@@ -23,6 +23,7 @@ import { useRoomManager } from '@/hooks/useRoomManager';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
 import { useConnectionStatus } from '@/hooks/useConnectionStatus';
 import { useNavigationState } from '@/hooks/useNavigationState';
+import { useKeyboardShortcuts, KeyboardShortcutsHint } from '@/hooks/useKeyboardShortcuts';
 import { logger } from '@/lib/logger';
 import { isDemoMode } from '@/lib/demo-mode';
 import { getChatService } from '@/services/ChatService';
@@ -30,6 +31,7 @@ import { cn } from '@/lib/utils';
 import { useSwipe } from '@/hooks/use-swipe';
 import { OnboardingTour, useOnboarding } from './OnboardingTour';
 import { ChatSkeleton } from './ChatSkeleton';
+import { SearchDialog } from './SearchDialog';
 import { AnimatedTabTransition } from '../layout/AnimatedTabTransition';
 import { safariSafeClick } from '@/lib/safari-workarounds';
 import { RoomState } from '@/lib/session-manager';
@@ -126,6 +128,7 @@ function ErrorScreen({ onRetry }: { onRetry: () => void }) {
 export function ChatRoom({ roomId }: { roomId: string }) {
     const [activeTab, setActiveTab] = useState<ChatTab>('chat');
     const [showSettings, setShowSettings] = useState(false);
+    const [showSearch, setShowSearch] = useState(false);
     const router = useRouter();
     const { toast } = useToast();
     const firebaseContext = useFirebase();
@@ -300,6 +303,34 @@ export function ChatRoom({ roomId }: { roomId: string }) {
         setShowSettings(true);
     }, []);
 
+    // Keyboard shortcuts (Этап 4: Desktop navigation)
+    const handleSearchOpen = useCallback(() => {
+        setShowSearch(true);
+    }, []);
+
+    const handleSearchClose = useCallback(() => {
+        setShowSearch(false);
+    }, []);
+
+    const handleNewChat = useCallback(() => {
+        router.push('/');
+    }, [router]);
+
+    const handleEscape = useCallback(() => {
+        if (showSearch) {
+            setShowSearch(false);
+        } else if (showSettings) {
+            setShowSettings(false);
+        }
+    }, [showSearch, showSettings]);
+
+    // Integrate keyboard shortcuts
+    useKeyboardShortcuts({
+        onSearch: handleSearchOpen,
+        onNewChat: handleNewChat,
+        onEscape: handleEscape,
+    });
+
     // Loading states - використовуємо skeleton для кращого UX
     const isSlow = connectionState.isSlow;
 
@@ -333,6 +364,13 @@ export function ChatRoom({ roomId }: { roomId: string }) {
         )}>
             {/* Connection Status Banner */}
             <ConnectionStatus />
+
+            {/* Search Dialog (Ctrl+K) */}
+            <SearchDialog
+                isOpen={showSearch}
+                onClose={handleSearchClose}
+                onNewChat={handleNewChat}
+            />
 
             {/* Settings Panel */}
             <SettingsPanel

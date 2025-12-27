@@ -7,8 +7,10 @@ import { RealtimeSnakeService, SnakeGameState, SnakeData } from '@/services/Real
 import { db as realtimeDb } from '@/lib/firebase';
 import { PremiumCard, PremiumCardContent, PremiumCardHeader, PremiumCardTitle, PremiumCardFooter } from '../ui/premium-card';
 import { PremiumButton } from '../ui/premium-button';
-import { Trophy, Zap, ArrowLeft, Gamepad2, Star, Flame, Clock } from 'lucide-react';
+import { Trophy, Zap, Gamepad2, Star, Flame, Clock, ArrowLeft } from 'lucide-react';
 import { hapticFeedback } from '@/lib/game-utils';
+import { formatGameTime } from '@/utils/time';
+import { ExitButton } from '../ui/ExitButton';
 
 interface SnakeGameProps {
   onGameEnd: () => void;
@@ -113,12 +115,35 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
     }
   }, [mySnake, rtState?.active]);
 
-  // Game timer
+  // Game timer - P0 FIX: Proper time tracking
   useEffect(() => {
-    if (!rtState?.active) return;
+    if (!rtState?.active) {
+      // Reset timer when game is not active
+      setGameTime(0);
+      return;
+    }
+
+    // Initialize start time when game becomes active
+    if (!gameStartTimeRef.current || gameStartTimeRef.current === 0) {
+      gameStartTimeRef.current = Date.now();
+    }
+
     const interval = setInterval(() => {
-      setGameTime(Math.floor((Date.now() - gameStartTimeRef.current) / 1000));
+      const now = Date.now();
+      const startTime = gameStartTimeRef.current;
+
+      // Validate start time
+      if (!startTime || startTime > now || startTime < now - 3600000) {
+        // Invalid start time - reset
+        gameStartTimeRef.current = now;
+        setGameTime(0);
+        return;
+      }
+
+      const elapsed = Math.floor((now - startTime) / 1000);
+      setGameTime(elapsed);
     }, 1000);
+
     return () => clearInterval(interval);
   }, [rtState?.active]);
 
@@ -216,9 +241,11 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
     setMySnake(initialSnake);
     setCombo(0);
     setSpeedBoost(false);
-    setGameTime(0);
     setParticles([]);
+
+    // P0 FIX: Reset timer properly BEFORE setting game active
     gameStartTimeRef.current = Date.now();
+    setGameTime(0);
 
     if (rtServiceRef.current) {
       rtServiceRef.current.setGameState(true, Date.now());
@@ -572,16 +599,19 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
     <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900">
       <PremiumCard className="w-full max-w-lg">
         <PremiumCardHeader>
-          <div className="flex items-center justify-between">
-            <PremiumButton variant="ghost" size="sm" onClick={onGameEnd}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Назад
-            </PremiumButton>
+          <div className="flex items-center justify-between w-full">
+            <ExitButton
+              view="game"
+              hasUnsavedChanges={rtState?.active || false}
+              onExit={onGameEnd}
+              variant="icon"
+              size="sm"
+            />
             <PremiumCardTitle className="flex items-center gap-2">
               <Gamepad2 className="w-5 h-5 text-purple-400" />
               Snake Battle
             </PremiumCardTitle>
-            <div className="w-20" />
+            <div className="w-10" /> {/* Spacer for centering */}
           </div>
         </PremiumCardHeader>
 
@@ -604,7 +634,7 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
             )}
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-gray-400" />
-              <span className="text-gray-300">{gameTime}s</span>
+              <span className="text-gray-300">{formatGameTime(gameTime)}</span>
             </div>
             <div className="flex items-center gap-2">
               <Star className="w-4 h-4 text-pink-400" />
@@ -622,33 +652,98 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
               style={{ touchAction: 'none' }}
             />
 
-            {/* Game Over Overlay */}
+            {/* Game Over Overlay - Улучшенный с статистикой */}
             <AnimatePresence>
               {isGameOver && winner && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
-                  className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 rounded-lg"
+                  className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 rounded-lg p-6"
                 >
-                  <Trophy className="w-16 h-16 text-yellow-400 mb-4" />
-                  <h2 className="text-2xl font-bold text-white mb-2">
-                    {winner.userName} победил!
+                  {/* Trophy Badge */}
+                  <div className="relative mb-4">
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center shadow-lg shadow-yellow-500/30">
+                      <Trophy className="w-10 h-10 text-white" />
+                    </div>
+                    {winner.userId === user.id && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute -top-2 -right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full"
+                      >
+                        Победа!
+                      </motion.div>
+                    )}
+                  </div>
+
+                  {/* Winner Name */}
+                  <h2 className="text-2xl font-bold text-white mb-1">
+                    {winner.userName}
                   </h2>
-                  <p className="text-gray-300 mb-4">Счёт: {winner.score}</p>
-                  <PremiumButton onClick={handleStart}>
-                    Играть снова
-                  </PremiumButton>
+                  <p className="text-[var(--text-tertiary)] text-sm mb-4">
+                    {winner.userId === user.id ? 'Отличная игра!' : 'Почти получилось!'}
+                  </p>
+
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-3 gap-4 mb-6 w-full max-w-xs">
+                    <div className="bg-white/5 rounded-xl p-3 text-center">
+                      <div className="text-2xl font-bold text-white">{winner.score}</div>
+                      <div className="text-xs text-[var(--text-muted)]">Счёт</div>
+                    </div>
+                    <div className="bg-white/5 rounded-xl p-3 text-center">
+                      <div className="text-2xl font-bold text-white">{winner.body.length}</div>
+                      <div className="text-xs text-[var(--text-muted)]">Длина</div>
+                    </div>
+                    <div className="bg-white/5 rounded-xl p-3 text-center">
+                      <div className="text-2xl font-bold text-white">{formatGameTime(gameTime)}</div>
+                      <div className="text-xs text-[var(--text-muted)]">Время</div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 w-full max-w-xs">
+                    <PremiumButton onClick={handleStart} className="flex-1">
+                      <Gamepad2 className="w-4 h-4 mr-2" />
+                      Ещё раз
+                    </PremiumButton>
+                    <PremiumButton variant="outline" onClick={onGameEnd} className="flex-1">
+                      Выйти
+                    </PremiumButton>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* Start Overlay */}
+            {/* Start Overlay - Улучшенный с превью */}
             {!rtState?.active && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 rounded-lg">
-                <Gamepad2 className="w-16 h-16 text-purple-400 mb-4" />
-                <h2 className="text-xl font-bold text-white mb-4">Snake Battle</h2>
-                <PremiumButton onClick={handleStart}>
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 rounded-lg p-6">
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center mb-4 shadow-lg shadow-purple-500/30">
+                  <Gamepad2 className="w-10 h-10 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold text-white mb-2">Snake Battle</h2>
+                <p className="text-[var(--text-tertiary)] text-sm text-center mb-6 max-w-xs">
+                  Классическая змейка в multiplayer режиме. Собирайте еду и избегайте столкновений!
+                </p>
+
+                {/* Quick Tips */}
+                <div className="flex gap-4 mb-6 text-xs text-[var(--text-muted)]">
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded-full bg-green-500" />
+                    <span>+1</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                    <span>+3</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded-full bg-blue-500" />
+                    <span>⚡</span>
+                  </div>
+                </div>
+
+                <PremiumButton onClick={handleStart} size="lg" className="min-w-[200px]">
+                  <Zap className="w-5 h-5 mr-2" />
                   Начать игру
                 </PremiumButton>
               </div>

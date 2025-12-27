@@ -2,6 +2,9 @@
 
 import { cn } from '@/lib/utils';
 
+// P0 FIX: Shimmer effect для skeleton
+const shimmerClass = "relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_1.5s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/10 before:to-transparent";
+
 // Skeleton для сообщений чата
 export function MessageSkeleton({ isOwn = false }: { isOwn?: boolean }) {
     return (
@@ -10,7 +13,10 @@ export function MessageSkeleton({ isOwn = false }: { isOwn?: boolean }) {
             isOwn ? "flex-row-reverse" : "flex-row"
         )}>
             {/* Avatar */}
-            <div className="w-8 h-8 rounded-full bg-[var(--bg-tertiary)] animate-pulse shrink-0" />
+            <div className={cn(
+                "w-9 h-9 rounded-full bg-[var(--bg-tertiary)] shrink-0",
+                shimmerClass
+            )} />
 
             {/* Content */}
             <div className={cn(
@@ -18,16 +24,16 @@ export function MessageSkeleton({ isOwn = false }: { isOwn?: boolean }) {
                 isOwn ? "items-end" : "items-start"
             )}>
                 {!isOwn && (
-                    <div className="h-3 w-20 bg-[var(--bg-tertiary)] rounded animate-pulse" />
+                    <div className={cn("h-3 w-20 bg-[var(--bg-tertiary)] rounded", shimmerClass)} />
                 )}
                 <div className={cn(
-                    "rounded-2xl px-3 py-2 space-y-1.5",
+                    "rounded-2xl px-4 py-3 space-y-2",
                     isOwn
-                        ? "bg-[var(--accent-light)] rounded-br-md"
+                        ? "bg-[var(--accent-primary)]/20 rounded-br-md"
                         : "bg-[var(--bg-secondary)] rounded-bl-md"
                 )}>
-                    <div className="h-3 w-32 bg-[var(--bg-tertiary)] rounded animate-pulse" />
-                    <div className="h-3 w-24 bg-[var(--bg-tertiary)] rounded animate-pulse" />
+                    <div className={cn("h-3 w-36 bg-[var(--bg-tertiary)] rounded", shimmerClass)} />
+                    <div className={cn("h-3 w-24 bg-[var(--bg-tertiary)] rounded", shimmerClass)} />
                 </div>
             </div>
         </div>

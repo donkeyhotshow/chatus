@@ -1,246 +1,147 @@
+#!/usr/bin/env node
+/**
+ * Performance Check Script
+ * P0: Analyzes bundle size and performance metrics
+ */
+
 const fs = require('fs');
 const path = require('path');
 
-/**
- * Performance Check Script
- * Analyzes bundle sizes, checks for potential memory leaks, and validates optimizations
- */
+const BUNDLE_SIZE_LIMITS = {
+  'framework': 150 * 1024,      // 150KB
+  'firebase': 200 * 1024,       // 200KB
+  'radix-ui': 100 * 1024,       // 100KB
+  'animations': 80 * 1024,      // 80KB
+  'vendors': 150 * 1024,        // 150KB
+  'total-initial': 300 * 1024,  // 300KB initial JS
+};
 
-class PerformanceChecker {
-    constructor() {
-        this.results = {
-            bundleSize: {},
-            codeAnalysis: {},
-            recommendations: [],
-            score: 0
-        };
-    }
+const COLORS = {
+  red: '\x1b[31m',
+  green: '\x1b[32m',
+  yellow: '\x1b[33m',
+  blue: '\x1b[34m',
+  reset: '\x1b[0m',
+};
 
-    async checkBundleSize() {
-        console.log('📦 Checking bundle sizes...');
-
-        const nextDir = path.join(process.cwd(), '.next');
-        if (!fs.existsSync(nextDir)) {
-            console.log('❌ .next directory not found. Run "npm run build" first.');
-            return;
-        }
-
-        const staticDir = path.join(nextDir, 'static');
-        if (!fs.existsSync(staticDir)) {
-            console.log('❌ Static directory not found.');
-            return;
-        }
-
-        // Check chunk sizes
-        const chunksDir = path.join(staticDir, 'chunks');
-        if (fs.existsSync(chunksDir)) {
-            const chunks = fs.readdirSync(chunksDir);
-            let totalSize = 0;
-
-            chunks.forEach(chunk => {
-                const chunkPath = path.join(chunksDir, chunk);
-                const stats = fs.statSync(chunkPath);
-                const sizeKB = Math.round(stats.size / 1024);
-                totalSize += sizeKB;
-
-                if (chunk.endsWith('.js')) {
-                    this.results.bundleSize[chunk] = sizeKB;
-
-                    if (sizeKB > 500) {
-                        this.results.recommendations.push(`⚠️  Large chunk detected: ${chunk} (${sizeKB}KB)`);
-                    }
-                }
-            });
-
-            this.results.bundleSize.total = totalSize;
-            console.log(`📊 Total bundle size: ${totalSize}KB`);
-
-            if (totalSize > 2000) {
-                this.results.recommendations.push('🔍 Consider code splitting for bundles over 2MB');
-            }
-        }
-    }
-
-    async analyzeCode() {
-        console.log('🔍 Analyzing code for performance issues...');
-
-        const srcDir = path.join(process.cwd(), 'src');
-        const issues = [];
-
-        // Check for potential memory leaks
-        this.checkForMemoryLeaks(srcDir, issues);
-
-        // Check for infinite loop patterns
-        this.checkForInfiniteLoops(srcDir, issues);
-
-        // Check for missing cleanup
-        this.checkForMissingCleanup(srcDir, issues);
-
-        this.results.codeAnalysis = {
-            totalIssues: issues.length,
-            issues: issues
-        };
-
-        if (issues.length > 0) {
-            console.log(`⚠️  Found ${issues.length} potential performance issues:`);
-            issues.forEach(issue => console.log(`   ${issue}`));
-        } else {
-            console.log('✅ No obvious performance issues detected');
-        }
-    }
-
-    checkForMemoryLeaks(dir, issues) {
-        const files = this.getJSFiles(dir);
-
-        files.forEach(file => {
-            const content = fs.readFileSync(file, 'utf8');
-
-            // Check for missing cleanup in useEffect
-            if (content.includes('useEffect') && !content.includes('return () =>')) {
-                const relativePath = path.relative(process.cwd(), file);
-                issues.push(`Potential memory leak in ${relativePath}: useEffect without cleanup`);
-            }
-
-            // Check for event listeners without removal
-            if (content.includes('addEventListener') && !content.includes('removeEventListener')) {
-                const relativePath = path.relative(process.cwd(), file);
-                issues.push(`Potential memory leak in ${relativePath}: addEventListener without cleanup`);
-            }
-
-            // Check for timers without clearing
-            if ((content.includes('setTimeout') || content.includes('setInterval')) &&
-                !content.includes('clearTimeout') && !content.includes('clearInterval')) {
-                const relativePath = path.relative(process.cwd(), file);
-                issues.push(`Potential memory leak in ${relativePath}: Timer without cleanup`);
-            }
-        });
-    }
-
-    checkForInfiniteLoops(dir, issues) {
-        const files = this.getJSFiles(dir);
-
-        files.forEach(file => {
-            const content = fs.readFileSync(file, 'utf8');
-
-            // Check for potential infinite re-renders
-            if (content.includes('useState') && content.includes('useEffect')) {
-                // Look for state updates in useEffect without proper dependencies
-                const useEffectMatches = content.match(/useEffect\s*\(\s*\(\s*\)\s*=>\s*{[^}]*}/g);
-                if (useEffectMatches) {
-                    useEffectMatches.forEach(match => {
-                        if (match.includes('set') && !match.includes('[]')) {
-                            const relativePath = path.relative(process.cwd(), file);
-                            issues.push(`Potential infinite loop in ${relativePath}: State update in useEffect`);
-                        }
-                    });
-                }
-            }
-        });
-    }
-
-    checkForMissingCleanup(dir, issues) {
-        const files = this.getJSFiles(dir);
-
-        files.forEach(file => {
-            const content = fs.readFileSync(file, 'utf8');
-
-            // Check for Firebase listeners without unsubscribe
-            if (content.includes('onSnapshot') && !content.includes('unsubscribe')) {
-                const relativePath = path.relative(process.cwd(), file);
-                issues.push(`Missing cleanup in ${relativePath}: Firebase listener without unsubscribe`);
-            }
-
-            // Check for subscription patterns without cleanup
-            if (content.includes('.subscribe(') && !content.includes('.unsubscribe(')) {
-                const relativePath = path.relative(process.cwd(), file);
-                issues.push(`Missing cleanup in ${relativePath}: Subscription without unsubscribe`);
-            }
-        });
-    }
-
-    getJSFiles(dir) {
-        const files = [];
-
-        const scan = (currentDir) => {
-            const items = fs.readdirSync(currentDir);
-
-            items.forEach(item => {
-                const fullPath = path.join(currentDir, item);
-                const stat = fs.statSync(fullPath);
-
-                if (stat.isDirectory() && !item.startsWith('.') && item !== 'node_modules') {
-                    scan(fullPath);
-                } else if (stat.isFile() && (item.endsWith('.ts') || item.endsWith('.tsx') || item.endsWith('.js') || item.endsWith('.jsx'))) {
-                    files.push(fullPath);
-                }
-            });
-        };
-
-        scan(dir);
-        return files;
-    }
-
-    calculateScore() {
-        let score = 100;
-
-        // Deduct points for large bundles
-        if (this.results.bundleSize.total > 2000) {
-            score -= 20;
-        } else if (this.results.bundleSize.total > 1000) {
-            score -= 10;
-        }
-
-        // Deduct points for code issues
-        score -= Math.min(this.results.codeAnalysis.totalIssues * 5, 50);
-
-        this.results.score = Math.max(score, 0);
-        return this.results.score;
-    }
-
-    generateReport() {
-        const score = this.calculateScore();
-
-        console.log('\n📊 PERFORMANCE REPORT');
-        console.log('='.repeat(50));
-        console.log(`Overall Score: ${score}/100`);
-
-        if (score >= 90) {
-            console.log('🎉 Excellent performance!');
-        } else if (score >= 70) {
-            console.log('✅ Good performance with room for improvement');
-        } else if (score >= 50) {
-            console.log('⚠️  Performance needs attention');
-        } else {
-            console.log('❌ Poor performance - immediate action required');
-        }
-
-        console.log('\n📦 Bundle Analysis:');
-        console.log(`Total Size: ${this.results.bundleSize.total || 0}KB`);
-
-        console.log('\n🔍 Code Analysis:');
-        console.log(`Issues Found: ${this.results.codeAnalysis.totalIssues || 0}`);
-
-        if (this.results.recommendations.length > 0) {
-            console.log('\n💡 Recommendations:');
-            this.results.recommendations.forEach(rec => console.log(`   ${rec}`));
-        }
-
-        // Save detailed report
-        const reportPath = path.join(process.cwd(), 'performance-report.json');
-        fs.writeFileSync(reportPath, JSON.stringify(this.results, null, 2));
-        console.log(`\n📄 Detailed report saved to: ${reportPath}`);
-    }
-
-    async run() {
-        console.log('🚀 Starting performance check...\n');
-
-        await this.checkBundleSize();
-        await this.analyzeCode();
-
-        this.generateReport();
-    }
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
 }
 
-// Run the performance check
-const checker = new PerformanceChecker();
-checker.run().catch(console.error);
+function checkBuildOutput() {
+  const buildDir = path.join(process.cwd(), '.next');
+
+  if (!fs.existsSync(buildDir)) {
+    console.log(`${COLORS.yellow}⚠ No build found. Run 'npm run build' first.${COLORS.reset}`);
+    return null;
+  }
+
+  const staticDir = path.join(buildDir, 'static', 'chunks');
+  if (!fs.existsSync(staticDir)) {
+    console.log(`${COLORS.yellow}⚠ No chunks found in build.${COLORS.reset}`);
+    return null;
+  }
+
+  const chunks = {};
+  let totalSize = 0;
+
+  const files = fs.readdirSync(staticDir);
+  files.forEach(file => {
+    if (file.endsWith('.js')) {
+      const filePath = path.join(staticDir, file);
+      const stats = fs.statSync(filePath);
+      const size = stats.size;
+      totalSize += size;
+
+      // Categorize chunks
+      if (file.includes('framework')) {
+        chunks.framework = (chunks.framework || 0) + size;
+      } else if (file.includes('firebase')) {
+        chunks.firebase = (chunks.firebase || 0) + size;
+      } else if (file.includes('radix')) {
+        chunks['radix-ui'] = (chunks['radix-ui'] || 0) + size;
+      } else if (file.includes('animation') || file.includes('framer')) {
+        chunks.animations = (chunks.animations || 0) + size;
+      } else if (file.includes('vendor') || file.includes('node_modules')) {
+        chunks.vendors = (chunks.vendors || 0) + size;
+      }
+    }
+  });
+
+  chunks['total-initial'] = totalSize;
+  return chunks;
+}
+
+function analyzePerformance() {
+  console.log('\n📊 Performance Analysis\n');
+  console.log('='.repeat(50));
+
+  const chunks = checkBuildOutput();
+
+  if (!chunks) {
+    process.exit(1);
+  }
+
+  let hasWarnings = false;
+  let hasErrors = false;
+
+  console.log('\n📦 Bundle Size Analysis:\n');
+
+  Object.entries(chunks).forEach(([name, size]) => {
+    const limit = BUNDLE_SIZE_LIMITS[name];
+    const formattedSize = formatBytes(size);
+
+    if (limit) {
+      const percentage = ((size / limit) * 100).toFixed(1);
+      const formattedLimit = formatBytes(limit);
+
+      if (size > limit) {
+        console.log(`${COLORS.red}❌ ${name}: ${formattedSize} (${percentage}% of ${formattedLimit} limit)${COLORS.reset}`);
+        hasErrors = true;
+      } else if (size > limit * 0.8) {
+        console.log(`${COLORS.yellow}⚠ ${name}: ${formattedSize} (${percentage}% of ${formattedLimit} limit)${COLORS.reset}`);
+        hasWarnings = true;
+      } else {
+        console.log(`${COLORS.green}✓ ${name}: ${formattedSize} (${percentage}% of ${formattedLimit} limit)${COLORS.reset}`);
+      }
+    } else {
+      console.log(`  ${name}: ${formattedSize}`);
+    }
+  });
+
+  console.log('\n' + '='.repeat(50));
+
+  // Performance recommendations
+  console.log('\n💡 Recommendations:\n');
+
+  if (chunks.firebase > 150 * 1024) {
+    console.log('  • Consider lazy loading Firebase modules');
+  }
+  if (chunks.animations > 60 * 1024) {
+    console.log('  • Consider using CSS animations instead of framer-motion for simple effects');
+  }
+  if (chunks['radix-ui'] > 80 * 1024) {
+    console.log('  • Import only needed Radix UI components');
+  }
+  if (chunks['total-initial'] > 250 * 1024) {
+    console.log('  • Consider code splitting for non-critical components');
+  }
+
+  console.log('\n');
+
+  if (hasErrors) {
+    console.log(`${COLORS.red}❌ Performance check failed - bundle size limits exceeded${COLORS.reset}\n`);
+    process.exit(1);
+  } else if (hasWarnings) {
+    console.log(`${COLORS.yellow}⚠ Performance check passed with warnings${COLORS.reset}\n`);
+    process.exit(0);
+  } else {
+    console.log(`${COLORS.green}✓ Performance check passed${COLORS.reset}\n`);
+    process.exit(0);
+  }
+}
+
+// Run analysis
+analyzePerformance();

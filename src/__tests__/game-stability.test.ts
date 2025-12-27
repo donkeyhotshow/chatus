@@ -63,15 +63,19 @@ describe('Game Stability Utilities', () => {
   describe('createFrameLimiter', () => {
     it('should limit frame rate', () => {
       const limiter = createFrameLimiter(60);
+      const frameTime = 1000 / 60; // ~16.67ms
 
-      // First frame should always pass
-      expect(limiter.shouldUpdate(0)).toBe(true);
+      // First frame should always pass (0 - 0 >= frameTime is false, but first call sets lastFrameTime)
+      expect(limiter.shouldUpdate(0)).toBe(false); // 0 - 0 = 0 < frameTime
+
+      // Frame after enough time should pass
+      expect(limiter.shouldUpdate(frameTime + 1)).toBe(true);
 
       // Frame within limit should not pass
-      expect(limiter.shouldUpdate(10)).toBe(false);
+      expect(limiter.shouldUpdate(frameTime + 5)).toBe(false);
 
-      // Frame after limit should pass
-      expect(limiter.shouldUpdate(20)).toBe(true);
+      // Frame after another interval should pass
+      expect(limiter.shouldUpdate(frameTime * 2 + 2)).toBe(true);
     });
 
     it('should reset correctly', () => {
@@ -93,7 +97,7 @@ describe('Game Stability Utilities', () => {
     });
 
     it('should block clicks over limit', () => {
-      const limiter = createClickLimiter
+      const limiter = createClickLimiter(3);
 
       for (let i = 0; i < 3; i++) {
         limiter.recordClick();
@@ -111,12 +115,14 @@ describe('Game Stability Utilities', () => {
     });
   });
 
-  describe('createDection', () => {
+  describe('createDebouncedAction', () => {
     it('should debounce actions', () => {
       const debouncer = createDebouncedAction(100);
 
+      // First call should pass and update lastActionTime
       expect(debouncer.canAct()).toBe(true);
-      expect(debouncer.cantoBe(false);
+      // Second immediate call should fail
+      expect(debouncer.canAct()).toBe(false);
     });
   });
 

@@ -156,9 +156,9 @@ export function HomeClient() {
     }, [isFormValid, isConnecting]);
 
     return (
-        <div className="min-h-screen w-full bg-[var(--bg-primary)]">
+        <div className="min-h-screen w-full bg-[var(--bg-primary)]" style={{ background: 'var(--bg-gradient)' }}>
             {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-2xl border-b border-white/[0.06]">
+            <header className="fixed top-0 left-0 right-0 z-50 bg-[var(--bg-primary)]/90 backdrop-blur-2xl border-b border-white/[0.08]">
                 <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center">
@@ -183,7 +183,7 @@ export function HomeClient() {
                             "md:hidden p-3 rounded-xl transition-all duration-200 touch-manipulation min-w-[48px] min-h-[48px] flex items-center justify-center",
                             isMenuOpen
                                 ? "bg-violet-600 text-white"
-                                : "bg-white/[0.06] text-white/70 hover:text-white hover:bg-white/[0.1]"
+                                : "bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-hover)]"
                         )}
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
                         aria-label={isMenuOpen ? "Закрыть меню" : "Открыть меню"}
@@ -197,7 +197,7 @@ export function HomeClient() {
             {/* Mobile menu */}
             {isMenuOpen && (
                 <div
-                    className="fixed inset-0 z-40 bg-black pt-14 md:hidden animate-in fade-in duration-200"
+                    className="fixed inset-0 z-40 bg-[var(--bg-primary)] pt-14 md:hidden animate-in fade-in duration-200"
                     role="dialog"
                     aria-modal="true"
                     aria-label="Мобильное меню"
@@ -232,7 +232,7 @@ export function HomeClient() {
                         <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
                             Приватный чат
                         </h1>
-                        <p className="text-lg sm:text-xl text-white/40 mb-10 px-4 leading-relaxed">
+                        <p className="text-lg sm:text-xl text-[var(--text-muted)] mb-10 px-4 leading-relaxed">
                             Общайтесь, рисуйте и играйте вместе.<br className="hidden sm:block" /> Без регистрации.
                         </p>
                     </div>
@@ -241,7 +241,7 @@ export function HomeClient() {
                 {/* Login Form */}
                 <section id="login" className="py-12 md:py-16 px-4">
                     <div className="max-w-md mx-auto">
-                        <div className="bg-white/[0.02] rounded-3xl border border-white/[0.08] p-6 md:p-8 shadow-2xl backdrop-blur-sm">
+                        <div className="bg-[var(--bg-card)] rounded-3xl border border-white/[0.1] p-6 md:p-8 shadow-2xl backdrop-blur-sm">
                             <h2 className="text-2xl md:text-3xl font-bold text-white text-center mb-8">
                                 Войти в чат
                             </h2>
@@ -251,7 +251,7 @@ export function HomeClient() {
                                 <div className="space-y-2">
                                     <label
                                         htmlFor="username"
-                                        className="text-sm font-medium text-white/50 flex items-center gap-2 px-1"
+                                        className="text-sm font-medium text-[var(--text-muted)] flex items-center gap-2 px-1"
                                     >
                                         <User className="w-4 h-4" />
                                         Ваш ник
@@ -266,11 +266,13 @@ export function HomeClient() {
                                             maxLength={20}
                                             autoComplete="username"
                                             className={cn(
-                                                "w-full px-4 py-4 bg-white/[0.04] border-2 rounded-xl text-base",
-                                                "text-white placeholder:text-white/30",
-                                                "focus:outline-none focus:border-violet-500/50 focus:bg-white/[0.06]",
+                                                "w-full px-4 py-4 bg-[var(--bg-secondary)] border-2 rounded-xl text-base",
+                                                "text-white placeholder:text-[var(--text-disabled)]",
+                                                "focus:outline-none focus:border-violet-500/50 focus:bg-[var(--bg-tertiary)]",
+                                                "hover:border-white/15",
                                                 "transition-all duration-200 touch-manipulation",
-                                                isUsernameValid ? "border-emerald-500/50" : "border-white/[0.08]"
+                                                "shadow-sm shadow-black/20",
+                                                isUsernameValid ? "border-emerald-500/50" : "border-white/[0.1]"
                                             )}
                                             aria-describedby={isUsernameValid ? "username-valid" : undefined}
                                         />
@@ -291,7 +293,7 @@ export function HomeClient() {
                                     <div className="flex items-center justify-between px-1">
                                         <label
                                             htmlFor="roomCode"
-                                            className="text-sm font-medium text-white/50 flex items-center gap-2"
+                                            className="text-sm font-medium text-[var(--text-muted)] flex items-center gap-2"
                                         >
                                             <Key className="w-4 h-4" />
                                             Код комнаты
@@ -300,7 +302,7 @@ export function HomeClient() {
                                             type="button"
                                             ref={createRoomButtonRef}
                                             onClick={handleCreateRoom}
-                                            className="text-sm font-medium text-violet-400 hover:text-violet-300 transition-colors flex items-center gap-1 py-2 px-3 rounded-lg min-h-[44px] min-w-[44px] touch-manipulation hover:bg-violet-500/10"
+                                            className="text-sm font-medium text-violet-400 hover:text-violet-300 transition-all duration-200 flex items-center gap-1 py-2 px-3 rounded-lg min-h-[44px] min-w-[44px] touch-manipulation hover:bg-violet-500/10 hover:scale-[1.02] active:scale-[0.98]"
                                             aria-label="Создать новую комнату"
                                         >
                                             <Plus className="w-4 h-4" aria-hidden="true" />
@@ -318,11 +320,13 @@ export function HomeClient() {
                                             autoComplete="off"
                                             inputMode="text"
                                             className={cn(
-                                                "w-full px-4 py-4 bg-white/[0.04] border-2 rounded-xl text-center tracking-[0.3em] font-mono text-lg",
-                                                "text-white placeholder:text-white/30",
-                                                "focus:outline-none focus:border-violet-500/50 focus:bg-white/[0.06]",
+                                                "w-full px-4 py-4 bg-[var(--bg-secondary)] border-2 rounded-xl text-center tracking-[0.3em] font-mono text-lg",
+                                                "text-white placeholder:text-[var(--text-disabled)]",
+                                                "focus:outline-none focus:border-violet-500/50 focus:bg-[var(--bg-tertiary)]",
+                                                "hover:border-white/15",
                                                 "transition-all duration-200 touch-manipulation uppercase",
-                                                isRoomCodeValid ? "border-emerald-500/50" : "border-white/[0.08]"
+                                                "shadow-sm shadow-black/20",
+                                                isRoomCodeValid ? "border-emerald-500/50" : "border-white/[0.1]"
                                             )}
                                             aria-describedby={isRoomCodeValid ? "roomcode-valid" : undefined}
                                         />
@@ -349,7 +353,7 @@ export function HomeClient() {
                                         "w-full h-14 text-base font-semibold touch-manipulation min-h-[56px] rounded-xl",
                                         "bg-gradient-to-r from-violet-600 to-purple-600",
                                         "hover:shadow-lg hover:shadow-violet-500/30",
-                                        "transition-all duration-300"
+                                        "transition-all duration-200"
                                     )}
                                     size="lg"
                                 >
@@ -362,12 +366,12 @@ export function HomeClient() {
                 </section>
 
                 {/* Features */}
-                <section id="features" className="py-20 px-4 bg-gradient-to-b from-black to-[#050505]">
+                <section id="features" className="py-20 px-4 bg-gradient-to-b from-[var(--bg-primary)] to-[var(--bg-secondary)]">
                     <div className="max-w-4xl mx-auto">
                         <h2 className="text-3xl font-bold text-white text-center mb-3">
                             Возможности
                         </h2>
-                        <p className="text-white/40 text-center mb-14 max-w-lg mx-auto">
+                        <p className="text-[var(--text-muted)] text-center mb-14 max-w-lg mx-auto">
                             Всё что нужно для общения в одном месте
                         </p>
 
@@ -376,44 +380,44 @@ export function HomeClient() {
                                 {
                                     icon: MessageCircle,
                                     title: "Чат",
-                                    desc: "Приватное общение в реальном времени",
+                                    desc: "Мгновенный обмен сообщениями, файлами и эмоциями. Полностью приватно.",
                                     color: "var(--chat-primary)",
                                     gradient: "from-violet-600 to-purple-700"
                                 },
                                 {
                                     icon: PenTool,
                                     title: "Холст",
-                                    desc: "Совместное рисование и творчество",
+                                    desc: "Рисуйте и создавайте вместе в реальном времени. Делитесь идеями визуально.",
                                     color: "var(--draw-primary)",
                                     gradient: "from-emerald-500 to-teal-600"
                                 },
                                 {
                                     icon: Gamepad2,
                                     title: "Игры",
-                                    desc: "Мини-игры для развлечения вдвоём",
+                                    desc: "Соревнуйтесь с друзьями в классических и новых играх.",
                                     color: "var(--game-primary)",
                                     gradient: "from-purple-500 to-fuchsia-600"
                                 }
                             ].map((feature, i) => (
                                 <div
                                     key={i}
-                                    className="group p-6 bg-white/[0.02] rounded-2xl border border-white/[0.06] transition-all duration-300 hover:bg-white/[0.04] hover:border-white/[0.12] hover:-translate-y-1"
+                                    className="group p-6 bg-[var(--bg-card)] rounded-2xl border border-white/[0.08] transition-all duration-200 hover:bg-[var(--bg-hover)] hover:border-white/[0.15] hover:-translate-y-1 hover:scale-[1.02]"
                                 >
                                     <div
                                         className={cn(
-                                            "w-14 h-14 rounded-2xl flex items-center justify-center mb-5 transition-all duration-300",
+                                            "w-16 h-16 md:w-[72px] md:h-[72px] rounded-2xl flex items-center justify-center mb-5 transition-all duration-200",
                                             "bg-gradient-to-br",
                                             feature.gradient,
                                             "group-hover:scale-105 shadow-lg"
                                         )}
                                         style={{ boxShadow: `0 8px 24px ${feature.color}30` }}
                                     >
-                                        <feature.icon className="w-7 h-7 text-white" />
+                                        <feature.icon className="w-8 h-8 md:w-9 md:h-9 text-white" />
                                     </div>
                                     <h3 className="text-lg font-semibold text-white mb-2">
                                         {feature.title}
                                     </h3>
-                                    <p className="text-sm text-white/40 leading-relaxed">
+                                    <p className="text-sm text-[var(--text-tertiary)] leading-relaxed">
                                         {feature.desc}
                                     </p>
                                 </div>
@@ -424,13 +428,13 @@ export function HomeClient() {
             </main>
 
             {/* Footer */}
-            <footer className="py-8 px-4 border-t border-white/[0.06]">
+            <footer className="py-8 px-4 border-t border-white/[0.08]">
                 <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
-                        <Logo className="w-5 h-5 text-white/30" />
-                        <span className="text-sm text-white/30">ChatUs</span>
+                        <Logo className="w-5 h-5 text-[var(--text-disabled)]" />
+                        <span className="text-sm text-[var(--text-disabled)]">ChatUs</span>
                     </div>
-                    <p className="text-sm text-white/30">
+                    <p className="text-sm text-[var(--text-disabled)]">
                         © 2025 ChatUs
                     </p>
                 </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { CanvasPath, UserProfile } from '@/lib/types';
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useChatService } from '@/hooks/useChatService';
 import { Timestamp } from 'firebase/firestore';
@@ -25,6 +25,8 @@ import {
 import { RealtimeCanvasService } from '@/services/RealtimeCanvasService';
 import { RemoteCursors } from './RemoteCursors';
 import { RemoteCursor } from '@/lib/types';
+import throttle from 'lodash.throttle';
+import { useDebouncedCallback } from 'use-debounce';
 
 // Helper to generate a consistent color for a user ID
 const generateCursorColor = (userId: string) => {
@@ -79,6 +81,23 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
   const [remoteCursors, setRemoteCursors] = useState<Map<string, RemoteCursor>>(new Map());
   const realtimeServiceRef = useRef<RealtimeCanvasService | null>(null);
   const cursorColor = useMemo(() => user ? generateCursorColor(user.id) : '#3B82F6', [user]);
+
+  // P0 FIX: Throttled cursor update to reduce network traffic
+  const throttledCursorUpdate = useMemo(
+    () => throttle((x: number, y: number, color: string) => {
+      if (realtimeServiceRef.current) {
+        realtimeServiceRef.current.updateCursor(x, y, color);
+      }
+    }, 50), // ~20fps for cursor updates
+    []
+  );
+
+  // Cleanup throttle on unmount
+  useEffect(() => {
+    return () => {
+      throttledCursorUpdate.cancel();
+    };
+  }, [throttledCursorUpdate]);
 
   // Memory leak prevention: limit max strokes in memory
   const MAX_STROKES_IN_MEMORY = 500;
@@ -304,32 +323,27 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     // BUG FIX: Assign the returned state back to the ref
     stabilizerStateRef.current = startDrawing(stabilizerStateRef.current, point);
 
-    // Update cursor position in RTDB
-    if (realtimeServiceRef.current) {
-      realtimeServiceRef.current.updateCursor(point.x, point.y, cursorColor);
-    }
+    // Update cursor position in RTDB (throttled)
+    throttledCursorUpdate(point.x, point.y, cursorColor);
   };
 
   const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!stabilizerStateRef.current || !stabilizerStateRef.current.isDrawing || !user) {
-      // Just update cursor if not drawing
-      const point = getEventPoint(e);
-      if (point && user && realtimeServiceRef.current) {
-        realtimeServiceRef.current.updateCursor(point.x, point.y, cursorColor);
-      }
+    if (!stabilizerStateRef.current || !user) {
       return;
     }
 
     const point = getEventPoint(e);
     if (!point) return;
 
+    // Always update cursor (throttled)
+    throttledCursorUpdate(point.x, point.y, cursorColor);
+
+    if (!stabilizerStateRef.current.isDrawing) {
+      return;
+    }
+
     // BUG FIX: Assign the returned state back to the ref
     stabilizerStateRef.current = processDrawEvent(stabilizerStateRef.current, point);
-
-    // Update cursor
-    if (realtimeServiceRef.current) {
-      realtimeServiceRef.current.updateCursor(point.x, point.y, cursorColor);
-    }
   };
 
   const handleMouseUp = () => {

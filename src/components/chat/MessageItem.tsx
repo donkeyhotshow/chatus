@@ -1,13 +1,16 @@
 
 "use client";
 
-import { memo, useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { memo, useState, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { format } from 'date-fns';
 import { Heart, Trash2, CornerUpLeft, Check, CheckCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Message } from '@/lib/types';
 import { EmojiRain } from './EmojiRain';
+
+// Quick reaction emojis for long-press menu - Этап 2
+const QUICK_REACTIONS = ['❤️', '😂', '😮', '😢', '👍', '🔥'];
 
 type MessageItemProps = {
     message: Message;
@@ -19,10 +22,21 @@ type MessageItemProps = {
     reactions?: { emoji: string; count: number; users: string[] }[];
 };
 
-const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, onReply, reactions = [] }: MessageItemProps) => {
+const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDelete, onImageClick, onReply, reactions = [] }: MessageItemProps) {
     const [showEmojiRain, setShowEmojiRain] = useState(false);
     const [rainEmoji, setRainEmoji] = useState('');
     const [showActions, setShowActions] = useState(false);
+    const [showQuickReactions, setShowQuickReactions] = useState(false);
+
+    // Swipe-to-reply state - Этап 2
+    const x = useMotionValue(0);
+    const swipeThreshold = 60;
+    const replyIconOpacity = useTransform(x, [0, swipeThreshold], [0, 1]);
+    const replyIconScale = useTransform(x, [0, swipeThreshold], [0.5, 1]);
+
+    // Long-press state - Этап 2
+    const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const isLongPressRef = useRef(false);
 
     // Reset emoji rain when message changes
     useEffect(() => {
@@ -31,6 +45,64 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
     }, [message.id]);
 
     const user = message.user || { id: 'unknown', name: 'Неизвестный', avatar: '' };
+
+    // Long-press handlers for quick reactions - Этап 2
+    const handleTouchStart = useCallback(() => {
+        isLongPressRef.current = false;
+        longPressTimerRef.current = setTimeout(() => {
+            isLongPressRef.current = true;
+            setShowQuickReactions(true);
+            // Haptic feedback
+            if ('vibrate' in navigator) {
+                navigator.vibrate(20);
+            }
+        }, 500);
+    }, []);
+
+    const handleTouchEnd = useCallback(() => {
+        if (longPressTimerRef.current) {
+            clearTimeout(longPressTimerRef.current);
+            longPressTimerRef.current = null;
+        }
+    }, []);
+
+    const handleTouchMove = useCallback(() => {
+        // Cancel long-press if user moves finger
+        if (longPressTimerRef.current) {
+            clearTimeout(longPressTimerRef.current);
+            longPressTimerRef.current = null;
+        }
+    }, []);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (longPressTimerRef.current) {
+                clearTimeout(longPressTimerRef.current);
+            }
+        };
+    }, []);
+
+    // Handle quick reaction select - Этап 2
+    const handleQuickReaction = useCallback((emoji: string) => {
+        onReaction(message.id, emoji);
+        setRainEmoji(emoji);
+        setShowEmojiRain(true);
+        setShowQuickReactions(false);
+        if ('vibrate' in navigator) navigator.vibrate(10);
+        setTimeout(() => setShowEmojiRain(false), 2000);
+    }, [message.id, onReaction]);
+
+    // Swipe-to-reply handler - Этап 2
+    const handleDragEnd = useCallback((_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+        if (info.offset.x > swipeThreshold && !isOwn) {
+            // Trigger reply
+            onReply(message);
+            if ('vibrate' in navigator) navigator.vibrate(15);
+        }
+        // Reset position
+        x.set(0);
+    }, [isOwn, message, onReply, x, swipeThreshold]);
 
     if (message.type === 'system') {
         return (
@@ -136,6 +208,16 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
             )}
             onDoubleClick={handleDoubleClick}
         >
+            {/* Swipe-to-reply indicator (only for received messages) - Этап 2 */}
+            {!isOwn && !isSticker && (
+                <motion.div
+                    className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-10 flex items-center justify-center w-8 h-8 rounded-full bg-[var(--accent-primary)]"
+                    style={{ opacity: replyIconOpacity, scale: replyIconScale }}
+                >
+                    <CornerUpLeft className="w-4 h-4 text-white" />
+                </motion.div>
+            )}
+
             {/* Avatar - visible on all devices */}
             {!isSticker && (
                 <div className="flex-shrink-0 mt-1 message-avatar">
@@ -172,10 +254,26 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
                 )}
 
                 {hasContent ? (
-                    <div
-                        onClick={() => setShowActions(!showActions)}
+                    <motion.div
+                        drag={!isOwn && !isSticker ? "x" : false}
+                        dragConstraints={{ left: 0, right: swipeThreshold + 20 }}
+                        dragElastic={0.1}
+                        onDragEnd={handleDragEnd}
+                        style={{ x }}
+                        onTouchStart={handleTouchStart}
+                        onTouchEnd={handleTouchEnd}
+                        onTouchMove={handleTouchMove}
+                        onMouseEnter={() => setShowActions(true)}
+                        onMouseLeave={() => setShowActions(false)}
+                        onClick={() => {
+                            if (!isLongPressRef.current) {
+                                setShowActions(!showActions);
+                            }
+                        }}
                         className={cn(
-                            "relative px-4 py-3 rounded-2xl transition-all duration-300 cursor-pointer",
+                            "relative px-4 py-3 rounded-2xl transition-all duration-200 cursor-pointer select-none",
+                            // Desktop hover states - Этап 4
+                            "md:hover:shadow-lg md:hover:shadow-black/20",
                             isOwn
                                 ? isSticker
                                     ? "bg-transparent"
@@ -183,7 +281,8 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
                                         "bg-gradient-to-br from-violet-600 via-violet-600 to-purple-700",
                                         "text-white rounded-tr-md",
                                         "shadow-[0_4px_20px_rgba(124,58,237,0.3)]",
-                                        "hover:shadow-[0_8px_30px_rgba(124,58,237,0.4)]",
+                                        "md:hover:shadow-[0_8px_30px_rgba(124,58,237,0.4)]",
+                                        "md:hover:translate-y-[-1px]",
                                     ]
                                 : isSticker
                                     ? "bg-transparent"
@@ -191,7 +290,8 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
                                         "bg-white/[0.06] backdrop-blur-xl",
                                         "text-white border border-white/[0.1]",
                                         "rounded-tl-md",
-                                        "hover:bg-white/[0.08]",
+                                        "md:hover:bg-white/[0.08]",
+                                        "md:hover:border-white/[0.15]",
                                     ],
                             message.id.startsWith("temp_") && "opacity-50",
                             showActions && "ring-2 ring-violet-500/30"
@@ -242,9 +342,49 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
                             )}
                         </AnimatePresence>
 
+                        {/* Quick reactions menu (long-press) - Этап 2 */}
+                        <AnimatePresence>
+                            {showQuickReactions && (
+                                <>
+                                    {/* Backdrop */}
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        className="fixed inset-0 z-30"
+                                        onClick={() => setShowQuickReactions(false)}
+                                    />
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: 10, scale: 0.8 }}
+                                        className={cn(
+                                            "absolute -top-14 flex items-center gap-1 p-1.5 bg-black/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl z-40",
+                                            isOwn ? "right-0" : "left-0"
+                                        )}
+                                    >
+                                        {QUICK_REACTIONS.map((emoji) => (
+                                            <motion.button
+                                                key={emoji}
+                                                whileHover={{ scale: 1.2 }}
+                                                whileTap={{ scale: 0.8 }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleQuickReaction(emoji);
+                                                }}
+                                                className="w-10 h-10 flex items-center justify-center text-xl hover:bg-white/10 rounded-xl transition-colors"
+                                            >
+                                                {emoji}
+                                            </motion.button>
+                                        ))}
+                                    </motion.div>
+                                </>
+                            )}
+                        </AnimatePresence>
+
                         {/* Action buttons - floating bar */}
                         <AnimatePresence>
-                            {(showActions) && (
+                            {(showActions) && !showQuickReactions && (
                                 <motion.div
                                     initial={{ opacity: 0, y: 10, scale: 0.9 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -291,7 +431,7 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
                                 </motion.div>
                             )}
                         </AnimatePresence>
-                    </div>
+                    </motion.div>
                 ) : null}
 
                 {/* Read status */}
@@ -312,4 +452,27 @@ const MessageItem = memo(({ message, isOwn, onReaction, onDelete, onImageClick, 
 
 MessageItem.displayName = 'MessageItem';
 
-export default MessageItem;
+// Custom comparison for better performance - P0 optimization
+function arePropsEqual(prevProps: MessageItemProps, nextProps: MessageItemProps): boolean {
+    // Fast path: same message reference
+    if (prevProps.message === nextProps.message &&
+        prevProps.isOwn === nextProps.isOwn &&
+        prevProps.reactions === nextProps.reactions) {
+        return true;
+    }
+
+    // Deep comparison for message
+    const prevMsg = prevProps.message;
+    const nextMsg = nextProps.message;
+
+    return (
+        prevMsg.id === nextMsg.id &&
+        prevMsg.text === nextMsg.text &&
+        prevMsg.imageUrl === nextMsg.imageUrl &&
+        prevMsg.seen === nextMsg.seen &&
+        prevProps.isOwn === nextProps.isOwn &&
+        prevProps.reactions?.length === nextProps.reactions?.length
+    );
+}
+
+export default memo(MessageItem, arePropsEqual);

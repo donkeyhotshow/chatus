@@ -120,6 +120,11 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
         }
         lastSendTimeRef.current = now;
 
+        // Этап 2: Haptic feedback при отправке сообщения
+        if ('vibrate' in navigator) {
+            navigator.vibrate(10);
+        }
+
         onSend(trimmed);
         setMessage('');
         setIsTyping(false);
@@ -308,7 +313,7 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
 
             {/* Input row */}
             <div className="flex items-end gap-2" role="group" aria-label="Ввод сообщения">
-                {/* Emoji button and picker */}
+                {/* Emoji button and picker - P2 UX-3: Added tooltip */}
                 <div className="relative" ref={emojiPickerRef}>
                     <motion.button
                         whileHover={{ scale: 1.05 }}
@@ -328,6 +333,7 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                         disabled={disabled}
                         aria-label="Открыть эмодзи"
                         aria-expanded={showEmojiPicker}
+                        title="Добавить эмодзи (E)" /* P2 UX-3: Tooltip */
                         className={cn(
                             "p-2.5 rounded-xl transition-all duration-200 touch-target disabled:opacity-50 min-w-[44px] min-h-[44px] relative z-[105]",
                             showEmojiPicker
@@ -414,15 +420,17 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                         aria-label="Введите сообщение"
                         aria-describedby={message.length > 800 ? "char-count" : undefined}
                         className={cn(
-                            "w-full px-4 py-3 bg-white/[0.04] border border-white/[0.08] rounded-2xl",
-                            "text-white placeholder:text-white/30",
+                            "w-full px-4 py-3 bg-[#242426] border border-white/[0.1] rounded-2xl",
+                            "text-white placeholder:text-[var(--text-muted)]",
                             "resize-none overflow-y-auto max-h-[120px] scrollbar-hide",
-                            "focus:outline-none focus:border-violet-500/40 focus:bg-white/[0.06]",
+                            "focus:outline-none focus:border-violet-500/50 focus:bg-[#2a2a2c]",
                             "focus:ring-2 focus:ring-violet-500/20",
+                            "hover:border-white/15",
                             "transition-all duration-200",
+                            "shadow-sm shadow-black/30",
                             "disabled:opacity-50"
                         )}
-                        style={{ fontSize: '16px', minHeight: '48px' }}
+                        style={{ fontSize: '16px', minHeight: '56px' }}
                     />
 
                     {/* Character count */}
@@ -450,7 +458,7 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                     aria-label="Выбрать изображение"
                 />
 
-                {/* Image button */}
+                {/* Image button - P2 UX-3: Added tooltip */}
                 {onFileUpload && (
                     <motion.button
                         whileHover={{ scale: 1.05 }}
@@ -462,6 +470,7 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                         }}
                         disabled={disabled}
                         aria-label="Прикрепить изображение"
+                        title="Прикрепить изображение (I)" /* P2 UX-3: Tooltip */
                         className="p-2.5 rounded-xl text-white/40 hover:text-white/70 hover:bg-white/[0.05] transition-all duration-200 touch-target disabled:opacity-50 min-w-[44px] min-h-[44px] relative z-[105]"
                     >
                         <ImageIcon className="w-5 h-5" aria-hidden="true" />

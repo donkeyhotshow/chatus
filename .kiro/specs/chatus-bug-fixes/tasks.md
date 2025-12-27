@@ -214,7 +214,7 @@
     - Добавить graceful error recovery
     - _Requirements: 21.1, 21.2, 21.3, 21.4_
 
-- [ ] 15. Checkpoint - Убедиться что P1 баги исправлены
+- [x] 15. Checkpoint - Убедиться что P1 баги исправлены
   - Ensure all tests pass, ask the user if questions arise.
 
 ---
@@ -230,13 +230,13 @@
     - Добавить tooltip с пояснением действия
     - _Requirements: 22.1, 22.2_
 
-- [ ] 17. Добавить валидацию имени с кириллицей (P2-VALIDATION-001)
-  - [ ] 17.1 Обновить UsernameValidator в src/lib/username-validator.ts
+- [x] 17. Добавить валидацию имени с кириллицей (P2-VALIDATION-001)
+  - [x] 17.1 Обновить UsernameValidator в src/lib/username-validator.ts
     - Добавить поддержку кириллических символов в regex
     - Добавить явные правила валидации (2-20 символов, латиница или кириллица)
     - Добавить специфичные сообщения об ошибках
     - _Requirements: 23.1, 23.2, 23.3, 23.4_
-  - [ ] 17.2 Обновить ProfileCreationDialog.tsx
+  - [x] 17.2 Обновить ProfileCreationDialog.tsx
     - Показывать явные правила валидации под полем ввода
     - Показывать специфичные ошибки при невалидном вводе
     - _Requirements: 23.2, 23.3_
@@ -290,13 +290,13 @@
     - Добавить видимую кнопку "Выход" с иконкой
     - Добавить диалог подтверждения при несохранённых изменениях
     - _Requirements: 25.1, 25.2, 25.3, 25.4_
-  - [ ] 19.3 Интегрировать ExitButton
+  - [x] 19.3 Интегрировать ExitButton
     - Добавить ExitButton в игровые компоненты
     - Добавить ExitButton в SharedCanvas.tsx
     - Добавить ExitButton в ChatRoom.tsx для выхода из комнаты
     - _Requirements: 25.1, 25.2, 25.3, 25.4_
 
-- [ ] 20. Checkpoint - Убедиться что P2 баги исправлены
+- [x] 20. Checkpoint - Убедиться что P2 баги исправлены
   - Ensure all tests pass, ask the user if questions arise.
 
 ---
@@ -385,7 +385,7 @@
     - **Property 11: Unique Key Generation**
     - **Validates: Requirements 11.1, 11.2, 11.3**
 
-- [ ] 27. Checkpoint - Убедиться что все баги исправлены
+- [x] 27. Checkpoint - Убедиться что все баги исправлены
   - Ensure all tests pass, ask the user if questions arise.
 
 ---
@@ -404,18 +404,18 @@
     - Проверить и исправить цвета с низкой контрастностью
     - Обеспечить минимум 4.5:1 для обычного текста
     - _Requirements: 12.2_
-  - [ ] 28.4 Добавить видимые индикаторы фокуса
+  - [x] 28.4 Добавить видимые индикаторы фокуса
     - Добавить :focus-visible стили
     - _Requirements: 12.3_
 
-- [ ] 29. Улучшить SEO
-  - [ ] 29.1 Добавить мета-теги в layout.tsx
+- [-] 29. Улучшить SEO
+  - [x] 29.1 Добавить мета-теги в layout.tsx
     - Добавить description и keywords
     - _Requirements: 13.1_
-  - [ ] 29.2 Проверить семантику заголовков
+  - [x] 29.2 Проверить семантику заголовков
     - Убедиться в правильной иерархии h1-h6
     - _Requirements: 13.2_
-  - [ ] 29.3 Добавить alt атрибуты к изображениям
+  - [x] 29.3 Добавить alt атрибуты к изображениям
     - Проверить все img теги
     - _Requirements: 13.3_
   - [ ] 29.4 Написать property-based тест для alt атрибутов
@@ -443,5 +443,5 @@
     - **Property 16: Page Load Time**
     - **Validates: Requirements 16.1**
 
-- [ ] 31. Final Checkpoint - Убедиться что все тесты проходят
+- [x] 31. Final Checkpoint - Убедиться что все тесты проходят
   - Ensure all tests pass, ask the user if questions arise.
