@@ -126,7 +126,7 @@ jobs:
       - name: Health check - Vercel
         run: |
           echo "🔍 Checking Vercel deployment..."
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://chatus-mu.vercel.app)
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://chatus-omega.vercel.app)
           if [ "$HTTP_STATUS" -eq 200 ]; then
             echo "✅ Vercel deployment healthy (HTTP $HTTP_STATUS)"
           else
@@ -137,5 +137,5 @@ jobs:
         run: |
           echo "## 🎉 Deployment Complete" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Vercel**: https://chatus-mu.vercel.app" >> $GITHUB_STEP_SUMMARY
+          echo "- **Vercel**: https://chatus-omega.vercel.app" >> $GITHUB_STEP_SUMMARY
           echo "- **Firebase Project**: chatus-703ce" >> $GITHUB_STEP_SUMMARY
