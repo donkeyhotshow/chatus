@@ -50,7 +50,7 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
   const [rtState, setRtState] = useState<SnakeGameState | null>(null);
   const rtServiceRef = useRef<RealtimeSnakeService | null>(null);
 
-  const [mysetMySnake] = useState<Omit<SnakeData, 'userId'>>({
+  const [mySnake, setMySnake] = useState<Omit<SnakeData, 'userId'>>({
     userName: user.name,
     body: [{ x: 5, y: 10 }, { x: 4, y: 10 }, { x: 3, y: 10 }],
     direction: { x: 1, y: 0 },
@@ -149,7 +149,7 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
   const spawnFood = useCallback(() => {
     let attempts = 0;
     let newFood: Food = {
-      x: Math.floor(Math.rANVAS_SIZE / GRID_SIZE)),
+      x: Math.floor(Math.random() * (CANVAS_SIZE / GRID_SIZE)),
       y: Math.floor(Math.random() * (CANVAS_SIZE / GRID_SIZE)),
       type: 'normal',
       spawnTime: Date.now()
@@ -567,3 +567,133 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
   const isGameOver = rtState?.active && Object.values(rtState.players || {}).every(p => p.isDead);
   const winner = isGameOver ? Object.values(rtState.players || {}).sort((a, b) => b.score - a.score)[0] : null;
   const aiScore = Object.values(rtState?.players || {}).find(p => p.userId !== user.id)?.score || 0;
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900">
+      <PremiumCard className="w-full max-w-lg">
+        <PremiumCardHeader>
+          <div className="flex items-center justify-between">
+            <PremiumButton variant="ghost" size="sm" onClick={onGameEnd}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Назад
+            </PremiumButton>
+            <PremiumCardTitle className="flex items-center gap-2">
+              <Gamepad2 className="w-5 h-5 text-purple-400" />
+              Snake Battle
+            </PremiumCardTitle>
+            <div className="w-20" />
+          </div>
+        </PremiumCardHeader>
+
+        <PremiumCardContent className="flex flex-col items-center gap-4">
+          {/* Score Display */}
+          <div className="flex justify-between w-full px-4">
+            <div className="flex items-center gap-2">
+              <Trophy className="w-4 h-4 text-yellow-400" />
+              <span className="text-white font-bold">{mySnake.score}</span>
+              {combo > 1 && (
+                <span className="text-orange-400 text-sm flex items-center gap-1">
+                  <Flame className="w-3 h-3" />x{combo}
+                </span>
+              )}
+            </div>
+            {speedBoost && (
+              <span className="text-blue-400 text-sm flex items-center gap-1">
+                <Zap className="w-3 h-3" />BOOST
+              </span>
+            )}
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-gray-400" />
+              <span className="text-gray-300">{gameTime}s</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Star className="w-4 h-4 text-pink-400" />
+              <span className="text-white font-bold">{aiScore}</span>
+            </div>
+          </div>
+
+          {/* Canvas */}
+          <div className="relative">
+            <canvas
+              ref={canvasRef}
+              width={CANVAS_SIZE}
+              height={CANVAS_SIZE}
+              className="rounded-lg border border-purple-500/30 shadow-lg shadow-purple-500/20"
+              style={{ touchAction: 'none' }}
+            />
+
+            {/* Game Over Overlay */}
+            <AnimatePresence>
+              {isGameOver && winner && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 rounded-lg"
+                >
+                  <Trophy className="w-16 h-16 text-yellow-400 mb-4" />
+                  <h2 className="text-2xl font-bold text-white mb-2">
+                    {winner.userName} победил!
+                  </h2>
+                  <p className="text-gray-300 mb-4">Счёт: {winner.score}</p>
+                  <PremiumButton onClick={handleStart}>
+                    Играть снова
+                  </PremiumButton>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Start Overlay */}
+            {!rtState?.active && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 rounded-lg">
+                <Gamepad2 className="w-16 h-16 text-purple-400 mb-4" />
+                <h2 className="text-xl font-bold text-white mb-4">Snake Battle</h2>
+                <PremiumButton onClick={handleStart}>
+                  Начать игру
+                </PremiumButton>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Controls */}
+          <div className="grid grid-cols-3 gap-2 mt-4 md:hidden">
+            <div />
+            <PremiumButton
+              variant="outline"
+              size="sm"
+              onTouchStart={() => { if (directionRef.current.y === 0) nextDirectionRef.current = { x: 0, y: -1 }; }}
+            >
+              ↑
+            </PremiumButton>
+            <div />
+            <PremiumButton
+              variant="outline"
+              size="sm"
+              onTouchStart={() => { if (directionRef.current.x === 0) nextDirectionRef.current = { x: -1, y: 0 }; }}
+            >
+              ←
+            </PremiumButton>
+            <PremiumButton
+              variant="outline"
+              size="sm"
+              onTouchStart={() => { if (directionRef.current.y === 0) nextDirectionRef.current = { x: 0, y: 1 }; }}
+            >
+              ↓
+            </PremiumButton>
+            <PremiumButton
+              variant="outline"
+              size="sm"
+              onTouchStart={() => { if (directionRef.current.x === 0) nextDirectionRef.current = { x: 1, y: 0 }; }}
+            >
+              →
+            </PremiumButton>
+          </div>
+
+          <p className="text-gray-400 text-sm text-center">
+            Используйте стрелки или WASD для управления
+          </p>
+        </PremiumCardContent>
+      </PremiumCard>
+    </div>
+  );
+}
