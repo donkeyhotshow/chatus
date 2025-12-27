@@ -133,9 +133,7 @@ export class RealtimeCanvasService {
     onChildAdded(this.strokesRef, (snapshot) => {
       const stroke = snapshot.val() as CanvasStroke;
       if (stroke && snapshot.key) {
-        // Skip own strokes (already rendered locally)
-        if (stroke.userId === this.userId) return;
-
+        // Include all strokes (own strokes need to persist after drawing ends)
         this.onStrokeAdded?.({
           ...stroke,
           id: snapshot.key,
