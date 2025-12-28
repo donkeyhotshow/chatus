@@ -460,7 +460,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         return () => clearTimeout(timer);
     }, []);
 
-    // Keyboard controls - СТАБИЛИЗИРОВАННЫЕ
+    // Keyboard controls - СТАБИЛИЗИРОВАННЫЕ + FIXED FOCUS
     useEffect(() => {
         if (!isGameStarted || countdown !== null) return;
 
@@ -469,12 +469,14 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
             const validKeys = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd', ' ', 'shift'];
             if (validKeys.includes(key)) {
                 e.preventDefault();
+                e.stopPropagation();
                 keysRef.current.add(key);
             }
         };
 
         const handleKeyUp = (e: KeyboardEvent) => {
-            keysRef.current.delete(e.key.toLowerCase());
+            const key = e.key.toLowerCase();
+            keysRef.current.delete(key);
         };
 
         const handleBlur = () => keysRef.current.clear();
@@ -482,16 +484,25 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
             if (document.hidden) keysRef.current.clear();
         };
 
-        window.addEventListener('keydown', handleKeyDown);
-        window.addEventListener('keyup', handleKeyUp);
+        // CRITICAL FIX: Attach to document instead of window for better capture
+        document.addEventListener('keydown', handleKeyDown, { capture: true });
+        document.addEventListener('keyup', handleKeyUp, { capture: true });
         window.addEventListener('blur', handleBlur);
         document.addEventListener('visibilitychange', handleVisibilityChange);
 
+        // Auto-focus canvas on mount
+        const focusTimer = setTimeout(() => {
+            if (canvasRef.current) {
+                canvasRef.current.focus();
+            }
+        }, 200);
+
         return () => {
-            window.removeEventListener('keydown', handleKeyDown);
-            window.removeEventListener('keyup', handleKeyUp);
+            document.removeEventListener('keydown', handleKeyDown, { capture: true });
+            document.removeEventListener('keyup', handleKeyUp, { capture: true });
             window.removeEventListener('blur', handleBlur);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
+            clearTimeout(focusTimer);
             keysRef.current.clear();
         };
     }, [isGameStarted, countdown]);

@@ -24,6 +24,8 @@ export function ConnectionStatus({ className }: ConnectionStatusProps) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
   const previousStatusRef = useRef<string>('online');
+  const lastOfflineTimeRef = useRef<number>(0);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const manager = getConnectionManager();
@@ -31,34 +33,52 @@ export function ConnectionStatus({ className }: ConnectionStatusProps) {
 
     const unsubscribe = manager.subscribe((state) => {
       const wasOffline = previousStatusRef.current !== 'online';
-      previousStatusRef.current = state.status;
+      const now = Date.now();
 
-      setConnectionState(state);
-
-      // Show banner for non-online states
-      if (state.status !== 'online') {
-        setShowBanner(true);
-        setShowSuccessBanner(false);
-      } else if (isInitialized && wasOffline) {
-        // Show success banner when reconnected
-        setShowSuccessBanner(true);
-        setShowBanner(true);
-        // Hide banner after showing success message
-        setTimeout(() => {
-          setShowBanner(false);
-          setShowSuccessBanner(false);
-        }, 3000);
+      // DEBOUNCE: Ignore rapid status changes (within 2 seconds)
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
       }
+
+      debounceTimerRef.current = setTimeout(() => {
+        previousStatusRef.current = state.status;
+        setConnectionState(state);
+
+        // Show banner for non-online states
+        if (state.status !== 'online') {
+          lastOfflineTimeRef.current = now;
+          setShowBanner(true);
+          setShowSuccessBanner(false);
+        } else if (isInitialized && wasOffline) {
+          // Only show success banner if was offline for more than 3 seconds
+          const offlineDuration = now - lastOfflineTimeRef.current;
+          if (offlineDuration > 3000) {
+            setShowSuccessBanner(true);
+            setShowBanner(true);
+            // Hide banner after showing success message
+            setTimeout(() => {
+              setShowBanner(false);
+              setShowSuccessBanner(false);
+            }, 2000);
+          } else {
+            // Quick reconnect - just hide banner without success message
+            setShowBanner(false);
+          }
+        }
+      }, 500); // 500ms debounce
     });
 
-    // Small delay before marking as initialized to avoid false "reconnected" on mount
+    // Longer delay before marking as initialized to avoid false "reconnected" on mount
     const initTimer = setTimeout(() => {
       setIsInitialized(true);
-    }, 1000);
+    }, 2000);
 
     return () => {
       unsubscribe();
       clearTimeout(initTimer);
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
     };
   }, [isInitialized]);
 

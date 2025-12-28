@@ -30,25 +30,25 @@ const MessageStatus = memo(function MessageStatus({
   const statusConfig = {
     sending: {
       icon: Clock,
-      color: 'text-white/40',
+      color: 'text-white/60',  // Increased from 40%
       label: 'Отправка...',
       animate: true,
     },
     sent: {
       icon: Check,
-      color: 'text-white/50',
+      color: 'text-white/70',  // Increased from 50%
       label: 'Отправлено',
       animate: false,
     },
     delivered: {
       icon: CheckCheck,
-      color: 'text-white/50',
+      color: 'text-white/70',  // Increased from 50%
       label: 'Доставлено',
       animate: false,
     },
     read: {
       icon: CheckCheck,
-      color: 'text-violet-400',
+      color: 'text-violet-300',  // Brighter violet
       label: 'Прочитано',
       animate: false,
     },
@@ -84,9 +84,9 @@ const MessageStatus = memo(function MessageStatus({
       >
         <Icon
           className={cn(
-            "w-3.5 h-3.5 transition-colors duration-200",
+            "w-4 h-4 transition-colors duration-200",  // Increased from 3.5
             config.color,
-            status === 'read' && "drop-shadow-[0_0_3px_rgba(139,92,246,0.5)]"
+            status === 'read' && "drop-shadow-[0_0_4px_rgba(167,139,250,0.6)]"  // Brighter glow
           )}
         />
       </motion.div>

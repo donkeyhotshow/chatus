@@ -1,4 +1,4 @@
-"use client
+"use client";
 
 import { memo } from 'react';
 import { Check, CheckCheck, Clock, AlertCircle } from 'lucide-react';
@@ -16,22 +16,22 @@ const statusConfig = {
   sending: {
     icon: Clock,
     label: 'Отправка...',
-    className: 'text-white/40 animate-pulse',
+    className: 'text-white/60 animate-pulse',  // Increased contrast
   },
   sent: {
     icon: Check,
     label: 'Отправлено',
-    className: 'text-white/60',
+    className: 'text-white/70',  // Increased contrast
   },
   delivered: {
     icon: CheckCheck,
     label: 'Доставлено',
-    className: 'text-white/60',
+    className: 'text-white/70',  // Increased contrast
   },
   read: {
     icon: CheckCheck,
     label: 'Прочитано',
-    className: 'text-[#60A5FA]', // Blue color for read status
+    className: 'text-violet-300 drop-shadow-[0_0_4px_rgba(167,139,250,0.6)]', // Brighter violet with glow
   },
   error: {
     icon: AlertCircle,
@@ -55,7 +55,7 @@ export const MessageStatusIcon = memo(function MessageStatusIcon({
       role="status"
       aria-label={config.label}
     >
-      <Icon className={cn('w-3.5 h-3.5', config.className)} />
+      <Icon className={cn('w-4 h-4', config.className)} />
       {showLabel && (
         <span className={cn('text-xs', config.className)}>{config.label}</span>
       )}

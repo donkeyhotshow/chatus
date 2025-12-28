@@ -261,10 +261,11 @@
     box-shadow: 0 0 20px rgba(124, 58, 237, 0.2);
   }
 
-  /* P1-1 FIX: Enhanced message hover effects */
+  /* P1-1 FIX: Enhanced message hover effects - IMPROVED VISIBILITY */
   .message-hover-effect:hover {
-    background: rgba(255, 255, 255, 0.03);
-    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 4px 16px rgba(255, 255, 255, 0.1);
+    transform: translateX(2px);
   }
 
   /* Mobile Audit: Message container with hover actions */
@@ -276,7 +277,8 @@
   }
 
   .message-container:hover {
-    background: rgba(124, 58, 237, 0.05);
+    background: rgba(124, 58, 237, 0.08);
+    transform: translateX(4px);
   }
 
   .message-actions {
@@ -673,11 +675,14 @@
     margin-left: auto;
     box-shadow: 0 2px 8px rgba(124, 58, 237, 0.1);
     backdrop-filter: blur(4px);
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .message-sent:hover {
-    background: rgba(124, 58, 237, 0.3);
-    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.15);
+    background: rgba(124, 58, 237, 0.35);
+    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.25);
+    transform: translateY(-1px);
+    border-color: rgba(124, 58, 237, 0.6);
   }
 
   /* Mobile Audit: Received message with lighter background */
@@ -687,11 +692,14 @@
     color: var(--text-primary);
     border-bottom-left-radius: 4px;
     box-shadow: 0 2px 8px rgba(255, 255, 255, 0.02);
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .message-received:hover {
-    background: #353540;
-    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.04);
+    background: #3A3A45;
+    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.08);
+    transform: translateY(-1px);
+    border-color: rgba(255, 255, 255, 0.12);
   }
 
   /* Mobile Audit: Timestamps with solid color for better readability */
@@ -1776,6 +1784,27 @@
   @media (min-width: 1024px) {
     .games-grid {
       grid-template-columns: repeat(4, 1fr); /* Desktop: 4 columns */
+    }
+
+    /* Desktop: Wider message input */
+    .message-input-container {
+      max-width: 100%;
+    }
+
+    .message-input-container textarea {
+      min-height: 52px;
+      font-size: 15px;
+    }
+  }
+
+  /* Extra large screens: Optimize input width */
+  @media (min-width: 1440px) {
+    .message-input-container {
+      max-width: 100%;
+    }
+
+    .message-input-container textarea {
+      min-height: 56px;
     }
   }
 

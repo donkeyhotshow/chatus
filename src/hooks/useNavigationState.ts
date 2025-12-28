@@ -50,32 +50,59 @@ export function useNavigationState({
   const currentStateRef = useRef<NavigationState | null>(null);
   const isInitializedRef = useRef(false);
 
-  // Initialize state on mount
+  // Initialize state on mount - FIXED: Parse URL params first
   useEffect(() => {
     if (isInitializedRef.current) return;
     isInitializedRef.current = true;
 
-    // Check if we have existing state
+    // CRITICAL FIX: First check URL for view parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const viewFromUrl = urlParams.get('view');
+    const gameTypeFromUrl = urlParams.get('game');
+
+    // Determine initial view from URL or fallback
+    let effectiveInitialView: NavigationView = initialView;
+    if (viewFromUrl === 'game') {
+      effectiveInitialView = 'game';
+    } else if (viewFromUrl === 'canvas') {
+      effectiveInitialView = 'canvas';
+    }
+
+    // Check if we have existing state that matches current URL
     const existingState = getCurrentNavigationState();
 
-    if (existingState && existingState.roomId === roomId) {
-      // Use existing state
+    if (existingState && existingState.roomId === roomId && existingState.currentView === effectiveInitialView) {
+      // Use existing state only if it matches URL
       currentStateRef.current = existingState;
       logger.debug('[useNavigationState] Using existing state', {
         view: existingState.currentView,
         roomId: existingState.roomId,
       });
+
+      // Notify callback about initial state from URL
+      if (onNavigate && effectiveInitialView !== 'chat') {
+        onNavigate(existingState);
+      }
     } else if (roomId) {
-      // Create initial state
-      const initialState = createNavigationState(initialView, { roomId });
+      // Create state from URL parameters
+      const initialState = createNavigationState(effectiveInitialView, {
+        roomId,
+        gameType: gameTypeFromUrl || undefined,
+      });
       replaceNavigationState(initialState);
       currentStateRef.current = initialState;
-      logger.debug('[useNavigationState] Created initial state', {
-        view: initialView,
+      logger.debug('[useNavigationState] Created initial state from URL', {
+        view: effectiveInitialView,
         roomId,
+        gameType: gameTypeFromUrl,
       });
+
+      // Notify callback about initial state from URL
+      if (onNavigate && effectiveInitialView !== 'chat') {
+        onNavigate(initialState);
+      }
     }
-  }, [roomId, initialView]);
+  }, [roomId, initialView, onNavigate]);
 
   // Setup history listener
   useEffect(() => {

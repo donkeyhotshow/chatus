@@ -23,6 +23,7 @@ import { useRoomManager } from '@/hooks/useRoomManager';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
 import { useConnectionStatus } from '@/hooks/useConnectionStatus';
 import { useNavigationState } from '@/hooks/useNavigationState';
+import { NavigationState } from '@/lib/navigation-state';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useRecentRooms } from '@/hooks/useRecentRooms';
 import { useTabScrollMemory } from '@/hooks/useScrollMemory';
@@ -138,7 +139,19 @@ export function ChatRoom({ roomId }: { roomId: string }) {
     const firebaseContext = useFirebase();
     const isMobile = useIsMobile();
     const connectionState = useConnectionStatus();
-    const { currentState, goBack, updateState } = useNavigationState({ roomId });
+    const { currentState, goBack, updateState } = useNavigationState({
+      roomId,
+      onNavigate: useCallback((state: NavigationState) => {
+        // Sync activeTab with navigation state
+        if (state.currentView === 'game') {
+          setActiveTab('games');
+        } else if (state.currentView === 'canvas') {
+          setActiveTab('canvas');
+        } else if (state.currentView === 'chat') {
+          setActiveTab('chat');
+        }
+      }, []),
+    });
 
     const { user, isLoading, createProfile, error: userError } = useCurrentUser(roomId);
     const [isCreating, setIsCreating] = useState(false);

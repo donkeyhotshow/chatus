@@ -243,7 +243,7 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
         <div
             ref={containerRef}
             className={cn(
-                "p-3 safe-bottom bg-black/95 backdrop-blur-2xl border-t border-white/5",
+                "p-3 safe-bottom bg-black/95 backdrop-blur-2xl border-t border-white/5 message-input-container",
                 isKeyboardVisible && isIOS() && "ios-keyboard-visible",
                 isKeyboardVisible && isAndroid() && isLandscape() && "android-landscape-keyboard",
                 className
