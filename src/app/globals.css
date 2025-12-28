@@ -2601,116 +2601,116 @@
 }
 
 
-  /* ═════════════════════════════════════════════════════
-     TOUCH FEEDBACK IMPROVEMENTS - Этап 6
-     Убираем 300ms delay, добавляем visual feedback
-     ═══════════════════════════════════════════════════════════════ */
+/* ═════════════════════════════════════════════════════
+ TOUCH FEEDBACK IMPROVEMENTS - Этап 6
+ Убираем 300ms delay, добавляем visual feedback
+ ═══════════════════════════════════════════════════════════════ */
 
-  /* Global touch-action for all interactive elements */
-  button,
-  a,
-  input,
-  textarea,
-  select,
-  [role="button"],
-  [role="link"],
-  [role="tab"],
-  [role="menuitem"],
-  [tabindex]:not([tabindex="-1"]),
-  .clickable,
-  .interactive {
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
+/* Global touch-action for all interactive elements */
+button,
+a,
+input,
+textarea,
+select,
+[role="button"],
+[role="link"],
+[role="tab"],
+[role="menuitem"],
+[tabindex]:not([tabindex="-1"]),
+.clickable,
+.interactive {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Visual feedback on touch - instant response */
+@media (pointer: coarse) {
+  /* Instant visual feedback */
+  .touch-feedback {
+    transition: transform 0.1s ease-out, opacity 0.1s ease-out, background-color 0.1s ease-out;
   }
 
-  /* Visual feedback on touch - instant response */
-  @media (pointer: coarse) {
-    /* Instant visual feedback */
-    .touch-feedback {
-      transition: transform 0.1s ease-out, opacity 0.1s ease-out, background-color 0.1s ease-out;
-    }
-
-    .touch-feedback:active {
-      transform: scale(0.97);
-      opacity: 0.85;
-    }
-
-    /* Button specific feedback */
-    button:not(:disabled):active,
-    [role="button"]:not([aria-disabled="true"]):active {
-      transform: scale(0.97);
-      opacity: 0.9;
-      transition: transform 0.05s ease-out, opacity 0.05s ease-out;
-    }
-
-    /* Card/list item feedback */
-    .touch-card:active,
-    .touch-list-item:active {
-      background-color: var(--bg-hover) !important;
-      transform: scale(0.99);
-    }
-
-    /* Icon button feedback */
-    .touch-icon:active {
-      transform: scale(0.9);
-      opacity: 0.8;
-    }
-
-    /* Nav item feedback */
-    .touch-nav:active {
-      background-color: var(--accent-light) !important;
-      transform: scale(0.95);
-    }
+  .touch-feedback:active {
+    transform: scale(0.97);
+    opacity: 0.85;
   }
 
-  /* Ensure no delay on iOS Safari */
-  @supports (-webkit-touch-callout: none) {
-    * {
-      -webkit-touch-callout: none;
-    }
-
-    button,
-    a,
-    [role="button"] {
-      cursor: pointer;
-      -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
-    }
+  /* Button specific feedback */
+  button:not(:disabled):active,
+  [role="button"]:not([aria-disabled="true"]):active {
+    transform: scale(0.97);
+    opacity: 0.9;
+    transition: transform 0.05s ease-out, opacity 0.05s ease-out;
   }
 
-  /* ═══════════════════════════════════════════════════════════════
-     CANVAS IMPROVEMENTS - Palm Rejection & Gestures
-     ═══════════════════════════════════════════════════════════════ */
+  /* Card/list item feedback */
+  .touch-card:active,
+  .touch-list-item:active {
+    background-color: var(--bg-hover) !important;
+    transform: scale(0.99);
+  }
 
-  /* Canvas container - prevent default touch behaviors */
-  .canvas-container {
-    touch-action: none;
-    -webkit-user-select: none;
-    user-select: none;
+  /* Icon button feedback */
+  .touch-icon:active {
+    transform: scale(0.9);
+    opacity: 0.8;
+  }
+
+  /* Nav item feedback */
+  .touch-nav:active {
+    background-color: var(--accent-light) !important;
+    transform: scale(0.95);
+  }
+}
+
+/* Ensure no delay on iOS Safari */
+@supports (-webkit-touch-callout: none) {
+  * {
     -webkit-touch-callout: none;
   }
 
-  /* Canvas element */
-  canvas.drawing-canvas {
-    touch-action: none;
-    -webkit-user-select: none;
-    user-select: none;
-    cursor: crosshair;
+  button,
+  a,
+  [role="button"] {
+    cursor: pointer;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
   }
+}
 
-  canvas.drawing-canvas.eraser-mode {
+/* ═══════════════════════════════════════════════════════════════
+ CANVAS IMPROVEMENTS - Palm Rejection & Gestures
+ ═══════════════════════════════════════════════════════════════ */
+
+/* Canvas container - prevent default touch behaviors */
+.canvas-container {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Canvas element */
+canvas.drawing-canvas {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: crosshair;
+}
+
+canvas.drawing-canvas.eraser-mode {
     cursor: cell;
   }
 
-  canvas.drawing-canvas.panning {
+canvas.drawing-canvas.panning {
     cursor: grab;
   }
 
-  canvas.drawing-canvas.panning:active {
+canvas.drawing-canvas.panning:active {
     cursor: grabbing;
   }
 
-  /* Zoom indicator */
-  .canvas-zoom-indicator {
+/* Zoom indicator */
+.canvas-zoom-indicator {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -2729,8 +2729,8 @@
     animation: fadeIn 0.15s ease-out;
   }
 
-  /* Palm rejection visual indicator */
-  .palm-rejected-indicator {
+/* Palm rejection visual indicator */
+.palm-rejected-indicator {
     position: fixed;
     bottom: 100px;
     left: 50%;
@@ -2746,12 +2746,12 @@
     animation: fadeIn 0.2s ease-out;
   }
 
-  /* ═══════════════════════════════════════════════════════════════
-     SCROLL MEMORY - Visual indicators
-     ═══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   SCROLL MEMORY - Visual indicators
+   ═══════════════════════════════════════════════════════════════ */
 
-  /* Scroll position restored indicator */
-  .scroll-restored-indicator {
+/* Scroll position restored indicator */
+.scroll-restored-indicator {
     position: fixed;
     bottom: 80px;
     left: 50%;
@@ -2769,7 +2769,7 @@
     animation: fadeInUp 0.3s ease-out, fadeOut 0.3s ease-out 2s forwards;
   }
 
-  @keyframes fadeOut {
+@keyframes fadeOut {
     from {
       opacity: 1;
     }
@@ -2779,12 +2779,12 @@
     }
   }
 
-  /* ═══════════════════════════════════════════════════════════════
-     IMAGE OPTIMIZATION - Shimmer & Lazy Loading
-     ═══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   IMAGE OPTIMIZATION - Shimmer & Lazy Loading
+   ═══════════════════════════════════════════════════════════════ */
 
-  /* Image shimmer loading effect */
-  @keyframes shimmer {
+/* Image shimmer loading effect */
+@keyframes shimmer {
     0% {
       background-position: -200% 0;
     }
@@ -2793,7 +2793,7 @@
     }
   }
 
-  .image-shimmer {
+.image-shimmer {
     background: linear-gradient(
       90deg,
       var(--bg-tertiary) 0%,
@@ -2804,43 +2804,43 @@
     animation: shimmer 1.5s infinite;
   }
 
-  /* Image placeholder blur */
-  .image-placeholder-blur {
+/* Image placeholder blur */
+.image-placeholder-blur {
     filter: blur(20px);
     transform: scale(1.1);
     transition: filter 0.3s ease-out, transform 0.3s ease-out;
   }
 
-  .image-placeholder-blur.loaded {
+.image-placeholder-blur.loaded {
     filter: blur(0);
     transform: scale(1);
   }
 
-  /* Lazy image container */
-  .lazy-image-container {
+/* Lazy image container */
+.lazy-image-container {
     position: relative;
     overflow: hidden;
     background: var(--bg-tertiary);
   }
 
-  .lazy-image-container img {
+.lazy-image-container img {
     transition: opacity 0.3s ease-out;
   }
 
-  .lazy-image-container img.loading {
+.lazy-image-container img.loading {
     opacity: 0;
   }
 
-  .lazy-image-container img.loaded {
+.lazy-image-container img.loaded {
     opacity: 1;
   }
 
-  /* ═══════════════════════════════════════════════════════════════
-     DESKTOP RIGHT PANEL
-     ═══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   DESKTOP RIGHT PANEL
+   ═══════════════════════════════════════════════════════════════ */
 
-  /* Right panel toggle button */
-  .right-panel-toggle {
+/* Right panel toggle button */
+.right-panel-toggle {
     position: fixed;
     right: 0;
     top: 50%;
@@ -2860,21 +2860,21 @@
     color: var(--text-muted);
   }
 
-  .right-panel-toggle:hover {
+.right-panel-toggle:hover {
     background: var(--bg-hover);
     color: var(--text-primary);
     width: 28px;
   }
 
-  /* Right panel content */
-  .right-panel-content {
+/* Right panel content */
+.right-panel-content {
     height: 100%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
   }
 
-  .right-panel-header {
+.right-panel-header {
     padding: 16px;
     border-bottom: 1px solid var(--border-primary);
     display: flex;
@@ -2882,12 +2882,12 @@
     justify-content: space-between;
   }
 
-  .right-panel-tabs {
+.right-panel-tabs {
     display: flex;
     border-bottom: 1px solid var(--border-primary);
   }
 
-  .right-panel-tab {
+.right-panel-tab {
     flex: 1;
     padding: 12px;
     display: flex;
@@ -2904,15 +2904,15 @@
     position: relative;
   }
 
-  .right-panel-tab:hover {
+.right-panel-tab:hover {
     color: var(--text-secondary);
   }
 
-  .right-panel-tab.active {
+.right-panel-tab.active {
     color: var(--accent-primary);
   }
 
-  .right-panel-tab.active::after {
+.right-panel-tab.active::after {
     content: '';
     position: absolute;
     bottom: 0;
@@ -2922,14 +2922,14 @@
     background: var(--accent-primary);
   }
 
-  .right-panel-body {
+.right-panel-body {
     flex: 1;
     overflow-y: auto;
     padding: 16px;
   }
 
-  /* User list in right panel */
-  .right-panel-user {
+/* User list in right panel */
+.right-panel-user {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -2939,11 +2939,11 @@
     cursor: pointer;
   }
 
-  .right-panel-user:hover {
+.right-panel-user:hover {
     background: var(--bg-hover);
   }
 
-  .right-panel-user-avatar {
+.right-panel-user-avatar {
     width: 36px;
     height: 36px;
     border-radius: 10px;
@@ -2957,7 +2957,7 @@
     position: relative;
   }
 
-  .right-panel-user-online {
+.right-panel-user-online {
     position: absolute;
     bottom: -2px;
     right: -2px;
@@ -2968,20 +2968,20 @@
     border-radius: 50%;
   }
 
-  .right-panel-user-name {
+.right-panel-user-name {
     font-size: 14px;
     font-weight: 500;
     color: var(--text-primary);
   }
 
-  /* Media gallery in right panel */
-  .right-panel-media-grid {
+/* Media gallery in right panel */
+.right-panel-media-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 6px;
   }
 
-  .right-panel-media-item {
+.right-panel-media-item {
     aspect-ratio: 1;
     border-radius: 8px;
     overflow: hidden;
@@ -2989,11 +2989,11 @@
     transition: opacity 0.2s ease;
   }
 
-  .right-panel-media-item:hover {
+.right-panel-media-item:hover {
     opacity: 0.8;
   }
 
-  .right-panel-media-item img {
+.right-panel-media-item img {
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -3001,9 +3001,9 @@
 
 
 /* ═══════════════════════════════════════════════════════════════
-   PART 4: MOBILE-FIRST ADAPTIVITY - December 2025
-   Adaptive typography, container system, utility classes
-   ═══════════════════════════════════════════════════════════════ */
+ PART 4: MOBILE-FIRST ADAPTIVITY - December 2025
+ Adaptive typography, container system, utility classes
+ ═══════════════════════════════════════════════════════════════ */
 
 /* Adaptive Typography CSS Variables */
 :root {
@@ -3297,90 +3297,90 @@
 }
 
 
-  /* ═══════════════════════════════════════════════════════════════
-     ЭТАП 9: MESSAGE STATUS INDICATORS
-     Индикаторы статуса сообщений (sending/sent/delivered/read/error)
-     ═══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+ ЭТАП 9: MESSAGE STATUS INDICATORS
+ Индикаторы статуса сообщений (sending/sent/delivered/read/error)
+ ═══════════════════════════════════════════════════════════════ */
 
-  /* Status container */
-  .message-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 10px;
+/* Status container */
+.message-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
   }
 
-  /* Sending status - animated clock */
-  .message-status-sending {
+/* Sending status - animated clock */
+.message-status-sending {
     color: rgba(255, 255, 255, 0.4);
   }
 
-  .message-status-sending svg {
+.message-status-sending svg {
     animation: status-spin 1.5s linear infinite;
   }
 
-  @keyframes status-spin {
+@keyframes status-spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
   }
 
-  /* Sent status - single check, gray */
-  .message-status-sent {
+/* Sent status - single check, gray */
+.message-status-sent {
     color: rgba(255, 255, 255, 0.5);
   }
 
-  /* Delivered status - double check, gray */
-  .message-status-delivered {
+/* Delivered status - double check, gray */
+.message-status-delivered {
     color: rgba(255, 255, 255, 0.5);
   }
 
-  /* Read status - double check, purple with glow */
-  .message-status-read {
+/* Read status - double check, purple with glow */
+.message-status-read {
     color: #A78BFA;
   }
 
-  .message-status-read svg {
+.message-status-read svg {
     filter: drop-shadow(0 0 3px rgba(167, 139, 250, 0.5));
   }
 
-  /* Error status - red alert */
-  .message-status-error {
+/* Error status - red alert */
+.message-status-error {
     color: #EF4444;
   }
 
-  .message-status-error svg {
+.message-status-error svg {
     animation: status-shake 0.5s ease-in-out;
   }
 
-  @keyframes status-shake {
+@keyframes status-shake {
     0%, 100% { transform: translateX(0); }
     25% { transform: translateX(-2px); }
     75% { transform: translateX(2px); }
   }
 
-  /* Status transition animation */
-  .message-status svg {
+/* Status transition animation */
+.message-status svg {
     transition: color 200ms ease, filter 200ms ease;
   }
 
-  /* ═══════════════════════════════════════════════════════════════
-     ЭТАП 9: KEYBOARD NAVIGATION FOR MESSAGES
-     Навигация по сообщениям с помощью клавиатуры
-     ═══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   ЭТАП 9: KEYBOARD NAVIGATION FOR MESSAGES
+   Навигация по сообщениям с помощью клавиатуры
+   ═══════════════════════════════════════════════════════════════ */
 
-  /* Message focus state for keyboard navigation */
-  .message-focusable:focus {
+/* Message focus state for keyboard navigation */
+.message-focusable:focus {
     outline: none;
   }
 
-  .message-focusable:focus-visible {
+.message-focusable:focus-visible {
     outline: 2px solid var(--accent-primary);
     outline-offset: 2px;
     border-radius: 16px;
   }
 
-  /* Selected message highlight */
-  .message-keyboard-selected {
+/* Selected message highlight */
+.message-keyboard-selected {
     background: rgba(124, 58, 237, 0.1) !important;
     border-radius: 16px;
     box-shadow:
@@ -3388,8 +3388,8 @@
       0 0 20px rgba(124, 58, 237, 0.15);
   }
 
-  /* Keyboard navigation indicator */
-  .keyboard-nav-indicator {
+/* Keyboard navigation indicator */
+.keyboard-nav-indicator {
     position: fixed;
     bottom: 80px;
     left: 50%;
@@ -3406,12 +3406,12 @@
     transition: opacity 200ms, visibility 200ms;
   }
 
-  .keyboard-nav-indicator.visible {
+.keyboard-nav-indicator.visible {
     opacity: 1;
     visibility: visible;
   }
 
-  .keyboard-nav-indicator kbd {
+.keyboard-nav-indicator kbd {
     background: var(--bg-hover);
     border: 1px solid var(--border-primary);
     border-radius: 4px;
@@ -3421,13 +3421,13 @@
     margin: 0 2px;
   }
 
-  /* ═══════════════════════════════════════════════════════════════
-     ЭТАП 9: ENHANCED SHIMMER FOR ALL LOADING STATES
-     Улучшенный shimmer эффект для всех загрузочных состояний
-     ═══════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   ЭТАП 9: ENHANCED SHIMMER FOR ALL LOADING STATES
+   Улучшенный shimmer эффект для всех загрузочных состояний
+   ═══════════════════════════════════════════════════════════════ */
 
-  /* Universal shimmer skeleton */
-  .skeleton-shimmer {
+/* Universal shimmer skeleton */
+.skeleton-shimmer {
     background: linear-gradient(
       90deg,
       var(--bg-tertiary) 0%,
@@ -3441,88 +3441,87 @@
     border-radius: var(--radius-md);
   }
 
-  @keyframes shimmer-enhanced {
+@keyframes shimmer-enhanced {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
   }
 
-  /* Message skeleton */
-  .message-skeleton {
+/* Message skeleton */
+.message-skeleton {
     display: flex;
     gap: 12px;
     padding: 12px 16px;
   }
 
-  .message-skeleton-avatar {
+.message-skeleton-avatar {
     width: 36px;
     height: 36px;
     border-radius: 50%;
   }
 
-  .message-skeleton-content {
+.message-skeleton-content {
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: 8px;
   }
 
-  .message-skeleton-name {
+.message-skeleton-name {
     width: 80px;
     height: 14px;
     border-radius: 4px;
   }
 
-  .message-skeleton-text {
+.message-skeleton-text {
     height: 16px;
     border-radius: 4px;
   }
 
-  .message-skeleton-text:nth-child(2) {
+.message-skeleton-text:nth-child(2) {
     width: 90%;
   }
 
-  .message-skeleton-text:nth-child(3) {
+.message-skeleton-text:nth-child(3) {
     width: 60%;
   }
 
-  /* Chat list skeleton */
-  .chat-skeleton {
+/* Chat list skeleton */
+.chat-skeleton {
     display: flex;
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
   }
 
-  .chat-skeleton-avatar {
+.chat-skeleton-avatar {
     width: 48px;
     height: 48px;
     border-radius: 50%;
   }
 
-  .chat-skeleton-content {
+.chat-skeleton-content {
     flex: 1;
     display: flex;
     flex-direction: column;
     gap: 6px;
   }
 
-  .chat-skeleton-name {
+.chat-skeleton-name {
     width: 120px;
     height: 16px;
     border-radius: 4px;
   }
 
-  .chat-skeleton-message {
-    width: 180px;
-    height: 14px;
-    border-radius: 4px;
-  }
+.chat-skeleton-message {
+  width: 180px;
+  height: 14px;
+  border-radius: 4px;
+}
 
-  /* Game card skeleton */
-  .game-skeleton {
-    border-radius: 16px;
-    min-height: 160px;
-  }
+/* Game card skeleton */
+.game-skeleton {
+  border-radius: 16px;
+  min-height: 160px;
 }
 
 
@@ -3533,88 +3532,88 @@
 
 /* Game container - fullscreen on mobile */
 .game-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  background: #0a0a1a;
-  overflow: hidden;
+position: relative;
+width: 100%;
+height: 100%;
+min-height: 100vh;
+min-height: 100dvh;
+display: flex;
+flex-direction: column;
+background: #0a0a1a;
+overflow: hidden;
 }
 
 /* Game canvas wrapper */
 .game-canvas-wrapper {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  overflow: hidden;
+flex: 1;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: 16px;
+overflow: hidden;
 }
 
 @media (max-width: 640px) {
-  .game-canvas-wrapper {
+.game-canvas-wrapper {
     padding: 8px;
   }
 }
 
 /* Game canvas - responsive */
 .game-canvas {
-  max-width: 100%;
-  max-height: 100%;
-  border-radius: 12px;
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-tap-highlight-color: transparent;
+max-width: 100%;
+max-height: 100%;
+border-radius: 12px;
+touch-action: none;
+user-select: none;
+-webkit-user-select: none;
+-webkit-tap-highlight-color: transparent;
 }
 
 /* Mobile game controls container */
 .game-controls-mobile {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 16px;
-  padding-bottom: calc(16px + env(safe-area-inset-bottom));
-  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
-  z-index: 50;
+position: fixed;
+bottom: 0;
+left: 0;
+right: 0;
+padding: 16px;
+padding-bottom: calc(16px + env(safe-area-inset-bottom));
+background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+z-index: 50;
 }
 
 /* D-Pad styles */
 .game-dpad {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 4px;
-  width: fit-content;
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+gap: 4px;
+width: fit-content;
 }
 
 .game-dpad-button {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  transition: all 100ms ease;
+width: 56px;
+height: 56px;
+border-radius: 12px;
+background: rgba(255, 255, 255, 0.1);
+backdrop-filter: blur(8px);
+border: 1px solid rgba(255, 255, 255, 0.2);
+display: flex;
+align-items: center;
+justify-content: center;
+color: white;
+touch-action: manipulation;
+-webkit-tap-highlight-color: transparent;
+transition: all 100ms ease;
 }
 
 .game-dpad-button:active {
-  background: rgba(255, 255, 255, 0.25);
-  transform: scale(0.95);
+background: rgba(255, 255, 255, 0.25);
+transform: scale(0.95);
 }
 
 /* Larger touch targets on mobile */
 @media (pointer: coarse) {
-  .game-dpad-button {
+.game-dpad-button {
     width: 64px;
     height: 64px;
   }
@@ -3622,116 +3621,116 @@
 
 /* Action button */
 .game-action-button {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: rgba(139, 92, 246, 0.4);
-  border: 2px solid rgba(167, 139, 250, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  transition: all 100ms ease;
+width: 80px;
+height: 80px;
+border-radius: 50%;
+background: rgba(139, 92, 246, 0.4);
+border: 2px solid rgba(167, 139, 250, 0.5);
+display: flex;
+align-items: center;
+justify-content: center;
+color: white;
+touch-action: manipulation;
+-webkit-tap-highlight-color: transparent;
+transition: all 100ms ease;
 }
 
 .game-action-button:active {
-  background: rgba(139, 92, 246, 0.6);
-  transform: scale(0.9);
+background: rgba(139, 92, 246, 0.6);
+transform: scale(0.9);
 }
 
 /* Game header - compact on mobile */
 .game-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 12px 16px;
+background: rgba(0, 0, 0, 0.3);
+backdrop-filter: blur(8px);
+border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 @media (max-width: 640px) {
-  .game-header {
+.game-header {
     padding: 8px 12px;
   }
 
-  .game-header-title {
+.game-header-title {
     display: none;
   }
 }
 
 /* Game score display */
 .game-score {
-  font-size: 24px;
-  font-weight: bold;
-  color: #a78bfa;
-  font-variant-numeric: tabular-nums;
+font-size: 24px;
+font-weight: bold;
+color: #a78bfa;
+font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 640px) {
-  .game-score {
+.game-score {
     font-size: 20px;
   }
 }
 
 /* Game overlay (pause, game over) */
 .game-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(8px);
-  z-index: 60;
-  padding: 24px;
+position: absolute;
+inset: 0;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+background: rgba(0, 0, 0, 0.85);
+backdrop-filter: blur(8px);
+z-index: 60;
+padding: 24px;
 }
 
 /* Rotate device hint */
 .game-rotate-hint {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.95);
-  z-index: 100;
-  padding: 24px;
-  text-align: center;
+position: fixed;
+inset: 0;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+background: rgba(0, 0, 0, 0.95);
+z-index: 100;
+padding: 24px;
+text-align: center;
 }
 
 .game-rotate-hint-icon {
-  width: 64px;
-  height: 64px;
-  color: #a78bfa;
-  margin-bottom: 16px;
-  animation: rotate-hint 1.5s ease-in-out infinite alternate;
+width: 64px;
+height: 64px;
+color: #a78bfa;
+margin-bottom: 16px;
+animation: rotate-hint 1.5s ease-in-out infinite alternate;
 }
 
 @keyframes rotate-hint {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(90deg); }
+from { transform: rotate(0deg); }
+to { transform: rotate(90deg); }
 }
 
 /* Game grid cells - responsive */
 .game-grid-cell {
-  aspect-ratio: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  transition: all 150ms ease;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
+aspect-ratio: 1;
+display: flex;
+align-items: center;
+justify-content: center;
+border-radius: 8px;
+transition: all 150ms ease;
+touch-action: manipulation;
+-webkit-tap-highlight-color: transparent;
 }
 
 /* Minimum touch target for game cells */
 @media (pointer: coarse) {
-  .game-grid-cell {
+.game-grid-cell {
     min-width: 44px;
     min-height: 44px;
   }
@@ -3739,49 +3738,49 @@
 
 /* TicTacToe specific */
 .tictactoe-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+gap: 8px;
+padding: 12px;
+background: rgba(255, 255, 255, 0.02);
+border-radius: 16px;
+border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .tictactoe-cell {
-  aspect-ratio: 1;
-  min-width: 60px;
-  min-height: 60px;
-  background: #0a0a0f;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 32px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 200ms ease;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
+aspect-ratio: 1;
+min-width: 60px;
+min-height: 60px;
+background: #0a0a0f;
+border-radius: 12px;
+border: 1px solid rgba(255, 255, 255, 0.06);
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 32px;
+font-weight: bold;
+cursor: pointer;
+transition: all 200ms ease;
+touch-action: manipulation;
+-webkit-tap-highlight-color: transparent;
 }
 
 .tictactoe-cell:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(139, 92, 246, 0.3);
-  transform: scale(1.02);
+background: rgba(255, 255, 255, 0.05);
+border-color: rgba(139, 92, 246, 0.3);
+transform: scale(1.02);
 }
 
 .tictactoe-cell:active:not(:disabled) {
-  transform: scale(0.95);
+transform: scale(0.95);
 }
 
 .tictactoe-cell:disabled {
-  cursor: not-allowed;
+cursor: not-allowed;
 }
 
 @media (min-width: 640px) {
-  .tictactoe-cell {
+.tictactoe-cell {
     min-width: 80px;
     min-height: 80px;
     font-size: 40px;
@@ -3789,7 +3788,7 @@
 }
 
 @media (min-width: 768px) {
-  .tictactoe-cell {
+.tictactoe-cell {
     min-width: 100px;
     min-height: 100px;
     font-size: 48px;
@@ -3798,162 +3797,162 @@
 
 /* Snake game specific */
 .snake-canvas {
-  border-radius: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  touch-action: none;
+border-radius: 12px;
+border: 2px solid rgba(255, 255, 255, 0.1);
+touch-action: none;
 }
 
 .snake-controls {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  width: 180px;
-  margin-top: 16px;
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+gap: 8px;
+width: 180px;
+margin-top: 16px;
 }
 
 .snake-control-button {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  cursor: pointer;
-  transition: all 100ms ease;
-  touch-action: manipulation;
+width: 56px;
+height: 56px;
+border-radius: 12px;
+background: rgba(255, 255, 255, 0.1);
+border: none;
+display: flex;
+align-items: center;
+justify-content: center;
+color: white;
+cursor: pointer;
+transition: all 100ms ease;
+touch-action: manipulation;
 }
 
 .snake-control-button:active {
-  background: rgba(255, 255, 255, 0.2);
-  transform: scale(0.95);
+background: rgba(255, 255, 255, 0.2);
+transform: scale(0.95);
 }
 
 /* Click War specific */
 .clickwar-button {
-  width: 100%;
-  height: 128px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #f43f5e, #dc2626);
-  border: none;
-  color: white;
-  font-size: 24px;
-  font-weight: bold;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  box-shadow: 0 10px 30px rgba(225, 29, 72, 0.4);
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-  -webkit-user-select: none;
+width: 100%;
+height: 128px;
+border-radius: 16px;
+background: linear-gradient(135deg, #f43f5e, #dc2626);
+border: none;
+color: white;
+font-size: 24px;
+font-weight: bold;
+cursor: pointer;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+gap: 8px;
+box-shadow: 0 10px 30px rgba(225, 29, 72, 0.4);
+touch-action: manipulation;
+-webkit-tap-highlight-color: transparent;
+user-select: none;
+-webkit-user-select: none;
 }
 
 .clickwar-button:active {
-  transform: scale(0.95);
-  box-shadow: 0 5px 15px rgba(225, 29, 72, 0.3);
+transform: scale(0.95);
+box-shadow: 0 5px 15px rgba(225, 29, 72, 0.3);
 }
 
 /* Tower Defense specific */
 .td-canvas {
-  border-radius: 8px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  touch-action: none;
-  cursor: pointer;
+border-radius: 8px;
+border: 2px solid rgba(255, 255, 255, 0.2);
+touch-action: none;
+cursor: pointer;
 }
 
 .td-tower-selector {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: center;
+display: flex;
+gap: 8px;
+flex-wrap: wrap;
+justify-content: center;
 }
 
 .td-tower-button {
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  transition: all 150ms ease;
+padding: 8px 12px;
+border-radius: 8px;
+background: rgba(255, 255, 255, 0.1);
+border: 1px solid rgba(255, 255, 255, 0.2);
+color: white;
+font-size: 12px;
+display: flex;
+align-items: center;
+gap: 4px;
+cursor: pointer;
+transition: all 150ms ease;
 }
 
 .td-tower-button:hover {
-  background: rgba(255, 255, 255, 0.15);
+background: rgba(255, 255, 255, 0.15);
 }
 
 .td-tower-button.selected {
-  background: rgba(139, 92, 246, 0.3);
-  border-color: rgba(139, 92, 246, 0.5);
+background: rgba(139, 92, 246, 0.3);
+border-color: rgba(139, 92, 246, 0.5);
 }
 
 .td-tower-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+opacity: 0.5;
+cursor: not-allowed;
 }
 
 /* Vibe Jet specific */
 .vibejet-canvas {
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  touch-action: none;
+border-radius: 12px;
+border: 1px solid rgba(255, 255, 255, 0.1);
+touch-action: none;
 }
 
 .vibejet-jump-button {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: rgba(139, 92, 246, 0.4);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 100ms ease;
+width: 80px;
+height: 80px;
+border-radius: 50%;
+background: rgba(139, 92, 246, 0.4);
+border: 2px solid rgba(255, 255, 255, 0.3);
+display: flex;
+align-items: center;
+justify-content: center;
+color: white;
+touch-action: manipulation;
+-webkit-tap-highlight-color: transparent;
+transition: transform 100ms ease;
 }
 
 .vibejet-jump-button:active {
-  transform: scale(0.9);
+transform: scale(0.9);
 }
 
 /* Landscape mode optimizations for games */
 @media (orientation: landscape) and (max-height: 500px) {
-  .game-header {
+.game-header {
     padding: 4px 12px;
   }
 
-  .game-controls-mobile {
+.game-controls-mobile {
     padding: 8px;
     padding-bottom: calc(8px + env(safe-area-inset-bottom));
   }
 
-  .game-dpad-button {
+.game-dpad-button {
     width: 48px;
     height: 48px;
   }
 
-  .game-action-button {
+.game-action-button {
     width: 64px;
     height: 64px;
   }
 
-  .snake-controls {
+.snake-controls {
     width: 150px;
   }
 
-  .snake-control-button {
+.snake-control-button {
     width: 48px;
     height: 48px;
   }
@@ -3961,17 +3960,17 @@
 
 /* Disable hover effects on touch devices for games */
 @media (hover: none) and (pointer: coarse) {
-  .tictactoe-cell:hover:not(:disabled) {
+.tictactoe-cell:hover:not(:disabled) {
     background: #0a0a0f;
     border-color: rgba(255, 255, 255, 0.06);
     transform: none;
   }
 
-  .game-dpad-button:hover {
+.game-dpad-button:hover {
     background: rgba(255, 255, 255, 0.1);
   }
 
-  .td-tower-button:hover {
+.td-tower-button:hover {
     background: rgba(255, 255, 255, 0.1);
   }
 }
