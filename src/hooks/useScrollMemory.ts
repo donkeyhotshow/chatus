@@ -62,9 +62,9 @@ export function useScrollMemory({
 
       try {
         sessionStorage.setItem(fullKey, JSON.stringify(position));
-      } catch (e) {
+      } catch {
         // sessionStorage может быть недоступен
-        console.warn('[useScrollMemory] Failed to save scroll position:', e);
+        console.warn('[useScrollMemory] Failed to save scroll position');
       }
     }, 100);
   }, [fullKey]);
@@ -98,8 +98,8 @@ export function useScrollMemory({
       }, restoreDelay);
 
       return true;
-    } catch (e) {
-      console.warn('[useScrollMemory] Failed to restore scroll position:', e);
+    } catch {
+      console.warn('[useScrollMemory] Failed to restore scroll position');
       return false;
     }
   }, [fullKey, ttl, restoreDelay]);
@@ -108,7 +108,7 @@ export function useScrollMemory({
   const clearScrollPosition = useCallback(() => {
     try {
       sessionStorage.removeItem(fullKey);
-    } catch (e) {
+    } catch {
       // Игнорируем ошибки
     }
   }, [fullKey]);
@@ -177,7 +177,7 @@ export function useTabScrollMemory(roomId: string) {
         scrollLeft,
         timestamp: Date.now(),
       }));
-    } catch (e) {
+    } catch {
       // Игнорируем
     }
   }, [roomId]);
@@ -200,7 +200,7 @@ export function useTabScrollMemory(roomId: string) {
           return position;
         }
       }
-    } catch (e) {
+    } catch {
       // Игнорируем
     }
 
@@ -212,7 +212,7 @@ export function useTabScrollMemory(roomId: string) {
     try {
       const key = `${STORAGE_PREFIX}${roomId}_${tabId}`;
       sessionStorage.removeItem(key);
-    } catch (e) {
+    } catch {
       // Игнорируем
     }
   }, [roomId]);

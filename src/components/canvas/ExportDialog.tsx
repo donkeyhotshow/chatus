@@ -45,17 +45,6 @@ export const ExportDialog = memo(function ExportDialog({
   const [copied, setCopied] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  // Генерация превью
-  const generatePreview = useCallback(async () => {
-    const blob = await onExport(selectedFormat, quality);
-    if (blob) {
-      const url = URL.createObjectURL(blob);
-      setPreviewUrl(url);
-      return url;
-    }
-    return null;
-  }, [onExport, selectedFormat, quality]);
-
   // Скачивание файла
   const handleDownload = useCallback(async () => {
     setIsExporting(true);

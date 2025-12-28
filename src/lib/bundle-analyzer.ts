@@ -86,14 +86,14 @@ export async function measureDynamicImport<T>(
   const start = performance.now();
 
   try {
-    const module = await importFn();
+    const loadedModule = await importFn();
     const loadTime = performance.now() - start;
 
     // Оцениваем размер (приблизительно)
-    const estimatedSize = JSON.stringify(module).length;
+    const estimatedSize = JSON.stringify(loadedModule).length;
     registerChunk(chunkName, estimatedSize, loadTime);
 
-    return module;
+    return loadedModule;
   } catch (error) {
     console.error(`[Bundle] Failed to load chunk "${chunkName}":`, error);
     throw error;
@@ -109,7 +109,7 @@ export function withLoadMetrics<T extends React.ComponentType<any>>(
 ): () => Promise<{ default: T }> {
   return async () => {
     const start = performance.now();
-    const module = await importFn();
+    const loadedModule = await importFn();
     const loadTime = performance.now() - start;
 
     // Логируем метрики в dev режиме
@@ -117,7 +117,7 @@ export function withLoadMetrics<T extends React.ComponentType<any>>(
       console.log(`[Bundle] Loaded "${chunkName}" in ${loadTime.toFixed(1)}ms`);
     }
 
-    return module;
+    return loadedModule;
   };
 }
 

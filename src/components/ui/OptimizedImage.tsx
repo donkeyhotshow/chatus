@@ -30,6 +30,8 @@ interface OptimizedImageProps {
   priority?: boolean;
   /** Качество изображения для оптимизации (1-100) */
   quality?: number;
+  /** Callback при ошибке загрузки */
+  onError?: () => void;
 }
 
 /**
@@ -74,7 +76,7 @@ export const OptimizedImage = memo(function OptimizedImage({
   placeholderColor = '#1A1A1C',
   onClick,
   priority = false,
-  quality = 80,
+  onError: onErrorProp,
 }: OptimizedImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -116,7 +118,8 @@ export const OptimizedImage = memo(function OptimizedImage({
   const handleError = useCallback(() => {
     setHasError(true);
     setIsLoaded(true);
-  }, []);
+    onErrorProp?.();
+  }, [onErrorProp]);
 
   const placeholder = generatePlaceholder(placeholderColor);
 
@@ -266,6 +269,7 @@ export const OptimizedAvatar = memo(function OptimizedAvatar({
       priority={true}
       containerClassName={cn("rounded-xl overflow-hidden", className)}
       className="rounded-xl"
+      onError={() => setHasError(true)}
     />
   );
 });

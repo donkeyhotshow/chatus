@@ -23,7 +23,7 @@ import { useRoomManager } from '@/hooks/useRoomManager';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
 import { useConnectionStatus } from '@/hooks/useConnectionStatus';
 import { useNavigationState } from '@/hooks/useNavigationState';
-import { useKeyboardShortcuts, KeyboardShortcutsHint } from '@/hooks/useKeyboardShortcuts';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useRecentRooms } from '@/hooks/useRecentRooms';
 import { useTabScrollMemory } from '@/hooks/useScrollMemory';
 import { logger } from '@/lib/logger';
@@ -351,6 +351,11 @@ export function ChatRoom({ roomId }: { roomId: string }) {
         }
     }, [showSearch, showSettings]);
 
+    // Toggle right panel handler - moved before conditional returns
+    const handleToggleRightPanel = useCallback(() => {
+        setShowRightPanel(prev => !prev);
+    }, []);
+
     // Integrate keyboard shortcuts
     useKeyboardShortcuts({
         onSearch: handleSearchOpen,
@@ -384,11 +389,6 @@ export function ChatRoom({ roomId }: { roomId: string }) {
     if (roomLoading && !room) return <LoadingScreen text="Подключение..." showSkeleton isSlow={isSlow} />;
 
     const otherUser = room?.participantProfiles?.find(p => p.id !== user?.id);
-
-    // Toggle right panel handler
-    const handleToggleRightPanel = useCallback(() => {
-        setShowRightPanel(prev => !prev);
-    }, []);
 
     return (
         <div className={cn(

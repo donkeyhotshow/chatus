@@ -9,13 +9,12 @@
 
 'use client';
 
-import { memo, useState, useCallback } from 'react';
+import { memo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users,
   Settings,
   Image as ImageIcon,
-  X,
   ChevronRight,
   ChevronLeft,
   Crown,
@@ -40,7 +39,6 @@ interface DesktopRightPanelProps {
 }
 
 const PANEL_WIDTH = 280;
-const COLLAPSED_WIDTH = 0;
 
 /**
  * Компонент списка участников

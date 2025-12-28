@@ -29,7 +29,6 @@ import { RealtimeCanvasService } from '@/services/RealtimeCanvasService';
 import { RemoteCursors } from './RemoteCursors';
 import { RemoteCursor } from '@/lib/types';
 import throttle from 'lodash.throttle';
-import { useDebouncedCallback } from 'use-debounce';
 
 // Helper to generate a consistent color for a user ID
 const generateCursorColor = (userId: string) => {

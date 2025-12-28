@@ -7,7 +7,7 @@
 
 import { useState, useRef, useEffect, memo } from 'react';
 import { cn } from '@/lib/utils';
-import { isSlowConnection, getOptimalSettings } from '@/lib/performance-config';
+import { isSlowConnection } from '@/lib/performance-config';
 
 interface LazyImageProps {
   src: string;
@@ -54,7 +54,6 @@ export const LazyImage = memo(function LazyImage({
   const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const settings = getOptimalSettings();
   const placeholder = generatePlaceholder(width, height, placeholderColor);
 
   // Intersection Observer для lazy loading

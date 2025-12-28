@@ -8,7 +8,7 @@
 
 import { memo, useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Undo2, Redo2, History, X, ChevronRight } from 'lucide-react';
+import { Undo2, Redo2, History, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface HistoryState {
@@ -16,15 +16,6 @@ interface HistoryState {
   imageData: ImageData;
   timestamp: number;
   thumbnail?: string; // base64 thumbnail
-}
-
-interface DrawingHistoryProps {
-  /** Текущий canvas ref */
-  canvasRef: React.RefObject<HTMLCanvasElement>;
-  /** Максимальное количество состояний в истории */
-  maxHistory?: number;
-  /** Callback при восстановлении состояния */
-  onRestore?: (imageData: ImageData) => void;
 }
 
 // Размер миниатюры

@@ -3,7 +3,7 @@
 import { GameState, UserProfile } from "@/lib/types";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "../ui/button";
-import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Dices, ArrowLeft, Bot } from 'lucide-react';
+import { Dice1, Dice2, Dice3, Dice4, Dice5, Dice6, Dices, Bot } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useActionGuard, hapticFeedback } from "@/lib/game-utils";

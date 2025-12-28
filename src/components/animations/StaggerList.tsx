@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, memo, Children, isValidElement, cloneElement } from 'react';
+import { ReactNode, memo, Children, isValidElement } from 'react';
 import { motion, Variants, HTMLMotionProps } from 'framer-motion';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 
@@ -11,17 +11,6 @@ interface StaggerListProps {
   className?: string;
   as?: 'ul' | 'ol' | 'div';
 }
-
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.05,
-      delayChildren: 0.1,
-    },
-  },
-};
 
 const itemVariants: Variants = {
   hidden: { opacity: 0, y: 20 },

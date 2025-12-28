@@ -52,7 +52,7 @@ export const queryClient = new QueryClient({
     mutations: {
       retry: 1,
       // Этап 8: Оптимистичные обновления по умолчанию
-      onError: (error, variables, context) => {
+      onError: (error, _variables, _context) => {
         console.error('[Mutation Error]', error);
       },
     },

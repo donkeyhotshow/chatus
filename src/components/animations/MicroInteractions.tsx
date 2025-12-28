@@ -7,7 +7,7 @@
 
 import { motion, useSpring, useTransform } from 'framer-motion';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
-import { ReactNode, useState } from 'react';
+import { ReactNode } from 'react';
 
 /**
  * Hover scale effect

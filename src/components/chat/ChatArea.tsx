@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, memo, useMemo } from 'react';
 import { X, MessageCircle } from 'lucide-react';
-import { doc, Timestamp } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { useDebounce } from 'use-debounce';
 import Image from 'next/image';
 import type { Message, Room, UserProfile } from '@/lib/types';

@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { getCoreWebVitals, getMemoryUsage, observeLongTasks } from '@/lib/bundle-analyzer';
 import { PERFORMANCE_THRESHOLDS } from '@/lib/performance-config';
 

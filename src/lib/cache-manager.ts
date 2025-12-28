@@ -77,9 +77,8 @@ class MemoryCache {
   }
 }
 
-// Глобальные инстансы кэша
+// Глобальный инстанс кэша
 const memoryCache = new MemoryCache(200);
-const queryCache = new MemoryCache(50);
 
 /**
  * LocalStorage Cache с сжатием
@@ -106,7 +105,7 @@ class StorageCache {
       };
 
       localStorage.setItem(this.getKey(key), JSON.stringify(entry));
-    } catch (e) {
+    } catch {
       // Storage full - очищаем старые записи
       this.cleanup();
       try {
@@ -265,7 +264,8 @@ export const CacheManager = {
   /**
    * Инвалидировать по паттерну
    */
-  invalidatePattern(pattern: string): void {
+  invalidatePattern(_pattern: string): void {
+    // TODO: Implement pattern matching for memory cache
     // Для memory cache нужно итерировать
     // Для storage cache используем cleanup
     storageCache.cleanup();

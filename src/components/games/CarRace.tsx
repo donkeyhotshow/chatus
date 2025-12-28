@@ -307,7 +307,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
     const [countdown, setCountdown] = useState<number | null>(null);
     const [raceStartTime, setRaceStartTime] = useState<number>(0);
     const [canvasSize, setCanvasSize] = useState({ width: DESKTOP_WIDTH, height: DESKTOP_HEIGHT });
-    const [scale, setScale] = useState(1);
+    const [, setScale] = useState(1);
     const [showLandscapeHint, setShowLandscapeHint] = useState(false);
     const [isPortrait, setIsPortrait] = useState(false);
     const [selectedTrack, setSelectedTrack] = useState(0);

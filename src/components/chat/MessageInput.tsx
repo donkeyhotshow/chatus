@@ -9,7 +9,6 @@ import { cn } from '@/lib/utils';
 import {
     isIOS,
     createIOSViewportManager,
-    ensureSendButtonVisible,
 } from '@/lib/ios-viewport-manager';
 import { isAndroid } from '@/lib/viewport-manager';
 

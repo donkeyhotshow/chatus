@@ -139,7 +139,6 @@ export function useCanvasGestures(
   // Refs для отслеживания состояния жестов
   const lastTouchDistance = useRef<number>(0);
   const lastTouchCenter = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const lastPanPosition = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const activeDrawingTouchId = useRef<number | null>(null);
   const gestureStateRef = useRef(gestureState);
 
@@ -156,7 +155,6 @@ export function useCanvasGestures(
     if (!canvas) return null;
 
     const rect = canvas.getBoundingClientRect();
-    const state = gestureStateRef.current;
 
     // Учитываем масштаб и смещение
     const scaleX = canvas.width / rect.width;

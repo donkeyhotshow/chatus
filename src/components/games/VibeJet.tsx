@@ -5,7 +5,7 @@ import { UserProfile } from '@/lib/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { hapticFeedback } from '@/lib/game-utils';
 import { Button } from '../ui/button';
-import { ArrowLeft, Gamepad2, Trophy, Zap, Heart, Star, Pause } from 'lucide-react';
+import { Gamepad2, Trophy, Zap, Heart, Star, Pause } from 'lucide-react';
 import { ExitButton } from '../ui/ExitButton';
 
 // --- Constants ---
