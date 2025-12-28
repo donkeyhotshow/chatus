@@ -133,18 +133,22 @@ export default function VibeJet({ onGameEnd }: {
         } catch { /* ignore */ }
     }, []);
 
-    // Responsive canvas
+    // Responsive canvas - учитываем мобильные устройства и safe area
     useEffect(() => {
         const updateScale = () => {
             if (!containerRef.current) return;
+            // На мобильных оставляем больше места для кнопки управления
+            const bottomPadding = isMobile ? 120 : 32;
             const w = containerRef.current.clientWidth - 32;
-            const h = containerRef.current.clientHeight - 32;
-            setCanvasScale(Math.min(w / CANVAS_WIDTH, h / CANVAS_HEIGHT, 1));
+            const h = containerRef.current.clientHeight - bottomPadding;
+            // Ограничиваем масштаб для мобильных чтобы игра была видна
+            const maxScale = isMobile ? 0.6 : 1;
+            setCanvasScale(Math.min(w / CANVAS_WIDTH, h / CANVAS_HEIGHT, maxScale));
         };
         updateScale();
         window.addEventListener('resize', updateScale);
         return () => window.removeEventListener('resize', updateScale);
-    }, []);
+    }, [isMobile]);
 
     // Pause on visibility change
     useEffect(() => {
@@ -576,10 +580,10 @@ export default function VibeJet({ onGameEnd }: {
     }
 
     return (
-        <div ref={containerRef} className="relative w-full h-full bg-[#0a0a1a] flex flex-col">
+        <div ref={containerRef} className="relative w-full h-full bg-[#0a0a1a] flex flex-col overflow-hidden">
             {/* Exit button removed - using parent GameLobby back button */}
 
-            <div className="flex-1 flex items-center justify-center p-4">
+            <div className="flex-1 flex items-center justify-center p-4 pb-2">
                 <div className="relative">
                     <canvas ref={canvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT}
                         className="rounded-xl border border-white/10 outline-none"
@@ -587,6 +591,7 @@ export default function VibeJet({ onGameEnd }: {
                         tabIndex={0}
                         onClick={() => { if (gameState === 'playing') handleJump(); canvasRef.current?.focus(); }}
                         onTouchStart={(e) => { e.preventDefault(); if (gameState === 'playing') handleJump(); }}
+                    />
                     />
 
                     {gameState === 'menu' && (
@@ -641,10 +646,10 @@ export default function VibeJet({ onGameEnd }: {
             </div>
 
             {isMobile && gameState === 'playing' && (
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20">
+                <div className="fixed bottom-0 left-0 right-0 flex justify-center pb-8 z-20" style={{ paddingBottom: 'max(32px, env(safe-area-inset-bottom, 32px))' }}>
                     <button
                         onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); handleJump(); }}
-                        className="vibejet-jump-button"
+                        className="w-20 h-20 rounded-full bg-violet-600/90 border-4 border-violet-400/60 flex items-center justify-center shadow-lg shadow-violet-500/40 active:scale-90 transition-transform touch-none"
                         aria-label="Прыжок"
                     >
                         <Zap className="w-10 h-10 text-white" />
