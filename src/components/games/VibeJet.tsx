@@ -642,8 +642,11 @@ export default function VibeJet({ onGameEnd }: {
 
             {isMobile && gameState === 'playing' && (
                 <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20">
-                    <button onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); handleJump(); }}
-                        className="w-20 h-20 rounded-full bg-violet-500/40 border-2 border-white/30 flex items-center justify-center active:scale-90 transition-transform">
+                    <button
+                        onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); handleJump(); }}
+                        className="vibejet-jump-button"
+                        aria-label="Прыжок"
+                    >
                         <Zap className="w-10 h-10 text-white" />
                     </button>
                 </div>

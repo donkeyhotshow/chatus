@@ -742,32 +742,36 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
         </AnimatePresence>
       </div>
 
-      {/* Mobile Controls */}
+      {/* Mobile Controls - Improved touch targets */}
       {isMobile && rtState?.active && !mySnake.isDead && (
-        <div className="mt-4 grid grid-cols-3 gap-2 w-[180px]">
+        <div className="mt-4 snake-controls">
           <div />
           <button
-            onClick={() => changeDirection({ x: 0, y: -1 })}
-            className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center active:bg-white/20 transition-colors"
+            onTouchStart={(e) => { e.preventDefault(); changeDirection({ x: 0, y: -1 }); }}
+            className="snake-control-button"
+            aria-label="Вверх"
           >
             <ChevronUp className="w-8 h-8 text-white" />
           </button>
           <div />
           <button
-            onClick={() => changeDirection({ x: -1, y: 0 })}
-            className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center active:bg-white/20 transition-colors"
+            onTouchStart={(e) => { e.preventDefault(); changeDirection({ x: -1, y: 0 }); }}
+            className="snake-control-button"
+            aria-label="Влево"
           >
             <ChevronLeft className="w-8 h-8 text-white" />
           </button>
           <button
-            onClick={() => changeDirection({ x: 0, y: 1 })}
-            className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center active:bg-white/20 transition-colors"
+            onTouchStart={(e) => { e.preventDefault(); changeDirection({ x: 0, y: 1 }); }}
+            className="snake-control-button"
+            aria-label="Вниз"
           >
             <ChevronDown className="w-8 h-8 text-white" />
           </button>
           <button
-            onClick={() => changeDirection({ x: 1, y: 0 })}
-            className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center active:bg-white/20 transition-colors"
+            onTouchStart={(e) => { e.preventDefault(); changeDirection({ x: 1, y: 0 }); }}
+            className="snake-control-button"
+            aria-label="Вправо"
           >
             <ChevronRight className="w-8 h-8 text-white" />
           </button>

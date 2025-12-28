@@ -65,9 +65,9 @@ const COLLISION_DAMAGE = 12;
 const WALL_DAMAGE = 6;
 
 // Стабилизация управления
-const INPUT_SMOOTHING = 0.15;  // Сглаживание ввода
+const INPUT_SMOOTHING = 0.35;  // Сглаживание ввода (увеличено для отзывчивости)
 const VELOCITY_DAMPING = 0.99; // Демпфирование скорости
-const MIN_TURN_SPEED = 30;     // Минимальная скорость для поворота
+const MIN_TURN_SPEED = 20;     // Минимальная скорость для поворота (уменьшено)
 
 // 5 КАРТ
 type TrackData = {
@@ -538,15 +538,18 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
 
         // Ускорение с плавным вводом
         if (smoothAccel > 0.1) {
-            player.vx += Math.cos(player.rotation) * ACCELERATION * smoothAccel * dt * damageMultiplier;
-            player.vy += Math.sin(player.rotation) * ACCELERATION * smoothAccel * dt * damageMultiplier;
+            const accelForce = ACCELERATION * dt * damageMultiplier;
+            player.vx += Math.cos(player.rotation) * accelForce;
+            player.vy += Math.sin(player.rotation) * accelForce;
         } else if (smoothAccel < -0.1) {
             if (speed > 20) {
-                player.vx -= Math.cos(player.rotation) * BRAKE_FORCE * Math.abs(smoothAccel) * dt;
-                player.vy -= Math.sin(player.rotation) * BRAKE_FORCE * Math.abs(smoothAccel) * dt;
+                const brakeForce = BRAKE_FORCE * dt;
+                player.vx -= Math.cos(player.rotation) * brakeForce;
+                player.vy -= Math.sin(player.rotation) * brakeForce;
             } else {
-                player.vx -= Math.cos(player.rotation) * REVERSE_SPEED * Math.abs(smoothAccel) * dt;
-                player.vy -= Math.sin(player.rotation) * REVERSE_SPEED * Math.abs(smoothAccel) * dt;
+                const reverseForce = REVERSE_SPEED * dt;
+                player.vx -= Math.cos(player.rotation) * reverseForce;
+                player.vy -= Math.sin(player.rotation) * reverseForce;
             }
         }
 
@@ -1259,18 +1262,20 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
 function MobileControls({ keysRef }: { keysRef: React.MutableRefObject<Set<string>> }) {
     const handleTouchStart = (key: string) => (e: React.TouchEvent) => {
         e.preventDefault();
+        e.stopPropagation();
         keysRef.current.add(key);
         hapticFeedback('light');
     };
 
     const handleTouchEnd = (key: string) => (e: React.TouchEvent) => {
         e.preventDefault();
+        e.stopPropagation();
         keysRef.current.delete(key);
     };
 
-    const buttonClass = "w-14 h-14 rounded-xl flex items-center justify-center text-2xl font-bold select-none active:scale-95 transition-transform";
-    const primaryBtn = "bg-white/20 text-white border border-white/30 backdrop-blur-sm";
-    const accentBtn = "bg-orange-500/80 text-white border border-orange-400/50";
+    const buttonClass = "w-16 h-16 rounded-xl flex items-center justify-center text-2xl font-bold select-none active:scale-90 transition-transform touch-none";
+    const primaryBtn = "bg-white/25 text-white border-2 border-white/40 backdrop-blur-sm shadow-lg";
+    const accentBtn = "bg-orange-500/90 text-white border-2 border-orange-400/60 shadow-lg shadow-orange-500/30";
 
     return (
         <div className="absolute bottom-4 left-0 right-0 flex justify-between px-4 z-30 pointer-events-none">
@@ -1281,6 +1286,7 @@ function MobileControls({ keysRef }: { keysRef: React.MutableRefObject<Set<strin
                         className={`${buttonClass} ${primaryBtn}`}
                         onTouchStart={handleTouchStart('arrowleft')}
                         onTouchEnd={handleTouchEnd('arrowleft')}
+                        onTouchCancel={handleTouchEnd('arrowleft')}
                         onContextMenu={(e) => e.preventDefault()}
                     >
                         ◀
@@ -1289,6 +1295,7 @@ function MobileControls({ keysRef }: { keysRef: React.MutableRefObject<Set<strin
                         className={`${buttonClass} ${primaryBtn}`}
                         onTouchStart={handleTouchStart('arrowright')}
                         onTouchEnd={handleTouchEnd('arrowright')}
+                        onTouchCancel={handleTouchEnd('arrowright')}
                         onContextMenu={(e) => e.preventDefault()}
                     >
                         ▶
@@ -1303,6 +1310,7 @@ function MobileControls({ keysRef }: { keysRef: React.MutableRefObject<Set<strin
                         className={`${buttonClass} ${primaryBtn}`}
                         onTouchStart={handleTouchStart('arrowdown')}
                         onTouchEnd={handleTouchEnd('arrowdown')}
+                        onTouchCancel={handleTouchEnd('arrowdown')}
                         onContextMenu={(e) => e.preventDefault()}
                     >
                         🛑
@@ -1311,6 +1319,7 @@ function MobileControls({ keysRef }: { keysRef: React.MutableRefObject<Set<strin
                         className={`${buttonClass} ${primaryBtn}`}
                         onTouchStart={handleTouchStart('arrowup')}
                         onTouchEnd={handleTouchEnd('arrowup')}
+                        onTouchCancel={handleTouchEnd('arrowup')}
                         onContextMenu={(e) => e.preventDefault()}
                     >
                         ⬆
@@ -1319,6 +1328,7 @@ function MobileControls({ keysRef }: { keysRef: React.MutableRefObject<Set<strin
                         className={`${buttonClass} ${accentBtn}`}
                         onTouchStart={handleTouchStart('shift')}
                         onTouchEnd={handleTouchEnd('shift')}
+                        onTouchCancel={handleTouchEnd('shift')}
                         onContextMenu={(e) => e.preventDefault()}
                     >
                         🔥

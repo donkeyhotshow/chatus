@@ -370,3 +370,93 @@ bounce: cubic-bezier(0.34, 1.56, 0.64, 1)
 - [x] `src/hooks/useGameKeyboard.ts` - keyboard navigation для игр
 - [x] `src/hooks/useBackgroundSync.ts` - offline sync сообщений
 - [x] `src/components/games/TicTacToe.tsx` - обновлен с keyboard navigation
+
+---
+
+## ✅ Этап 9: Status Indicators & Focus Improvements (ВЫПОЛНЕНО)
+
+### Message Status Indicators
+- [x] Компонент `MessageStatus.tsx` - индикаторы статуса сообщений
+- [x] Статусы: sending (часы с анимацией), sent (одна галочка), delivered (две галочки), read (фиолетовые галочки), error (красный)
+- [x] Анимации переходов между статусами
+- [x] Интеграция в `MessageItem.tsx`
+- [x] Хелпер `getMessageStatus()` для определения статуса
+
+### Enhanced Focus Indicators
+- [x] Улучшенное кольцо фокуса: 3px, brand color, offset 3px
+- [x] Анимация пульсации фокуса для важных элементов
+- [x] High contrast mode для keyboard navigation
+- [x] CSS классы `.focus-ring-animated`, `.keyboard-nav-active`
+
+### Keyboard Navigation for Messages
+- [x] Хук `useMessageKeyboardNav.ts` - навигация по сообщениям
+- [x] Горячие клавиши: ↑/↓ (навигация), Enter (ответ), Delete (удаление), R (реакция), Escape (снять выделение)
+- [x] Home/End для перехода к первому/последнему сообщению
+- [x] CSS классы `.message-keyboard-selected`, `.keyboard-nav-indicator`
+
+### Enhanced Shimmer Loading States
+- [x] Новый класс `.skeleton-shimmer` с фиолетовым акцентом
+- [x] Обновлен `MessageSkeleton` с shimmer эффектом
+- [x] Обновлен `ChatListSkeleton` с shimmer эффектом
+- [x] Новые компоненты: `GameCardSkeleton`, `ProfileSkeleton`
+
+### Компоненты созданы/обновлены:
+- [x] `src/components/chat/MessageStatus.tsx` - индикаторы статуса
+- [x] `src/components/chat/MessageItem.tsx` - интеграция статусов
+- [x] `src/components/chat/MessageSkeleton.tsx` - улучшенные скелетоны
+- [x] `src/hooks/useMessageKeyboardNav.ts` - keyboard navigation
+- [x] `src/app/globals.css` - стили для статусов, фокуса, shimmer
+
+
+---
+
+## ✅ Этап 9.1: Game Responsive & Mobile Controls (ВЫПОЛНЕНО)
+
+### Универсальные компоненты для игр
+- [x] `MobileGameControls.tsx` - универсальные мобильные контролы
+  - D-Pad с haptic feedback
+  - Joystick с drag-to-move
+  - Action buttons с анимациями
+  - Поддержка swipe-управления
+  - Кнопки паузы/рестарта
+  - Адаптивные размеры (sm/md/lg)
+
+- [x] `GameLayout.tsx` - обёртка для игр с адаптивным layout
+  - Автоматический header с score/time/players
+  - Подсказка о повороте устройства
+  - Fullscreen API поддержка
+  - Адаптивные размеры игрового поля
+
+- [x] `useGameResponsive.ts` - хук для адаптивности игр
+  - Определение типа устройства (mobile/tablet/desktop)
+  - Определение ориентации (portrait/landscape)
+  - Расчёт размеров игрового поля
+  - Адаптивные шрифты и отступы
+  - Touch detection
+
+### CSS стили для игр
+- [x] `.game-container` - fullscreen контейнер
+- [x] `.game-canvas` - адаптивный canvas
+- [x] `.game-dpad` / `.game-dpad-button` - D-Pad стили
+- [x] `.game-action-button` - кнопка действия
+- [x] `.tictactoe-grid` / `.tictactoe-cell` - TicTacToe стили
+- [x] `.snake-controls` / `.snake-control-button` - Snake стили
+- [x] `.clickwar-button` - ClickWar кнопка
+- [x] `.vibejet-jump-button` - VibeJet кнопка
+- [x] `.td-canvas` / `.td-tower-button` - Tower Defense стили
+- [x] Landscape mode оптимизации
+- [x] Отключение hover на touch устройствах
+
+### Обновлённые игры
+- [x] `SnakeGame.tsx` - улучшенные touch контролы с onTouchStart
+- [x] `TicTacToe.tsx` - адаптивная сетка с CSS классами
+- [x] `ClickWar.tsx` - улучшенная кнопка клика
+- [x] `VibeJet.tsx` - улучшенная кнопка прыжка
+
+### Ключевые улучшения
+- Минимальный touch target 44x44px на всех кнопках
+- onTouchStart вместо onClick для мгновенного отклика
+- Haptic feedback на всех действиях
+- Отключение hover эффектов на touch устройствах
+- Адаптивные размеры для разных экранов
+- Landscape mode оптимизации

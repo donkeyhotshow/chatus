@@ -4,10 +4,11 @@
 import { memo, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { format } from 'date-fns';
-import { Heart, Trash2, CornerUpLeft, Check, CheckCheck, Copy, Smile } from 'lucide-react';
+import { Heart, Trash2, CornerUpLeft, Copy, Smile } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Message } from '@/lib/types';
 import { EmojiRain } from './EmojiRain';
+import MessageStatus, { getMessageStatus } from './MessageStatus';
 
 // Quick reaction emojis for long-press menu - Этап 2
 const QUICK_REACTIONS = ['❤️', '😂', '😮', '😢', '👍', '🔥'];
@@ -467,13 +468,13 @@ const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDe
                     </motion.div>
                 ) : null}
 
-                {/* Read status */}
+                {/* Message status indicator - Этап 9 */}
                 {isOwn && !isSticker && (
-                    <div className="mt-1 px-1 flex items-center gap-1">
-                        {message.seen ? (
-                            <CheckCheck className="w-3.5 h-3.5 text-violet-400" />
-                        ) : (
-                            <Check className="w-3.5 h-3.5 text-white/30" />
+                    <div className="mt-1 px-1 flex items-center gap-1.5">
+                        <MessageStatus status={getMessageStatus(message)} />
+                        {/* Time for grouped messages without header */}
+                        {(groupPosition === 'middle' || groupPosition === 'last') && (
+                            <span className="text-[10px] text-white/40">{formattedTime}</span>
                         )}
                     </div>
                 )}

@@ -341,8 +341,7 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
               onTouchStart={handleClickDirect}
               onTouchEnd={(e) => e.preventDefault()}
               onPointerDown={handleClickDirect}
-              className="w-full h-32 rounded-2xl text-3xl font-black transition-all bg-gradient-to-br from-rose-500 to-red-700 text-white shadow-[0_10px_30px_rgba(225,29,72,0.4)] flex flex-col items-center justify-center gap-2 select-none touch-none"
-              style={{ touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none' }}
+              className="clickwar-button"
             >
               <Zap className="w-8 h-8 fill-current" />
               ЖМИ!

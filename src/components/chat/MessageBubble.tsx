@@ -3,9 +3,10 @@
 import { memo, useMemo } from 'react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { Reply, MoreHorizontal, Check, CheckCheck, Clock } from 'lucide-react';
+import { Reply, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import DOMPurify from 'dompurify';
+import { MessageStatusIcon, type MessageStatus } from '@/components/ui/MessageStatusIcon';
 import type { Message, UserProfile } from '@/lib/types';
 
 // Helper function for consistent timestamp formatting
@@ -26,42 +27,12 @@ interface MessageBubbleProps {
     onReply?: (message: Message) => void;
     onEdit?: (message: Message) => void;
     className?: string;
+    isSelected?: boolean; // For keyboard navigation
 }
 
-// Message delivery status component
-function DeliveryStatus({ status }: { status?: 'sending' | 'sent' | 'delivered' | 'read' }) {
-    switch (status) {
-        case 'sending':
-            return (
-                <span className="inline-flex items-center" title="Отправка...">
-                    <Clock className="w-3 h-3 text-white/50" />
-                </span>
-            );
-        case 'sent':
-            return (
-                <span className="inline-flex items-center" title="Отправлено">
-                    <Check className="w-3 h-3 text-white/70" />
-                </span>
-            );
-        case 'delivered':
-            return (
-                <span className="inline-flex items-center" title="Доставлено">
-                    <CheckCheck className="w-3 h-3 text-white/70" />
-                </span>
-            );
-        case 'read':
-            return (
-                <span className="inline-flex items-center" title="Прочитано">
-                    <CheckCheck className="w-3 h-3 text-blue-300" />
-                </span>
-            );
-        default:
-            return (
-                <span className="inline-flex items-center" title="Отправлено">
-                    <Check className="w-3 h-3 text-white/70" />
-                </span>
-            );
-    }
+// Extended Message type with status
+interface MessageWithStatus extends Message {
+    status?: MessageStatus;
 }
 
 export const MessageBubble = memo(function MessageBubble({
@@ -69,13 +40,26 @@ export const MessageBubble = memo(function MessageBubble({
     currentUser,
     onReply,
     onEdit,
-    className
+    className,
+    isSelected = false,
 }: MessageBubbleProps) {
     const isOwn = message.senderId === currentUser.id;
     const timestamp = message.createdAt?.toDate?.() || new Date();
 
     // Safe user access
     const user = message.user || { id: 'unknown', name: 'Unknown', avatar: '' };
+
+    // Determine message status
+    const messageStatus = useMemo((): MessageStatus => {
+        const msg = message as MessageWithStatus;
+        if (msg.status) return msg.status;
+
+        // Infer status from message properties
+        if (message.id.startsWith('temp_')) return 'sending';
+        if (message.seen) return 'read';
+        if (message.delivered) return 'delivered';
+        return 'sent';
+    }, [message]);
 
     // P0 FIX: XSS protection - sanitize message text
     const sanitizedText = useMemo(() => {
@@ -107,6 +91,7 @@ export const MessageBubble = memo(function MessageBubble({
             "hover:bg-white/[0.03]", /* P1-1 FIX: Enhanced hover background */
             "hover:shadow-[0_4px_12px_rgba(255,255,255,0.08)]", /* P1-1 FIX: Subtle shadow on hover */
             "animate-message-appear", /* Quick Win #3: Smooth message animation */
+            isSelected && "message-selected", /* Этап 9: Keyboard navigation highlight */
             isOwn ? "flex-row-reverse" : "flex-row",
             className
         )}>
@@ -164,11 +149,11 @@ export const MessageBubble = memo(function MessageBubble({
                         {sanitizedText}
                     </p>
 
-                    {/* Own message timestamp with delivery status - Mobile Audit: solid color */}
+                    {/* Own message timestamp with delivery status - Этап 9: Enhanced status icons */}
                     {isOwn && (
                         <div className="flex items-center justify-end gap-1.5 text-xs text-white/80 mt-1.5">
                             <span>{formatMessageTime(timestamp)}</span>
-                            <DeliveryStatus status={(message as Message & { status?: string }).status as 'sending' | 'sent' | 'delivered' | 'read' | undefined} />
+                            <MessageStatusIcon status={messageStatus} />
                         </div>
                     )}
                 </div>
@@ -181,8 +166,9 @@ export const MessageBubble = memo(function MessageBubble({
                     {onReply && (
                         <button
                             onClick={() => onReply(message)}
-                            className="p-1.5 rounded-lg hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-colors min-w-[32px] min-h-[32px] flex items-center justify-center"
+                            className="p-1.5 rounded-lg hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-colors min-w-[32px] min-h-[32px] flex items-center justify-center focus-ring-animated"
                             title="Ответить"
+                            aria-label="Ответить на сообщение"
                         >
                             <Reply className="w-4 h-4" />
                         </button>
@@ -191,8 +177,9 @@ export const MessageBubble = memo(function MessageBubble({
                     {isOwn && onEdit && (
                         <button
                             onClick={() => onEdit(message)}
-                            className="p-1.5 rounded-lg hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-colors min-w-[32px] min-h-[32px] flex items-center justify-center"
+                            className="p-1.5 rounded-lg hover:bg-white/10 text-[var(--text-muted)] hover:text-white transition-colors min-w-[32px] min-h-[32px] flex items-center justify-center focus-ring-animated"
                             title="Редактировать"
+                            aria-label="Редактировать сообщение"
                         >
                             <MoreHorizontal className="w-4 h-4" />
                         </button>
@@ -242,8 +229,11 @@ function areMessageBubblePropsEqual(
         prevMsg.id === nextMsg.id &&
         prevMsg.text === nextMsg.text &&
         prevMsg.senderId === nextMsg.senderId &&
+        prevMsg.seen === nextMsg.seen &&
+        prevMsg.delivered === nextMsg.delivered &&
         prevProps.currentUser.id === nextProps.currentUser.id &&
-        prevProps.className === nextProps.className
+        prevProps.className === nextProps.className &&
+        prevProps.isSelected === nextProps.isSelected
     );
 }
 
