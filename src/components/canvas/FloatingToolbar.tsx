@@ -11,20 +11,38 @@ const NEON_COLORS = [
     '#8B5CF6', '#D946EF', '#F43F5E', '#64748B'
 ];
 
+// Extended color presets with categories
+const COLOR_PRESETS = {
+    basic: ['#FFFFFF', '#000000', '#EF4444', '#F97316', '#F59E0B', '#22C55E', '#3B82F6', '#8B5CF6'],
+    neon: ['#FF0080', '#FF00FF', '#00FFFF', '#00FF00', '#FFFF00', '#FF6600', '#FF0000', '#0066FF'],
+    pastel: ['#FFB3BA', '#FFDFBA', '#FFFFBA', '#BAFFC9', '#BAE1FF', '#E0BBE4', '#FEC8D8', '#D4A5A5'],
+    skin: ['#FFE0BD', '#FFCD94', '#EAC086', '#C68642', '#8D5524', '#5C3317', '#3B2219', '#2C1810'],
+};
+
 // Color names for accessibility
 const COLOR_NAMES: { [key: string]: string } = {
     '#FFFFFF': 'Белый',
+    '#000000': 'Чёрный',
     '#EF4444': 'Красный',
     '#F97316': 'Оранжевый',
     '#F59E0B': 'Жёлтый',
     '#84CC16': 'Лаймовый',
     '#10B981': 'Зелёный',
+    '#22C55E': 'Ярко-зелёный',
     '#06B6D4': 'Голубой',
     '#3B82F6': 'Синий',
     '#8B5CF6': 'Фиолетовый',
     '#D946EF': 'Розовый',
     '#F43F5E': 'Малиновый',
-    '#64748B': 'Серый'
+    '#64748B': 'Серый',
+    '#FF0080': 'Неон розовый',
+    '#FF00FF': 'Неон фуксия',
+    '#00FFFF': 'Неон голубой',
+    '#00FF00': 'Неон зелёный',
+    '#FFFF00': 'Неон жёлтый',
+    '#FF6600': 'Неон оранжевый',
+    '#FF0000': 'Неон красный',
+    '#0066FF': 'Неон синий',
 };
 
 type BrushType = 'normal' | 'neon' | 'dashed' | 'calligraphy';
@@ -74,6 +92,7 @@ export function FloatingToolbar({
     const [showColorPalette, setShowColorPalette] = useState(false);
     const [showBrushes, setShowBrushes] = useState(false);
     const [showSlider, setShowSlider] = useState(false);
+    const [colorCategory, setColorCategory] = useState<keyof typeof COLOR_PRESETS>('basic');
 
     const handleToolChange = (tool: 'pen' | 'eraser') => {
         if ('vibrate' in navigator) navigator.vibrate(10);
@@ -116,29 +135,92 @@ export function FloatingToolbar({
                 <div className="fixed inset-0 z-20" onClick={closeAllPanels} />
             )}
 
-            {/* Color Palette Panel */}
+            {/* Color Palette Panel - Enhanced with categories */}
             {showColorPalette && !isMazeActive && selectedTool === 'pen' && (
                 <div
-                    className="fixed bottom-24 left-4 right-4 z-30 bg-[#1A1A1C] backdrop-blur-xl rounded-2xl p-4 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-4 duration-200"
+                    className="fixed bottom-24 left-4 right-4 z-30 flex justify-center"
                     role="group"
                     aria-label="Палитра цветов"
                 >
-                    <div className="grid grid-cols-6 gap-3">
-                        {NEON_COLORS.map((color) => (
-                            <button
-                                key={color}
-                                onClick={() => handleColorChange(color)}
-                                aria-label={`Цвет: ${COLOR_NAMES[color] || color}`}
-                                aria-pressed={selectedColor === color}
-                                className={cn(
-                                    "w-12 h-12 min-w-[48px] min-h-[48px] rounded-full transition-all duration-200 border-2 active:scale-95",
-                                    selectedColor === color
-                                        ? "ring-2 ring-white scale-110 border-white"
-                                        : "hover:scale-105 border-white/20"
-                                )}
-                                style={{ backgroundColor: color, boxShadow: `0 0 12px ${color}40` }}
+                    <div className="bg-[#1A1A1C] backdrop-blur-xl rounded-2xl p-4 border border-white/10 shadow-2xl animate-in slide-in-from-bottom-4 duration-200 max-w-md w-full">
+                        {/* Category tabs */}
+                        <div className="flex gap-1 mb-3 p-1 bg-white/5 rounded-xl">
+                            {(Object.keys(COLOR_PRESETS) as Array<keyof typeof COLOR_PRESETS>).map((cat) => (
+                                <button
+                                    key={cat}
+                                    onClick={() => setColorCategory(cat)}
+                                    className={cn(
+                                        "flex-1 px-3 py-2 rounded-lg text-xs font-medium transition-all capitalize",
+                                        colorCategory === cat
+                                            ? "bg-[#7C3AED] text-white"
+                                            : "text-white/50 hover:text-white hover:bg-white/10"
+                                    )}
+                                >
+                                    {cat === 'basic' ? 'Базовые' : cat === 'neon' ? 'Неон' : cat === 'pastel' ? 'Пастель' : 'Кожа'}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Colors grid */}
+                        <div className="grid grid-cols-8 gap-2 mb-4">
+                            {COLOR_PRESETS[colorCategory].map((color) => (
+                                <button
+                                    key={color}
+                                    onClick={() => handleColorChange(color)}
+                                    aria-label={`Цвет: ${COLOR_NAMES[color] || color}`}
+                                    aria-pressed={selectedColor === color}
+                                    className={cn(
+                                        "w-10 h-10 min-w-[40px] min-h-[40px] rounded-full transition-all duration-200 border-2 active:scale-95",
+                                        selectedColor === color
+                                            ? "ring-2 ring-white scale-110 border-white"
+                                            : "hover:scale-105 border-white/20"
+                                    )}
+                                    style={{
+                                        backgroundColor: color,
+                                        boxShadow: colorCategory === 'neon' ? `0 0 16px ${color}60` : `0 0 8px ${color}30`
+                                    }}
+                                />
+                            ))}
+                        </div>
+
+                        {/* Recent colors */}
+                        <div className="flex items-center gap-2 mb-3">
+                            <span className="text-xs text-white/40">Недавние:</span>
+                            <div className="flex gap-1">
+                                {NEON_COLORS.slice(0, 6).map((color) => (
+                                    <button
+                                        key={`recent-${color}`}
+                                        onClick={() => handleColorChange(color)}
+                                        className="w-6 h-6 rounded-full border border-white/20 hover:scale-110 transition-transform"
+                                        style={{ backgroundColor: color }}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Custom color input */}
+                        <div className="flex items-center gap-3 pt-3 border-t border-white/10">
+                            <span className="text-xs text-white/50">Свой цвет:</span>
+                            <input
+                                type="color"
+                                value={selectedColor}
+                                onChange={(e) => handleColorChange(e.target.value.toUpperCase())}
+                                className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-0"
                             />
-                        ))}
+                            <input
+                                type="text"
+                                value={selectedColor}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) {
+                                        if (val.length === 7) handleColorChange(val.toUpperCase());
+                                    }
+                                }}
+                                className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white font-mono uppercase"
+                                placeholder="#FFFFFF"
+                                maxLength={7}
+                            />
+                        </div>
                     </div>
                 </div>
             )}

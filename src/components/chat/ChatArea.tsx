@@ -24,6 +24,8 @@ import { NewMessageNotification } from './NewMessageNotification';
 import { TypingIndicator } from './TypingIndicator';
 import { EnhancedMessageInput } from './EnhancedMessageInput';
 import { NavigationState } from '@/lib/navigation-state';
+import { FileUploadProgress } from '@/components/ui/FileUploadProgress';
+import { useFileUpload } from '@/hooks/useFileUpload';
 
 interface ChatAreaProps {
     user: UserProfile;
@@ -53,6 +55,28 @@ export const ChatArea = memo(function ChatArea({
     const [newMessageCount, setNewMessageCount] = useState(0);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
 
+    // File upload with progress - Этап 4
+    const {
+        uploads,
+        uploadFile,
+        cancelUpload,
+        retryUpload,
+        dismissUpload,
+    } = useFileUpload({
+        roomId,
+        userId: user.id,
+        onUploadComplete: async (url) => {
+            if (service) {
+                await service.sendMessage({
+                    text: '',
+                    imageUrl: url,
+                    user,
+                    senderId: user.id,
+                    type: 'image',
+                });
+            }
+        },
+    });
 
     const { saveMessages, loadMessages, hasHistory } = useChatPersistence(roomId);
     const { updateLastRoomId } = useUserPreferences();
@@ -267,37 +291,10 @@ export const ChatArea = memo(function ChatArea({
         } catch { }
     }, [service, user]);
 
+    // Используем useFileUpload с progress bar
     const handleImageUpload = useCallback(async (file: File) => {
-        if (!service) return;
-
-        const tempId = `temp_${Date.now()}`;
-        const tempUrl = URL.createObjectURL(file);
-
-        const optimisticMessage: Message = {
-            id: tempId,
-            text: '',
-            imageUrl: tempUrl,
-            user,
-            senderId: user.id,
-            createdAt: new Timestamp(Math.floor(Date.now() / 1000), 0),
-            reactions: [],
-            delivered: true,
-            seen: true,
-            type: 'image',
-        };
-
-        setOptimisticMessages(prev => [...prev, optimisticMessage]);
-
-        try {
-            const downloadURL = await service.uploadImage(file);
-            await service.sendMessage({ text: '', imageUrl: downloadURL, user, senderId: user.id, type: 'image' });
-        } catch {
-            toast({ title: "Ошибка загрузки", variant: "destructive" });
-        } finally {
-            URL.revokeObjectURL(tempUrl);
-            setOptimisticMessages(prev => prev.filter(m => m.id !== tempId));
-        }
-    }, [service, user, toast]);
+        await uploadFile(file);
+    }, [uploadFile]);
 
     const handleDeleteMessage = useCallback(async (messageId: string) => {
         if (!service) return;
@@ -462,6 +459,14 @@ export const ChatArea = memo(function ChatArea({
 
                     <TypingIndicator
                         users={room?.participantProfiles?.filter(p => p.id !== user.id && typingUsers.includes(p.id)).map(p => p.name) || []}
+                    />
+
+                    {/* File Upload Progress - Этап 4 */}
+                    <FileUploadProgress
+                        uploads={uploads}
+                        onCancel={cancelUpload}
+                        onRetry={retryUpload}
+                        onDismiss={dismissUpload}
                     />
 
                     <EnhancedMessageInput

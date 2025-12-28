@@ -61,7 +61,6 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
     const fileInputRef = useRef<HTMLInputElement>(null);
     const sendButtonRef = useRef<HTMLButtonElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-    const emojiPickerRef = useRef<HTMLDivElement>(null);
     const typingTimeoutRef = useRef<NodeJS.Timeout>();
     const iosViewportManagerRef = useRef<ReturnType<typeof createIOSViewportManager> | null>(null);
 
@@ -160,42 +159,18 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
         textareaRef.current?.focus();
     }, []);
 
-    // Track if we just opened the picker to prevent immediate close
-    const justOpenedRef = useRef(false);
-
-    // Close emoji picker when clicking outside
+    // Close emoji picker on Escape key
     useEffect(() => {
-        if (!showEmojiPicker) {
-            justOpenedRef.current = false;
-            return;
-        }
+        if (!showEmojiPicker) return;
 
-        // Mark that we just opened
-        justOpenedRef.current = true;
-
-        const handleClickOutside = (e: MouseEvent | TouchEvent) => {
-            // Skip if we just opened (prevents the opening click from closing)
-            if (justOpenedRef.current) {
-                justOpenedRef.current = false;
-                return;
-            }
-
-            const target = e.target as Node;
-
-            // Check if click is inside emoji picker container (includes button and dropdown)
-            if (emojiPickerRef.current && !emojiPickerRef.current.contains(target)) {
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
                 setShowEmojiPicker(false);
             }
         };
 
-        // Add listeners immediately but use the justOpenedRef flag to skip first click
-        document.addEventListener('click', handleClickOutside, true);
-        document.addEventListener('touchend', handleClickOutside, true);
-
-        return () => {
-            document.removeEventListener('click', handleClickOutside, true);
-            document.removeEventListener('touchend', handleClickOutside, true);
-        };
+        document.addEventListener('keydown', handleEscape);
+        return () => document.removeEventListener('keydown', handleEscape);
     }, [showEmojiPicker]);
 
     useEffect(() => {
@@ -314,7 +289,7 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
             {/* Input row */}
             <div className="flex items-end gap-2" role="group" aria-label="Ввод сообщения">
                 {/* Emoji button and picker - P2 UX-3: Added tooltip */}
-                <div className="relative" ref={emojiPickerRef}>
+                <div className="relative">
                     <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
@@ -348,13 +323,22 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                     <AnimatePresence>
                         {showEmojiPicker && (
                             <>
-                                {/* Mobile backdrop */}
+                                {/* Backdrop for both mobile and desktop - closes picker on click outside */}
                                 <motion.div
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
-                                    className="fixed inset-0 bg-black/50 z-[100] md:hidden"
-                                    onClick={() => setShowEmojiPicker(false)}
+                                    className="fixed inset-0 bg-black/50 md:bg-transparent z-[100]"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setShowEmojiPicker(false);
+                                    }}
+                                    onTouchEnd={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setShowEmojiPicker(false);
+                                    }}
                                 />
                                 <motion.div
                                     initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -369,6 +353,7 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                                         "rounded-b-none md:rounded-2xl",
                                         "p-3 md:p-2"
                                     )}
+                                    onClick={(e) => e.stopPropagation()}
                                 >
                                     {/* Mobile drag handle */}
                                     <div className="md:hidden flex justify-center pb-2">

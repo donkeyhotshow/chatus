@@ -24,18 +24,27 @@ type GameDefinition = {
   description: string;
   icon: React.ComponentType<any>;
   gradient: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  players: string;
 };
 
 // Список игр для двоих
 const gamesList: GameDefinition[] = [
-  { id: 'tic-tac-toe', name: 'Крестики-нолики', description: 'Классическая игра', icon: Gamepad, gradient: 'from-violet-600 to-purple-700' },
-  { id: 'rock-paper-scissors', name: 'Камень-ножницы-бумага', description: 'Кто победит?', icon: Hand, gradient: 'from-pink-600 to-rose-700' },
-  { id: 'dice-roll', name: 'Кости', description: 'Бросьте кости', icon: Dices, gradient: 'from-amber-500 to-orange-600' },
-  { id: 'click-war', name: 'Кликер', description: 'Кто быстрее?', icon: Swords, gradient: 'from-emerald-500 to-teal-600' },
-  { id: 'car-race', name: 'Car Race', description: 'Гонки в реальном времени', icon: Car, gradient: 'from-blue-500 to-cyan-600' },
-  { id: 'snake', name: 'Змейка', description: 'Классика на двоих', icon: Gamepad, gradient: 'from-emerald-600 to-green-700' },
-  { id: 'vibe-jet', name: 'Vibe Jet', description: 'Воздушный бой в 3D', icon: Zap, gradient: 'from-violet-500 to-fuchsia-600' },
+  { id: 'tic-tac-toe', name: 'Крестики-нолики', description: 'Классическая игра', icon: Gamepad, gradient: 'from-violet-600 to-purple-700', difficulty: 'easy', players: '1-2' },
+  { id: 'rock-paper-scissors', name: 'Камень-ножницы-бумага', description: 'Кто победит?', icon: Hand, gradient: 'from-pink-600 to-rose-700', difficulty: 'easy', players: '2' },
+  { id: 'dice-roll', name: 'Кости', description: 'Бросьте кости', icon: Dices, gradient: 'from-amber-500 to-orange-600', difficulty: 'easy', players: '1-4' },
+  { id: 'click-war', name: 'Кликер', description: 'Кто быстрее?', icon: Swords, gradient: 'from-emerald-500 to-teal-600', difficulty: 'medium', players: '2' },
+  { id: 'car-race', name: 'Car Race', description: 'Гонки в реальном времени', icon: Car, gradient: 'from-blue-500 to-cyan-600', difficulty: 'hard', players: '1-2' },
+  { id: 'snake', name: 'Змейка', description: 'Классика на двоих', icon: Gamepad, gradient: 'from-emerald-600 to-green-700', difficulty: 'medium', players: '1-2' },
+  { id: 'vibe-jet', name: 'Vibe Jet', description: 'Воздушный бой в 3D', icon: Zap, gradient: 'from-violet-500 to-fuchsia-600', difficulty: 'hard', players: '1' },
 ];
+
+// Difficulty config
+const difficultyConfig = {
+  easy: { label: 'Легко', color: 'bg-green-500/20 text-green-400', dots: 1 },
+  medium: { label: 'Средне', color: 'bg-yellow-500/20 text-yellow-400', dots: 2 },
+  hard: { label: 'Сложно', color: 'bg-red-500/20 text-red-400', dots: 3 },
+};
 
 type GameLobbyProps = {
   roomId: string;
@@ -226,6 +235,27 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
                 <div className="text-center">
                   <p className="text-sm font-semibold text-white">{game.name}</p>
                   <p className="text-[11px] md:text-xs text-white/40 mt-0.5 md:mt-1">{game.description}</p>
+                  {/* Difficulty badge */}
+                  <div className="flex items-center justify-center gap-2 mt-2">
+                    <span className={cn(
+                      "px-2 py-0.5 rounded-full text-[10px] font-medium flex items-center gap-1",
+                      difficultyConfig[game.difficulty].color
+                    )}>
+                      {difficultyConfig[game.difficulty].label}
+                      <span className="flex gap-0.5">
+                        {[...Array(3)].map((_, i) => (
+                          <span
+                            key={i}
+                            className={cn(
+                              "w-1 h-1 rounded-full",
+                              i < difficultyConfig[game.difficulty].dots ? "bg-current" : "bg-current/30"
+                            )}
+                          />
+                        ))}
+                      </span>
+                    </span>
+                    <span className="text-[10px] text-white/30">{game.players} игр.</span>
+                  </div>
                 </div>
               </button>
             );

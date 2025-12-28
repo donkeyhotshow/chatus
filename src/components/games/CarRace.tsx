@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { GameState, UserProfile } from '@/lib/types';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '../ui/card';
-import { ArrowLeft, Car, Users, Gamepad2, Trophy, Heart, Map } from 'lucide-react';
+import { ArrowLeft, Car, Users, Gamepad2, Trophy, Heart, MapIcon } from 'lucide-react';
 import { useActionGuard, hapticFeedback } from '@/lib/game-utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -1122,7 +1122,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
                         {/* Track Selection */}
                         <div className="space-y-2">
                             <div className="flex items-center gap-2 text-sm text-white/60">
-                                <Map className="w-4 h-4" />
+                                <MapIcon className="w-4 h-4" />
                                 <span>Выберите трассу:</span>
                             </div>
                             <div className="grid grid-cols-2 gap-2">

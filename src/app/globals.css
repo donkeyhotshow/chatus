@@ -1901,9 +1901,10 @@
   .mobile-menu-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-    z-index: 998;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 9998;
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s, visibility 0.3s;
@@ -1922,12 +1923,14 @@
     width: 280px;
     max-width: 85vw;
     background: var(--bg-secondary);
-    z-index: 999;
+    z-index: 9999;
     transform: translateX(-100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
     padding-left: env(safe-area-inset-left, 0px);
+    display: flex;
+    flex-direction: column;
   }
 
   .mobile-menu-drawer.open {
@@ -2350,5 +2353,405 @@
     .text-xs {
       font-size: 13px !important;
     }
+  }
+}
+
+
+  /* ═════════════════════════════════════════════════════
+     TOUCH FEEDBACK IMPROVEMENTS - Этап 6
+     Убираем 300ms delay, добавляем visual feedback
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* Global touch-action for all interactive elements */
+  button,
+  a,
+  input,
+  textarea,
+  select,
+  [role="button"],
+  [role="link"],
+  [role="tab"],
+  [role="menuitem"],
+  [tabindex]:not([tabindex="-1"]),
+  .clickable,
+  .interactive {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Visual feedback on touch - instant response */
+  @media (pointer: coarse) {
+    /* Instant visual feedback */
+    .touch-feedback {
+      transition: transform 0.1s ease-out, opacity 0.1s ease-out, background-color 0.1s ease-out;
+    }
+
+    .touch-feedback:active {
+      transform: scale(0.97);
+      opacity: 0.85;
+    }
+
+    /* Button specific feedback */
+    button:not(:disabled):active,
+    [role="button"]:not([aria-disabled="true"]):active {
+      transform: scale(0.97);
+      opacity: 0.9;
+      transition: transform 0.05s ease-out, opacity 0.05s ease-out;
+    }
+
+    /* Card/list item feedback */
+    .touch-card:active,
+    .touch-list-item:active {
+      background-color: var(--bg-hover) !important;
+      transform: scale(0.99);
+    }
+
+    /* Icon button feedback */
+    .touch-icon:active {
+      transform: scale(0.9);
+      opacity: 0.8;
+    }
+
+    /* Nav item feedback */
+    .touch-nav:active {
+      background-color: var(--accent-light) !important;
+      transform: scale(0.95);
+    }
+  }
+
+  /* Ensure no delay on iOS Safari */
+  @supports (-webkit-touch-callout: none) {
+    * {
+      -webkit-touch-callout: none;
+    }
+
+    button,
+    a,
+    [role="button"] {
+      cursor: pointer;
+      -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     CANVAS IMPROVEMENTS - Palm Rejection & Gestures
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* Canvas container - prevent default touch behaviors */
+  .canvas-container {
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  /* Canvas element */
+  canvas.drawing-canvas {
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: crosshair;
+  }
+
+  canvas.drawing-canvas.eraser-mode {
+    cursor: cell;
+  }
+
+  canvas.drawing-canvas.panning {
+    cursor: grab;
+  }
+
+  canvas.drawing-canvas.panning:active {
+    cursor: grabbing;
+  }
+
+  /* Zoom indicator */
+  .canvas-zoom-indicator {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    pointer-events: none;
+    z-index: 100;
+    animation: fadeIn 0.15s ease-out;
+  }
+
+  /* Palm rejection visual indicator */
+  .palm-rejected-indicator {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(239, 68, 68, 0.9);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    pointer-events: none;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     SCROLL MEMORY - Visual indicators
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* Scroll position restored indicator */
+  .scroll-restored-indicator {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    pointer-events: none;
+    z-index: 100;
+    animation: fadeInUp 0.3s ease-out, fadeOut 0.3s ease-out 2s forwards;
+  }
+
+  @keyframes fadeOut {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+      visibility: hidden;
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     IMAGE OPTIMIZATION - Shimmer & Lazy Loading
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* Image shimmer loading effect */
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  .image-shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--bg-tertiary) 0%,
+      var(--bg-hover) 50%,
+      var(--bg-tertiary) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  /* Image placeholder blur */
+  .image-placeholder-blur {
+    filter: blur(20px);
+    transform: scale(1.1);
+    transition: filter 0.3s ease-out, transform 0.3s ease-out;
+  }
+
+  .image-placeholder-blur.loaded {
+    filter: blur(0);
+    transform: scale(1);
+  }
+
+  /* Lazy image container */
+  .lazy-image-container {
+    position: relative;
+    overflow: hidden;
+    background: var(--bg-tertiary);
+  }
+
+  .lazy-image-container img {
+    transition: opacity 0.3s ease-out;
+  }
+
+  .lazy-image-container img.loading {
+    opacity: 0;
+  }
+
+  .lazy-image-container img.loaded {
+    opacity: 1;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     DESKTOP RIGHT PANEL
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* Right panel toggle button */
+  .right-panel-toggle {
+    position: fixed;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 30;
+    width: 24px;
+    height: 64px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-muted);
+  }
+
+  .right-panel-toggle:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    width: 28px;
+  }
+
+  /* Right panel content */
+  .right-panel-content {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .right-panel-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--border-primary);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .right-panel-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-primary);
+  }
+
+  .right-panel-tab {
+    flex: 1;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+
+  .right-panel-tab:hover {
+    color: var(--text-secondary);
+  }
+
+  .right-panel-tab.active {
+    color: var(--accent-primary);
+  }
+
+  .right-panel-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--accent-primary);
+  }
+
+  .right-panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+  }
+
+  /* User list in right panel */
+  .right-panel-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    border-radius: 12px;
+    transition: background 0.2s ease;
+    cursor: pointer;
+  }
+
+  .right-panel-user:hover {
+    background: var(--bg-hover);
+  }
+
+  .right-panel-user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--bg-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-muted);
+    position: relative;
+  }
+
+  .right-panel-user-online {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 12px;
+    height: 12px;
+    background: var(--success);
+    border: 2px solid var(--bg-secondary);
+    border-radius: 50%;
+  }
+
+  .right-panel-user-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  /* Media gallery in right panel */
+  .right-panel-media-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  .right-panel-media-item {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+  }
+
+  .right-panel-media-item:hover {
+    opacity: 0.8;
+  }
+
+  .right-panel-media-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 }

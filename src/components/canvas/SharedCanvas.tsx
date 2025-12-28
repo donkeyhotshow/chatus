@@ -7,10 +7,13 @@ import { useChatService } from '@/hooks/useChatService';
 import { Timestamp } from 'firebase/firestore';
 import { useFirebase } from '../firebase/FirebaseProvider';
 import { Slider } from '../ui/slider';
-import { LucideIcon, Eraser, PenTool, Trash2, Brush, Tally1, Bot, Pen, Send } from 'lucide-react';
+import { LucideIcon, Eraser, PenTool, Trash2, Brush, Tally1, Bot, Pen, Send, ZoomIn, ZoomOut, RotateCcw, Download } from 'lucide-react';
 import { createCanvasBatcher } from '@/lib/canvas-batch';
 import { logger } from '@/lib/logger';
 import { FloatingToolbar } from './FloatingToolbar';
+import { BrushPreview } from './BrushPreview';
+import { ExportDialog } from './ExportDialog';
+import { DrawingHistoryPanel, useDrawingHistory } from './DrawingHistory';
 import {
   CanvasDrawState,
   Point,
@@ -36,6 +39,42 @@ const generateCursorColor = (userId: string) => {
     hash = userId.charCodeAt(i) + ((hash << 5) - hash);
   }
   return colors[Math.abs(hash) % colors.length];
+};
+
+/**
+ * Palm rejection - определяет, является ли касание ладонью
+ * Этап 6: Canvas improvements
+ */
+const isPalmTouch = (touch: Touch): boolean => {
+  const radiusX = (touch as any).radiusX || 0;
+  const radiusY = (touch as any).radiusY || 0;
+  const maxRadius = Math.max(radiusX, radiusY);
+
+  // Большие касания (> 40px) скорее всего ладонь
+  if (maxRadius > 40) {
+    return true;
+  }
+
+  // Очень сильное давление с большим радиусом - ладонь
+  const force = touch.force || 0;
+  if (force > 0.8 && maxRadius > 20) {
+    return true;
+  }
+
+  return false;
+};
+
+/**
+ * Фильтрует касания, убирая ладони
+ */
+const filterPalmTouches = (touches: TouchList): Touch[] => {
+  const validTouches: Touch[] = [];
+  for (let i = 0; i < touches.length; i++) {
+    if (!isPalmTouch(touches[i])) {
+      validTouches.push(touches[i]);
+    }
+  }
+  return validTouches;
 };
 
 const NEON_COLORS = [
@@ -75,6 +114,17 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
   const [selectedColor, setSelectedColor] = useState('#3B82F6');
   const [strokeWidth, setStrokeWidth] = useState(4);
   const [brushType, setBrushType] = useState<BrushType>('normal');
+
+  // Brush preview state - Этап 7
+  const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
+  const [isCanvasHovered, setIsCanvasHovered] = useState(false);
+
+  // Export dialog state - Этап 7
+  const [showExportDialog, setShowExportDialog] = useState(false);
+
+  // Drawing history - Этап 7
+  const drawingHistory = useDrawingHistory(30);
+  const [showHistoryPanel, setShowHistoryPanel] = useState(false);
 
   // Real-time paths from RTDB (BUG-004)
   const [realtimePaths, setRealtimePaths] = useState<Map<string, CanvasPath>>(new Map());
@@ -320,6 +370,11 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     const point = getEventPoint(e);
     if (!point) return;
 
+    // Save state to history before drawing - Этап 7
+    if (canvasRef.current) {
+      drawingHistory.pushState(canvasRef.current);
+    }
+
     // BUG FIX: Assign the returned state back to the ref
     stabilizerStateRef.current = startDrawing(stabilizerStateRef.current, point);
 
@@ -334,6 +389,13 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
 
     const point = getEventPoint(e);
     if (!point) return;
+
+    // Update brush preview position - Этап 7
+    if ('clientX' in e) {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    } else if (e.touches.length > 0) {
+      setMousePosition({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+    }
 
     // Always update cursor (throttled)
     throttledCursorUpdate(point.x, point.y, cursorColor);
@@ -417,34 +479,51 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     };
   };
 
-  // Touch handlers for zoom/pan
+  // Touch handlers for zoom/pan with palm rejection - Этап 6
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 2) {
+    // Filter out palm touches
+    const validTouches = filterPalmTouches(e.touches);
+
+    if (validTouches.length === 0) {
+      // All touches are palms - ignore
+      return;
+    }
+
+    if (validTouches.length >= 2) {
+      // Pinch-to-zoom with two valid touches
       isPinching.current = true;
+      const touch1 = validTouches[0];
+      const touch2 = validTouches[1];
       const dist = Math.hypot(
-        e.touches[0].pageX - e.touches[1].pageX,
-        e.touches[0].pageY - e.touches[1].pageY
+        touch1.pageX - touch2.pageX,
+        touch1.pageY - touch2.pageY
       );
       lastTouchDistance.current = dist;
       lastTouchCenter.current = {
-        x: (e.touches[0].pageX + e.touches[1].pageX) / 2,
-        y: (e.touches[0].pageY + e.touches[1].pageY) / 2
+        x: (touch1.pageX + touch2.pageX) / 2,
+        y: (touch1.pageY + touch2.pageY) / 2
       };
       setShowZoomHint(true);
-    } else if (e.touches.length === 1) {
+    } else if (validTouches.length === 1 && !isPinching.current) {
+      // Single valid touch - start drawing
       handleMouseDown(e);
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (e.touches.length === 2 && isPinching.current) {
+    // Filter out palm touches
+    const validTouches = filterPalmTouches(e.touches);
+
+    if (validTouches.length >= 2 && isPinching.current) {
+      const touch1 = validTouches[0];
+      const touch2 = validTouches[1];
       const dist = Math.hypot(
-        e.touches[0].pageX - e.touches[1].pageX,
-        e.touches[0].pageY - e.touches[1].pageY
+        touch1.pageX - touch2.pageX,
+        touch1.pageY - touch2.pageY
       );
       const center = {
-        x: (e.touches[0].pageX + e.touches[1].pageX) / 2,
-        y: (e.touches[0].pageY + e.touches[1].pageY) / 2
+        x: (touch1.pageX + touch2.pageX) / 2,
+        y: (touch1.pageY + touch2.pageY) / 2
       };
 
       const deltaScale = dist / lastTouchDistance.current;
@@ -460,7 +539,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
 
       lastTouchDistance.current = dist;
       lastTouchCenter.current = center;
-    } else if (e.touches.length === 1 && !isPinching.current) {
+    } else if (validTouches.length === 1 && !isPinching.current) {
       handleMouseMove(e);
     }
   };
@@ -535,8 +614,115 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     }
   };
 
+  // Export function - Этап 7
+  const handleExport = useCallback(async (format: 'png' | 'jpeg' | 'webp', quality: number): Promise<Blob | null> => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+
+    try {
+      // Create a temporary canvas with background
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+      const tempCtx = tempCanvas.getContext('2d');
+      if (!tempCtx) return null;
+
+      // Fill background
+      tempCtx.fillStyle = '#0d0d0d';
+      tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+      // Draw original canvas content
+      tempCtx.drawImage(canvas, 0, 0);
+
+      // Convert to blob
+      const mimeType = format === 'png' ? 'image/png' : format === 'jpeg' ? 'image/jpeg' : 'image/webp';
+      const qualityValue = format === 'png' ? undefined : quality / 100;
+
+      return new Promise((resolve) => {
+        tempCanvas.toBlob(
+          (blob) => resolve(blob),
+          mimeType,
+          qualityValue
+        );
+      });
+    } catch (error) {
+      logger.error('Error exporting canvas', error as Error);
+      return null;
+    }
+  }, []);
+
+  // Undo/Redo handlers - Этап 7
+  const handleUndo = useCallback(() => {
+    if (canvasRef.current && drawingHistory.canUndo) {
+      drawingHistory.undo(canvasRef.current);
+    }
+  }, [drawingHistory]);
+
+  const handleRedo = useCallback(() => {
+    if (canvasRef.current && drawingHistory.canRedo) {
+      drawingHistory.redo(canvasRef.current);
+    }
+  }, [drawingHistory]);
+
+  const handleGoToHistoryState = useCallback((index: number) => {
+    if (canvasRef.current) {
+      drawingHistory.goToState(canvasRef.current, index);
+    }
+  }, [drawingHistory]);
+
+  // Keyboard shortcuts for undo/redo - Этап 7
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        handleUndo();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleUndo, handleRedo]);
+
   return (
     <div className="h-full w-full relative flex flex-col">
+      {/* Brush Preview - Этап 7 */}
+      <BrushPreview
+        x={mousePosition?.x || 0}
+        y={mousePosition?.y || 0}
+        size={strokeWidth}
+        color={selectedColor}
+        tool={selectedTool}
+        brushType={brushType}
+        visible={isCanvasHovered && !stabilizerStateRef.current?.isDrawing}
+        scale={scale}
+      />
+
+      {/* Export Dialog - Этап 7 */}
+      <ExportDialog
+        isOpen={showExportDialog}
+        onClose={() => setShowExportDialog(false)}
+        onExport={handleExport}
+        onSendToChat={handleSendToChat}
+      />
+
+      {/* Drawing History Panel - Этап 7 (Desktop only) */}
+      <div className="hidden md:block">
+        <DrawingHistoryPanel
+          history={drawingHistory.history}
+          currentIndex={drawingHistory.currentIndex}
+          canUndo={drawingHistory.canUndo}
+          canRedo={drawingHistory.canRedo}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          onGoToState={handleGoToHistoryState}
+          isOpen={showHistoryPanel}
+          onToggle={() => setShowHistoryPanel(!showHistoryPanel)}
+        />
+      </div>
+
       {/* Desktop toolbar - Dark Minimalism Theme */}
       <div className="absolute top-3 left-3 z-20 flex-col gap-2 hidden md:flex">
         <div className="flex flex-col gap-2 p-2 bg-[var(--glass-bg)] backdrop-blur-xl rounded-2xl border border-[var(--glass-border)] w-auto md:w-52 shadow-[var(--shadow-lg)]">
@@ -558,6 +744,13 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
               className="p-2.5 rounded-xl bg-[var(--bg-tertiary)] text-rose-400 hover:bg-rose-500/20 transition-all flex-1 flex justify-center min-h-[44px]"
             >
               <Trash2 className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setShowExportDialog(true)}
+              className="p-2.5 rounded-xl bg-[var(--bg-tertiary)] text-blue-400 hover:bg-blue-500/20 transition-all flex-1 flex justify-center min-h-[44px]"
+              title="Экспорт"
+            >
+              <Download className="w-5 h-5" />
             </button>
             <button
               onClick={handleSendToChat}
@@ -628,6 +821,10 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
           isMazeActive={isMazeActive}
           onClearSheet={handleClear}
           onSendToChat={handleSendToChat}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          canUndo={drawingHistory.canUndo}
+          canRedo={drawingHistory.canRedo}
         />
       </div>
       <RemoteCursors
@@ -650,7 +847,12 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onMouseLeave={() => {
+          handleMouseUp();
+          setIsCanvasHovered(false);
+          setMousePosition(null);
+        }}
+        onMouseEnter={() => setIsCanvasHovered(true)}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -660,9 +862,42 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
       {/* Mobile zoom hint - Dark Minimalism */}
       {showZoomHint && (
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-[var(--glass-bg)] backdrop-blur-xl text-[var(--text-primary)] px-5 py-3 rounded-xl text-sm font-medium pointer-events-none z-10 animate-in fade-in-0 zoom-in-95 border border-[var(--glass-border)] shadow-[var(--shadow-lg)]">
-          Масштабирование активно
+          {Math.round(scale * 100)}%
         </div>
       )}
+
+      {/* Zoom Controls - Этап 6 */}
+      <div className="absolute bottom-20 right-3 z-20 flex flex-col gap-1.5 md:bottom-3">
+        <button
+          onClick={() => setScale(prev => Math.min(prev * 1.2, 5))}
+          className="w-10 h-10 rounded-xl bg-[var(--glass-bg)] backdrop-blur-xl border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all flex items-center justify-center touch-feedback"
+          title="Увеличить"
+        >
+          <ZoomIn className="w-5 h-5" />
+        </button>
+        <button
+          onClick={() => setScale(prev => Math.max(prev / 1.2, 0.5))}
+          className="w-10 h-10 rounded-xl bg-[var(--glass-bg)] backdrop-blur-xl border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all flex items-center justify-center touch-feedback"
+          title="Уменьшить"
+        >
+          <ZoomOut className="w-5 h-5" />
+        </button>
+        <button
+          onClick={() => {
+            setScale(1);
+            setTranslateX(0);
+            setTranslateY(0);
+          }}
+          className="w-10 h-10 rounded-xl bg-[var(--glass-bg)] backdrop-blur-xl border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all flex items-center justify-center touch-feedback"
+          title="Сбросить"
+        >
+          <RotateCcw className="w-5 h-5" />
+        </button>
+        {/* Scale indicator */}
+        <div className="text-center text-[10px] text-[var(--text-muted)] font-medium">
+          {Math.round(scale * 100)}%
+        </div>
+      </div>
     </div>
   );
 }

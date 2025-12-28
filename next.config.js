@@ -89,7 +89,20 @@ const nextConfig = {
       '@radix-ui/react-icons',
       'framer-motion',
       'date-fns',
+      'lodash',
+      'recharts',
+      '@tanstack/react-query',
     ],
+  },
+
+  // Этап 8: Модульные импорты для tree-shaking
+  modularizeImports: {
+    'lucide-react': {
+      transform: 'lucide-react/dist/esm/icons/{{kebabCase member}}',
+    },
+    'date-fns': {
+      transform: 'date-fns/{{member}}',
+    },
   },
 
   // Webpack optimizations for code splitting (Requirements: 16.2)
@@ -151,6 +164,27 @@ const nextConfig = {
               name: 'vendors',
               chunks: 'all',
               priority: 10,
+            },
+            // Three.js and 3D libraries - separate chunk
+            threejs: {
+              test: /[\\/]node_modules[\\/](three|@react-three)[\\/]/,
+              name: 'threejs',
+              chunks: 'all',
+              priority: 22,
+            },
+            // Charts library
+            charts: {
+              test: /[\\/]node_modules[\\/]recharts[\\/]/,
+              name: 'charts',
+              chunks: 'all',
+              priority: 18,
+            },
+            // Emoji picker - heavy component
+            emoji: {
+              test: /[\\/]node_modules[\\/]emoji-picker-react[\\/]/,
+              name: 'emoji',
+              chunks: 'all',
+              priority: 17,
             },
             // Common app code
             common: {

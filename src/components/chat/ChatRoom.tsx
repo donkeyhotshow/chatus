@@ -24,6 +24,8 @@ import { useSessionPersistence } from '@/hooks/useSessionPersistence';
 import { useConnectionStatus } from '@/hooks/useConnectionStatus';
 import { useNavigationState } from '@/hooks/useNavigationState';
 import { useKeyboardShortcuts, KeyboardShortcutsHint } from '@/hooks/useKeyboardShortcuts';
+import { useRecentRooms } from '@/hooks/useRecentRooms';
+import { useTabScrollMemory } from '@/hooks/useScrollMemory';
 import { logger } from '@/lib/logger';
 import { isDemoMode } from '@/lib/demo-mode';
 import { getChatService } from '@/services/ChatService';
@@ -33,6 +35,7 @@ import { OnboardingTour, useOnboarding } from './OnboardingTour';
 import { ChatSkeleton } from './ChatSkeleton';
 import { SearchDialog } from './SearchDialog';
 import { AnimatedTabTransition } from '../layout/AnimatedTabTransition';
+import { DesktopRightPanel } from '../layout/DesktopRightPanel';
 import { safariSafeClick } from '@/lib/safari-workarounds';
 import { RoomState } from '@/lib/session-manager';
 
@@ -129,6 +132,7 @@ export function ChatRoom({ roomId }: { roomId: string }) {
     const [activeTab, setActiveTab] = useState<ChatTab>('chat');
     const [showSettings, setShowSettings] = useState(false);
     const [showSearch, setShowSearch] = useState(false);
+    const [showRightPanel, setShowRightPanel] = useState(false);
     const router = useRouter();
     const { toast } = useToast();
     const firebaseContext = useFirebase();
@@ -141,6 +145,12 @@ export function ChatRoom({ roomId }: { roomId: string }) {
 
     // Onboarding
     const { showOnboarding, completeOnboarding } = useOnboarding();
+
+    // Recent rooms for Ctrl+1-9 navigation - Этап 4
+    const { addRoom, navigateToRoom } = useRecentRooms();
+
+    // Scroll memory for tabs - Этап 6
+    const { saveTabPosition, getTabPosition } = useTabScrollMemory(roomId);
 
     // Session persistence - P0 fix for refresh/back navigation
     const handleSessionRestore = useCallback((state: RoomState) => {
@@ -170,13 +180,28 @@ export function ChatRoom({ roomId }: { roomId: string }) {
     const { joinRoom, leaveRoom } = useRoomManager(roomId);
 
     const handleTabChange = useCallback((tab: ChatTab | string) => {
+        // Save current tab scroll position before switching
+        const scrollContainer = document.querySelector('[data-scroll-container]');
+        if (scrollContainer) {
+            saveTabPosition(activeTab, scrollContainer.scrollTop);
+        }
+
         setActiveTab(tab as ChatTab);
         // Update navigation state
         const view = tab === 'chat' ? 'chat' : (tab === 'canvas' ? 'canvas' : (tab === 'games' ? 'game' : 'chat'));
         updateState(view as any);
         // Save state on tab change
         setTimeout(saveCurrentState, 100);
-    }, [saveCurrentState, updateState]);
+
+        // Restore scroll position for new tab
+        setTimeout(() => {
+            const savedPosition = getTabPosition(tab);
+            const newScrollContainer = document.querySelector('[data-scroll-container]');
+            if (savedPosition && newScrollContainer) {
+                newScrollContainer.scrollTop = savedPosition.scrollTop;
+            }
+        }, 150);
+    }, [activeTab, saveCurrentState, updateState, saveTabPosition, getTabPosition]);
 
     const handleMobileBack = useCallback(() => {
         if (isMobile && activeTab !== 'chat') {
@@ -230,8 +255,10 @@ export function ChatRoom({ roomId }: { roomId: string }) {
     useEffect(() => {
         if (user && !roomLoading) {
             validate();
+            // Регистрируем комнату в recent rooms для Ctrl+1-9
+            addRoom(roomId, room?.participantProfiles?.find(p => p.id !== user.id)?.name);
         }
-    }, [user, roomLoading, validate]);
+    }, [user, roomLoading, validate, addRoom, roomId, room?.participantProfiles]);
 
     useEffect(() => {
         if (!user) return;
@@ -329,6 +356,7 @@ export function ChatRoom({ roomId }: { roomId: string }) {
         onSearch: handleSearchOpen,
         onNewChat: handleNewChat,
         onEscape: handleEscape,
+        onNavigateChat: navigateToRoom,
     });
 
     // Loading states - використовуємо skeleton для кращого UX
@@ -356,6 +384,11 @@ export function ChatRoom({ roomId }: { roomId: string }) {
     if (roomLoading && !room) return <LoadingScreen text="Подключение..." showSkeleton isSlow={isSlow} />;
 
     const otherUser = room?.participantProfiles?.find(p => p.id !== user?.id);
+
+    // Toggle right panel handler
+    const handleToggleRightPanel = useCallback(() => {
+        setShowRightPanel(prev => !prev);
+    }, []);
 
     return (
         <div className={cn(
@@ -447,6 +480,17 @@ export function ChatRoom({ roomId }: { roomId: string }) {
                     )}
                 </AnimatedTabTransition>
             </main>
+
+            {/* Desktop Right Panel - Этап 6 */}
+            {!isMobile && activeTab === 'chat' && (
+                <DesktopRightPanel
+                    isOpen={showRightPanel}
+                    onToggle={handleToggleRightPanel}
+                    users={room?.participantProfiles || []}
+                    currentUserId={user.id}
+                    roomName={room?.name}
+                />
+            )}
         </div>
     );
 }

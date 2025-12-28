@@ -8,6 +8,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "../ui/card
 import { ArrowLeft, Circle, X, Bot } from "lucide-react";
 import { useActionGuard, hapticFeedback } from "@/lib/game-utils";
 import { ExitButton } from "../ui/ExitButton";
+import { useTicTacToeKeyboard } from "@/hooks/useGameKeyboard";
 
 type TicTacToeProps = {
     onGameEnd: () => void;
@@ -193,6 +194,15 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
 
     const { guard } = useActionGuard();
 
+    // Keyboard navigation for accessibility
+    const handleCellSelect = useCallback((index: number) => {
+        if (!winner && !displayBoard?.[index] && myTurn && !isAIThinking) {
+            handleClick(index);
+        }
+    }, [winner, displayBoard, myTurn, isAIThinking]);
+
+    useTicTacToeKeyboard(handleCellSelect, !winner && myTurn && !isAIThinking);
+
     const handleClick = guard((...args: unknown[]) => {
         const i = args[0] as number;
         if (winner || displayBoard?.[i] || !myTurn || isAIThinking) return;
@@ -298,6 +308,8 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
                             <button
                                 key={i}
                                 onClick={() => handleClick(i)}
+                                data-game-cell={i}
+                                tabIndex={myTurn && !winner && !displayBoard[i] ? 0 : -1}
                                 className={`
                                     /* Адаптивные размеры: min 60px на мобильных, 80px на планшетах, 100px на десктопе */
                                     h-[60px] w-[60px] sm:h-20 sm:w-20 md:h-[100px] md:w-[100px]

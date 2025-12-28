@@ -112,13 +112,17 @@ export function ChatConnectionStatus({
 // Консолидировано из chat/ConnectionStatus.tsx
 // ============================================================================
 
+import { X } from 'lucide-react';
+
 export function NetworkConnectionStatus() {
     const [isConnected, setIsConnected] = useState(true);
     const [showAlert, setShowAlert] = useState(false);
+    const [isDismissed, setIsDismissed] = useState(false);
 
     useEffect(() => {
         const handleOnline = () => {
             setIsConnected(true);
+            setIsDismissed(false);
             setShowAlert(true);
             // Auto-hide after 2 seconds
             setTimeout(() => setShowAlert(false), 2000);
@@ -126,6 +130,7 @@ export function NetworkConnectionStatus() {
 
         const handleOffline = () => {
             setIsConnected(false);
+            setIsDismissed(false);
             setShowAlert(true);
         };
 
@@ -141,7 +146,12 @@ export function NetworkConnectionStatus() {
         };
     }, []);
 
-    if (!showAlert && isConnected) return null;
+    const handleDismiss = () => {
+        setIsDismissed(true);
+        setShowAlert(false);
+    };
+
+    if (isDismissed || (!showAlert && isConnected)) return null;
 
     return (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4">
@@ -149,18 +159,28 @@ export function NetworkConnectionStatus() {
                 ? 'border-green-500/50 bg-green-500/10 text-green-400'
                 : 'border-red-500/50 bg-red-500/10 text-red-400'
                 } backdrop-blur-sm animate-in slide-in-from-top-2`}>
-                <div className="flex items-center gap-2">
-                    {isConnected ? (
-                        <Wifi className="w-4 h-4" />
-                    ) : (
-                        <WifiOff className="w-4 h-4" />
-                    )}
-                    <AlertDescription className="font-medium">
-                        {isConnected
-                            ? 'Подключение восстановлено'
-                            : 'Нет подключения к интернету. Сообщения не будут отправлены.'
-                        }
-                    </AlertDescription>
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                        {isConnected ? (
+                            <Wifi className="w-4 h-4" />
+                        ) : (
+                            <WifiOff className="w-4 h-4" />
+                        )}
+                        <AlertDescription className="font-medium">
+                            {isConnected
+                                ? 'Подключение восстановлено'
+                                : 'Нет подключения к интернету. Сообщения не будут отправлены.'
+                            }
+                        </AlertDescription>
+                    </div>
+                    {/* Dismiss button - Warning Banner Close */}
+                    <button
+                        onClick={handleDismiss}
+                        className="p-1 rounded-md hover:bg-white/10 transition-colors shrink-0"
+                        aria-label="Закрыть уведомление"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
                 </div>
             </Alert>
         </div>

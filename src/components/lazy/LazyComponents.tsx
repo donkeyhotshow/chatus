@@ -3,13 +3,15 @@
  * These components are loaded only when needed to reduce initial bundle size
  *
  * P2 Fix: Добавлены skeleton-загрузчики для улучшения UX при загрузке
+ * Этап 8: Улучшенная предзагрузка с метриками и приоритетами
  */
 
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { LoadingSpinner } from '@/components/ui/LoadingStates';
 import { ChatSkeleton } from '@/components/chat/ChatSkeleton';
 import { GamesSkeleton, TicTacToeSkeleton } from '@/components/ui/skeletons/GamesSkeleton';
 import { CanvasSkeleton } from '@/components/ui/skeletons/CanvasSkeleton';
+import { isSlowConnection } from '@/lib/performance-config';
 
 // Lazy load heavy components
 export const LazyDoodlePad = lazy(() => import('@/components/chat/DoodlePad'));
@@ -129,8 +131,14 @@ export const preloadTicTacToe = () => import('@/components/games/TicTacToe');
 
 /**
  * P2 Fix: Предзагрузка компонентов при наведении для ускорения переключения вкладок
+ * Этап 8: Улучшенная предзагрузка с учётом скорости соединения
  */
 export const preloadOnHover = (componentName: string) => {
+    // Не предзагружаем на медленном соединении
+    if (isSlowConnection()) {
+        return () => Promise.resolve();
+    }
+
     switch (componentName) {
         case 'doodle':
             return preloadDoodlePad;
@@ -148,3 +156,49 @@ export const preloadOnHover = (componentName: string) => {
             return () => Promise.resolve();
     }
 };
+
+/**
+ * Этап 8: Предзагрузка критических компонентов при idle
+ */
+export function useIdlePreload() {
+    useEffect(() => {
+        if (isSlowConnection()) return;
+
+        const preloadCritical = () => {
+            // Предзагружаем Firebase модули
+            import('firebase/firestore');
+            import('firebase/database');
+        };
+
+        if ('requestIdleCallback' in window) {
+            const id = requestIdleCallback(preloadCritical, { timeout: 3000 });
+            return () => cancelIdleCallback(id);
+        } else {
+            const id = setTimeout(preloadCritical, 2000);
+            return () => clearTimeout(id);
+        }
+    }, []);
+}
+
+/**
+ * Этап 8: Компонент для предзагрузки при intersection
+ */
+export function PreloadOnVisible({
+    children,
+    preloadFn
+}: {
+    children: React.ReactNode;
+    preloadFn: () => Promise<any>;
+}) {
+    useEffect(() => {
+        if (isSlowConnection()) return;
+
+        const timer = setTimeout(() => {
+            preloadFn().catch(() => {});
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [preloadFn]);
+
+    return <>{children}</>;
+}

@@ -15,6 +15,7 @@ interface GameCardProps {
     rating?: number;
     players?: string;
     category?: string;
+    difficulty?: 'easy' | 'medium' | 'hard';
 }
 
 export const GameCard: React.FC<GameCardProps> = ({
@@ -26,8 +27,15 @@ export const GameCard: React.FC<GameCardProps> = ({
     className,
     rating = 4.5,
     players = "1-2",
-    category = "Classic"
+    category = "Classic",
+    difficulty = "medium"
 }) => {
+    const difficultyConfig = {
+        easy: { label: 'Легко', color: 'bg-green-500/20 text-green-400 border-green-500/30', dots: 1 },
+        medium: { label: 'Средне', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', dots: 2 },
+        hard: { label: 'Сложно', color: 'bg-red-500/20 text-red-400 border-red-500/30', dots: 3 },
+    };
+    const diffConfig = difficultyConfig[difficulty];
     return (
         <motion.button
             className={cn(
@@ -53,6 +61,25 @@ export const GameCard: React.FC<GameCardProps> = ({
                 {/* Category Tag */}
                 <div className="absolute top-4 left-4 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/5 text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
                     {category}
+                </div>
+
+                {/* Difficulty Badge */}
+                <div className={cn(
+                    "absolute bottom-4 left-4 px-2.5 py-1 rounded-lg border text-[10px] font-bold flex items-center gap-1.5",
+                    diffConfig.color
+                )}>
+                    <span>{diffConfig.label}</span>
+                    <span className="flex gap-0.5">
+                        {[...Array(3)].map((_, i) => (
+                            <span
+                                key={i}
+                                className={cn(
+                                    "w-1.5 h-1.5 rounded-full",
+                                    i < diffConfig.dots ? "bg-current" : "bg-current/30"
+                                )}
+                            />
+                        ))}
+                    </span>
                 </div>
 
                 {/* Rating */}

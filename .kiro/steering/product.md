@@ -164,7 +164,7 @@ bounce: cubic-bezier(0.34, 1.56, 0.64, 1)
 
 ---
 
-## 📋 Этап 4: Desktop & Polish (В ПРОЦЕССЕ)
+## ✅ Этап 4: Desktop & Polish (ВЫПОЛНЕНО)
 
 ### Desktop Layout
 - [x] Трехколоночный layout: Sidebar(240px) + Main + Right panel(280px) - CSS классы добавлены
@@ -177,7 +177,7 @@ bounce: cubic-bezier(0.34, 1.56, 0.64, 1)
 - [x] Tab navigation по всем элементам - focus-visible стили добавлены
 - [x] Focus indicators везде - реализовано в globals.css
 - [x] Hotkeys: Ctrl/Cmd+K (поиск), Ctrl/Cmd+N (новый чат) - реализовано в useKeyboardShortcuts
-- [ ] Навигация по чатам: Ctrl/Cmd+1-9
+- [x] Навигация по чатам: Ctrl/Cmd+1-9 - реализовано в useRecentRooms + useKeyboardShortcuts
 
 ### Hover States (Desktop)
 - [x] Все кликабельные элементы: cursor pointer + hover effect - реализовано
@@ -187,6 +187,186 @@ bounce: cubic-bezier(0.34, 1.56, 0.64, 1)
 ### Loading & Empty States
 - [x] Skeleton screens для чатов - ChatSkeleton компонент
 - [x] Spinner для отправки сообщений - реализован
-- [ ] Progress bar для файлов
+- [x] Progress bar для файлов - FileUploadProgress + useFileUpload
 - [x] Shimmer effect - skeleton-wave класс в globals.css
 - [x] Empty states с иллюстрациями - в MessageList
+
+
+---
+
+## ✅ Этап 5: Final Polish (ВЫПОЛНЕНО)
+
+### Улучшения UI/UX
+- [x] Color Picker улучшенный - добавлен custom color input в FloatingToolbar
+- [x] Message Grouping - группировка последовательных сообщений от одного пользователя (2 мин интервал)
+- [x] Warning Banner Close - кнопка закрытия для NetworkConnectionStatus
+- [x] ColorPicker компонент - полноценный picker с hue/saturation (src/components/ui/ColorPicker.tsx)
+
+### Компоненты обновлены:
+- [x] `FloatingToolbar.tsx` - улучшенная палитра цветов с custom input
+- [x] `MessageList.tsx` - логика группировки сообщений (groupPosition)
+- [x] `MessageItem.tsx` - поддержка groupPosition для скрытия аватаров/имён
+- [x] `connection-status.tsx` - кнопка dismiss для warning banners
+- [x] `ColorPicker.tsx` - новый компонент с hue/saturation picker
+
+---
+
+## ✅ Этап 6: Рекомендуемые улучшения (ВЫПОЛНЕНО)
+
+### Scroll Position Memory
+- [x] Сохранение позиции скролла при переключении табов - `useScrollMemory.ts`
+- [x] Восстановление позиции при возврате - `useTabScrollMemory` hook
+- [x] Интеграция в ChatRoom - автоматическое сохранение/восстановление
+
+### Image Optimization
+- [x] Lazy loading для изображений - `OptimizedImage.tsx`
+- [x] Placeholder blur для загрузки - shimmer эффект
+- [x] Progressive loading с IntersectionObserver
+- [x] `ChatImage` компонент для сообщений
+- [x] `OptimizedAvatar` компонент для аватаров
+
+### Touch Feedback
+- [x] Убран 300ms delay через `touch-action: manipulation` - globals.css
+- [x] Visual feedback на все touch targets - `.touch-feedback` класс
+- [x] Instant response на касания - 0.1s transitions
+- [x] Специфичные стили для iOS Safari
+
+### Desktop Right Panel
+- [x] Компонент `DesktopRightPanel.tsx` - 280px ширина
+- [x] Три таба: Участники, Медиа, Настройки
+- [x] Список участников с online статусом
+- [x] Медиа галерея из сообщений
+- [x] Настройки комнаты
+- [x] Toggle кнопка для открытия/закрытия
+- [x] Интеграция в ChatRoom (только desktop + chat tab)
+
+### Canvas Improvements
+- [x] Palm rejection для планшетов - `filterPalmTouches()` функция
+- [x] Определение ладони по radiusX/radiusY и force
+- [x] Zoom/Pan жесты с двумя пальцами
+- [x] Zoom controls (кнопки +/-/reset)
+- [x] Индикатор текущего масштаба
+- [x] `useCanvasGestures.ts` hook для переиспользования
+
+### Компоненты созданы/обновлены:
+- [x] `src/hooks/useScrollMemory.ts` - хук для сохранения позиции скролла
+- [x] `src/hooks/useCanvasGestures.ts` - хук для жестов canvas
+- [x] `src/components/ui/OptimizedImage.tsx` - оптимизированные изображения
+- [x] `src/components/layout/DesktopRightPanel.tsx` - правая панель desktop
+- [x] `src/components/chat/ChatRoom.tsx` - интеграция всех улучшений
+- [x] `src/components/canvas/SharedCanvas.tsx` - palm rejection + zoom controls
+- [x] `src/app/globals.css` - touch feedback стили
+
+---
+
+## ✅ Этап 7: Canvas & Games Improvements (ВЫПОЛНЕНО)
+
+### Brush Preview
+- [x] Компонент `BrushPreview.tsx` - превью размера кисти при наведении
+- [x] Отображение контура и заливки кисти
+- [x] Поддержка разных типов кистей (normal, neon, dashed, calligraphy)
+- [x] Центральная точка для точности на больших кистях
+- [x] Crosshair для кистей > 20px
+- [x] Учёт масштаба canvas
+
+### Export Options
+- [x] Компонент `ExportDialog.tsx` - диалог экспорта рисунка
+- [x] Форматы: PNG (без потерь), JPEG, WebP
+- [x] Настройка качества для JPEG/WebP (50-100%)
+- [x] Скачивание файла
+- [x] Копирование в буфер обмена
+- [x] Отправка в чат
+- [x] Кнопка экспорта в desktop toolbar
+
+### Drawing History Thumbnails
+- [x] Компонент `DrawingHistory.tsx` - визуальная история рисования
+- [x] Хук `useDrawingHistory` для управления состояниями
+- [x] Миниатюры 60x60px для каждого состояния
+- [x] Undo/Redo кнопки с состоянием disabled
+- [x] Переход к любому состоянию по клику
+- [x] Автоскролл к текущему состоянию
+- [x] Keyboard shortcuts: Ctrl+Z (undo), Ctrl+Y (redo)
+- [x] Интеграция в FloatingToolbar (mobile)
+- [x] Панель истории на desktop
+
+### Game Stats & Leaderboards
+- [x] Компонент `GameStats.tsx` - статистика и достижения
+- [x] Три таба: Статистика, Лидеры, Достижения
+- [x] Карточки статистики: рекорд, средний счёт, игр сыграно, время
+- [x] Таблица лидеров с рангами и аватарами
+- [x] Достижения с прогрессом
+- [x] Функция `saveGameStats` для сохранения результатов
+- [x] Хранение в localStorage (готово к миграции на Firebase)
+
+### Компоненты созданы/обновлены:
+- [x] `src/components/canvas/BrushPreview.tsx` - превью кисти
+- [x] `src/components/canvas/ExportDialog.tsx` - диалог экспорта
+- [x] `src/components/canvas/DrawingHistory.tsx` - история рисования
+- [x] `src/components/games/GameStats.tsx` - статистика игр
+- [x] `src/components/canvas/SharedCanvas.tsx` - интеграция всех улучшений
+- [x] `src/components/canvas/FloatingToolbar.tsx` - undo/redo кнопки
+
+
+---
+
+## 🚀 Этап 8: Performance & Accessibility (В ПРОЦЕССЕ)
+
+### Performance Optimizations
+- [x] Lazy loading для тяжёлых компонентов (уже есть LazyComponents.tsx)
+- [x] React.memo для часто рендерящихся компонентов
+- [x] useMemo/useCallback оптимизация
+- [x] Preload критических ресурсов (next.config.js)
+- [x] Web Vitals мониторинг - `useWebVitals.ts` hook
+- [x] Bundle size optimization (webpack splitChunks)
+
+### Accessibility (WCAG 2.1 AA)
+- [x] Skip links для навигации - `SkipLinks.tsx`
+- [x] ARIA labels для всех интерактивных элементов
+- [x] Screen reader announcements - `ScreenReaderOnly.tsx`, `LiveRegion`
+- [x] Reduced motion support - `ReducedMotionProvider`
+- [x] High contrast mode (CSS media query)
+- [x] Focus management в модалках - `FocusTrap.tsx`
+- [x] Keyboard navigation для игр - `useGameKeyboard.ts`, `useTicTacToeKeyboard`
+
+### Animations & Micro-interactions
+- [x] Stagger animations для списков - `StaggerList.tsx`
+- [x] Loading state transitions
+- [x] Success/Error feedback animations - `SuccessFeedback.tsx`, `useFeedback`
+- [x] Smooth scroll behaviors
+- [x] FadeIn/ScaleIn animations - `FadeIn.tsx`
+
+### Offline Support (PWA)
+- [x] Offline fallback page - `/offline`
+- [x] Service Worker (sw.js)
+- [x] Background sync для сообщений - `useBackgroundSync.ts`
+- [ ] Cache strategies improvements
+
+### Компоненты созданы:
+- [x] `src/components/accessibility/SkipLinks.tsx` - skip links
+- [x] `src/components/accessibility/ReducedMotion.tsx` - reduced motion provider
+- [x] `src/components/accessibility/FocusTrap.tsx` - focus trap для модалок
+- [x] `src/components/accessibility/ScreenReaderOnly.tsx` - SR-only + LiveRegion
+- [x] `src/hooks/useWebVitals.ts` - Web Vitals мониторинг
+- [x] `src/hooks/useGameKeyboard.ts` - keyboard navigation для игр
+- [x] `src/hooks/useBackgroundSync.ts` - background sync для сообщений
+- [x] `src/components/animations/SuccessFeedback.tsx` - feedback notifications
+- [x] `src/components/animations/FadeIn.tsx` - fade/scale animations
+- [x] `src/components/animations/StaggerList.tsx` - stagger list animations
+- [x] `src/app/offline/page.tsx` - offline fallback page
+
+---
+
+## ✅ Этап 8.1: Финальные улучшения (ВЫПОЛНЕНО)
+
+### Реализовано:
+- [x] Game difficulty badges - уже есть в `GameCard.tsx` (easy/medium/hard)
+- [x] Canvas color presets - улучшенная палитра с категориями в `FloatingToolbar.tsx`
+- [x] Confirmation dialogs - `ConfirmationDialog.tsx` + `useConfirmation` hook
+- [x] Keyboard navigation для игр - `useGameKeyboard.ts`, `useTicTacToeKeyboard`
+- [x] Background sync для сообщений - `useBackgroundSync.ts`
+
+### Компоненты созданы:
+- [x] `src/components/ui/ConfirmationDialog.tsx` - диалоги подтверждения
+- [x] `src/hooks/useGameKeyboard.ts` - keyboard navigation для игр
+- [x] `src/hooks/useBackgroundSync.ts` - offline sync сообщений
+- [x] `src/components/games/TicTacToe.tsx` - обновлен с keyboard navigation

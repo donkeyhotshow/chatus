@@ -20,9 +20,10 @@ type MessageItemProps = {
     onImageClick: (imageUrl: string) => void;
     onReply: (message: Message) => void;
     reactions?: { emoji: string; count: number; users: string[] }[];
+    groupPosition?: 'first' | 'middle' | 'last' | 'single';
 };
 
-const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDelete, onImageClick, onReply, reactions = [] }: MessageItemProps) {
+const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDelete, onImageClick, onReply, reactions = [], groupPosition = 'single' }: MessageItemProps) {
     const [showEmojiRain, setShowEmojiRain] = useState(false);
     const [rainEmoji, setRainEmoji] = useState('');
     const [showActions, setShowActions] = useState(false);
@@ -218,8 +219,8 @@ const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDe
                 </motion.div>
             )}
 
-            {/* Avatar - visible on all devices */}
-            {!isSticker && (
+            {/* Avatar - visible on all devices, hidden for grouped middle/last messages */}
+            {!isSticker && (groupPosition === 'first' || groupPosition === 'single') && (
                 <div className="flex-shrink-0 mt-1 message-avatar">
                     <motion.div
                         whileHover={{ scale: 1.1 }}
@@ -228,20 +229,24 @@ const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDe
                             "border border-white/[0.08] bg-center bg-cover",
                             "shadow-sm overflow-hidden"
                         )}
-                        style={{ backgroundImage: user.avatar ? `url(${user.avatar})` : undefined }}
+                        style={{ backgroundImage: user.avatar && user.avatar.trim() ? `url(${user.avatar})` : undefined }}
                     >
-                        {!user.avatar && (
-                            <div className="w-full h-full flex items-center justify-center text-white/50 font-semibold text-sm">
-                                {user.name?.charAt(0).toUpperCase()}
+                        {(!user.avatar || !user.avatar.trim()) && (
+                            <div className="w-full h-full flex items-center justify-center text-white/50 font-semibold text-sm bg-gradient-to-br from-violet-500/30 to-purple-500/30">
+                                {user.name?.charAt(0).toUpperCase() || '?'}
                             </div>
                         )}
                     </motion.div>
                 </div>
             )}
+            {/* Spacer for grouped messages without avatar */}
+            {!isSticker && (groupPosition === 'middle' || groupPosition === 'last') && (
+                <div className="w-9 flex-shrink-0" />
+            )}
 
             <div className={cn("flex flex-col min-w-0 flex-1", isOwn ? "items-end" : "items-start")}>
-                {/* Name & Time */}
-                {!isSticker && (
+                {/* Name & Time - only show for first message in group or single */}
+                {!isSticker && (groupPosition === 'first' || groupPosition === 'single') && (
                     <div className="mb-1.5 px-1 flex items-center gap-2">
                         <span className={cn(
                             "text-sm font-semibold tracking-wide message-username",
@@ -250,6 +255,12 @@ const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDe
                             {user.name}
                         </span>
                         <span className="text-xs text-white/60 message-time">{formattedTime}</span>
+                    </div>
+                )}
+                {/* Time only for middle/last grouped messages - shown inline */}
+                {!isSticker && (groupPosition === 'middle' || groupPosition === 'last') && (
+                    <div className="mb-1 px-1">
+                        <span className="text-xs text-white/40 message-time">{formattedTime}</span>
                     </div>
                 )}
 

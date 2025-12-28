@@ -5,12 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GameState, UserProfile } from '@/lib/types';
 import { RealtimeSnakeService, SnakeGameState, SnakeData } from '@/services/RealtimeSnakeService';
 import { db as realtimeDb } from '@/lib/firebase';
-import { PremiumCard, PremiumCardContent, PremiumCardHeader, PremiumCardTitle, PremiumCardFooter } from '../ui/premium-card';
+import { PremiumCard, PremiumCardContent, PremiumCardHeader, PremiumCardTitle } from '../ui/premium-card';
 import { PremiumButton } from '../ui/premium-button';
-import { Trophy, Zap, Gamepad2, Star, Flame, Clock, ArrowLeft } from 'lucide-react';
+import { Trophy, Zap, Gamepad2, Star, Flame, Clock, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { hapticFeedback } from '@/lib/game-utils';
 import { formatGameTime } from '@/utils/time';
 import { ExitButton } from '../ui/ExitButton';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface SnakeGameProps {
   onGameEnd: () => void;
@@ -21,13 +22,11 @@ interface SnakeGameProps {
   roomId: string;
 }
 
-const GRID_SIZE = 20;
-const CANVAS_SIZE = 400;
+const GRID_CELLS = 20;
 const INITIAL_SPEED = 140;
 const MIN_SPEED = 50;
 const SPEED_BOOST_DURATION = 3000;
 
-// Типы еды
 type FoodType = 'normal' | 'golden' | 'speed' | 'shrink';
 
 interface Food {
@@ -49,8 +48,27 @@ interface Particle {
 
 export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: SnakeGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [rtState, setRtState] = useState<SnakeGameState | null>(null);
   const rtServiceRef = useRef<RealtimeSnakeService | null>(null);
+  const isMobile = useIsMobile();
+
+  // Responsive canvas size
+  const [canvasSize, setCanvasSize] = useState(400);
+  const gridSize = canvasSize / GRID_CELLS;
+
+  useEffect(() => {
+    const updateSize = () => {
+      if (!containerRef.current) return;
+      const containerWidth = containerRef.current.clientWidth;
+      const maxSize = isMobile ? Math.min(containerWidth - 32, 340) : Math.min(containerWidth - 32, 480);
+      const size = Math.floor(maxSize / GRID_CELLS) * GRID_CELLS;
+      setCanvasSize(Math.max(260, size));
+    };
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, [isMobile]);
 
   const [mySnake, setMySnake] = useState<Omit<SnakeData, 'userId'>>({
     userName: user.name,
@@ -76,6 +94,49 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
   const comboTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const speedBoostTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const gameStartTimeRef = useRef(0);
+
+  // Swipe handling for mobile
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const touch = e.changedTouches[0];
+    const dx = touch.clientX - touchStartRef.current.x;
+    const dy = touch.clientY - touchStartRef.current.y;
+    const minSwipe = 30;
+
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > minSwipe) {
+      if (dx > 0 && directionRef.current.x === 0) {
+        nextDirectionRef.current = { x: 1, y: 0 };
+        hapticFeedback('light');
+      } else if (dx < 0 && directionRef.current.x === 0) {
+        nextDirectionRef.current = { x: -1, y: 0 };
+        hapticFeedback('light');
+      }
+    } else if (Math.abs(dy) > minSwipe) {
+      if (dy > 0 && directionRef.current.y === 0) {
+        nextDirectionRef.current = { x: 0, y: 1 };
+        hapticFeedback('light');
+      } else if (dy < 0 && directionRef.current.y === 0) {
+        nextDirectionRef.current = { x: 0, y: -1 };
+        hapticFeedback('light');
+      }
+    }
+    touchStartRef.current = null;
+  }, []);
+
+  // Direction change handler for buttons
+  const changeDirection = useCallback((newDir: { x: number; y: number }) => {
+    if ((newDir.x !== 0 && directionRef.current.x === 0) ||
+        (newDir.y !== 0 && directionRef.current.y === 0)) {
+      nextDirectionRef.current = newDir;
+      hapticFeedback('light');
+    }
+  }, []);
 
   // Initialize RTDB Service
   useEffect(() => {
@@ -115,15 +176,13 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
     }
   }, [mySnake, rtState?.active]);
 
-  // Game timer - P0 FIX: Proper time tracking
+  // Game timer
   useEffect(() => {
     if (!rtState?.active) {
-      // Reset timer when game is not active
       setGameTime(0);
       return;
     }
 
-    // Initialize start time when game becomes active
     if (!gameStartTimeRef.current || gameStartTimeRef.current === 0) {
       gameStartTimeRef.current = Date.now();
     }
@@ -132,9 +191,7 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
       const now = Date.now();
       const startTime = gameStartTimeRef.current;
 
-      // Validate start time
       if (!startTime || startTime > now || startTime < now - 3600000) {
-        // Invalid start time - reset
         gameStartTimeRef.current = now;
         setGameTime(0);
         return;
@@ -147,7 +204,7 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
     return () => clearInterval(interval);
   }, [rtState?.active]);
 
-  // Input Handling
+  // Keyboard Input
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const { x, y } = directionRef.current;
@@ -170,28 +227,27 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Spawn food with different types
+  // Spawn food
   const spawnFood = useCallback(() => {
     let attempts = 0;
     let newFood: Food = {
-      x: Math.floor(Math.random() * (CANVAS_SIZE / GRID_SIZE)),
-      y: Math.floor(Math.random() * (CANVAS_SIZE / GRID_SIZE)),
+      x: Math.floor(Math.random() * GRID_CELLS),
+      y: Math.floor(Math.random() * GRID_CELLS),
       type: 'normal',
       spawnTime: Date.now()
     };
 
-    // Random food type
     const rand = Math.random();
-    if (rand < 0.1) newFood.type = 'golden';      // 10% - 3 очка
-    else if (rand < 0.2) newFood.type = 'speed';  // 10% - ускорение
-    else if (rand < 0.25) newFood.type = 'shrink'; // 5% - уменьшение
+    if (rand < 0.1) newFood.type = 'golden';
+    else if (rand < 0.2) newFood.type = 'speed';
+    else if (rand < 0.25) newFood.type = 'shrink';
 
     while (attempts < 10) {
       const onSnake = mySnake.body.some(p => p.x === newFood.x && p.y === newFood.y) ||
                       (aiSnake?.body.some(p => p.x === newFood.x && p.y === newFood.y));
       if (!onSnake) break;
-      newFood.x = Math.floor(Math.random() * (CANVAS_SIZE / GRID_SIZE));
-      newFood.y = Math.floor(Math.random() * (CANVAS_SIZE / GRID_SIZE));
+      newFood.x = Math.floor(Math.random() * GRID_CELLS);
+      newFood.y = Math.floor(Math.random() * GRID_CELLS);
       attempts++;
     }
 
@@ -205,13 +261,13 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
     }
   }, [mySnake.body, aiSnake?.body]);
 
-  // Add particles effect
-  const addParticles = useCallback((x: number, y: number, color: string, count: number) => {
+  // Add particles
+  const addParticles = useCallback((x: number, y: number, color: string, count: number, gs: number) => {
     const newParticles: Particle[] = [];
     for (let i = 0; i < count; i++) {
       newParticles.push({
-        x: x * GRID_SIZE + GRID_SIZE / 2,
-        y: y * GRID_SIZE + GRID_SIZE / 2,
+        x: x * gs + gs / 2,
+        y: y * gs + gs / 2,
         vx: (Math.random() - 0.5) * 8,
         vy: (Math.random() - 0.5) * 8,
         life: 1,
@@ -243,7 +299,6 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
     setSpeedBoost(false);
     setParticles([]);
 
-    // P0 FIX: Reset timer properly BEFORE setting game active
     gameStartTimeRef.current = Date.now();
     setGameTime(0);
 
@@ -293,7 +348,6 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
       lastMoveTimeRef.current = now;
       directionRef.current = nextDirectionRef.current;
 
-      // Update particles
       setParticles(prev => prev.filter(p => {
         p.x += p.vx;
         p.y += p.vy;
@@ -302,7 +356,6 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
         return p.life > 0;
       }));
 
-      // Update My Snake
       setMySnake(prev => {
         if (prev.isDead) return prev;
 
@@ -311,18 +364,16 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
           y: prev.body[0].y + directionRef.current.y
         };
 
-        // Wall wrapping - проход сквозь стены
-        const gridWidth = CANVAS_SIZE / GRID_SIZE;
-        const gridHeight = CANVAS_SIZE / GRID_SIZE;
-        if (head.x < 0) head.x = gridWidth - 1;
-        if (head.x >= gridWidth) head.x = 0;
-        if (head.y < 0) head.y = gridHeight - 1;
-        if (head.y >= gridHeight) head.y = 0;
+        // Wall wrapping
+        if (head.x < 0) head.x = GRID_CELLS - 1;
+        if (head.x >= GRID_CELLS) head.x = 0;
+        if (head.y < 0) head.y = GRID_CELLS - 1;
+        if (head.y >= GRID_CELLS) head.y = 0;
 
         // Self collision
         if (prev.body.some(part => part.x === head.x && part.y === head.y)) {
           hapticFeedback('heavy');
-          addParticles(head.x, head.y, '#ef4444', 15);
+          addParticles(head.x, head.y, '#ef4444', 15, gridSize);
           return { ...prev, isDead: true };
         }
 
@@ -332,7 +383,7 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
           for (const other of otherSnakes) {
             if (other.body.some(part => part.x === head.x && part.y === head.y)) {
               hapticFeedback('heavy');
-              addParticles(head.x, head.y, '#ef4444', 15);
+              addParticles(head.x, head.y, '#ef4444', 15, gridSize);
               return { ...prev, isDead: true };
             }
           }
@@ -342,7 +393,6 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
         let newScore = prev.score;
         let ateFood = false;
 
-        // Food collision
         if (food && head.x === food.x && head.y === food.y) {
           ateFood = true;
           let points = 1;
@@ -363,7 +413,6 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
             case 'shrink':
               points = 2;
               particleColor = '#a855f7';
-              // Shrink snake by 2 segments
               if (newBody.length > 5) {
                 newBody.pop();
                 newBody.pop();
@@ -371,7 +420,6 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
               break;
           }
 
-          // Combo system
           setCombo(c => {
             const newCombo = c + 1;
             if (newCombo > 1) points += Math.floor(newCombo / 2);
@@ -382,7 +430,7 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
           comboTimeoutRef.current = setTimeout(() => setCombo(0), 2000);
 
           newScore += points;
-          addParticles(head.x, head.y, particleColor, 10);
+          addParticles(head.x, head.y, particleColor, 10, gridSize);
           spawnFood();
           hapticFeedback('light');
         }
@@ -402,7 +450,6 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
           const head = prev.body[0];
           let nextDir = prev.direction;
 
-          // Smarter AI: Move towards food with obstacle avoidance
           if (food) {
             const possibleDirs = [
               { x: 1, y: 0 }, { x: -1, y: 0 }, { x: 0, y: 1 }, { x: 0, y: -1 }
@@ -414,14 +461,12 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
             for (const d of possibleDirs) {
               const nextHead = { x: head.x + d.x, y: head.y + d.y };
 
-              // Check if valid move
-              if (nextHead.x < 0 || nextHead.x >= 20 || nextHead.y < 0 || nextHead.y >= 20) continue;
+              if (nextHead.x < 0 || nextHead.x >= GRID_CELLS || nextHead.y < 0 || nextHead.y >= GRID_CELLS) continue;
               if (prev.body.some(p => p.x === nextHead.x && p.y === nextHead.y)) continue;
               if (mySnake.body.some(p => p.x === nextHead.x && p.y === nextHead.y)) continue;
 
-              // Score based on distance to food
               const dist = Math.abs(nextHead.x - food.x) + Math.abs(nextHead.y - food.y);
-              const score = -dist + Math.random() * 2; // Add randomness
+              const score = -dist + Math.random() * 2;
 
               if (score > bestScore) {
                 bestScore = score;
@@ -433,11 +478,10 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
 
           const newAiHead = { x: head.x + nextDir.x, y: head.y + nextDir.y };
 
-          // Wall wrapping for AI
-          if (newAiHead.x < 0) newAiHead.x = 19;
-          if (newAiHead.x >= 20) newAiHead.x = 0;
-          if (newAiHead.y < 0) newAiHead.y = 19;
-          if (newAiHead.y >= 20) newAiHead.y = 0;
+          if (newAiHead.x < 0) newAiHead.x = GRID_CELLS - 1;
+          if (newAiHead.x >= GRID_CELLS) newAiHead.x = 0;
+          if (newAiHead.y < 0) newAiHead.y = GRID_CELLS - 1;
+          if (newAiHead.y >= GRID_CELLS) newAiHead.y = 0;
 
           if (prev.body.some(part => part.x === newAiHead.x && part.y === newAiHead.y)) {
             return { ...prev, isDead: true };
@@ -464,7 +508,7 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
 
     rafId = requestAnimationFrame(move);
     return () => cancelAnimationFrame(rafId);
-  }, [rtState?.active, rtState?.players, mySnake.isDead, mySnake.score, aiSnake, food, speedBoost, user.id, gameState.hostId, otherUser, spawnFood, addParticles]);
+  }, [rtState?.active, rtState?.players, mySnake.isDead, mySnake.score, mySnake.body, aiSnake, food, speedBoost, user.id, gameState.hostId, otherUser, spawnFood, addParticles, gridSize]);
 
   // Rendering
   useEffect(() => {
@@ -473,18 +517,20 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    const gs = gridSize;
+
+    ctx.clearRect(0, 0, canvasSize, canvasSize);
 
     // Background
     ctx.fillStyle = '#0a0a0f';
-    ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+    ctx.fillRect(0, 0, canvasSize, canvasSize);
 
     // Grid
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
     ctx.lineWidth = 1;
-    for (let i = 0; i <= CANVAS_SIZE; i += GRID_SIZE) {
-      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, CANVAS_SIZE); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(CANVAS_SIZE, i); ctx.stroke();
+    for (let i = 0; i <= canvasSize; i += gs) {
+      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvasSize); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvasSize, i); ctx.stroke();
     }
 
     // Particles
@@ -517,29 +563,23 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
           break;
       }
 
-      // Pulsing effect
       const pulse = 1 + Math.sin(Date.now() / 200) * 0.15;
-      const size = (GRID_SIZE / 2 - 3) * pulse;
+      const size = (gs / 2 - 3) * pulse;
 
       ctx.fillStyle = foodColor;
       ctx.shadowBlur = 12;
       ctx.shadowColor = glowColor;
       ctx.beginPath();
-      ctx.arc(
-        food.x * GRID_SIZE + GRID_SIZE / 2,
-        food.y * GRID_SIZE + GRID_SIZE / 2,
-        size, 0, Math.PI * 2
-      );
+      ctx.arc(food.x * gs + gs / 2, food.y * gs + gs / 2, size, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
 
-      // Food type indicator
       if (food.type !== 'normal') {
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 10px sans-serif';
+        ctx.font = `bold ${Math.max(8, gs * 0.4)}px sans-serif`;
         ctx.textAlign = 'center';
         const symbol = food.type === 'golden' ? '★' : food.type === 'speed' ? '⚡' : '↓';
-        ctx.fillText(symbol, food.x * GRID_SIZE + GRID_SIZE / 2, food.y * GRID_SIZE + GRID_SIZE / 2 + 4);
+        ctx.fillText(symbol, food.x * gs + gs / 2, food.y * gs + gs / 2 + 4);
       }
     }
 
@@ -553,11 +593,10 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
         ctx.globalAlpha = player.isDead ? opacity * 0.3 : opacity;
 
         const padding = isHead ? 1 : 2;
-        const size = GRID_SIZE - padding * 2;
-        const x = part.x * GRID_SIZE + padding;
-        const y = part.y * GRID_SIZE + padding;
+        const size = gs - padding * 2;
+        const x = part.x * gs + padding;
+        const y = part.y * gs + padding;
 
-        // Glow for head
         if (isHead && !player.isDead) {
           ctx.shadowBlur = 8;
           ctx.shadowColor = player.color;
@@ -572,11 +611,10 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
         ctx.fill();
         ctx.shadowBlur = 0;
 
-        // Eyes
         if (isHead && !player.isDead) {
           ctx.fillStyle = 'white';
-          const eyeSize = 3;
-          const eyeOffset = 5;
+          const eyeSize = Math.max(2, gs * 0.15);
+          const eyeOffset = gs * 0.25;
           ctx.fillRect(x + eyeOffset, y + eyeOffset, eyeSize, eyeSize);
           ctx.fillRect(x + size - eyeOffset - eyeSize, y + eyeOffset, eyeSize, eyeSize);
           ctx.fillStyle = player.color;
@@ -589,206 +627,8 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
     if (rtState?.players) {
       Object.values(rtState.players).forEach(drawSnake);
     }
-  }, [rtState, food, particles]);
+  }, [rtState, food, particles, canvasSize, gridSize]);
 
   const isGameOver = rtState?.active && Object.values(rtState.players || {}).every(p => p.isDead);
   const winner = isGameOver ? Object.values(rtState.players || {}).sort((a, b) => b.score - a.score)[0] : null;
   const aiScore = Object.values(rtState?.players || {}).find(p => p.userId !== user.id)?.score || 0;
-
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-gradient-to-br from-gray-900 via-purple-900/20 to-gray-900">
-      <PremiumCard className="w-full max-w-lg">
-        <PremiumCardHeader>
-          <div className="flex items-center justify-between w-full">
-            <ExitButton
-              view="game"
-              hasUnsavedChanges={rtState?.active || false}
-              onExit={onGameEnd}
-              variant="icon"
-              size="sm"
-            />
-            <PremiumCardTitle className="flex items-center gap-2">
-              <Gamepad2 className="w-5 h-5 text-purple-400" />
-              Snake Battle
-            </PremiumCardTitle>
-            <div className="w-10" /> {/* Spacer for centering */}
-          </div>
-        </PremiumCardHeader>
-
-        <PremiumCardContent className="flex flex-col items-center gap-4">
-          {/* Score Display */}
-          <div className="flex justify-between w-full px-4">
-            <div className="flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-yellow-400" />
-              <span className="text-white font-bold">{mySnake.score}</span>
-              {combo > 1 && (
-                <span className="text-orange-400 text-sm flex items-center gap-1">
-                  <Flame className="w-3 h-3" />x{combo}
-                </span>
-              )}
-            </div>
-            {speedBoost && (
-              <span className="text-blue-400 text-sm flex items-center gap-1">
-                <Zap className="w-3 h-3" />BOOST
-              </span>
-            )}
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-gray-400" />
-              <span className="text-gray-300">{formatGameTime(gameTime)}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Star className="w-4 h-4 text-pink-400" />
-              <span className="text-white font-bold">{aiScore}</span>
-            </div>
-          </div>
-
-          {/* Canvas */}
-          <div className="relative">
-            <canvas
-              ref={canvasRef}
-              width={CANVAS_SIZE}
-              height={CANVAS_SIZE}
-              className="rounded-lg border border-purple-500/30 shadow-lg shadow-purple-500/20"
-              style={{ touchAction: 'none' }}
-            />
-
-            {/* Game Over Overlay - Улучшенный с статистикой */}
-            <AnimatePresence>
-              {isGameOver && winner && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 rounded-lg p-6"
-                >
-                  {/* Trophy Badge */}
-                  <div className="relative mb-4">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-400 to-amber-600 flex items-center justify-center shadow-lg shadow-yellow-500/30">
-                      <Trophy className="w-10 h-10 text-white" />
-                    </div>
-                    {winner.userId === user.id && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="absolute -top-2 -right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full"
-                      >
-                        Победа!
-                      </motion.div>
-                    )}
-                  </div>
-
-                  {/* Winner Name */}
-                  <h2 className="text-2xl font-bold text-white mb-1">
-                    {winner.userName}
-                  </h2>
-                  <p className="text-[var(--text-tertiary)] text-sm mb-4">
-                    {winner.userId === user.id ? 'Отличная игра!' : 'Почти получилось!'}
-                  </p>
-
-                  {/* Stats Grid */}
-                  <div className="grid grid-cols-3 gap-4 mb-6 w-full max-w-xs">
-                    <div className="bg-white/5 rounded-xl p-3 text-center">
-                      <div className="text-2xl font-bold text-white">{winner.score}</div>
-                      <div className="text-xs text-[var(--text-muted)]">Счёт</div>
-                    </div>
-                    <div className="bg-white/5 rounded-xl p-3 text-center">
-                      <div className="text-2xl font-bold text-white">{winner.body.length}</div>
-                      <div className="text-xs text-[var(--text-muted)]">Длина</div>
-                    </div>
-                    <div className="bg-white/5 rounded-xl p-3 text-center">
-                      <div className="text-2xl font-bold text-white">{formatGameTime(gameTime)}</div>
-                      <div className="text-xs text-[var(--text-muted)]">Время</div>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-3 w-full max-w-xs">
-                    <PremiumButton onClick={handleStart} className="flex-1">
-                      <Gamepad2 className="w-4 h-4 mr-2" />
-                      Ещё раз
-                    </PremiumButton>
-                    <PremiumButton variant="outline" onClick={onGameEnd} className="flex-1">
-                      Выйти
-                    </PremiumButton>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Start Overlay - Улучшенный с превью */}
-            {!rtState?.active && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 rounded-lg p-6">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center mb-4 shadow-lg shadow-purple-500/30">
-                  <Gamepad2 className="w-10 h-10 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-white mb-2">Snake Battle</h2>
-                <p className="text-[var(--text-tertiary)] text-sm text-center mb-6 max-w-xs">
-                  Классическая змейка в multiplayer режиме. Собирайте еду и избегайте столкновений!
-                </p>
-
-                {/* Quick Tips */}
-                <div className="flex gap-4 mb-6 text-xs text-[var(--text-muted)]">
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 rounded-full bg-green-500" />
-                    <span>+1</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                    <span>+3</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 rounded-full bg-blue-500" />
-                    <span>⚡</span>
-                  </div>
-                </div>
-
-                <PremiumButton onClick={handleStart} size="lg" className="min-w-[200px]">
-                  <Zap className="w-5 h-5 mr-2" />
-                  Начать игру
-                </PremiumButton>
-              </div>
-            )}
-          </div>
-
-          {/* Mobile Controls */}
-          <div className="grid grid-cols-3 gap-2 mt-4 md:hidden">
-            <div />
-            <PremiumButton
-              variant="outline"
-              size="sm"
-              onTouchStart={() => { if (directionRef.current.y === 0) nextDirectionRef.current = { x: 0, y: -1 }; }}
-            >
-              ↑
-            </PremiumButton>
-            <div />
-            <PremiumButton
-              variant="outline"
-              size="sm"
-              onTouchStart={() => { if (directionRef.current.x === 0) nextDirectionRef.current = { x: -1, y: 0 }; }}
-            >
-              ←
-            </PremiumButton>
-            <PremiumButton
-              variant="outline"
-              size="sm"
-              onTouchStart={() => { if (directionRef.current.y === 0) nextDirectionRef.current = { x: 0, y: 1 }; }}
-            >
-              ↓
-            </PremiumButton>
-            <PremiumButton
-              variant="outline"
-              size="sm"
-              onTouchStart={() => { if (directionRef.current.x === 0) nextDirectionRef.current = { x: 1, y: 0 }; }}
-            >
-              →
-            </PremiumButton>
-          </div>
-
-          <p className="text-gray-400 text-sm text-center">
-            Используйте стрелки или WASD для управления
-          </p>
-        </PremiumCardContent>
-      </PremiumCard>
-    </div>
-  );
-}

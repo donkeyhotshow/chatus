@@ -3,6 +3,7 @@
 
 import { memo, useEffect, useRef, forwardRef, useImperativeHandle, useCallback, useMemo } from 'react';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
+import { cn } from '@/lib/utils';
 import MessageItem from './MessageItem';
 import type { Message } from '@/lib/types';
 
@@ -113,6 +114,9 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
     }
 
     const prevMsg = messages?.[index - 1];
+    const nextMsg = messages?.[index + 1];
+
+    // Date divider logic
     const isNewDay = !prevMsg || (() => {
       const currentDate = msg.createdAt && 'seconds' in msg.createdAt
         ? new Date(msg.createdAt.seconds * 1000)
@@ -123,11 +127,46 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
       return currentDate.toDateString() !== prevDate.toDateString();
     })();
 
+    // Message grouping logic - group consecutive messages from same user within 2 minutes
+    const isSameSenderAsPrev = prevMsg &&
+      (prevMsg.senderId === msg.senderId || prevMsg.user?.id === msg.user?.id) &&
+      !isNewDay;
+
+    const isSameSenderAsNext = nextMsg &&
+      (nextMsg.senderId === msg.senderId || nextMsg.user?.id === msg.user?.id);
+
+    // Check time gap (2 minutes = 120 seconds)
+    const timeSincePrev = prevMsg?.createdAt && msg.createdAt &&
+      'seconds' in prevMsg.createdAt && 'seconds' in msg.createdAt
+        ? msg.createdAt.seconds - prevMsg.createdAt.seconds
+        : Infinity;
+
+    const timeToNext = nextMsg?.createdAt && msg.createdAt &&
+      'seconds' in nextMsg.createdAt && 'seconds' in msg.createdAt
+        ? nextMsg.createdAt.seconds - msg.createdAt.seconds
+        : Infinity;
+
+    const isGroupedWithPrev = isSameSenderAsPrev && timeSincePrev < 120;
+    const isGroupedWithNext = isSameSenderAsNext && timeToNext < 120;
+
+    // Determine group position
+    const groupPosition: 'first' | 'middle' | 'last' | 'single' =
+      isGroupedWithPrev && isGroupedWithNext ? 'middle' :
+      isGroupedWithPrev && !isGroupedWithNext ? 'last' :
+      !isGroupedWithPrev && isGroupedWithNext ? 'first' : 'single';
+
     // Generate stable unique key for the message
     const messageKey = getMessageKey(msg, index);
 
     return (
-      <div className="px-4 py-1.5"> {/* Mobile Audit: 16px padding, 12px gap (py-1.5 = 6px * 2 = 12px total) */}
+      <div className={cn(
+        "px-4",
+        // Reduced padding for grouped messages
+        groupPosition === 'first' ? "pt-1.5 pb-0.5" :
+        groupPosition === 'middle' ? "py-0.5" :
+        groupPosition === 'last' ? "pt-0.5 pb-1.5" :
+        "py-1.5"
+      )}>
         {isNewDay && (
           <div className="date-divider flex justify-center my-4 sticky top-2 z-10">
             <span className="date-divider-text bg-[rgba(124,58,237,0.15)] text-[#A78BFA] text-[11px] font-medium px-4 py-1.5 rounded-full border border-[rgba(124,58,237,0.25)] shadow-[0_2px_8px_rgba(124,58,237,0.1)] uppercase tracking-wider">
@@ -145,6 +184,7 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
           onReaction={onReaction}
           onImageClick={onImageClick}
           onReply={onReply}
+          groupPosition={groupPosition}
         />
       </div>
     );
