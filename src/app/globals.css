@@ -1258,6 +1258,227 @@
     }
   }
 
+  /* ═══════════════════════════════════════════════════════════════
+     QUICK WIN #1: RIPPLE EFFECT
+     ═══════════════════════════════════════════════════════════════ */
+  @keyframes ripple {
+    0% {
+      transform: translate(-50%, -50%) scale(0);
+      opacity: 0.6;
+    }
+    100% {
+      transform: translate(-50%, -50%) scale(4);
+      opacity: 0;
+    }
+  }
+
+  .ripple-effect {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.4) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: ripple 0.6s ease-out forwards;
+    z-index: 10;
+  }
+
+  /* Dark variant for light buttons */
+  .ripple-effect-dark {
+    background: radial-gradient(circle, rgba(0, 0, 0, 0.2) 0%, transparent 70%);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     QUICK WIN #2: PREMIUM GRADIENTS
+     ═══════════════════════════════════════════════════════════════ */
+  .gradient-premium {
+    background: linear-gradient(135deg, #7C3AED 0%, #A855F7 50%, #7C3AED 100%);
+    background-size: 200% 200%;
+    animation: gradient-shift 3s ease infinite;
+  }
+
+  .gradient-premium-subtle {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%);
+  }
+
+  .gradient-glass {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .gradient-border {
+    position: relative;
+    background: var(--bg-card);
+    border-radius: 16px;
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.5) 0%, rgba(168, 85, 247, 0.2) 50%, rgba(124, 58, 237, 0.5) 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  @keyframes gradient-shift {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  /* Shine effect for cards */
+  .shine-effect {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .shine-effect::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+      45deg,
+      transparent 30%,
+      rgba(255, 255, 255, 0.08) 50%,
+      transparent 70%
+    );
+    transform: translateX(-100%) rotate(45deg);
+    transition: transform 0.6s ease;
+    pointer-events: none;
+  }
+
+  .shine-effect:hover::after {
+    transform: translateX(100%) rotate(45deg);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     QUICK WIN #3: SMOOTH PAGE TRANSITIONS
+     ═══════════════════════════════════════════════════════════════ */
+  @keyframes pageEnter {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pageExit {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slideInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes messageAppear {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes bounceIn {
+    0% {
+      opacity: 0;
+      transform: scale(0.3);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    70% {
+      transform: scale(0.9);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Animation classes */
+  .animate-page-enter {
+    animation: pageEnter 0.3s ease-out forwards;
+  }
+
+  .animate-page-exit {
+    animation: pageExit 0.2s ease-in forwards;
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out forwards;
+  }
+
+  .animate-slide-in-left {
+    animation: slideInLeft 0.3s ease-out forwards;
+  }
+
+  .animate-message-appear {
+    animation: messageAppear 0.25s ease-out forwards;
+  }
+
+  .animate-bounce-in {
+    animation: bounceIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  /* Staggered animations for lists */
+  .stagger-animation > * {
+    opacity: 0;
+    animation: fadeInUp 0.3s ease-out forwards;
+  }
+
+  .stagger-animation > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger-animation > *:nth-child(2) { animation-delay: 50ms; }
+  .stagger-animation > *:nth-child(3) { animation-delay: 100ms; }
+  .stagger-animation > *:nth-child(4) { animation-delay: 150ms; }
+  .stagger-animation > *:nth-child(5) { animation-delay: 200ms; }
+  .stagger-animation > *:nth-child(6) { animation-delay: 250ms; }
+  .stagger-animation > *:nth-child(7) { animation-delay: 300ms; }
+  .stagger-animation > *:nth-child(8) { animation-delay: 350ms; }
+
   /* Typing indicator dots animation - Этап 2 */
   @keyframes typing-dot {
     0%, 60%, 100% {
@@ -1745,6 +1966,389 @@
     .message-bubble {
       max-width: 100% !important;
       break-inside: avoid;
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     MOBILE AUDIT V2 FIXES - December 2025
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* FIX #1: Canvas Tools Panel - Narrow screens optimization */
+  @media (max-width: 360px) {
+    .canvas-tools-panel,
+    .floating-toolbar {
+      right: 4px !important;
+      padding: 6px !important;
+    }
+
+    .canvas-tools-panel button,
+    .floating-toolbar button {
+      min-width: 44px !important;
+      min-height: 44px !important;
+      padding: 8px !important;
+    }
+  }
+
+  /* FIX #2: Games Grid - Tablet optimization (768px - 1023px) */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .games-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 16px;
+    }
+
+    .game-card {
+      min-height: 180px;
+    }
+  }
+
+  /* FIX #3: Date Divider - Narrow screens */
+  @media (max-width: 360px) {
+    .date-separator::before,
+    .date-separator::after,
+    .date-divider::before,
+    .date-divider::after {
+      flex: 0 1 25%;
+    }
+
+    .date-separator-text,
+    .date-divider-text {
+      padding: 4px 12px;
+      font-size: 11px;
+    }
+  }
+
+  /* FIX #4: Emoji Picker - Mobile fullscreen optimization */
+  @media (max-width: 767px) {
+    .emoji-picker-mobile {
+      position: fixed !important;
+      bottom: 56px !important;
+      left: 0 !important;
+      right: 0 !important;
+      max-height: 50vh !important;
+      border-radius: 16px 16px 0 0 !important;
+      z-index: 200 !important;
+    }
+  }
+
+  /* FIX #5: Message Bubble - Long text border radius balance */
+  .message-bubble-long {
+    border-radius: 16px !important;
+  }
+
+  .message-sent.message-bubble-long {
+    border-bottom-right-radius: 8px !important;
+  }
+
+  .message-received.message-bubble-long {
+    border-bottom-left-radius: 8px !important;
+  }
+
+  /* FIX #6: Keyboard Safety - iOS/Android improvements */
+  @supports (-webkit-touch-callout: none) {
+    /* iOS specific */
+    .chat-input-container {
+      padding-bottom: max(env(safe-area-inset-bottom), 8px);
+    }
+
+    .chat-input-bar.keyboard-visible {
+      position: sticky;
+      bottom: 0;
+    }
+  }
+
+  /* Android keyboard handling */
+  @media (max-height: 500px) and (pointer: coarse) {
+    .chat-input-container {
+      padding: 8px 12px !important;
+    }
+
+    .chat-input-container textarea {
+      max-height: 60px !important;
+    }
+  }
+
+  /* FIX #7: Game Lobby Content - Scroll optimization */
+  .game-lobby-content {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    padding-bottom: calc(env(safe-area-inset-bottom) + 80px);
+  }
+
+  /* FIX #8: Canvas horizontal toolbar - Mobile scroll */
+  @media (max-width: 400px) {
+    .canvas-toolbar-horizontal {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .canvas-toolbar-horizontal::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     MOBILE SCREEN OPTIMIZATION - December 2025
+     Цель: Все элементы видны без скролла на iPhone (844px высота)
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* FIX #9: Onboarding Hero - Compact mobile layout */
+  @media (max-width: 767px) {
+    /* Hero section - АГРЕССИВНО уменьшаем высоту */
+    .mobile-hero,
+    main > section:first-of-type {
+      padding-top: 8px !important;
+      padding-bottom: 0 !important;
+    }
+
+    /* Logo - компактнее */
+    .hero-logo,
+    .mobile-hero > div > div:first-child,
+    main > section:first-of-type > div > div:first-child {
+      width: 56px !important;
+      height: 56px !important;
+      margin-bottom: 8px !important;
+      border-radius: 16px !important;
+    }
+
+    .hero-logo svg,
+    .mobile-hero > div > div:first-child svg,
+    main > section:first-of-type > div > div:first-child svg {
+      width: 28px !important;
+      height: 28px !important;
+    }
+
+    /* Title - меньше */
+    .hero-title,
+    .mobile-hero h1,
+    main > section:first-of-type h1 {
+      font-size: 22px !important;
+      margin-bottom: 4px !important;
+      line-height: 1.2 !important;
+    }
+
+    /* Subtitle - компактнее, одна строка */
+    .hero-subtitle,
+    .mobile-hero p,
+    main > section:first-of-type p {
+      font-size: 13px !important;
+      margin-bottom: 0 !important;
+      line-height: 1.3 !important;
+    }
+
+    .hero-subtitle br,
+    .mobile-hero p br,
+    main > section:first-of-type p br {
+      display: none !important;
+    }
+
+    /* Login form section - подтягиваем вверх */
+    #login {
+      padding-top: 12px !important;
+      padding-bottom: 12px !important;
+    }
+
+    /* Form card - компактнее */
+    #login > div > div {
+      padding: 16px !important;
+      border-radius: 20px !important;
+    }
+
+    #login h2 {
+      font-size: 18px !important;
+      margin-bottom: 16px !important;
+    }
+
+    /* Input fields - компактнее */
+    #login input {
+      padding: 12px 14px !important;
+      font-size: 15px !important;
+    }
+
+    /* Labels */
+    #login label {
+      font-size: 12px !important;
+    }
+
+    /* Space between inputs */
+    #login form > div {
+      margin-bottom: 12px !important;
+    }
+
+    #login .space-y-5 {
+      gap: 12px !important;
+    }
+
+    /* Submit button */
+    #login button[type="submit"] {
+      height: 48px !important;
+      min-height: 48px !important;
+      font-size: 15px !important;
+    }
+
+    /* Features section - скрываем на первом экране */
+    #features {
+      padding-top: 24px !important;
+    }
+  }
+
+  /* FIX #10: Very small screens (iPhone SE, etc) */
+  @media (max-width: 375px) {
+    .mobile-hero,
+    main > section:first-of-type {
+      padding-top: 4px !important;
+      padding-bottom: 0 !important;
+    }
+
+    .hero-logo,
+    .mobile-hero > div > div:first-child,
+    main > section:first-of-type > div > div:first-child {
+      width: 48px !important;
+      height: 48px !important;
+      margin-bottom: 6px !important;
+    }
+
+    .hero-title,
+    .mobile-hero h1,
+    main > section:first-of-type h1 {
+      font-size: 20px !important;
+    }
+
+    #login {
+      padding-top: 8px !important;
+    }
+
+    #login > div > div {
+      padding: 14px !important;
+    }
+
+    #login h2 {
+      font-size: 16px !important;
+      margin-bottom: 12px !important;
+    }
+
+    #login input {
+      padding: 10px 12px !important;
+    }
+  }
+
+  /* FIX #11: Game screens - Compact header and play area */
+  @media (max-width: 767px) {
+    /* Game header - компактнее */
+    .game-header,
+    [class*="game"] > div:first-child {
+      padding: 8px 12px !important;
+    }
+
+    /* Game back button */
+    .game-header button,
+    [class*="game"] button[aria-label*="Назад"],
+    [class*="game"] button[aria-label*="Вернуться"] {
+      padding: 8px 12px !important;
+      min-height: 40px !important;
+    }
+
+    /* Game title badge */
+    .game-header > div:last-child,
+    [class*="game"] > div:first-child > div:last-child {
+      padding: 6px 12px !important;
+      font-size: 13px !important;
+    }
+
+    /* Game play area - убираем лишние отступы */
+    .game-play-area,
+    [class*="game"] > div:nth-child(2) {
+      padding-top: 8px !important;
+    }
+
+    /* Game lobby header */
+    .game-lobby-content {
+      padding: 12px !important;
+      padding-bottom: calc(env(safe-area-inset-bottom) + 70px) !important;
+    }
+
+    /* Games grid cards - компактнее */
+    .games-grid button {
+      padding: 16px !important;
+      min-height: 120px !important;
+      gap: 8px !important;
+    }
+
+    .games-grid button > div:first-child {
+      width: 48px !important;
+      height: 48px !important;
+    }
+
+    .games-grid button > div:first-child svg {
+      width: 24px !important;
+      height: 24px !important;
+    }
+
+    /* Game lobby header - компактнее */
+    .game-lobby-content ~ div:first-child,
+    [class*="GameLobby"] > div:first-child {
+      padding: 12px 16px !important;
+    }
+  }
+
+  /* FIX #12: Avatar Editor - Compact layout */
+  @media (max-width: 767px) {
+    /* Avatar canvas - меньше */
+    .avatar-editor canvas,
+    [class*="avatar"] canvas {
+      width: 180px !important;
+      height: 180px !important;
+    }
+
+    /* Avatar controls - компактнее */
+    .avatar-controls,
+    [class*="avatar"] > div:last-child {
+      padding: 12px !important;
+      gap: 8px !important;
+    }
+
+    /* Color palette - меньше кнопки */
+    .avatar-controls button,
+    [class*="avatar"] button[style*="background"] {
+      width: 24px !important;
+      height: 24px !important;
+    }
+  }
+
+  /* FIX #13: Safe area for all fixed elements */
+  @supports (padding: env(safe-area-inset-bottom)) {
+    .bottom-nav,
+    .chat-input-container,
+    .game-controls,
+    [class*="fixed"][class*="bottom"] {
+      padding-bottom: env(safe-area-inset-bottom) !important;
+    }
+  }
+
+  /* FIX #14: Reduce motion for performance */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* FIX #15: Typography scaling for mobile */
+  @media (max-width: 767px) {
+    h1 { font-size: clamp(20px, 5vw, 28px) !important; }
+    h2 { font-size: clamp(18px, 4.5vw, 24px) !important; }
+    h3 { font-size: clamp(16px, 4vw, 20px) !important; }
+
+    /* Timestamps and captions - readable on Retina */
+    .timestamp,
+    [class*="timestamp"],
+    time,
+    .text-xs {
+      font-size: 13px !important;
     }
   }
 }

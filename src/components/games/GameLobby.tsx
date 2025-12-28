@@ -129,11 +129,11 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
 
     return (
       <div className="flex flex-col h-full bg-black">
-        {/* Back button with game title - Glass effect */}
-        <div className="p-3 border-b border-white/10 bg-black/80 backdrop-blur-xl flex items-center justify-between">
+        {/* Back button with game title - Glass effect - Mobile optimized */}
+        <div className="p-2 md:p-3 border-b border-white/10 bg-black/80 backdrop-blur-xl flex items-center justify-between game-header">
           <button
             onClick={handleEndGame}
-            className="flex items-center gap-2 px-4 py-2.5 min-h-[44px] text-sm text-white/70 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all hover:-translate-y-0.5"
+            className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 min-h-[40px] md:min-h-[44px] text-xs md:text-sm text-white/70 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all hover:-translate-y-0.5"
             aria-label="Вернуться к списку игр"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -143,18 +143,18 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
             const GameIcon = currentGame.icon;
             return (
               <div className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r shadow-lg",
+                "flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-xl bg-gradient-to-r shadow-lg",
                 currentGame.gradient
               )}>
-                <GameIcon className="w-4 h-4 text-white" />
-                <span className="font-semibold text-white text-sm">{currentGame.name}</span>
+                <GameIcon className="w-3.5 h-3.5 md:w-4 md:h-4 text-white" />
+                <span className="font-semibold text-white text-xs md:text-sm">{currentGame.name}</span>
               </div>
             );
           })()}
         </div>
 
         {/* Game content */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden game-play-area">
           {gameState && gameState.type === activeGameId ? (
             <Suspense fallback={<GameLoading />}>
               {activeGameId === 'tic-tac-toe' && <TicTacToe {...commonProps} gameState={gameState} />}
@@ -176,21 +176,21 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
   // Лобі - Dark Minimalism Theme
   return (
     <div className="flex flex-col h-full bg-black">
-      {/* Header - Glass effect */}
-      <div className="p-4 border-b border-white/10 bg-black/80 backdrop-blur-xl">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-purple-600 to-fuchsia-700 shadow-lg shadow-purple-500/25">
-            <Gamepad className="w-6 h-6 text-white" />
+      {/* Header - Glass effect - Mobile optimized */}
+      <div className="p-4 md:p-4 p-3 border-b border-white/10 bg-black/80 backdrop-blur-xl game-lobby-header">
+        <div className="flex items-center gap-3 md:gap-4">
+          <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-purple-600 to-fuchsia-700 shadow-lg shadow-purple-500/25">
+            <Gamepad className="w-5 h-5 md:w-6 md:h-6 text-white" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-white">Игры</h2>
-            <p className="text-xs text-white/50">Выберите игру для двоих</p>
+            <h2 className="text-base md:text-lg font-semibold text-white">Игры</h2>
+            <p className="text-[11px] md:text-xs text-white/50">Выберите игру для двоих</p>
           </div>
         </div>
       </div>
 
       {/* Games list - Dark Minimalism cards */}
-      <div className="flex-1 overflow-y-auto mobile-scroll-y game-lobby-content p-4">
+      <div className="flex-1 overflow-y-auto mobile-scroll-y game-lobby-content p-3 md:p-4">
         <div className="games-grid">
           {gamesList.map((game, index) => {
             const isLoading = loadingGameId === game.id;
@@ -202,29 +202,30 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
                 onClick={() => handleStartGame(game.id)}
                 disabled={isLoading}
                 className={cn(
-                  "flex flex-col items-center gap-3 p-5 rounded-2xl border transition-all duration-300 min-h-[140px]",
+                  "flex flex-col items-center gap-2 md:gap-3 p-4 md:p-5 rounded-2xl border transition-all duration-300 min-h-[120px] md:min-h-[140px]",
                   "bg-white/[0.02] border-white/[0.06]",
                   "hover:bg-white/[0.05] hover:border-white/10 hover:shadow-xl hover:shadow-purple-500/5",
                   "hover:-translate-y-1",
                   "active:scale-[0.98]",
+                  "shine-effect", // Quick Win #2: Shine effect on hover
                   isLoading && "opacity-50 pointer-events-none",
                   "animate-fade-in-up"
                 )}
-                style={{ animationDelay: `${index * 0.1}s` }}
+                style={{ animationDelay: `${index * 0.05}s` }}
               >
                 <div className={cn(
-                  "w-14 h-14 rounded-xl flex items-center justify-center bg-gradient-to-br shadow-lg transition-transform group-hover:scale-110",
+                  "w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center bg-gradient-to-br shadow-lg transition-transform group-hover:scale-110",
                   game.gradient
                 )}>
                   {isLoading ? (
-                    <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <div className="w-5 h-5 md:w-6 md:h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   ) : (
-                    <Icon className="w-7 h-7 text-white" />
+                    <Icon className="w-6 h-6 md:w-7 md:h-7 text-white" />
                   )}
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-semibold text-white">{game.name}</p>
-                  <p className="text-xs text-white/40 mt-1">{game.description}</p>
+                  <p className="text-[11px] md:text-xs text-white/40 mt-0.5 md:mt-1">{game.description}</p>
                 </div>
               </button>
             );
@@ -232,9 +233,9 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
         </div>
 
         {/* Hint - Glass card */}
-        <div className="mt-6 p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-          <p className="text-xs text-white/40 text-center flex items-center justify-center gap-2">
-            <span className="text-base">💡</span>
+        <div className="mt-4 md:mt-6 p-3 md:p-4 rounded-xl bg-white/[0.02] border border-white/[0.06]">
+          <p className="text-[11px] md:text-xs text-white/40 text-center flex items-center justify-center gap-2">
+            <span className="text-sm md:text-base">💡</span>
             Игры синхронизируются в реальном времени
           </p>
         </div>

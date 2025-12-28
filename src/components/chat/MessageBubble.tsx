@@ -94,6 +94,7 @@ export const MessageBubble = memo(function MessageBubble({
             "group flex gap-3 px-4 py-1.5 transition-all duration-150",
             "hover:bg-white/[0.03]", /* P1-1 FIX: Enhanced hover background */
             "hover:shadow-[0_4px_12px_rgba(255,255,255,0.08)]", /* P1-1 FIX: Subtle shadow on hover */
+            "animate-message-appear", /* Quick Win #3: Smooth message animation */
             isOwn ? "flex-row-reverse" : "flex-row",
             className
         )}>
@@ -129,6 +130,8 @@ export const MessageBubble = memo(function MessageBubble({
                     "relative px-4 py-3 rounded-2xl break-words",
                     "text-[15px] md:text-base leading-relaxed",
                     "transition-all duration-200",
+                    // Mobile Audit V2 FIX: Better border-radius for long messages
+                    sanitizedText.length > 200 && "message-bubble-long",
                     isOwn
                         ? "bg-[rgba(124,58,237,0.2)] border border-[rgba(124,58,237,0.4)] text-white rounded-br-md shadow-[0_2px_8px_rgba(124,58,237,0.1)] backdrop-blur-sm"
                         : "bg-[#2D2D35] text-white border border-white/[0.06] rounded-bl-md shadow-[0_2px_8px_rgba(255,255,255,0.02)]"

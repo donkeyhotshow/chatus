@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useCallback, useRef } from 'react';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -10,6 +10,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     isLoading?: boolean;
     loadingText?: string;
     children?: React.ReactNode;
+    enableRipple?: boolean;
 }
 
 const buttonVariants = {
@@ -32,18 +33,55 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
     size = 'md',
     isLoading = false,
     loadingText,
+    enableRipple = true,
     className,
     children,
     disabled,
+    onClick,
     ...props
 }, ref) => {
     const isDisabled = disabled || isLoading;
+    const buttonRef = useRef<HTMLButtonElement>(null);
+    const combinedRef = (ref as React.RefObject<HTMLButtonElement>) || buttonRef;
+
+    // Ripple effect handler
+    const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+        if (isDisabled || !enableRipple) {
+            onClick?.(e);
+            return;
+        }
+
+        const button = e.currentTarget;
+        const rect = button.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // Create ripple element
+        const ripple = document.createElement('span');
+        ripple.className = 'ripple-effect';
+        ripple.style.left = `${x}px`;
+        ripple.style.top = `${y}px`;
+
+        button.appendChild(ripple);
+
+        // Haptic feedback on mobile
+        if ('vibrate' in navigator) {
+            navigator.vibrate(10);
+        }
+
+        // Remove ripple after animation
+        setTimeout(() => {
+            ripple.remove();
+        }, 600);
+
+        onClick?.(e);
+    }, [isDisabled, enableRipple, onClick]);
 
     return (
         <button
-            ref={ref}
+            ref={combinedRef}
             className={cn(
-                "relative inline-flex items-center justify-center gap-2 rounded-xl font-semibold",
+                "relative inline-flex items-center justify-center gap-2 rounded-xl font-semibold overflow-hidden",
                 "transition-all duration-200 ease-out",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)]",
                 "disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none disabled:transform-none",
@@ -54,6 +92,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
                 className
             )}
             disabled={isDisabled}
+            onClick={handleClick}
             {...props}
         >
             {isLoading && (
