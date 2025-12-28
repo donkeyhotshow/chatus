@@ -14,7 +14,7 @@ import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { cn } from '@/lib/utils';
 
 interface OptimizedImageProps {
-  src:;
+  src: string;
   alt: string;
   className?: string;
   containerClassName?: string;

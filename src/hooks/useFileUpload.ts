@@ -1,4 +1,4 @@
-"use
+"use client";
 
 import { useState, useCallback, useRef } from 'react';
 import { ref, uploadBytesResumable, getDownloadURL, UploadTask } from 'firebase/storage';

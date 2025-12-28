@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from 'react';
-imporoad, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle, X } from 'lucide-react';
 import { Progress } from './progress';
 import { cn } from '@/lib/utils';
 

@@ -632,3 +632,168 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
   const isGameOver = rtState?.active && Object.values(rtState.players || {}).every(p => p.isDead);
   const winner = isGameOver ? Object.values(rtState.players || {}).sort((a, b) => b.score - a.score)[0] : null;
   const aiScore = Object.values(rtState?.players || {}).find(p => p.userId !== user.id)?.score || 0;
+
+  return (
+    <div ref={containerRef} className="flex flex-col items-center w-full max-w-lg mx-auto px-2">
+      {/* Header */
+      <div className="w-full flex items-center justify-between mb-3">
+        <ExitButton onExit={onGameEnd} />
+        <div className="flex items-center gap-2">
+          <Clock className="w-4 h-4 text-[var(--text-muted)]" />
+          <span className="text-sm font-mono text-[var(--text-secondary)]">
+            {formatGameTime(gameTime)}
+          </span>
+        </div>
+      </div>
+
+      {/* Score Display */}
+      <div className="w-full flex justify-between items-center mb-3 px-2">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-[#8B5CF6]" />
+          <span className="text-sm font-semibold text-[var(--text-primary)]">{user.name}</span>
+          <span className="text-lg font-bold text-[var(--accent-primary)]">{mySnake.score}</span>
+          {combo > 1 && (
+            <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--accent-primary)]/20 text-[var(--accent-primary)]">
+              x{combo}
+            </span>
+          )}
+          {speedBoost && (
+            <Zap className="w-4 h-4 text-blue-400 animate-pulse" />
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-lg font-bold text-pink-400">{aiScore}</span>
+          <span className="text-sm font-semibold text-[var(--text-secondary)]">
+            {otherUser?.name || 'AI Bot 🤖'}
+          </span>
+          <div className="w-3 h-3 rounded-full bg-pink-500" />
+        </div>
+      </div>
+
+      {/* Canvas */}
+      <div className="relative">
+        <canvas
+          ref={canvasRef}
+          width={canvasSize}
+          height={canvasSize}
+          className="rounded-xl border-2 border-white/10 touch-none"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        />
+
+        {/* Start Screen */}
+        <AnimatePresence>
+          {!rtState?.active && !isGameOver && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 rounded-xl"
+            >
+              <Gamepad2 className="w-16 h-16 text-[var(--accent-primary)] mb-4" />
+              <h2 className="text-2xl font-bold text-white mb-2">Snake Battle</h2>
+              <p className="text-sm text-[var(--text-muted)] mb-6 text-center px-4">
+                {isMobile ? 'Свайпайте для управления' : 'WASD или стрелки для управления'}
+              </p>
+              <PremiumButton onClick={handleStart} size="lg">
+                <Zap className="w-5 h-5 mr-2" />
+                Начать игру
+              </PremiumButton>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Game Over Screen */}
+        <AnimatePresence>
+          {isGameOver && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 rounded-xl"
+            >
+              <Trophy className="w-16 h-16 text-yellow-400 mb-4" />
+              <h2 className="text-2xl font-bold text-white mb-2">Игра окончена!</h2>
+              {winner && (
+                <p className="text-lg text-[var(--text-secondary)] mb-2">
+                  Победитель: <span className="text-[var(--accent-primary)] font-semibold">{winner.userName}</span>
+                </p>
+              )}
+              <div className="flex items-center gap-4 mb-6">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-[var(--accent-primary)]">{mySnake.score}</p>
+                  <p className="text-xs text-[var(--text-muted)]">Ваш счёт</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-pink-400">{aiScore}</p>
+                  <p className="text-xs text-[var(--text-muted)]">Противник</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <PremiumButton onClick={handleStart} variant="default">
+                  <Star className="w-4 h-4 mr-2" />
+                  Играть снова
+                </PremiumButton>
+                <PremiumButton onClick={onGameEnd} variant="outline">
+                  Выйти
+                </PremiumButton>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Mobile Controls */}
+      {isMobile && rtState?.active && !mySnake.isDead && (
+        <div className="mt-4 grid grid-cols-3 gap-2 w-[180px]">
+          <div />
+          <button
+            onClick={() => changeDirection({ x: 0, y: -1 })}
+            className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center active:bg-white/20 transition-colors"
+          >
+            <ChevronUp className="w-8 h-8 text-white" />
+          </button>
+          <div />
+          <button
+            onClick={() => changeDirection({ x: -1, y: 0 })}
+            className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center active:bg-white/20 transition-colors"
+          >
+            <ChevronLeft className="w-8 h-8 text-white" />
+          </button>
+          <button
+            onClick={() => changeDirection({ x: 0, y: 1 })}
+            className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center active:bg-white/20 transition-colors"
+          >
+            <ChevronDown className="w-8 h-8 text-white" />
+          </button>
+          <button
+            onClick={() => changeDirection({ x: 1, y: 0 })}
+            className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center active:bg-white/20 transition-colors"
+          >
+            <ChevronRight className="w-8 h-8 text-white" />
+          </button>
+        </div>
+      )}
+
+      {/* Legend */}
+      <div className="mt-4 flex flex-wrap justify-center gap-3 text-xs text-[var(--text-muted)]">
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-full bg-green-500" />
+          <span>+1</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-full bg-yellow-400" />
+          <span>+3 ★</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-full bg-blue-500" />
+          <span>⚡ Speed</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-full bg-purple-500" />
+          <span>↓ Shrink</span>
+        </div>
+      </div>
+    </div>
+  );
+}

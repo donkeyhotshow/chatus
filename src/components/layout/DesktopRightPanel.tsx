@@ -20,7 +20,7 @@ import {
   ChevronLeft,
   Crown,
   Circle
-} from 'luc-react';
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { UserProfile, Message } from '@/lib/types';
 import { OptimizedImage } from '../ui/OptimizedImage';
