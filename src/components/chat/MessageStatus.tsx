@@ -2,7 +2,7 @@
 
 import { memo } from 'react';
 import { motion } from 'framer-motion';
-import { Check, CheckCheck, Clock, AlertCircle } from 'lucireact';
+import { Check, CheckCheck, Clock, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export type MessageStatusType = 'sending' | 'sent' | 'delivered' | 'read' | 'error';
