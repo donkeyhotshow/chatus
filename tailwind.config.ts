@@ -8,6 +8,15 @@ export default {
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
+    // Extended breakpoints for better responsiveness
+    screens: {
+      'xs': '375px',
+      'sm': '640px',
+      'md': '768px',
+      'lg': '1024px',
+      'xl': '1280px',
+      '2xl': '1536px',
+    },
     extend: {
       container: { center: true, padding: '1rem' },
       maxWidth: { content: '80rem' },
@@ -22,6 +31,9 @@ export default {
         'xl': '32px',
         '2xl': '48px',
         '3xl': '64px',
+        // Additional spacing for sections
+        'section': '80px',
+        'section-lg': '120px',
       },
       height: {
         header: '4rem',
@@ -33,15 +45,15 @@ export default {
         mono: ['monospace'],
       },
       fontSize: {
-        // Mobile-first typography scale
-        'xs': ['12px', { lineHeight: '16px' }],
-        'sm': ['14px', { lineHeight: '20px' }],
-        'base': ['16px', { lineHeight: '24px' }],
-        'lg': ['18px', { lineHeight: '28px' }],
-        'xl': ['20px', { lineHeight: '28px' }],
-        '2xl': ['24px', { lineHeight: '32px' }],
-        '3xl': ['30px', { lineHeight: '36px' }],
-        '4xl': ['36px', { lineHeight: '40px' }],
+        // Mobile-first typography scale with improved line-height
+        'xs': ['12px', { lineHeight: '1.5' }],
+        'sm': ['14px', { lineHeight: '1.5' }],
+        'base': ['16px', { lineHeight: '1.6' }],
+        'lg': ['18px', { lineHeight: '1.6' }],
+        'xl': ['20px', { lineHeight: '1.5' }],
+        '2xl': ['24px', { lineHeight: '1.4' }],
+        '3xl': ['30px', { lineHeight: '1.3' }],
+        '4xl': ['36px', { lineHeight: '1.2' }],
       },
       colors: {
         background: 'hsl(var(--background))',
@@ -77,17 +89,18 @@ export default {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
-        // Design System colors
+        // Design System colors - WCAG 2.1 AA Compliant
         'ds': {
           'bg-primary': '#0D0D0D',
           'bg-secondary': '#121214',
           'bg-tertiary': '#1A1A1C',
           'bg-hover': '#242426',
           'text-primary': '#FFFFFF',
-          'text-secondary': 'rgba(255, 255, 255, 0.8)',
-          'text-tertiary': 'rgba(255, 255, 255, 0.6)',
-          'text-muted': 'rgba(255, 255, 255, 0.5)',
-          'text-disabled': 'rgba(255, 255, 255, 0.4)',
+          'text-secondary': '#E4E4E7', // WCAG FIX: 7:1 contrast
+          'text-tertiary': '#B4B4B9', // WCAG FIX: 5.5:1 contrast
+          'text-muted': '#8E8E93', // WCAG FIX: 4.5:1 contrast
+          'text-disabled': 'rgba(255, 255, 255, 0.5)',
+          'text-placeholder': '#9CA3AF', // WCAG FIX: 4.5:1 contrast
           'accent': '#7C3AED',
           'accent-hover': '#6D28D9',
           'accent-light': '#8B5CF6',

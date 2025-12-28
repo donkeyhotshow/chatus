@@ -1,20 +1,23 @@
 /**
  * Loading States Components
  * Provides consistent loading indicators across the application
+ * WCAG FIX: Improved contrast and accessibility
  */
 
 import React from 'react';
-import { Loader2, MessageCircle, Users, Image as ImageIcon, Send } from 'lucide-react';
+import { Loader2, MessageCircle, Users, Image as ImageIcon, Send, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface LoadingSpinnerProps {
     size?: 'sm' | 'md' | 'lg';
     className?: string;
+    label?: string;
 }
 
 export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
     size = 'md',
-    className
+    className,
+    label = 'Загрузка...'
 }) => {
     const sizeClasses = {
         sm: 'w-4 h-4',
@@ -23,13 +26,17 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
     };
 
     return (
-        <Loader2
-            className={cn(
-                'animate-spin text-violet-400',
-                sizeClasses[size],
-                className
-            )}
-        />
+        <div className="flex items-center gap-2" role="status" aria-label={label}>
+            <Loader2
+                className={cn(
+                    'animate-spin text-violet-400',
+                    sizeClasses[size],
+                    className
+                )}
+                aria-hidden="true"
+            />
+            <span className="sr-only">{label}</span>
+        </div>
     );
 };
 
@@ -50,13 +57,82 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
         <div className={cn('relative', className)}>
             {children}
             {isLoading && (
-                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+                <div
+                    className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+                    role="status"
+                    aria-live="polite"
+                >
                     <div className="flex flex-col items-center gap-3 text-white">
                         <LoadingSpinner size="lg" />
                         <span className="text-sm font-medium">{loadingText}</span>
                     </div>
                 </div>
             )}
+        </div>
+    );
+};
+
+/**
+ * Enhanced Loading with Progress Bar
+ * Shows visual progress indicator
+ */
+interface ProgressLoadingProps {
+    progress?: number;
+    text?: string;
+    showPercentage?: boolean;
+}
+
+export const ProgressLoading: React.FC<ProgressLoadingProps> = ({
+    progress = 0,
+    text = 'Загрузка...',
+    showPercentage = true
+}) => {
+    return (
+        <div className="flex flex-col items-center gap-4 p-6" role="status" aria-live="polite">
+            <div className="w-full max-w-xs">
+                <div className="flex justify-between mb-2">
+                    <span className="text-sm text-[var(--text-secondary)]">{text}</span>
+                    {showPercentage && (
+                        <span className="text-sm text-[var(--text-muted)]">{Math.round(progress)}%</span>
+                    )}
+                </div>
+                <div className="h-2 bg-[var(--bg-tertiary)] rounded-full overflow-hidden">
+                    <div
+                        className="h-full bg-gradient-to-r from-violet-600 to-purple-500 rounded-full transition-all duration-300"
+                        style={{ width: `${progress}%` }}
+                    />
+                </div>
+            </div>
+        </div>
+    );
+};
+
+/**
+ * Connection Loading State
+ * For initial connection to chat/room
+ */
+export const ConnectionLoading: React.FC<{ roomCode?: string }> = ({ roomCode }) => {
+    return (
+        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-6">
+            <div className="relative">
+                <div className="w-20 h-20 bg-violet-500/10 rounded-[32px] flex items-center justify-center">
+                    <MessageCircle className="w-10 h-10 text-violet-400" />
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-[var(--bg-primary)] rounded-full flex items-center justify-center">
+                    <div className="w-4 h-4 border-2 border-violet-500/30 border-t-violet-500 rounded-full animate-spin" />
+                </div>
+            </div>
+            <div className="space-y-2">
+                <h3 className="text-xl font-bold text-white">Подключение к чату</h3>
+                {roomCode && (
+                    <p className="text-sm text-[var(--text-tertiary)]">
+                        Комната: <span className="font-mono text-violet-400">{roomCode}</span>
+                    </p>
+                )}
+                <p className="text-sm text-[var(--text-muted)]">
+                    Загружаем сообщения и настраиваем соединение
+                </p>
+            </div>
         </div>
     );
 };

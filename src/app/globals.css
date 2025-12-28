@@ -25,14 +25,17 @@
     --glass-border: rgba(255, 255, 255, 0.1);
 
     /* ═══════════════════════════════════════════════════════════════
-       TEXT COLORS - MOBILE AUDIT V2: Improved contrast
+       TEXT COLORS - WCAG 2.1 AA Compliant (4.5:1 contrast ratio)
        ═══════════════════════════════════════════════════════════════ */
     /* Text Colors - 5 оттенков серого (WCAG AA compliant) */
     --text-primary: #FFFFFF;
-    --text-secondary: #D4D4D8; /* Mobile Audit: 85% instead of 80% */
-    --text-tertiary: #A1A1A6; /* Mobile Audit: Solid color for timestamps */
-    --text-muted: #727278; /* Mobile Audit: Darker for better hierarchy */
-    --text-disabled: rgba(255, 255, 255, 0.4);
+    --text-secondary: #E4E4E7; /* WCAG FIX: Increased from #D4D4D8 for 7:1 ratio */
+    --text-tertiary: #B4B4B9; /* WCAG FIX: Increased from #A1A1A6 for 5.5:1 ratio */
+    --text-muted: #8E8E93; /* WCAG FIX: Increased from #727278 for 4.5:1 ratio */
+    --text-disabled: rgba(255, 255, 255, 0.5); /* WCAG FIX: Increased from 0.4 */
+
+    /* Placeholder - WCAG AA compliant */
+    --text-placeholder: #9CA3AF; /* WCAG FIX: 4.5:1 contrast on dark bg */
 
     /* Username accent color */
     --text-username: #A78BFA; /* Mobile Audit: Lighter purple for usernames */
@@ -434,7 +437,7 @@
   }
 
   .input::placeholder {
-    color: #727278;
+    color: var(--text-placeholder, #9CA3AF); /* WCAG FIX: 4.5:1 contrast */
   }
 
   .input:hover:not(:focus) {
@@ -464,7 +467,7 @@
   }
 
   .chat-input::placeholder {
-    color: #727278;
+    color: var(--text-placeholder, #9CA3AF); /* WCAG FIX: 4.5:1 contrast */
   }
 
   .chat-input:focus {

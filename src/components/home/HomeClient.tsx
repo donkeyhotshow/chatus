@@ -214,12 +214,12 @@ export function HomeClient() {
                                             type="text"
                                             value={username}
                                             onChange={(e) => setUsername(e.target.value)}
-                                            placeholder="Введите ник"
+                                            placeholder="Ваше имя (2-20 символов)"
                                             maxLength={20}
                                             autoComplete="username"
                                             className={cn(
                                                 "w-full px-3 h-14 bg-[var(--bg-secondary)] border-2 rounded-lg sm:rounded-xl text-sm",
-                                                "text-white placeholder:text-[var(--text-disabled)]",
+                                                "text-white placeholder:text-[var(--text-placeholder)]",
                                                 "focus:outline-none focus:border-violet-500/50 focus:bg-[var(--bg-tertiary)]",
                                                 "transition-all duration-200 touch-manipulation",
                                                 isUsernameValid ? "border-emerald-500/50" : "border-white/[0.1]"
@@ -264,7 +264,7 @@ export function HomeClient() {
                                                 inputMode="text"
                                                 className={cn(
                                                     "w-full px-3 h-14 bg-[var(--bg-secondary)] border-2 rounded-lg sm:rounded-xl text-center tracking-[0.25em] font-mono text-sm sm:text-base",
-                                                    "text-white placeholder:text-[var(--text-disabled)]",
+                                                    "text-white placeholder:text-[var(--text-placeholder)]",
                                                     "focus:outline-none focus:border-violet-500/50 focus:bg-[var(--bg-tertiary)]",
                                                     "transition-all duration-200 touch-manipulation uppercase",
                                                     isRoomCodeValid ? "border-emerald-500/50" : "border-white/[0.1]"
@@ -308,54 +308,54 @@ export function HomeClient() {
                     </div>
                 </section>
 
-                {/* Features - Compact for second screen */}
-                <section id="features" className="py-6 sm:py-10 md:py-16 px-4 bg-gradient-to-b from-[var(--bg-primary)] to-[var(--bg-secondary)]">
+                {/* Features - Improved spacing and typography */}
+                <section id="features" className="py-10 sm:py-16 md:py-24 px-4 bg-gradient-to-b from-[var(--bg-primary)] to-[var(--bg-secondary)]">
                     <div className="max-w-4xl mx-auto">
-                        <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-white text-center mb-1 sm:mb-2">
+                        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white text-center mb-2 sm:mb-3">
                             Возможности
                         </h2>
-                        <p className="text-xs sm:text-sm text-[var(--text-muted)] text-center mb-4 sm:mb-6 md:mb-10">
-                            Всё для общения в одном месте
+                        <p className="text-sm sm:text-base text-[var(--text-tertiary)] text-center mb-8 sm:mb-12 md:mb-16 max-w-md mx-auto leading-relaxed">
+                            Всё для общения в одном месте — без регистрации и сложных настроек
                         </p>
 
-                        <div className="grid grid-cols-3 md:grid-cols-3 gap-2 sm:gap-3 md:gap-5">
+                        <div className="grid grid-cols-3 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
                             {[
                                 {
                                     icon: MessageCircle,
                                     title: "Чат",
-                                    desc: "Мгновенные сообщения",
+                                    desc: "Мгновенные сообщения в реальном времени",
                                     gradient: "from-violet-600 to-purple-700"
                                 },
                                 {
                                     icon: PenTool,
                                     title: "Холст",
-                                    desc: "Рисуйте вместе",
+                                    desc: "Рисуйте вместе на общем холсте",
                                     gradient: "from-emerald-500 to-teal-600"
                                 },
                                 {
                                     icon: Gamepad2,
                                     title: "Игры",
-                                    desc: "Играйте с друзьями",
+                                    desc: "7 мини-игр для компании",
                                     gradient: "from-purple-500 to-fuchsia-600"
                                 }
                             ].map((feature, i) => (
                                 <div
                                     key={i}
-                                    className="group p-3 sm:p-4 md:p-6 bg-[var(--bg-card)] rounded-xl sm:rounded-2xl border border-white/[0.08] transition-all duration-200 hover:bg-[var(--bg-hover)] hover:border-white/[0.15] hover:-translate-y-0.5 text-center"
+                                    className="group p-4 sm:p-5 md:p-8 bg-[var(--bg-card)] rounded-xl sm:rounded-2xl border border-white/[0.08] transition-all duration-200 hover:bg-[var(--bg-hover)] hover:border-violet-500/30 hover:-translate-y-1 hover:shadow-lg hover:shadow-violet-500/10 text-center cursor-pointer"
                                 >
                                     <div
                                         className={cn(
-                                            "w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center mb-2 sm:mb-3 mx-auto",
-                                            "bg-gradient-to-br shadow-lg",
+                                            "w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center mb-3 sm:mb-4 mx-auto",
+                                            "bg-gradient-to-br shadow-lg group-hover:scale-110 transition-transform",
                                             feature.gradient
                                         )}
                                     >
-                                        <feature.icon className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" />
+                                        <feature.icon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white" />
                                     </div>
-                                    <h3 className="text-xs sm:text-sm md:text-base font-semibold text-white mb-0.5 sm:mb-1">
+                                    <h3 className="text-sm sm:text-base md:text-lg font-semibold text-white mb-1 sm:mb-2">
                                         {feature.title}
                                     </h3>
-                                    <p className="text-[10px] sm:text-xs text-[var(--text-tertiary)] leading-snug hidden sm:block">
+                                    <p className="text-xs sm:text-sm text-[var(--text-tertiary)] leading-relaxed hidden sm:block">
                                         {feature.desc}
                                     </p>
                                 </div>
@@ -365,14 +365,18 @@ export function HomeClient() {
                 </section>
             </main>
 
-            {/* Footer - Compact */}
-            <footer className="py-4 sm:py-6 px-4 border-t border-white/[0.08]">
-                <div className="max-w-4xl mx-auto flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                        <Logo className="w-4 h-4 text-[var(--text-disabled)]" />
-                        <span className="text-xs text-[var(--text-disabled)]">ChatUs</span>
+            {/* Footer - Improved visibility */}
+            <footer className="py-6 sm:py-8 px-4 border-t border-white/[0.1] bg-[var(--bg-secondary)]">
+                <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center gap-2">
+                        <Logo className="w-5 h-5 text-[var(--text-muted)]" />
+                        <span className="text-sm text-[var(--text-muted)] font-medium">ChatUs</span>
                     </div>
-                    <p className="text-xs text-[var(--text-disabled)]">© 2025</p>
+                    <div className="flex items-center gap-4 text-sm text-[var(--text-muted)]">
+                        <span>Приватный чат без регистрации</span>
+                        <span className="hidden sm:inline">•</span>
+                        <span className="hidden sm:inline">© 2025</span>
+                    </div>
                 </div>
             </footer>
         </div>
