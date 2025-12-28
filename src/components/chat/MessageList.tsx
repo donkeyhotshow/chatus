@@ -171,7 +171,20 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
           <div className="date-divider flex justify-center my-4 sticky top-2 z-10">
             <span className="date-divider-text bg-[rgba(124,58,237,0.15)] text-[#A78BFA] text-[11px] font-medium px-4 py-1.5 rounded-full border border-[rgba(124,58,237,0.25)] shadow-[0_2px_8px_rgba(124,58,237,0.1)] uppercase tracking-wider">
               {msg.createdAt && 'seconds' in msg.createdAt
-                ? new Date(msg.createdAt.seconds * 1000).toLocaleDateString('ru-RU', { weekday: 'short', month: 'long', day: 'numeric' })
+                ? (() => {
+                    const msgDate = new Date(msg.createdAt.seconds * 1000);
+                    const today = new Date();
+                    const yesterday = new Date(today);
+                    yesterday.setDate(yesterday.getDate() - 1);
+
+                    if (msgDate.toDateString() === today.toDateString()) {
+                      return 'Сегодня';
+                    } else if (msgDate.toDateString() === yesterday.toDateString()) {
+                      return 'Вчера';
+                    } else {
+                      return msgDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+                    }
+                  })()
                 : 'Сегодня'}
             </span>
           </div>
@@ -184,6 +197,9 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
           onReaction={onReaction}
           onImageClick={onImageClick}
           onReply={onReply}
+          onCopy={(text) => {
+            navigator.clipboard.writeText(text);
+          }}
           groupPosition={groupPosition}
         />
       </div>

@@ -1,12 +1,24 @@
 "use client";
 
 import { memo, useMemo } from 'react';
-import { formatDistanceToNow } from 'date-fns';
+import { format, isToday, isYesterday } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { Reply, MoreHorizontal, Check, CheckCheck, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import DOMPurify from 'dompurify';
 import type { Message, UserProfile } from '@/lib/types';
+
+// Helper function for consistent timestamp formatting
+function formatMessageTime(date: Date): string {
+    const time = format(date, 'HH:mm');
+    if (isToday(date)) {
+        return time;
+    } else if (isYesterday(date)) {
+        return `Вчера, ${time}`;
+    } else {
+        return format(date, 'd MMM, HH:mm', { locale: ru });
+    }
+}
 
 interface MessageBubbleProps {
     message: Message;
@@ -98,10 +110,10 @@ export const MessageBubble = memo(function MessageBubble({
             isOwn ? "flex-row-reverse" : "flex-row",
             className
         )}>
-            {/* Avatar - увеличен до 36-40px */}
+            {/* Avatar - P2 FIX: увеличен до 36-40px (было 32px) */}
             {!isOwn && (
                 <div className={cn(
-                    "w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold shrink-0 mt-1 shadow-lg",
+                    "w-[36px] h-[36px] md:w-10 md:h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold shrink-0 mt-1 shadow-lg",
                     getAvatarColor(user.name)
                 )}>
                     {getAvatarText(user.name)}
@@ -120,7 +132,7 @@ export const MessageBubble = memo(function MessageBubble({
                             {user.name}
                         </span>
                         <span className="text-xs text-[#A1A1A6]">
-                            {formatDistanceToNow(timestamp, { addSuffix: true, locale: ru })}
+                            {formatMessageTime(timestamp)}
                         </span>
                     </div>
                 )}
@@ -155,7 +167,7 @@ export const MessageBubble = memo(function MessageBubble({
                     {/* Own message timestamp with delivery status - Mobile Audit: solid color */}
                     {isOwn && (
                         <div className="flex items-center justify-end gap-1.5 text-xs text-white/80 mt-1.5">
-                            <span>{formatDistanceToNow(timestamp, { addSuffix: true, locale: ru })}</span>
+                            <span>{formatMessageTime(timestamp)}</span>
                             <DeliveryStatus status={(message as Message & { status?: string }).status as 'sending' | 'sent' | 'delivered' | 'read' | undefined} />
                         </div>
                     )}
@@ -188,9 +200,9 @@ export const MessageBubble = memo(function MessageBubble({
                 </div>
             </div>
 
-            {/* Own avatar - увеличен */}
+            {/* Own avatar - P2 FIX: увеличен до 36-40px */}
             {isOwn && (
-                <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center text-white text-sm font-semibold shrink-0 mt-1 shadow-lg">
+                <div className="w-[36px] h-[36px] md:w-10 md:h-10 rounded-full bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center text-white text-sm font-semibold shrink-0 mt-1 shadow-lg">
                     {getAvatarText(currentUser.name)}
                 </div>
             )}

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
-import { ArrowRight, Plus, Menu, X, MessageCircle, PenTool, Gamepad2, User, Key, Check } from 'lucide-react';
+import { ArrowRight, Plus, MessageCircle, PenTool, Gamepad2, User, Key, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/icons/logo';
 import { useToast } from '@/hooks/use-toast';
@@ -18,7 +18,6 @@ export function HomeClient() {
     const [roomCode, setRoomCode] = useState('');
     const [username, setUsername] = useState('');
     const [isConnecting, setIsConnecting] = useState(false);
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     // Refs for Safari button state management
     const createRoomButtonRef = useRef<HTMLButtonElement>(null);
@@ -167,64 +166,22 @@ export function HomeClient() {
                         <span className="font-semibold text-white">ChatUs</span>
                     </div>
 
-                    {/* Desktop nav */}
-                    <nav className="hidden md:flex items-center gap-6">
-                        <a href="#features" className="text-sm text-white/50 hover:text-white transition-colors">
+                    {/* Desktop nav - P2 FIX: убран гамбургер-меню на мобильных */}
+                    <nav className="flex items-center gap-6">
+                        <a href="#features" className="text-sm text-white/50 hover:text-white transition-colors hidden sm:block">
                             Возможности
                         </a>
-                        <a href="#login" className="text-sm text-white/50 hover:text-white transition-colors">
+                        <a href="#login" className="text-sm text-white/50 hover:text-white transition-colors hidden sm:block">
                             Войти
                         </a>
                     </nav>
-
-                    {/* Mobile menu button - более заметная */}
-                    <button
-                        className={cn(
-                            "md:hidden p-3 rounded-xl transition-all duration-200 touch-manipulation min-w-[48px] min-h-[48px] flex items-center justify-center",
-                            isMenuOpen
-                                ? "bg-violet-600 text-white"
-                                : "bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-hover)]"
-                        )}
-                        onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        aria-label={isMenuOpen ? "Закрыть меню" : "Открыть меню"}
-                        aria-expanded={isMenuOpen}
-                    >
-                        {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-                    </button>
                 </div>
             </header>
 
-            {/* Mobile menu */}
-            {isMenuOpen && (
-                <div
-                    className="fixed inset-0 z-40 bg-[var(--bg-primary)] pt-14 md:hidden animate-in fade-in duration-200"
-                    role="dialog"
-                    aria-modal="true"
-                    aria-label="Мобильное меню"
-                >
-                    <nav className="flex flex-col items-center gap-8 pt-16 px-4">
-                        <a
-                            href="#features"
-                            onClick={() => setIsMenuOpen(false)}
-                            className="text-xl text-white hover:text-violet-400 transition-colors py-2"
-                        >
-                            Возможности
-                        </a>
-                        <a
-                            href="#login"
-                            onClick={() => setIsMenuOpen(false)}
-                            className="text-xl text-white hover:text-violet-400 transition-colors py-2"
-                        >
-                            Войти
-                        </a>
-                    </nav>
-                </div>
-            )}
-
-            <main className="pt-14">
+            <main className="pt-14 min-h-[calc(100vh-56px)] flex flex-col">
                 {/* Hero + Login - Combined for mobile to fit in first screen */}
-                <section className="px-4 py-4 sm:py-8 md:py-16 mobile-hero">
-                    <div className="max-w-md mx-auto">
+                <section className="flex-1 flex items-center justify-center px-4 py-4 sm:py-8 md:py-16 mobile-hero">
+                    <div className="max-w-md mx-auto w-full">
                         {/* Compact Hero */}
                         <div className="text-center mb-4 sm:mb-6">
                             {/* Logo - very compact on mobile */}
@@ -234,19 +191,19 @@ export function HomeClient() {
                             <h1 className="text-xl sm:text-2xl md:text-4xl font-bold text-white mb-1 sm:mb-2 leading-tight hero-title">
                                 Приватный чат
                             </h1>
-                            <p className="text-xs sm:text-sm md:text-base text-[var(--text-muted)] leading-snug hero-subtitle">
+                            <p className="text-xs sm:text-sm md:text-base text-white/70 leading-snug hero-subtitle">
                                 Общайтесь, рисуйте и играйте вместе
                             </p>
                         </div>
 
                         {/* Login Form - Compact */}
                         <div className="bg-[var(--bg-card)] rounded-xl sm:rounded-2xl border border-white/[0.1] p-3 sm:p-4 md:p-6 shadow-xl backdrop-blur-sm">
-                            <form onSubmit={handleJoinRoom} className="space-y-2.5 sm:space-y-3">
+                            <form onSubmit={handleJoinRoom} className="space-y-4 sm:space-y-5">
                                 {/* Username */}
-                                <div className="space-y-1">
+                                <div className="space-y-1.5">
                                     <label
                                         htmlFor="username"
-                                        className="text-[11px] sm:text-xs font-medium text-[var(--text-muted)] flex items-center gap-1.5 px-0.5"
+                                        className="text-[11px] sm:text-xs font-medium text-white/70 flex items-center gap-1.5 px-0.5"
                                     >
                                         <User className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                                         Ваш ник
@@ -261,7 +218,7 @@ export function HomeClient() {
                                             maxLength={20}
                                             autoComplete="username"
                                             className={cn(
-                                                "w-full px-3 py-2.5 sm:py-3 bg-[var(--bg-secondary)] border-2 rounded-lg sm:rounded-xl text-sm",
+                                                "w-full px-3 h-14 bg-[var(--bg-secondary)] border-2 rounded-lg sm:rounded-xl text-sm",
                                                 "text-white placeholder:text-[var(--text-disabled)]",
                                                 "focus:outline-none focus:border-violet-500/50 focus:bg-[var(--bg-tertiary)]",
                                                 "transition-all duration-200 touch-manipulation",
@@ -274,49 +231,51 @@ export function HomeClient() {
                                     </div>
                                 </div>
 
-                                {/* Room Code */}
-                                <div className="space-y-1">
-                                    <div className="flex items-center justify-between px-0.5">
-                                        <label
-                                            htmlFor="roomCode"
-                                            className="text-[11px] sm:text-xs font-medium text-[var(--text-muted)] flex items-center gap-1.5"
-                                        >
-                                            <Key className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                                            Код комнаты
-                                        </label>
-                                        <button
-                                            type="button"
-                                            ref={createRoomButtonRef}
-                                            onClick={handleCreateRoom}
-                                            className="text-[11px] sm:text-xs font-medium text-violet-400 hover:text-violet-300 flex items-center gap-1 py-1 px-2 rounded-md min-h-[28px] touch-manipulation hover:bg-violet-500/10 active:scale-[0.98]"
-                                        >
-                                            <Plus className="w-3 h-3" />
-                                            Создать
-                                        </button>
-                                    </div>
-                                    <div className="relative">
-                                        <input
-                                            id="roomCode"
-                                            type="text"
-                                            value={roomCode}
-                                            onChange={(e) => setRoomCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
-                                            placeholder="ABC123"
-                                            maxLength={6}
-                                            autoComplete="off"
-                                            inputMode="text"
-                                            className={cn(
-                                                "w-full px-3 py-2.5 sm:py-3 bg-[var(--bg-secondary)] border-2 rounded-lg sm:rounded-xl text-center tracking-[0.25em] font-mono text-sm sm:text-base",
-                                                "text-white placeholder:text-[var(--text-disabled)]",
-                                                "focus:outline-none focus:border-violet-500/50 focus:bg-[var(--bg-tertiary)]",
-                                                "transition-all duration-200 touch-manipulation uppercase",
-                                                isRoomCodeValid ? "border-emerald-500/50" : "border-white/[0.1]"
+                                {/* Room Code - P2 FIX: показывается только после ввода ника */}
+                                {username.trim().length >= 2 && (
+                                    <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                                        <div className="flex items-center justify-between px-0.5">
+                                            <label
+                                                htmlFor="roomCode"
+                                                className="text-[11px] sm:text-xs font-medium text-white/70 flex items-center gap-1.5"
+                                            >
+                                                <Key className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                                Код комнаты
+                                            </label>
+                                            <button
+                                                type="button"
+                                                ref={createRoomButtonRef}
+                                                onClick={handleCreateRoom}
+                                                className="text-[11px] sm:text-xs font-medium text-violet-400 hover:text-violet-300 flex items-center gap-1 py-1 px-2 rounded-md min-h-[28px] touch-manipulation hover:bg-violet-500/10 active:scale-[0.98]"
+                                            >
+                                                <Plus className="w-3 h-3" />
+                                                Создать
+                                            </button>
+                                        </div>
+                                        <div className="relative">
+                                            <input
+                                                id="roomCode"
+                                                type="text"
+                                                value={roomCode}
+                                                onChange={(e) => setRoomCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                                                placeholder="ABC123"
+                                                maxLength={6}
+                                                autoComplete="off"
+                                                inputMode="text"
+                                                className={cn(
+                                                    "w-full px-3 h-14 bg-[var(--bg-secondary)] border-2 rounded-lg sm:rounded-xl text-center tracking-[0.25em] font-mono text-sm sm:text-base",
+                                                    "text-white placeholder:text-[var(--text-disabled)]",
+                                                    "focus:outline-none focus:border-violet-500/50 focus:bg-[var(--bg-tertiary)]",
+                                                    "transition-all duration-200 touch-manipulation uppercase",
+                                                    isRoomCodeValid ? "border-emerald-500/50" : "border-white/[0.1]"
+                                                )}
+                                            />
+                                            {isRoomCodeValid && (
+                                                <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-400" />
                                             )}
-                                        />
-                                        {isRoomCodeValid && (
-                                            <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-400" />
-                                        )}
+                                        </div>
                                     </div>
-                                </div>
+                                )}
 
                                 <Button
                                     ref={submitButtonRef}
@@ -325,14 +284,24 @@ export function HomeClient() {
                                     isLoading={isConnecting}
                                     loadingText="Подключение..."
                                     className={cn(
-                                        "w-full h-11 sm:h-12 text-sm font-semibold touch-manipulation rounded-lg sm:rounded-xl mt-1",
+                                        "w-full h-14 text-sm font-semibold touch-manipulation rounded-lg sm:rounded-xl mt-2",
                                         "bg-gradient-to-r from-violet-600 to-purple-600",
-                                        "hover:shadow-lg hover:shadow-violet-500/30"
+                                        "hover:shadow-lg hover:shadow-violet-500/30",
+                                        "disabled:opacity-50 disabled:cursor-not-allowed"
                                     )}
                                     size="lg"
                                 >
-                                    Войти в чат
-                                    <ArrowRight className="w-4 h-4 ml-1.5" />
+                                    {isConnecting ? (
+                                        <div className="flex items-center justify-center gap-2">
+                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            <span>Подключение...</span>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            Войти в чат
+                                            <ArrowRight className="w-4 h-4 ml-1.5" />
+                                        </>
+                                    )}
                                 </Button>
                             </form>
                         </div>

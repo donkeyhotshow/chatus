@@ -125,12 +125,12 @@ export const ChatSidebar = memo(function ChatSidebar({
                             >
                                 <item.icon className={cn(
                                     "w-5 h-5 transition-colors",
-                                    isActive ? "text-white" : "text-white/50 group-hover:text-white/70"
+                                    isActive ? "text-white" : "text-white/60 group-hover:text-white/80"
                                 )} />
                             </div>
                             <span className={cn(
                                 "text-sm font-medium whitespace-nowrap transition-all duration-300",
-                                isActive ? "text-white" : "text-white/50 group-hover:text-white/70",
+                                isActive ? "text-white" : "text-white/60 group-hover:text-white/80",
                                 isHovered ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2 pointer-events-none"
                             )}>
                                 {item.label}
@@ -144,7 +144,7 @@ export const ChatSidebar = memo(function ChatSidebar({
             <div className="px-3 py-4 space-y-1.5 border-t border-white/[0.06]">
                 <button
                     onClick={onSettings}
-                    className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-white/50 hover:text-white hover:bg-white/[0.04] transition-all duration-200 touch-target group"
+                    className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/[0.06] transition-all duration-200 touch-target group"
                 >
                     <div className="w-10 h-10 rounded-xl bg-white/[0.04] group-hover:bg-white/[0.08] flex items-center justify-center shrink-0 transition-colors">
                         <Settings className="w-5 h-5" />
@@ -162,7 +162,7 @@ export const ChatSidebar = memo(function ChatSidebar({
                         console.log('[ChatSidebar] Logout button clicked');
                         onLogout();
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 touch-target group"
+                    className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-white/70 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 touch-target group"
                 >
                     <div className="w-10 h-10 rounded-xl bg-white/[0.04] group-hover:bg-red-500/10 flex items-center justify-center shrink-0 transition-colors">
                         <LogOut className="w-5 h-5" />

@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Star, Users, Clock, Play } from 'lucide-react';
+import { Star, Users, Clock, Play, Trophy } from 'lucide-react';
 
 interface GameCardProps {
     title: string;
@@ -16,6 +16,8 @@ interface GameCardProps {
     players?: string;
     category?: string;
     difficulty?: 'easy' | 'medium' | 'hard';
+    highScore?: number | null; // P2 FIX: Show high score on card
+    highScoreLabel?: string;
 }
 
 export const GameCard: React.FC<GameCardProps> = ({
@@ -28,7 +30,9 @@ export const GameCard: React.FC<GameCardProps> = ({
     rating = 4.5,
     players = "1-2",
     category = "Classic",
-    difficulty = "medium"
+    difficulty = "medium",
+    highScore,
+    highScoreLabel = "Рекорд"
 }) => {
     const difficultyConfig = {
         easy: { label: 'Легко', color: 'bg-green-500/20 text-green-400 border-green-500/30', dots: 1 },
@@ -95,6 +99,14 @@ export const GameCard: React.FC<GameCardProps> = ({
                     <h3 className="text-lg font-bold text-white group-hover:text-violet-400 transition-colors">{title}</h3>
                     <p className="text-xs text-neutral-500 line-clamp-2 leading-relaxed">{description}</p>
                 </div>
+
+                {/* P2 FIX: High Score Display */}
+                {highScore !== undefined && highScore !== null && highScore > 0 && (
+                    <div className="flex items-center gap-2 text-sm">
+                        <span className="text-yellow-400">🏆</span>
+                        <span className="text-violet-400 font-medium">{highScoreLabel}: {highScore}</span>
+                    </div>
+                )}
 
                 <div className="pt-2 flex items-center justify-between border-t border-white/5">
                     <div className="flex items-center gap-3 text-[10px] font-bold text-neutral-500 uppercase tracking-wider">

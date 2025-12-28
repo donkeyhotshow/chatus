@@ -4,7 +4,7 @@
 import { memo, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { format } from 'date-fns';
-import { Heart, Trash2, CornerUpLeft, Check, CheckCheck } from 'lucide-react';
+import { Heart, Trash2, CornerUpLeft, Check, CheckCheck, Copy, Smile } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Message } from '@/lib/types';
 import { EmojiRain } from './EmojiRain';
@@ -19,11 +19,12 @@ type MessageItemProps = {
     onDelete: (messageId: string) => void;
     onImageClick: (imageUrl: string) => void;
     onReply: (message: Message) => void;
+    onCopy?: (text: string) => void;
     reactions?: { emoji: string; count: number; users: string[] }[];
     groupPosition?: 'first' | 'middle' | 'last' | 'single';
 };
 
-const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDelete, onImageClick, onReply, reactions = [], groupPosition = 'single' }: MessageItemProps) {
+const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDelete, onImageClick, onReply, onCopy, reactions = [], groupPosition = 'single' }: MessageItemProps) {
     const [showEmojiRain, setShowEmojiRain] = useState(false);
     const [rainEmoji, setRainEmoji] = useState('');
     const [showActions, setShowActions] = useState(false);
@@ -257,12 +258,6 @@ const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDe
                         <span className="text-xs text-white/60 message-time">{formattedTime}</span>
                     </div>
                 )}
-                {/* Time only for middle/last grouped messages - shown inline */}
-                {!isSticker && (groupPosition === 'middle' || groupPosition === 'last') && (
-                    <div className="mb-1 px-1">
-                        <span className="text-xs text-white/40 message-time">{formattedTime}</span>
-                    </div>
-                )}
 
                 {hasContent ? (
                     <motion.div
@@ -406,6 +401,14 @@ const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDe
                                     )}
                                     onClick={(e) => e.stopPropagation()}
                                 >
+                                    {/* Reactions button - opens quick reactions */}
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); setShowQuickReactions(true); setShowActions(false); }}
+                                        className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-all"
+                                        title="Добавить реакцию"
+                                    >
+                                        <Smile className="w-4 h-4" />
+                                    </button>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); onReply(message); setShowActions(false); }}
                                         className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-all"
@@ -413,6 +416,25 @@ const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDe
                                     >
                                         <CornerUpLeft className="w-4 h-4" />
                                     </button>
+                                    {/* Copy button */}
+                                    {message.text && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (onCopy) {
+                                                    onCopy(message.text || '');
+                                                } else {
+                                                    navigator.clipboard.writeText(message.text || '');
+                                                }
+                                                if ('vibrate' in navigator) navigator.vibrate(10);
+                                                setShowActions(false);
+                                            }}
+                                            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-all"
+                                            title="Копировать"
+                                        >
+                                            <Copy className="w-4 h-4" />
+                                        </button>
+                                    )}
                                     <button
                                         onClick={handleLike}
                                         className={cn(

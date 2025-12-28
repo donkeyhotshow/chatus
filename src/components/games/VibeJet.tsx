@@ -6,7 +6,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { hapticFeedback } from '@/lib/game-utils';
 import { Button } from '../ui/button';
 import { Gamepad2, Trophy, Zap, Heart, Star, Pause } from 'lucide-react';
-import { ExitButton } from '../ui/ExitButton';
 
 // --- Constants ---
 const CANVAS_WIDTH = 900;
@@ -578,16 +577,7 @@ export default function VibeJet({ onGameEnd }: {
 
     return (
         <div ref={containerRef} className="relative w-full h-full bg-[#0a0a1a] flex flex-col">
-            <div className="absolute top-3 left-3 z-20">
-                <ExitButton
-                    view="game"
-                    hasUnsavedChanges={gameState === 'playing'}
-                    onExit={onGameEnd}
-                    variant="icon"
-                    size="md"
-                    className="bg-black/50 hover:bg-white/10 text-white rounded-xl border border-white/10"
-                />
-            </div>
+            {/* Exit button removed - using parent GameLobby back button */}
 
             <div className="flex-1 flex items-center justify-center p-4">
                 <div className="relative">
@@ -609,11 +599,10 @@ export default function VibeJet({ onGameEnd }: {
                             <Button onClick={startGame} className="bg-violet-600 hover:bg-violet-700 text-white px-6 py-5 text-base">
                                 <Zap className="w-4 h-4 mr-2" /> ИГРАТЬ
                             </Button>
-                            {highScore > 0 && (
-                                <div className="mt-3 flex items-center gap-2 text-yellow-400 text-sm">
-                                    <Trophy className="w-4 h-4" /><span>Рекорд: {highScore}</span>
-                                </div>
-                            )}
+                            <div className="mt-3 flex items-center gap-2 text-yellow-400 text-sm">
+                                <Trophy className="w-4 h-4" />
+                                <span>Рекорд: {highScore > 0 ? highScore : 'Не установлен'}</span>
+                            </div>
                         </div>
                     )}
 

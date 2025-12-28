@@ -93,27 +93,53 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+        {/* P2 Performance: Preload critical fonts for LCP optimization */}
+        <link
+          rel="preload"
+          href="https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+
+        {/* Preconnect to critical origins */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://firebasestorage.googleapis.com" />
+
         {/* P0 Performance: Preconnect to Firebase services */}
         <link rel="preconnect" href="https://firestore.googleapis.com" />
         <link rel="preconnect" href="https://firebaseio.com" />
+
+        {/* DNS prefetch for faster resolution */}
         <link rel="dns-prefetch" href="https://firestore.googleapis.com" />
         <link rel="dns-prefetch" href="https://firebaseio.com" />
         <link rel="dns-prefetch" href="https://firebasestorage.googleapis.com" />
+
+        {/* Load Inter font with display=swap for better LCP */}
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
+                  // Register main SW for caching and offline support
+                  navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                      console.log('[SW] Main service worker registered:', registration.scope);
+                    })
+                    .catch(function(error) {
+                      console.error('[SW] Main service worker registration failed:', error);
+                    });
+
+                  // Register Firebase messaging SW for push notifications
                   navigator.serviceWorker.register('/firebase-messaging-sw.js')
                     .then(function(registration) {
-                      console.log('SW registered: ', registration);
+                      console.log('[SW] Firebase messaging SW registered:', registration.scope);
                     })
-                    .catch(function(registrationError) {
-                      console.log('SW registration failed: ', registrationError);
+                    .catch(function(error) {
+                      console.log('[SW] Firebase messaging SW registration failed:', error);
                     });
                 });
               }
