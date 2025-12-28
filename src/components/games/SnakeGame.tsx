@@ -635,7 +635,7 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
 
   return (
     <div ref={containerRef} className="flex flex-col items-center w-full max-w-lg mx-auto px-2">
-      {/* Header */
+      {/* Header */}
       <div className="w-full flex items-center justify-between mb-3">
         <ExitButton onExit={onGameEnd} />
         <div className="flex items-center gap-2">

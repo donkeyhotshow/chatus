@@ -3,7 +3,7 @@
  * Утилиты для анализа и мониторинга размера бандла в runtime
  */
 
-imp { BUNDLE_BUDGETS, PERFORMANCE_THRESHOLDS } from './performance-config';
+import { BUNDLE_BUDGETS, PERFORMANCE_THRESHOLDS } from './performance-config';
 
 interface ChunkInfo {
   name: string;
