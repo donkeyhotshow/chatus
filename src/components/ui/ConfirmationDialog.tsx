@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useCallback, useState, createContext, useContext, React} from 'react';
+import { memo, useCallback, useState, createContext, useContext, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Trash2, LogOut, X, Check } from 'lucide-react';
 import { FocusTrap } from '@/components/accessibility/FocusTrap';
@@ -112,7 +112,7 @@ export const ConfirmationDialog = memo(function ConfirmationDialog({
                     <div className="flex-1 min-w-0">
                       <h2
                         id="dialog-title"
-assName="text-lg font-semibold text-white mb-1"
+                        className="text-lg font-semibold text-white mb-1"
            >
                         {title}
                       </h2>

@@ -5,7 +5,7 @@ import { ref, uploadBytesResumable, getDownloadURL, UploadTask } from 'firebase/
 import { useFirebase } from '@/components/firebase/FirebaseProvider';
 import { isDemoMode } from '@/lib/demo-mode';
 import { logger } from '@/lib/logger';
-import type { FileUploadState, UploadStatus } from '@/components/ui/FileUploadProgress';
+import type { FileUploadState } from '@/components/ui/FileUploadProgress';
 
 interface UseFileUploadOptions {
     roomId: string;
@@ -99,6 +99,10 @@ export function useFileUpload({
         // Real upload with Firebase
         return new Promise((resolve, reject) => {
             const storagePath = `chat_images/${roomId}/${userId}/${Date.now()}_${file.name}`;
+            if (!firebase?.storage) {
+                reject(new Error('Firebase storage not initialized'));
+                return;
+            }
             const storageRef = ref(firebase.storage, storagePath);
             const uploadTask = uploadBytesResumable(storageRef, file);
 

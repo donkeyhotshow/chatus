@@ -4,8 +4,8 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-client';
-import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { getFirestore } from '@/lib/firebase-lazy';
+import { serverTimestamp } from 'firebase/firestore';
+import { getFirestoreLazy } from '@/lib/firebase-lazy';
 
 export interface User {
   id: string;
@@ -24,7 +24,8 @@ export function useUserQuery(userId: string | undefined) {
     queryKey: queryKeys.user(userId || ''),
     queryFn: async () => {
       if (!userId) return null;
-      const db = await getFirestore();
+      const { getFirestore, doc, getDoc } = await getFirestoreLazy();
+      const db = getFirestore();
       const userRef = doc(db, 'users', userId);
       const snapshot = await getDoc(userRef);
 
@@ -46,7 +47,8 @@ export function useCurrentUserQuery(userId: string | undefined) {
     queryKey: queryKeys.currentUser,
     queryFn: async () => {
       if (!userId) return null;
-      const db = await getFirestore();
+      const { getFirestore, doc, getDoc } = await getFirestoreLazy();
+      const db = getFirestore();
       const userRef = doc(db, 'users', userId);
       const snapshot = await getDoc(userRef);
 
@@ -67,11 +69,12 @@ export function useUpdateProfileMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-ationFn: async ({ userId, updates }: {
+    mutationFn: async ({ userId, updates }: {
       userId: string;
       updates: Partial<Pick<User, 'displayName' | 'photoURL' | 'bio'>>;
     }) => {
-      const db = await getFirestore();
+      const { getFirestore, doc, updateDoc } = await getFirestoreLazy();
+      const db = getFirestore();
       const userRef = doc(db, 'users', userId);
 
       await updateDoc(userRef, {
@@ -97,7 +100,8 @@ export function useUpdatePresenceMutation() {
       userId: string;
       status: 'online' | 'offline' | 'away';
     }) => {
-      const db = await getFirestore();
+      const { getFirestore, doc, updateDoc } = await getFirestoreLazy();
+      const db = getFirestore();
       const userRef = doc(db, 'users', userId);
 
       await updateDoc(userRef, {

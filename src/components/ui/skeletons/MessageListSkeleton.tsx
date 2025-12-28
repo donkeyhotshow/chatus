@@ -17,7 +17,7 @@ function MessageItemSkeleton({ isOwn = false, showAvatar = true, className }: Me
   return (
     <div
       className={cn(
-x gap-3 px-4 py-2',
+        'flex gap-3 px-4 py-2',
         isOwn ? 'flex-row-reverse' : 'flex-row',
         className
       )}

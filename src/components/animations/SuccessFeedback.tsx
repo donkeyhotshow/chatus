@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, X, AtCircle, Info } from 'lucide-react';
+import { Check, X, AlertCircle, Info } from 'lucide-react';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 type FeedbackType = 'success' | 'error' | 'warning' | 'info';

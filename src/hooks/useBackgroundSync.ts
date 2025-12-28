@@ -18,7 +18,7 @@ interface BackgroundSyncConfig {
 
 const DEFAULT_CONFIG: Required<BackgroundSyncConfig> = {
   maxRetries: 5,
-  retryDe00,
+  retryDelay: 3000,
   storageKey: 'chatus_pending_messages',
 };
 
@@ -177,7 +177,7 @@ export function useBackgroundSync(
         if ('sync' in registration) {
           await (registration as ServiceWorkerRegistration & { sync: { register: (tag: string) => Promise<void> } }).sync.register('sync-messages');
         }
-      } catch (error) {
+      } catch {
         // Background sync not supported
         console.log('[BackgroundSync] Background sync not supported');
       }

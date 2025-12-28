@@ -45,9 +45,9 @@ const generateCursorColor = (userId: string) => {
  * Palm rejection - определяет, является ли касание ладонью
  * Этап 6: Canvas improvements
  */
-const isPalmTouch = (touch: Touch): boolean => {
-  const radiusX = (touch as any).radiusX || 0;
-  const radiusY = (touch as any).radiusY || 0;
+const isPalmTouch = (touch: any): boolean => {
+  const radiusX = touch.radiusX || 0;
+  const radiusY = touch.radiusY || 0;
   const maxRadius = Math.max(radiusX, radiusY);
 
   // Большие касания (> 40px) скорее всего ладонь
@@ -67,8 +67,8 @@ const isPalmTouch = (touch: Touch): boolean => {
 /**
  * Фильтрует касания, убирая ладони
  */
-const filterPalmTouches = (touches: TouchList): Touch[] => {
-  const validTouches: Touch[] = [];
+const filterPalmTouches = (touches: any): any[] => {
+  const validTouches: any[] = [];
   for (let i = 0; i < touches.length; i++) {
     if (!isPalmTouch(touches[i])) {
       validTouches.push(touches[i]);

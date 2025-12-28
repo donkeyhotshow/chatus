@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback } from 'react';
 
-interfacealsMetric {
+interface WebVitalsMetric {
   name: 'CLS' | 'FCP' | 'FID' | 'INP' | 'LCP' | 'TTFB';
   value: number;
   rating: 'good' | 'needs-improvement' | 'poor';

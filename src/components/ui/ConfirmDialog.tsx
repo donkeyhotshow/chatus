@@ -1,7 +1,7 @@
 'use client';
 
-import { memo, useCallback, useState, createContext, useContext, ReactNode } from 'reac
-port { motion, AnimatePresence } from 'framer-motion';
+import { memo, useCallback, useState, createContext, useContext, ReactNode } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Trash2, LogOut, X } from 'lucide-react';
 import { FocusTrap } from '@/components/accessibility/FocusTrap';
 

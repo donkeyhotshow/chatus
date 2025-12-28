@@ -12,7 +12,7 @@ const ReducedMotionContext = createContext<ReducedMotionContextType>({
   setOverride: () => {},
 });
 
-export functReducedMotionContext() {
+export function useReducedMotionContext() {
   return useContext(ReducedMotionContext);
 }
 

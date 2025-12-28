@@ -5,9 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GameState, UserProfile } from '@/lib/types';
 import { RealtimeSnakeService, SnakeGameState, SnakeData } from '@/services/RealtimeSnakeService';
 import { db as realtimeDb } from '@/lib/firebase';
-import { PremiumCard, PremiumCardContent, PremiumCardHeader, PremiumCardTitle } from '../ui/premium-card';
 import { PremiumButton } from '../ui/premium-button';
-import { Trophy, Zap, Gamepad2, Star, Flame, Clock, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Trophy, Zap, Gamepad2, Star, Clock, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { hapticFeedback } from '@/lib/game-utils';
 import { formatGameTime } from '@/utils/time';
 import { ExitButton } from '../ui/ExitButton';
@@ -230,7 +229,7 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
   // Spawn food
   const spawnFood = useCallback(() => {
     let attempts = 0;
-    let newFood: Food = {
+    const newFood: Food = {
       x: Math.floor(Math.random() * GRID_CELLS),
       y: Math.floor(Math.random() * GRID_CELLS),
       type: 'normal',
@@ -637,7 +636,7 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
     <div ref={containerRef} className="flex flex-col items-center w-full max-w-lg mx-auto px-2">
       {/* Header */}
       <div className="w-full flex items-center justify-between mb-3">
-        <ExitButton onExit={onGameEnd} />
+        <ExitButton onExit={onGameEnd} view="game" />
         <div className="flex items-center gap-2">
           <Clock className="w-4 h-4 text-[var(--text-muted)]" />
           <span className="text-sm font-mono text-[var(--text-secondary)]">
@@ -730,11 +729,11 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
                 </div>
               </div>
               <div className="flex gap-3">
-                <PremiumButton onClick={handleStart} variant="default">
+                <PremiumButton onClick={handleStart} variant="primary">
                   <Star className="w-4 h-4 mr-2" />
                   Играть снова
                 </PremiumButton>
-                <PremiumButton onClick={onGameEnd} variant="outline">
+                <PremiumButton onClick={onGameEnd} variant="secondary">
                   Выйти
                 </PremiumButton>
               </div>

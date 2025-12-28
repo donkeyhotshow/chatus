@@ -285,7 +285,7 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
                 <CardHeader className="text-center relative">
                     <ExitButton
                         view="game"
-                        hasUnsavedChanges={!winner && board.some(cell => cell !== null)}
+                        hasUnsavedChanges={!winner && board?.some(cell => cell !== null)}
                         onExit={onGameEnd}
                         variant="icon"
                         size="sm"

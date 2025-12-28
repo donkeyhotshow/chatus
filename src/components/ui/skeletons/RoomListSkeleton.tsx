@@ -23,7 +23,7 @@ function RoomItemSkeleton({ className }: RoomItemSkeletonProps) {
           <div className="h-4 w-28 bg-bg-tertiary rounded skeleton-wave" />
           <div className="h-3 w-10 bg-bg-tertiary rounded skeleton-wave" />
         </div>
-        <div className="h-3.5 w-full max-w-[200px] bg-bg-tertiary rounded skeleton-wave />
+        <div className="h-3.5 w-full max-w-[200px] bg-bg-tertiary rounded skeleton-wave" />
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ interface SkeletonProps {
     width?: string | number;
     height?: string | number;
     animation?: 'pulse' | 'wave' | 'none';
+    style?: React.CSSProperties;
 }
 
 /**
@@ -19,6 +20,7 @@ export function Skeleton({
     width,
     height,
     animation = 'wave',
+    style,
 }: SkeletonProps) {
     const variantClasses = {
         text: 'rounded',
@@ -44,6 +46,7 @@ export function Skeleton({
             style={{
                 width: width,
                 height: height || (variant === 'text' ? '1em' : undefined),
+                ...style,
             }}
         />
     );

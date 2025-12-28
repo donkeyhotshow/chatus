@@ -6,20 +6,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/query-client';
 import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  orderBy,
-  limit,
-  where,
-  addDoc,
-  updateDoc,
   serverTimestamp,
   Timestamp
 } from 'firebase/firestore';
-import { getFirestore } from '@/lib/firebase-lazy';
+import { getFirestoreLazy } from '@/lib/firebase-lazy';
 
 export interface Room {
   id: string;
@@ -51,7 +41,8 @@ export function useRoomsQuery(userId?: string) {
   return useQuery({
     queryKey: queryKeys.rooms,
     queryFn: async () => {
-      const db = await getFirestore();
+      const { getFirestore, collection, query, orderBy, limit, getDocs } = await getFirestoreLazy();
+      const db = getFirestore();
       const roomsRef = collection(db, 'rooms');
       const q = query(roomsRef, orderBy('updatedAt', 'desc'), limit(50));
       const snapshot = await getDocs(q);
@@ -72,7 +63,8 @@ export function useRoomQuery(roomId: string | undefined) {
     queryKey: queryKeys.room(roomId || ''),
     queryFn: async () => {
       if (!roomId) return null;
-      const db = await getFirestore();
+      const { getFirestore, doc, getDoc } = await getFirestoreLazy();
+      const db = getFirestore();
       const roomRef = doc(db, 'rooms', roomId);
       const snapshot = await getDoc(roomRef);
 
@@ -94,7 +86,8 @@ export function useRoomMessagesQuery(roomId: string | undefined, messageLimit = 
     queryKey: [...queryKeys.roomMessages(roomId || ''), messageLimit],
     queryFn: async () => {
       if (!roomId) return [];
-      const db = await getFirestore();
+      const { getFirestore, collection, query, orderBy, limit, getDocs } = await getFirestoreLazy();
+      const db = getFirestore();
       const messagesRef = collection(db, 'rooms', roomId, 'messages');
       const q = query(messagesRef, orderBy('timestamp', 'desc'), limit(messageLimit));
       const snapshot = await getDocs(q);
@@ -119,13 +112,14 @@ export function useSendMessageMutation(roomId: string) {
       senderId: string;
       senderName: string;
     }) => {
-      const db = await getFirestore();
+      const { getFirestore, collection, addDoc, doc, updateDoc } = await getFirestoreLazy();
+      const db = getFirestore();
       const messagesRef = collection(db, 'rooms', roomId, 'messages');
 
       const newMessage = {
         text,
         senderId,
-        sme,
+        senderName,
         timestamp: serverTimestamp(),
         type: 'text' as const,
       };
@@ -189,7 +183,8 @@ export function useCreateRoomMutation() {
       description?: string;
       createdBy: string;
     }) => {
-      const db = await getFirestore();
+      const { getFirestore, collection, addDoc } = await getFirestoreLazy();
+      const db = getFirestore();
       const roomsRef = collection(db, 'rooms');
 
       const newRoom = {

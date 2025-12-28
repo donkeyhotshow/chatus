@@ -15,7 +15,7 @@ interface PreloadOptions {
 
 // Кэш загруженных модулей
 const loadedModules = new Set<string>();
-const pendingLoads = new Map<string, Promise<any>>();
+const pendingLoads = new Map<string, Promise<unknown>>();
 
 /**
  * Предзагрузка модуля с дедупликацией
@@ -46,7 +46,7 @@ async function preloadModule(modulePath: string): Promise<void> {
 /**
  * Предзагрузка компонентов при idle
  */
-function preloadOnIdle(modules: string[]): void {
+function preloadOnIdle(modules: readonly string[]): void {
   if (typeof window === 'undefined') return;
   if (isSlowConnection()) return; // Не предзагружаем на медленном соединении
 
@@ -128,7 +128,7 @@ export function useResourcePreloader() {
   /**
    * Предзагрузка шрифта
    */
-  const preloadFont = useCallback((fontFamily: string, src: string): Promise<void> => {
+  const preloadFont = useCallback((fontFamily: string): Promise<void> => {
     if (typeof document === 'undefined') return Promise.resolve();
 
     return document.fonts.load(`1em ${fontFamily}`).then(() => {});
@@ -161,7 +161,7 @@ export function useResourcePreloader() {
  * Hook для предзагрузки при intersection (появлении в viewport)
  */
 export function useIntersectionPreloader(
-  ref: React.RefObject<HTMLElement>,
+  ref: React.RefObject<HTMLElement | null>,
   onIntersect: () => void,
   options?: IntersectionObserverInit
 ) {

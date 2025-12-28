@@ -8,7 +8,7 @@
 import DOMPurify from 'dompurify';
 
 // Configure DOMPurify for strict sanitization
-const SANITIZE_CONFIG: DOMPurify.Config = {
+const SANITIZE_CONFIG = {
   ALLOWED_TAGS: [], // No HTML tags allowed by default
   ALLOWED_ATTR: [], // No attributes allowed
   KEEP_CONTENT: true, // Keep text content
@@ -17,7 +17,7 @@ const SANITIZE_CONFIG: DOMPurify.Config = {
 };
 
 // Config for allowing basic formatting (bold, italic, links)
-const SANITIZE_CONFIG_BASIC: DOMPurify.Config = {
+const SANITIZE_CONFIG_BASIC = {
   ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'br'],
   ALLOWED_ATTR: ['href', 'target', 'rel'],
   ALLOW_DATA_ATTR: false,
@@ -26,7 +26,7 @@ const SANITIZE_CONFIG_BASIC: DOMPurify.Config = {
 };
 
 // Config for search highlighting
-const SANITIZE_CONFIG_HIGHLIGHT: DOMPurify.Config = {
+const SANITIZE_CONFIG_HIGHLIGHT = {
   ALLOWED_TAGS: ['mark', 'span'],
   ALLOWED_ATTR: ['class'],
   KEEP_CONTENT: true,
@@ -47,7 +47,7 @@ export function sanitizeText(text: string): string {
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
   }
-  return DOMPurify.sanitize(text, SANITIZE_CONFIG);
+  return DOMPurify.sanitize(text, SANITIZE_CONFIG) as string;
 }
 
 /**
@@ -59,7 +59,7 @@ export function sanitizeHtml(html: string): string {
   if (typeof window === 'undefined') return sanitizeText(html);
 
   // Add rel="noopener noreferrer" to all links
-  const clean = DOMPurify.sanitize(html, SANITIZE_CONFIG_BASIC);
+  const clean = DOMPurify.sanitize(html, SANITIZE_CONFIG_BASIC) as string;
   return clean.replace(/<a /g, '<a rel="noopener noreferrer" ');
 }
 
@@ -70,7 +70,7 @@ export function sanitizeHtml(html: string): string {
 export function sanitizeHighlight(html: string): string {
   if (!html || typeof html !== 'string') return '';
   if (typeof window === 'undefined') return sanitizeText(html);
-  return DOMPurify.sanitize(html, SANITIZE_CONFIG_HIGHLIGHT);
+  return DOMPurify.sanitize(html, SANITIZE_CONFIG_HIGHLIGHT) as string;
 }
 
 /**

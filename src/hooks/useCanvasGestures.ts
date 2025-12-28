@@ -12,8 +12,8 @@
 import { useCallback, useRef, useState, useEffect } from 'react';
 
 interface Point {
-  x: nu
- number;
+  x: number;
+  y: number;
   pressure?: number;
   timestamp: number;
 }
@@ -56,7 +56,7 @@ const DEFAULT_OPTIONS: Required<Omit<CanvasGesturesOptions, 'onTransformChange' 
 /**
  * Определяет, является ли касание ладонью
  */
-function isPalmTouch(touch: Touch): boolean {
+function isPalmTouch(touch: any): boolean {
   // Проверяем размер касания (radiusX/radiusY)
   const radiusX = (touch as any).radiusX || 0;
   const radiusY = (touch as any).radiusY || 0;
@@ -79,7 +79,7 @@ function isPalmTouch(touch: Touch): boolean {
 /**
  * Фильтрует касания, убирая ладони
  */
-function filterPalmTouches(touches: TouchList, palmRejection: boolean): Touch[] {
+function filterPalmTouches(touches: any, palmRejection: boolean): any[] {
   if (!palmRejection) {
     return Array.from(touches);
   }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect, memo } from 'react';
-import { X, Pipetteom 'lucide-react';
+import { X, Pipette } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ColorPickerProps {
