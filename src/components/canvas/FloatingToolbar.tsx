@@ -207,7 +207,7 @@ export function FloatingToolbar({
 
             {/* Main Horizontal Toolbar - Fixed at bottom - P1-5 FIX: Mobile layout optimization */}
             <div
-                className="fixed bottom-0 left-0 right-0 z-30 bg-[#1A1A1C] border-t border-white/10 safe-bottom"
+                className="fixed bottom-0 left-0 right-0 z-30 bg-[#1A1A1C] border-t border-white/10 safe-bottom canvas-toolbar-horizontal"
                 role="toolbar"
                 aria-label="Инструменты рисования"
             >
