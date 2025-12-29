@@ -463,15 +463,19 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
 
     // Keyboard controls - ПОЛНОСТЬЮ ПЕРЕРАБОТАННЫЕ
     useEffect(() => {
+        console.log('[CarRace] Keyboard effect:', { isGameStarted, countdown });
         if (!isGameStarted || countdown !== null) return;
+        console.log('[CarRace] Registering keyboard handlers');
 
         const handleKeyDown = (e: KeyboardEvent) => {
             const key = e.key.toLowerCase();
             const validKeys = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd', ' ', 'shift'];
+            console.log('[CarRace] keydown:', key, 'valid:', validKeys.includes(key));
             if (validKeys.includes(key)) {
                 e.preventDefault();
                 e.stopPropagation();
                 keysRef.current.add(key);
+                console.log('[CarRace] keys:', Array.from(keysRef.current));
             }
         };
 
