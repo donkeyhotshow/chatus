@@ -3,6 +3,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import { X, Check, Trash2, Undo2, PenTool } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface DoodlePadProps {
   onClose: () => void;

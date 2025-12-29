@@ -89,8 +89,9 @@ async function cacheFirst(request, cacheName = STATIC_CACHE) {
         // Обновляем кэш в фоне
         fetch(request).then(response => {
             if (response.ok) {
+                const responseToCache = response.clone();
                 caches.open(cacheName).then(cache => {
-                    cache.put(request, response.clone());
+                    cache.put(request, responseToCache);
                 });
             }
         }).catch(() => {});
@@ -111,8 +112,9 @@ async function staleWhileRevalidate(request) {
 
     const fetchPromise = fetch(request).then(response => {
         if (response.ok) {
+            const responseToCache = response.clone();
             caches.open(STATIC_CACHE).then(cache => {
-                cache.put(request, response.clone());
+                cache.put(request, responseToCache);
             });
         }
         return response;
