@@ -284,5 +284,3 @@ export default function DoodlePad({ onClose, onSend }: DoodlePadProps) {
     </div>
   );
 }
-  );
-}
