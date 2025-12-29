@@ -193,7 +193,7 @@ export const ChatArea = memo(function ChatArea({
             const bTime = b.createdAt?.toMillis?.() || 0;
             return aTime - bTime;
         });
-    }, [persistedMessages, optimisticMessages, cachedMessages]);
+    }, [persistedMessages, cachedMessages]);
 
     const otherUser = useMemo(() => {
         return room?.participantProfiles?.find(p => p.id !== user?.id);

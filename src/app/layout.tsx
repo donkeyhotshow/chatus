@@ -126,20 +126,20 @@ export default function RootLayout({
                 window.addEventListener('load', function() {
                   // Register main SW for caching and offline support
                   navigator.serviceWorker.register('/sw.js')
-                    .then(function(registration) {
-                      console.log('[SW] Main service worker registered:', registration.scope);
+                    .then(function(reg) {
+                      console.log('[SW] Main SW registered');
                     })
-                    .catch(function(error) {
-                      console.error('[SW] Main service worker registration failed:', error);
+                    .catch(function(err) {
+                      console.error('[SW] Main SW failed:', err);
                     });
 
-                  // Register Firebase messaging SW for push notifications
+                  // Register Firebase messaging SW
                   navigator.serviceWorker.register('/firebase-messaging-sw.js')
-                    .then(function(registration) {
-                      console.log('[SW] Firebase messaging SW registered:', registration.scope);
+                    .then(function(reg) {
+                      console.log('[SW] Firebase SW registered');
                     })
-                    .catch(function(error) {
-                      console.log('[SW] Firebase messaging SW registration failed:', error);
+                    .catch(function(err) {
+                      console.warn('[SW] Firebase SW failed:', err);
                     });
                 });
               }

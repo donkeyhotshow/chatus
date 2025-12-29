@@ -3,7 +3,8 @@
 import { useState, useEffect, lazy, Suspense, useMemo, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Room } from '@/lib/types';
-import { MessageCircle, PenTool, Gamepad2, Settings, LogOut } from 'lucide-react';
+import { MessageCircle, PenTool, Gamepad2 } from 'lucide-react';
+import { OptimizedAvatar } from '../ui/OptimizedImage';
 import { ChatArea } from './ChatArea';
 import { ProfileCreationDialog } from './ProfileCreationDialog';
 import { MobileNavigation } from '../mobile/MobileNavigation';
@@ -486,10 +487,14 @@ export function ChatRoom({ roomId }: { roomId: string }) {
 
                         <div className="ml-auto flex items-center gap-4">
                             <div className="flex -space-x-2">
-                                {room?.participantProfiles?.slice(0, 3).map((p, i) => (
-                                    <div key={p.id} className="w-7 h-7 rounded-full border-2 border-black bg-[var(--bg-tertiary)] overflow-hidden" title={p.name}>
-                                        {p.avatar ? <img src={p.avatar} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[10px]">{p.name[0]}</div>}
-                                    </div>
+                                {room?.participantProfiles?.slice(0, 3).map((p) => (
+                                    <OptimizedAvatar 
+                                        key={p.id} 
+                                        src={p.avatar} 
+                                        alt={p.name} 
+                                        size={28} 
+                                        className="border-2 border-black"
+                                    />
                                 ))}
                                 {(room?.participantProfiles?.length || 0) > 3 && (
                                     <div className="w-7 h-7 rounded-full border-2 border-black bg-[var(--bg-tertiary)] flex items-center justify-center text-[10px] text-white/40">

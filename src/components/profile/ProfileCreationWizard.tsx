@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { ValidatedInput } from '@/components/ui/ValidatedInput';
 import { useToast } from '@/components/ui/toast';
+import { OptimizedImage, OptimizedAvatar } from '@/components/ui/OptimizedImage';
 
 interface ProfileData {
     avatar: string | null;
@@ -89,9 +90,11 @@ function AvatarEditor({
             <div className="flex justify-center">
                 <div className="relative">
                     {avatar ? (
-                        <img
+                        <OptimizedImage
                             src={avatar}
                             alt="Avatar preview"
+                            width={128}
+                            height={128}
                             className="w-32 h-32 rounded-2xl border-4 border-violet-500/50 shadow-2xl shadow-violet-500/25"
                         />
                     ) : (
@@ -323,10 +326,11 @@ export function ProfileCreationWizard({ onComplete, onCancel }: ProfileCreationW
                                         <h4 className="text-sm font-medium text-slate-300 mb-4">Предварительный просмотр профиля:</h4>
                                         <div className="flex items-center gap-4">
                                             {profileData.avatar && (
-                                                <img
+                                                <OptimizedAvatar
                                                     src={profileData.avatar}
                                                     alt="Avatar"
-                                                    className="w-16 h-16 rounded-xl"
+                                                    size={64}
+                                                    className="rounded-xl"
                                                 />
                                             )}
                                             <div>

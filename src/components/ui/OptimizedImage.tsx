@@ -10,6 +10,7 @@
 
 'use client';
 
+import Image from 'next/image';
 import { useState, useCallback, useRef, useEffect, memo } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -44,7 +45,8 @@ function generatePlaceholder(color: string = '#1A1A1C'): string {
       <rect fill="${color}" width="100" height="100"/>
     </svg>
   `;
-  return `data:image/svg+xml;base64,${btoa(svg)}`;
+  // Use Buffer for base64 in Node/Next.js environment if needed, but btoa is fine in browser
+  return `data:image/svg+xml;base64,${typeof window !== 'undefined' ? btoa(svg) : Buffer.from(svg).toString('base64')}`;
 }
 
 /**
@@ -76,12 +78,12 @@ export const OptimizedImage = memo(function OptimizedImage({
   placeholderColor = '#1A1A1C',
   onClick,
   priority = false,
+  quality = 75,
   onError: onErrorProp,
 }: OptimizedImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [isInView, setIsInView] = useState(priority);
-  const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Intersection Observer для lazy loading
@@ -143,26 +145,30 @@ export const OptimizedImage = memo(function OptimizedImage({
 
       {/* Blur placeholder */}
       {showBlur && !isLoaded && !hasError && (
-        <img
+        <Image
           src={placeholder}
           alt=""
+          width={width || 100}
+          height={height || 100}
           className={cn(
             "absolute inset-0 w-full h-full object-cover",
             "filter blur-lg scale-110",
             className
           )}
           aria-hidden="true"
+          unoptimized
         />
       )}
 
       {/* Actual image */}
       {isInView && !hasError && (
-        <img
-          ref={imgRef}
+        <Image
           src={src}
           alt={alt}
-          loading={priority ? 'eager' : 'lazy'}
-          decoding="async"
+          width={width || 800}
+          height={height || 800}
+          priority={priority}
+          quality={quality}
           onLoad={handleLoad}
           onError={handleError}
           className={cn(

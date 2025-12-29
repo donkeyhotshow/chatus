@@ -19,13 +19,18 @@ interface UsePinchZoomOptions {
   onDoubleTap?: () => void;
 }
 
-function getDistance(touch1: Touch, touch2: Touch): number {
+interface MinimalTouch {
+  clientX: number;
+  clientY: number;
+}
+
+function getDistance(touch1: MinimalTouch, touch2: MinimalTouch): number {
   const dx = touch1.clientX - touch2.clientX;
   const dy = touch1.clientY - touch2.clientY;
   return Math.sqrt(dx * dx + dy * dy);
 }
 
-function getCenter(touch1: Touch, touch2: Touch): { x: number; y: number } {
+function getCenter(touch1: MinimalTouch, touch2: MinimalTouch): { x: number; y: number } {
   return {
     x: (touch1.clientX + touch2.clientX) / 2,
     y: (touch1.clientY + touch2.clientY) / 2,

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { SwipeGestures } from './SwipeGestures';
 import { cn } from '@/lib/utils';
+import { OptimizedAvatar } from '../ui/OptimizedImage';
 
 interface User {
     id: string;
@@ -116,10 +117,10 @@ export function MobileParticipantsPanel({
                 <div className="relative flex-shrink-0">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold overflow-hidden">
                         {user.avatar ? (
-                            <img
+                            <OptimizedAvatar
                                 src={user.avatar}
                                 alt={user.name}
-                                className="w-full h-full object-cover"
+                                size={48}
                             />
                         ) : (
                             user.name.charAt(0).toUpperCase()
