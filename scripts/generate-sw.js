@@ -17,7 +17,7 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-const swContent = \`/* eslint-disable no-undef */
+const swContent = `/* eslint-disable no-undef */
 console.log('[SW] Firebase Messaging SW starting...');
 const CACHE_NAME = 'chatus-v1';
 const STATIC_CACHE = 'chatus-static-v1';
