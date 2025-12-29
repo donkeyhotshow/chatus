@@ -791,12 +791,13 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
           )}
         </div>
         {!isMazeActive && selectedTool === 'pen' && (
-          <div className="grid grid-cols-6 gap-1.5 p-2 bg-[var(--glass-bg)] backdrop-blur-xl rounded-2xl border border-[var(--glass-border)] w-auto md:w-52 shadow-[var(--shadow-lg)]">
+          <div className="grid grid-cols-4 gap-2 p-2.5 bg-[var(--glass-bg)] backdrop-blur-xl rounded-2xl border border-[var(--glass-border)] w-auto md:w-52 shadow-[var(--shadow-lg)]">
             {NEON_COLORS.map((c) => (
               <button
                 key={c}
                 onClick={() => setSelectedColor(c)}
-                className={`w-6 h-6 md:w-7 md:h-7 rounded-full transition-all border-2
+                aria-label={`Цвет ${c}`}
+                className={`w-10 h-10 rounded-full transition-all border-2 touch-feedback
                                 ${selectedColor === c ? 'ring-2 ring-white scale-110 z-10 border-[var(--bg-primary)]' : 'hover:scale-110 opacity-80 hover:opacity-100 border-transparent'}
                             `}
                 style={{ backgroundColor: c, boxShadow: selectedColor === c ? `0 0 12px ${c}` : `0 0 4px ${c}40` }}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo, lazy, Suspense } from 'react';
+import { useState, useCallback, useMemo, useEffect, lazy, Suspense } from 'react';
 import { doc } from 'firebase/firestore';
 import { Gamepad, ArrowLeft, Dices, Hand, Swords, Car, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -8,6 +8,35 @@ import { UserProfile, GameType, GameState } from '@/lib/types';
 import { useChatService } from '@/hooks/useChatService';
 import { useDoc } from '@/hooks/useDoc';
 import { useFirebase } from '../firebase/FirebaseProvider';
+
+// Skeleton component for game cards
+function GameCardSkeleton({ index }: { index: number }) {
+  return (
+    <div
+      className={cn(
+        "flex flex-col items-center gap-2 md:gap-3 p-4 md:p-5 rounded-2xl border min-h-[140px] md:min-h-[160px]",
+        "bg-white/[0.02] border-white/[0.06]",
+        "animate-pulse"
+      )}
+      style={{ animationDelay: `${index * 0.1}s` }}
+    >
+      {/* Icon skeleton */}
+      <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl bg-white/[0.06] skeleton-shimmer" />
+
+      {/* Text skeleton */}
+      <div className="flex flex-col items-center gap-2 w-full">
+        <div className="h-4 w-24 rounded bg-white/[0.06] skeleton-shimmer" />
+        <div className="h-3 w-20 rounded bg-white/[0.04] skeleton-shimmer" />
+
+        {/* Badge skeleton */}
+        <div className="flex items-center gap-2 mt-1">
+          <div className="h-5 w-14 rounded-full bg-white/[0.04] skeleton-shimmer" />
+          <div className="h-3 w-10 rounded bg-white/[0.03] skeleton-shimmer" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Lazy load game components
 const TicTacToe = lazy(() => import('./TicTacToe').then(m => ({ default: m.TicTacToe })));
@@ -67,8 +96,17 @@ function GameLoading() {
 export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
   const [activeGameId, setActiveGameId] = useState<GameType | null>(null);
   const [loadingGameId, setLoadingGameId] = useState<GameType | null>(null);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   const firebase = useFirebase();
+
+  // Simulate initial loading for skeleton effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitialLoading(false);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, []);
   const db = firebase?.db;
   const { service } = useChatService(roomId, user);
 
@@ -201,65 +239,75 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
       {/* Games list - Dark Minimalism cards */}
       <div className="flex-1 overflow-y-auto mobile-scroll-y game-lobby-content p-3 md:p-4">
         <div className="games-grid">
-          {gamesList.map((game, index) => {
-            const isLoading = loadingGameId === game.id;
-            const Icon = game.icon;
+          {isInitialLoading ? (
+            // Skeleton loading state
+            <>
+              {[...Array(7)].map((_, index) => (
+                <GameCardSkeleton key={index} index={index} />
+              ))}
+            </>
+          ) : (
+            // Actual game cards with stagger animation
+            gamesList.map((game, index) => {
+              const isLoading = loadingGameId === game.id;
+              const Icon = game.icon;
 
-            return (
-              <button
-                key={game.id}
-                onClick={() => handleStartGame(game.id)}
-                disabled={isLoading}
-                className={cn(
-                  "flex flex-col items-center gap-2 md:gap-3 p-4 md:p-5 rounded-2xl border transition-all duration-300 min-h-[120px] md:min-h-[140px]",
-                  "bg-white/[0.02] border-white/[0.06]",
-                  "hover:bg-white/[0.05] hover:border-white/10 hover:shadow-xl hover:shadow-purple-500/5",
-                  "hover:-translate-y-1",
-                  "active:scale-[0.98]",
-                  "shine-effect", // Quick Win #2: Shine effect on hover
-                  isLoading && "opacity-50 pointer-events-none",
-                  "animate-fade-in-up"
-                )}
-                style={{ animationDelay: `${index * 0.05}s` }}
-              >
-                <div className={cn(
-                  "w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center bg-gradient-to-br shadow-lg transition-transform group-hover:scale-110",
-                  game.gradient
-                )}>
-                  {isLoading ? (
-                    <div className="w-5 h-5 md:w-6 md:h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <Icon className="w-6 h-6 md:w-7 md:h-7 text-white" />
+              return (
+                <button
+                  key={game.id}
+                  onClick={() => handleStartGame(game.id)}
+                  disabled={isLoading}
+                  className={cn(
+                    "flex flex-col items-center gap-2 md:gap-3 p-4 md:p-5 rounded-2xl border transition-all duration-300 min-h-[140px] md:min-h-[160px]",
+                    "bg-white/[0.02] border-white/[0.06]",
+                    "hover:bg-white/[0.05] hover:border-white/10 hover:shadow-xl hover:shadow-purple-500/5",
+                    "hover:-translate-y-1",
+                    "active:scale-[0.98]",
+                    "shine-effect", // Quick Win #2: Shine effect on hover
+                    isLoading && "opacity-50 pointer-events-none",
+                    "animate-fade-in-up"
                   )}
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-semibold text-white">{game.name}</p>
-                  <p className="text-[11px] md:text-xs text-white/40 mt-0.5 md:mt-1">{game.description}</p>
-                  {/* Difficulty badge */}
-                  <div className="flex items-center justify-center gap-2 mt-2">
-                    <span className={cn(
-                      "px-2 py-0.5 rounded-full text-[10px] font-medium flex items-center gap-1",
-                      difficultyConfig[game.difficulty].color
-                    )}>
-                      {difficultyConfig[game.difficulty].label}
-                      <span className="flex gap-0.5">
-                        {[...Array(3)].map((_, i) => (
-                          <span
-                            key={i}
-                            className={cn(
-                              "w-1 h-1 rounded-full",
-                              i < difficultyConfig[game.difficulty].dots ? "bg-current" : "bg-current/30"
-                            )}
-                          />
-                        ))}
-                      </span>
-                    </span>
-                    <span className="text-[10px] text-white/30">{game.players} игр.</span>
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                >
+                  <div className={cn(
+                    "w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center bg-gradient-to-br shadow-lg transition-transform group-hover:scale-110",
+                    game.gradient
+                  )}>
+                    {isLoading ? (
+                      <div className="w-5 h-5 md:w-6 md:h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <Icon className="w-6 h-6 md:w-7 md:h-7 text-white" />
+                    )}
                   </div>
-                </div>
-              </button>
-            );
-          })}
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-white">{game.name}</p>
+                    <p className="text-[11px] md:text-xs text-white/40 mt-0.5 md:mt-1">{game.description}</p>
+                    {/* Difficulty badge */}
+                    <div className="flex items-center justify-center gap-2 mt-2">
+                      <span className={cn(
+                        "px-2 py-0.5 rounded-full text-[10px] font-medium flex items-center gap-1",
+                        difficultyConfig[game.difficulty].color
+                      )}>
+                        {difficultyConfig[game.difficulty].label}
+                        <span className="flex gap-0.5">
+                          {[...Array(3)].map((_, i) => (
+                            <span
+                              key={i}
+                              className={cn(
+                                "w-1 h-1 rounded-full",
+                                i < difficultyConfig[game.difficulty].dots ? "bg-current" : "bg-current/30"
+                              )}
+                            />
+                          ))}
+                        </span>
+                      </span>
+                      <span className="text-[10px] text-white/30">{game.players} игр.</span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })
+          )}
         </div>
 
         {/* Hint - Glass card */}

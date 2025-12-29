@@ -178,10 +178,15 @@ const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDe
         }
 
         if (message.text) {
+            // Dynamic line-height: short messages (1-2 lines ~80 chars) get 1.5, longer get 1.65
+            const isLongMessage = message.text.length > 80 || message.text.split('\n').length > 2;
             return (
                 <div className="flex flex-col">
                     {contentNode}
-                    <p className="leading-relaxed whitespace-pre-wrap text-[15px] break-words">
+                    <p className={cn(
+                        "whitespace-pre-wrap text-[15px] break-words text-white tracking-[0.01em]",
+                        isLongMessage ? "leading-[1.65]" : "leading-[1.5]"
+                    )}>
                         {message.text}
                     </p>
                 </div>
@@ -200,13 +205,14 @@ const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDe
 
     return (
         <motion.article
-            layout
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
+            layout="position"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
             role="article"
             aria-label={`${user.name} написал: ${message.text || 'изображение'}. ${formattedTime}`}
             className={cn(
-                "group flex gap-2.5 max-w-[85%] sm:max-w-[75%] mb-3 relative",
+                "group flex gap-2.5 max-w-[85%] sm:max-w-[75%] md:max-w-[65%] lg:max-w-[55%] mb-3 relative gpu-accelerated",
                 isOwn ? "ml-auto flex-row-reverse" : "items-start"
             )}
             onDoubleClick={handleDoubleClick}
@@ -252,11 +258,11 @@ const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDe
                     <div className="mb-1.5 px-1 flex items-center gap-2">
                         <span className={cn(
                             "text-sm font-semibold tracking-wide message-username",
-                            isOwn ? "text-white/70" : "text-violet-400"
+                            isOwn ? "text-white/90" : "text-[#C4B5FD]"
                         )}>
                             {user.name}
                         </span>
-                        <span className="text-xs text-white/60 message-time">{formattedTime}</span>
+                        <span className="text-xs text-white/60 message-time font-medium">{formattedTime}</span>
                     </div>
                 )}
 
@@ -278,7 +284,7 @@ const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDe
                             }
                         }}
                         className={cn(
-                            "relative px-4 py-3 rounded-2xl transition-all duration-200 cursor-pointer select-none",
+                            "relative px-4 py-3 rounded-2xl transition-all duration-150 cursor-pointer select-none contain-paint",
                             // Desktop hover states - Этап 4
                             "md:hover:shadow-lg md:hover:shadow-black/20",
                             isOwn
@@ -300,7 +306,7 @@ const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDe
                                         "md:hover:bg-white/[0.08]",
                                         "md:hover:border-white/[0.15]",
                                     ],
-                            message.id.startsWith("temp_") && "opacity-50",
+                            message.id.startsWith("temp_") && "opacity-60",
                             showActions && "ring-2 ring-violet-500/30"
                         )}
                     >

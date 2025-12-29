@@ -52,6 +52,10 @@ export const MobileMenuDrawer = memo(function MobileMenuDrawer({
     }, [isOpen]);
 
     const handleItemClick = useCallback((action?: () => void) => {
+        // Haptic feedback
+        if ('vibrate' in navigator) {
+            navigator.vibrate(5);
+        }
         action?.();
         onClose();
     }, [onClose]);

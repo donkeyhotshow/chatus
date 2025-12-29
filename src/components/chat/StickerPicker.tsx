@@ -72,7 +72,7 @@ export function StickerPicker({ onSelect, onClose }: StickerPickerProps) {
 
   return (
     <div className="relative" ref={containerRef}>
-      {/* Trigger Button */}
+      {/* Trigger Button - компактнее */}
       <button
         type="button"
         onClick={(e) => {
@@ -87,7 +87,9 @@ export function StickerPicker({ onSelect, onClose }: StickerPickerProps) {
           handleToggle();
         }}
         className={cn(
-          "p-2.5 rounded-xl text-white/40 hover:text-white/70 hover:bg-white/[0.05] transition-all duration-200 min-w-[44px] min-h-[44px] relative z-[105]",
+          "p-2 rounded-xl text-white/40 hover:text-white/70 hover:bg-white/[0.05] transition-all duration-200",
+          "min-w-[44px] min-h-[44px]",
+          "flex items-center justify-center relative z-[105]",
           isOpen && "text-white/70 bg-white/[0.05]"
         )}
         title="Стикеры"
@@ -102,40 +104,43 @@ export function StickerPicker({ onSelect, onClose }: StickerPickerProps) {
         <>
           {/* Mobile backdrop */}
           <div
-            className="fixed inset-0 bg-black/50 z-[100] md:hidden"
+            className="fixed inset-0 bg-black/60 z-[200] md:hidden"
             onClick={() => setIsOpen(false)}
           />
           <div className={cn(
-            "bg-black/95 border border-white/10 rounded-2xl shadow-2xl z-[110] backdrop-blur-2xl overflow-hidden",
-            // Desktop: absolute positioning
-            "md:absolute md:bottom-full md:right-0 md:mb-2 md:w-80",
+            "bg-[#121214] border border-white/10 shadow-2xl z-[210] backdrop-blur-2xl overflow-hidden",
+            // Desktop: absolute positioning above input
+            "md:absolute md:bottom-full md:left-0 md:mb-2 md:w-72 md:rounded-2xl",
             // Mobile: fixed bottom sheet
             "fixed bottom-0 left-0 right-0 md:bottom-auto md:left-auto",
-            "rounded-b-none md:rounded-2xl",
-            "w-full md:w-80"
+            "rounded-t-2xl md:rounded-2xl",
+            "w-full md:w-72",
+            "max-h-[50vh] md:max-h-[400px]",
+            // Animation
+            "animate-slide-up"
           )}>
             {/* Mobile drag handle */}
-            <div className="md:hidden flex justify-center pt-2">
-              <div className="w-10 h-1 bg-neutral-600 rounded-full" />
+            <div className="md:hidden flex justify-center pt-2 pb-1">
+              <div className="w-10 h-1 bg-white/20 rounded-full" />
             </div>
-            {/* Header */}
-            <div className="p-3 border-b border-white/10 flex justify-between items-center">
+            {/* Header - компактнее */}
+            <div className="px-3 py-2 border-b border-white/10 flex justify-between items-center">
               <span className="text-sm font-semibold text-white">Стикеры</span>
               <div className="flex items-center gap-2">
                 {isLoading && <Loader2 className="w-4 h-4 animate-spin text-violet-400" />}
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors touch-target"
+                  className="p-1.5 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors"
                 >
-                  <X className="w-5 h-5 md:w-4 md:h-4" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
           {/* Content */}
           {packs.length === 0 ? (
-            <div className="p-8 text-center text-sm text-white/50">
+            <div className="p-6 text-center text-sm text-white/50">
               {isLoading ? (
                 <div className="flex flex-col items-center gap-2">
                   <Loader2 className="w-6 h-6 animate-spin text-violet-400" />
@@ -150,8 +155,8 @@ export function StickerPicker({ onSelect, onClose }: StickerPickerProps) {
             </div>
           ) : (
             <div className="w-full">
-              {/* Stickers Grid */}
-              <div className="h-72 overflow-y-auto p-2">
+              {/* Stickers Grid - 4 columns for better touch targets */}
+              <div className="h-52 md:h-64 overflow-y-auto p-2 overscroll-contain">
                 {currentPack && (
                   <div className="grid grid-cols-4 gap-2">
                     {currentPack.stickers.map((sticker, idx) => (
@@ -159,7 +164,7 @@ export function StickerPicker({ onSelect, onClose }: StickerPickerProps) {
                         key={idx}
                         type="button"
                         onClick={() => handleSelect(sticker.localPath)}
-                        className="relative aspect-square hover:bg-white/10 rounded-lg transition-colors p-1"
+                        className="relative aspect-square hover:bg-white/10 rounded-lg transition-colors p-0.5 active:scale-95"
                       >
                         <Image
                           src={sticker.localPath}
@@ -174,16 +179,16 @@ export function StickerPicker({ onSelect, onClose }: StickerPickerProps) {
                 )}
               </div>
 
-              {/* Pack Selector */}
+              {/* Pack Selector - компактнее */}
               {packs.length > 1 && (
-                <div className="border-t border-white/10 p-1 bg-white/5">
-                  <div className="flex gap-1 overflow-x-auto">
+                <div className="border-t border-white/10 p-1.5 bg-white/5">
+                  <div className="flex gap-1 overflow-x-auto scrollbar-hide">
                     {packs.map(pack => (
                       <button
                         key={pack.shortName}
                         type="button"
                         onClick={() => setSelectedPack(pack.shortName)}
-                        className={`px-2 py-1 rounded-lg transition-colors ${
+                        className={`p-1.5 rounded-lg transition-colors flex-shrink-0 ${
                           selectedPack === pack.shortName
                             ? 'bg-violet-500/20'
                             : 'hover:bg-white/10'

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { LucideIcon, PenTool, Eraser, Trash2, Brush, Tally1, Bot, Pen, Send, Undo, Redo } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Slider } from '../ui/slider';
@@ -44,6 +44,50 @@ const COLOR_NAMES: { [key: string]: string } = {
     '#FF0000': 'Неон красный',
     '#0066FF': 'Неон синий',
 };
+
+// Recent colors storage key
+const RECENT_COLORS_KEY = 'canvas-recent-colors';
+const MAX_RECENT_COLORS = 8;
+
+// Hook for managing recent colors with localStorage
+function useRecentColors() {
+    const [recentColors, setRecentColors] = useState<string[]>([]);
+
+    // Load from localStorage on mount
+    useEffect(() => {
+        try {
+            const stored = localStorage.getItem(RECENT_COLORS_KEY);
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed)) {
+                    setRecentColors(parsed.slice(0, MAX_RECENT_COLORS));
+                }
+            }
+        } catch {
+            // Ignore parse errors
+        }
+    }, []);
+
+    // Add color to recent list
+    const addRecentColor = useCallback((color: string) => {
+        setRecentColors(prev => {
+            // Remove if already exists, add to front
+            const filtered = prev.filter(c => c.toUpperCase() !== color.toUpperCase());
+            const updated = [color.toUpperCase(), ...filtered].slice(0, MAX_RECENT_COLORS);
+
+            // Save to localStorage
+            try {
+                localStorage.setItem(RECENT_COLORS_KEY, JSON.stringify(updated));
+            } catch {
+                // Ignore storage errors
+            }
+
+            return updated;
+        });
+    }, []);
+
+    return { recentColors, addRecentColor };
+}
 
 type BrushType = 'normal' | 'neon' | 'dashed' | 'calligraphy';
 
@@ -94,6 +138,9 @@ export function FloatingToolbar({
     const [showSlider, setShowSlider] = useState(false);
     const [colorCategory, setColorCategory] = useState<keyof typeof COLOR_PRESETS>('basic');
 
+    // Recent colors with localStorage persistence
+    const { recentColors, addRecentColor } = useRecentColors();
+
     const handleToolChange = (tool: 'pen' | 'eraser') => {
         if ('vibrate' in navigator) navigator.vibrate(10);
         onToolChange(tool);
@@ -103,6 +150,7 @@ export function FloatingToolbar({
     const handleColorChange = (color: string) => {
         if ('vibrate' in navigator) navigator.vibrate(10);
         onColorChange(color);
+        addRecentColor(color); // Save to recent colors
         setShowColorPalette(false);
     };
 
@@ -183,20 +231,28 @@ export function FloatingToolbar({
                             ))}
                         </div>
 
-                        {/* Recent colors */}
-                        <div className="flex items-center gap-2 mb-3">
-                            <span className="text-xs text-white/40">Недавние:</span>
-                            <div className="flex gap-1">
-                                {NEON_COLORS.slice(0, 6).map((color) => (
-                                    <button
-                                        key={`recent-${color}`}
-                                        onClick={() => handleColorChange(color)}
-                                        className="w-6 h-6 rounded-full border border-white/20 hover:scale-110 transition-transform"
-                                        style={{ backgroundColor: color }}
-                                    />
-                                ))}
+                        {/* Recent colors - from localStorage */}
+                        {recentColors.length > 0 && (
+                            <div className="flex items-center gap-2 mb-3">
+                                <span className="text-xs text-white/40 whitespace-nowrap">Недавние:</span>
+                                <div className="flex gap-1.5 flex-wrap">
+                                    {recentColors.map((color, idx) => (
+                                        <button
+                                            key={`recent-${color}-${idx}`}
+                                            onClick={() => handleColorChange(color)}
+                                            aria-label={`Недавний цвет: ${COLOR_NAMES[color] || color}`}
+                                            className={cn(
+                                                "w-7 h-7 rounded-full border transition-all hover:scale-110 active:scale-95",
+                                                selectedColor.toUpperCase() === color.toUpperCase()
+                                                    ? "border-white ring-1 ring-white"
+                                                    : "border-white/20"
+                                            )}
+                                            style={{ backgroundColor: color }}
+                                        />
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Custom color input */}
                         <div className="flex items-center gap-3 pt-3 border-t border-white/10">

@@ -26,19 +26,20 @@
 
     /* ═══════════════════════════════════════════════════════════════
        TEXT COLORS - WCAG 2.1 AA Compliant (4.5:1 contrast ratio)
+       УЛУЧШЕННАЯ ЧИТАЕМОСТЬ - увеличены контрасты
        ═══════════════════════════════════════════════════════════════ */
     /* Text Colors - 5 оттенков серого (WCAG AA compliant) */
     --text-primary: #FFFFFF;
-    --text-secondary: #E4E4E7; /* WCAG FIX: Increased from #D4D4D8 for 7:1 ratio */
-    --text-tertiary: #B4B4B9; /* WCAG FIX: Increased from #A1A1A6 for 5.5:1 ratio */
-    --text-muted: #8E8E93; /* WCAG FIX: Increased from #727278 for 4.5:1 ratio */
-    --text-disabled: rgba(255, 255, 255, 0.5); /* WCAG FIX: Increased from 0.4 */
+    --text-secondary: #E8E8EB; /* УЛУЧШЕНО: ещё светлее для лучшей читаемости */
+    --text-tertiary: #C4C4C9; /* УЛУЧШЕНО: увеличен контраст */
+    --text-muted: #9A9AA0; /* УЛУЧШЕНО: увеличен контраст */
+    --text-disabled: rgba(255, 255, 255, 0.55); /* УЛУЧШЕНО */
 
     /* Placeholder - WCAG AA compliant */
-    --text-placeholder: #9CA3AF; /* WCAG FIX: 4.5:1 contrast on dark bg */
+    --text-placeholder: #A1A1AA; /* УЛУЧШЕНО: светлее для читаемости */
 
     /* Username accent color */
-    --text-username: #A78BFA; /* Mobile Audit: Lighter purple for usernames */
+    --text-username: #B794F6; /* УЛУЧШЕНО: светлее для лучшей видимости */
 
     /* Border Colors */
     --border-primary: rgba(255, 255, 255, 0.1);
@@ -194,6 +195,62 @@
   ::selection {
     background: var(--accent-primary);
     color: var(--accent-contrast);
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     PERFORMANCE OPTIMIZATIONS - GPU acceleration & containment
+     Улучшение быстродействия через CSS containment
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* GPU-accelerated animations */
+  .gpu-accelerated {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+
+  /* Content containment for better performance */
+  .contain-layout {
+    contain: layout;
+  }
+
+  .contain-paint {
+    contain: paint;
+  }
+
+  .contain-strict {
+    contain: strict;
+  }
+
+  /* Optimize scrolling containers */
+  .scroll-container {
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  /* Reduce repaints for animated elements */
+  .will-change-transform {
+    will-change: transform;
+  }
+
+  .will-change-opacity {
+    will-change: opacity;
+  }
+
+  /* Content visibility for off-screen optimization */
+  .content-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 500px;
+  }
+
+  /* Optimize list items */
+  .list-item-optimized {
+    contain: layout style;
+    content-visibility: auto;
+    contain-intrinsic-size: 0 80px;
   }
 
   /* ═══════════════════════════════════════════════════════════════
@@ -2097,21 +2154,23 @@
   .mobile-menu-drawer {
     position: fixed;
     top: 0;
-    left: 0;
+    right: 0;
     bottom: 0;
     width: 280px;
     max-width: 85vw;
     background: #0D0D0D;
     background-color: var(--bg-secondary, #121214);
     z-index: 99999;
-    transform: translateX(-100%);
+    transform: translateX(100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
-    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
     display: flex;
     flex-direction: column;
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.5);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .mobile-menu-drawer.open {

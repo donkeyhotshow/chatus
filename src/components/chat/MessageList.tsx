@@ -146,6 +146,9 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
         ? nextMsg.createdAt.seconds - msg.createdAt.seconds
         : Infinity;
 
+    // Show sticky timestamp if gap > 5 minutes (300 seconds) between messages
+    const showTimeGap = timeSincePrev > 300 && !isNewDay;
+
     const isGroupedWithPrev = isSameSenderAsPrev && timeSincePrev < 120;
     const isGroupedWithNext = isSameSenderAsNext && timeToNext < 120;
 
@@ -160,7 +163,7 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
 
     return (
       <div className={cn(
-        "px-4",
+        "px-4 list-item-optimized",
         // Reduced padding for grouped messages
         groupPosition === 'first' ? "pt-1.5 pb-0.5" :
         groupPosition === 'middle' ? "py-0.5" :
@@ -186,6 +189,14 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
                     }
                   })()
                 : 'Сегодня'}
+            </span>
+          </div>
+        )}
+        {/* Sticky timestamp for gaps > 5 minutes */}
+        {showTimeGap && !isNewDay && msg.createdAt && 'seconds' in msg.createdAt && (
+          <div className="flex justify-center my-3">
+            <span className="text-[10px] text-white/40 font-medium px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.06]">
+              {new Date(msg.createdAt.seconds * 1000).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
         )}
@@ -229,17 +240,20 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
 
   return (
     <div
-      className="flex-1 h-full"
+      className="flex-1 h-full scroll-container contain-layout"
       role="log"
       aria-label="Список сообщений чата"
       aria-live="polite"
       aria-relevant="additions"
+      data-scroll-container
     >
       <Virtuoso
         ref={virtuosoRef}
         data={messages}
         initialTopMostItemIndex={messages.length - 1}
         followOutput="auto"
+        overscan={300}
+        increaseViewportBy={{ top: 300, bottom: 300 }}
         startReached={() => {
           if (hasMoreMessages && onLoadMore) {
             onLoadMore();

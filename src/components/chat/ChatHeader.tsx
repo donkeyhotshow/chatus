@@ -45,6 +45,10 @@ export const ChatHeader = memo(function ChatHeader({
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const roomName = otherUser?.name || `Комната ${roomId}`;
 
+    // Не показываем кнопку назад если пользователь залогинен (есть currentUserName)
+    // чтобы не выкидывало на страницу входа
+    const showBackButton = onBack && !currentUserName;
+
     return (
         <header className={cn(
             "flex items-center justify-between h-14 px-3 sm:px-4",
@@ -55,7 +59,7 @@ export const ChatHeader = memo(function ChatHeader({
         )}>
             {/* Left section */}
             <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                {onBack && (
+                {showBackButton && (
                     <button
                         onClick={onBack}
                         className={cn(
@@ -157,7 +161,12 @@ export const ChatHeader = memo(function ChatHeader({
                 {/* Mobile: Hamburger menu button */}
                 {isMobile && (
                     <button
-                        onClick={() => setIsMenuOpen(true)}
+                        onClick={() => {
+                            if ('vibrate' in navigator) {
+                                navigator.vibrate(5);
+                            }
+                            setIsMenuOpen(true);
+                        }}
                         className={cn(
                             "hamburger-btn p-2.5 rounded-xl",
                             "text-white/50 hover:text-white",

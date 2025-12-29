@@ -133,21 +133,31 @@ export default function VibeJet({ onGameEnd }: {
         } catch { /* ignore */ }
     }, []);
 
-    // Responsive canvas - учитываем мобильные устройства и safe area
+    // Responsive canvas - ИСПРАВЛЕННОЕ масштабирование для мобильных
     useEffect(() => {
         const updateScale = () => {
             if (!containerRef.current) return;
-            // На мобильных оставляем больше места для кнопки управления
-            const bottomPadding = isMobile ? 120 : 32;
-            const w = containerRef.current.clientWidth - 32;
+            // На мобильных оставляем место для кнопки управления
+            const bottomPadding = isMobile ? 100 : 32;
+            const sidePadding = isMobile ? 8 : 32;
+            const w = containerRef.current.clientWidth - sidePadding * 2;
             const h = containerRef.current.clientHeight - bottomPadding;
-            // Ограничиваем масштаб для мобильных чтобы игра была видна
-            const maxScale = isMobile ? 0.6 : 1;
-            setCanvasScale(Math.min(w / CANVAS_WIDTH, h / CANVAS_HEIGHT, maxScale));
+
+            // Вычисляем масштаб чтобы canvas полностью помещался
+            const scaleX = w / CANVAS_WIDTH;
+            const scaleY = h / CANVAS_HEIGHT;
+            const scale = Math.min(scaleX, scaleY);
+
+            // Не ограничиваем масштаб - пусть заполняет доступное пространство
+            setCanvasScale(Math.max(0.3, scale)); // минимум 0.3 чтобы было видно
         };
         updateScale();
         window.addEventListener('resize', updateScale);
-        return () => window.removeEventListener('resize', updateScale);
+        window.addEventListener('orientationchange', updateScale);
+        return () => {
+            window.removeEventListener('resize', updateScale);
+            window.removeEventListener('orientationchange', updateScale);
+        };
     }, [isMobile]);
 
     // Pause on visibility change
@@ -583,15 +593,21 @@ export default function VibeJet({ onGameEnd }: {
         <div ref={containerRef} className="relative w-full h-full bg-[#0a0a1a] flex flex-col overflow-hidden">
             {/* Exit button removed - using parent GameLobby back button */}
 
-            <div className="flex-1 flex items-center justify-center p-4 pb-2">
-                <div className="relative">
+            <div className="flex-1 flex items-center justify-center p-2 sm:p-4">
+                <div className="relative" style={{
+                    width: CANVAS_WIDTH * canvasScale,
+                    height: CANVAS_HEIGHT * canvasScale
+                }}>
                     <canvas ref={canvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT}
-                        className="rounded-xl border border-white/10 outline-none"
-                        style={{ width: CANVAS_WIDTH * canvasScale, height: CANVAS_HEIGHT * canvasScale, touchAction: 'none' }}
+                        className="rounded-xl border border-white/10 outline-none block"
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            touchAction: 'none'
+                        }}
                         tabIndex={0}
                         onClick={() => { if (gameState === 'playing') handleJump(); canvasRef.current?.focus(); }}
                         onTouchStart={(e) => { e.preventDefault(); if (gameState === 'playing') handleJump(); }}
-                    />
                     />
 
                     {gameState === 'menu' && (
@@ -646,7 +662,7 @@ export default function VibeJet({ onGameEnd }: {
             </div>
 
             {isMobile && gameState === 'playing' && (
-                <div className="fixed bottom-0 left-0 right-0 flex justify-center pb-8 z-20" style={{ paddingBottom: 'max(32px, env(safe-area-inset-bottom, 32px))' }}>
+                <div className="absolute bottom-4 left-0 right-0 flex justify-center z-20" style={{ paddingBottom: 'env(safe-area-inset-bottom, 8px)' }}>
                     <button
                         onTouchStart={(e) => { e.preventDefault(); e.stopPropagation(); handleJump(); }}
                         className="w-20 h-20 rounded-full bg-violet-600/90 border-4 border-violet-400/60 flex items-center justify-center shadow-lg shadow-violet-500/40 active:scale-90 transition-transform touch-none"

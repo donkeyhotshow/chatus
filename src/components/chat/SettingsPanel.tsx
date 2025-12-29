@@ -44,7 +44,7 @@ export function SettingsPanel({ isOpen, onClose, onClearChat }: SettingsPanelPro
 
     return (
         <div
-            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in"
             onClick={(e) => {
                 // Close on backdrop click
                 if (e.target === e.currentTarget) {
@@ -56,7 +56,7 @@ export function SettingsPanel({ isOpen, onClose, onClearChat }: SettingsPanelPro
             aria-labelledby="settings-title"
         >
             <div
-                className="bg-black/95 rounded-2xl w-full max-w-md border border-white/[0.08] overflow-hidden shadow-2xl"
+                className="bg-black/95 rounded-2xl w-full max-w-md border border-white/[0.08] overflow-hidden shadow-2xl animate-scale-in"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}

@@ -9,7 +9,7 @@
 
 'use client';
 
-import { memo, useState } from 'react';
+import { memo, useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users,
@@ -142,7 +142,24 @@ const UsersList = memo(function UsersList({
 });
 
 /**
- * Компонент медиа галереи
+ * Skeleton для медиа галереи
+ */
+const MediaSkeleton = memo(function MediaSkeleton() {
+  return (
+    <div className="grid grid-cols-3 gap-1.5">
+      {[...Array(9)].map((_, i) => (
+        <div
+          key={i}
+          className="aspect-square rounded-lg bg-white/[0.03] skeleton-shimmer"
+          style={{ animationDelay: `${i * 0.05}s` }}
+        />
+      ))}
+    </div>
+  );
+});
+
+/**
+ * Компонент медиа галереи с виртуализацией
  */
 const MediaGallery = memo(function MediaGallery({
   messages,
@@ -151,12 +168,27 @@ const MediaGallery = memo(function MediaGallery({
   messages?: Message[];
   onImageClick?: (imageUrl: string) => void;
 }) {
+  const [isLoading, setIsLoading] = useState(true);
+
   // Фильтруем сообщения с изображениями
-  const mediaMessages = messages?.filter(m => m.imageUrl && m.type !== 'sticker') || [];
+  const mediaMessages = useMemo(() =>
+    messages?.filter(m => m.imageUrl && m.type !== 'sticker') || [],
+    [messages]
+  );
+
+  // Имитация загрузки при первом рендере
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 300);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading) {
+    return <MediaSkeleton />;
+  }
 
   if (mediaMessages.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-8 text-center">
+      <div className="flex flex-col items-center justify-center py-8 text-center animate-fade-in">
         <ImageIcon className="w-12 h-12 text-[var(--text-muted)] mb-3 opacity-50" />
         <p className="text-sm text-[var(--text-muted)]">Нет медиафайлов</p>
         <p className="text-xs text-[var(--text-disabled)] mt-1">
@@ -169,10 +201,13 @@ const MediaGallery = memo(function MediaGallery({
   return (
     <div className="grid grid-cols-3 gap-1.5">
       {mediaMessages.slice(0, 30).map((msg, index) => (
-        <button
+        <motion.button
           key={msg.id || index}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: index * 0.03, duration: 0.2 }}
           onClick={() => msg.imageUrl && onImageClick?.(msg.imageUrl)}
-          className="aspect-square rounded-lg overflow-hidden hover:opacity-80 transition-opacity focus-visible:ring-2 focus-visible:ring-[var(--accent-primary)]"
+          className="aspect-square rounded-lg overflow-hidden hover:opacity-80 hover:scale-105 transition-all focus-visible:ring-2 focus-visible:ring-[var(--accent-primary)]"
         >
           <OptimizedImage
             src={msg.imageUrl!}
@@ -180,7 +215,7 @@ const MediaGallery = memo(function MediaGallery({
             className="w-full h-full object-cover"
             showBlur={true}
           />
-        </button>
+        </motion.button>
       ))}
     </div>
   );
@@ -261,14 +296,15 @@ export const DesktopRightPanel = memo(function DesktopRightPanel({
           onClick={onToggle}
           className={cn(
             "fixed right-0 top-1/2 -translate-y-1/2 z-30",
-            "w-6 h-16 bg-[var(--bg-tertiary)] border border-white/[0.08] border-r-0",
-            "rounded-l-lg flex items-center justify-center",
-            "hover:bg-[var(--bg-hover)] transition-colors",
-            "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+            "w-8 h-20 bg-[var(--bg-tertiary)] border border-white/[0.08] border-r-0",
+            "rounded-l-xl flex items-center justify-center",
+            "hover:bg-[var(--bg-hover)] hover:w-10 transition-all duration-200",
+            "text-[var(--text-muted)] hover:text-[var(--text-primary)]",
+            "shadow-lg hover:shadow-xl"
           )}
           aria-label="Открыть панель"
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft className="w-5 h-5" />
         </button>
       )}
 
@@ -333,10 +369,13 @@ export const DesktopRightPanel = memo(function DesktopRightPanel({
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeTab}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.15 }}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{
+                    duration: 0.2,
+                    ease: [0.4, 0, 0.2, 1]
+                  }}
                 >
                   {activeTab === 'users' && (
                     <UsersList

@@ -282,10 +282,10 @@ function normalizeAngle(angle: number): number {
     return angle;
 }
 
-// Линейная интерполяция для сглаживания
-function lerp(a: number, b: number, t: number): number {
-    return a + (b - a) * t;
-}
+// Линейная интерполяция (оставлено для возможного использования)
+// function lerp(a: number, b: number, t: number): number {
+//     return a + (b - a) * t;
+// }
 
 export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser }: CarRaceProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -299,8 +299,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
     const particlesRef = useRef<Particle[]>([]);
     const sparksRef = useRef<Spark[]>([]);
 
-    // Сглаженный ввод для стабильности
-    const smoothedInputRef = useRef({ turn: 0, accel: 0 });
+    // Refs для эффектов (сглаживание убрано для отзывчивости)
 
     const [isLoading, setIsLoading] = useState(true);
     const [isGameStarted, setIsGameStarted] = useState(false);
@@ -366,9 +365,12 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         };
     }, [isMobile]);
 
-    // Initialize player
+    // Initialize player - СРАЗУ при старте игры (до countdown)
     useEffect(() => {
-        if (!isGameStarted || countdown !== null) return;
+        if (!isGameStarted) return;
+        // Инициализируем игрока сразу при старте, не ждём окончания countdown
+        if (playerRef.current) return; // Уже инициализирован
+
         const playerIndex = Object.keys(gameState.carRacePlayers || {}).length;
         const startPos = currentTrack.startPositions[playerIndex % currentTrack.startPositions.length];
 
@@ -392,7 +394,6 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
             isTurboActive: false,
         };
         prevPosRef.current = { x: startPos.x, y: startPos.y };
-        smoothedInputRef.current = { turn: 0, accel: 0 };
 
         updateGameState({
             carRacePlayers: { ...gameState.carRacePlayers, [user.id]: playerRef.current },
@@ -422,7 +423,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
                 isTurboActive: false,
             });
         }
-    }, [isGameStarted, countdown, user.id, user.name, otherUser, currentTrack, gameState.carRacePlayers, updateGameState]);
+    }, [isGameStarted, user.id, user.name, otherUser, currentTrack, gameState.carRacePlayers, updateGameState]);
 
     // Sync other players
     useEffect(() => {
@@ -460,7 +461,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         return () => clearTimeout(timer);
     }, []);
 
-    // Keyboard controls - СТАБИЛИЗИРОВАННЫЕ + FIXED FOCUS
+    // Keyboard controls - ПОЛНОСТЬЮ ПЕРЕРАБОТАННЫЕ
     useEffect(() => {
         if (!isGameStarted || countdown !== null) return;
 
@@ -484,30 +485,30 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
             if (document.hidden) keysRef.current.clear();
         };
 
-        // CRITICAL FIX: Attach to document instead of window for better capture
-        document.addEventListener('keydown', handleKeyDown, { capture: true });
-        document.addEventListener('keyup', handleKeyUp, { capture: true });
+        // Attach to window with capture for guaranteed event handling
+        window.addEventListener('keydown', handleKeyDown, { capture: true });
+        window.addEventListener('keyup', handleKeyUp, { capture: true });
         window.addEventListener('blur', handleBlur);
         document.addEventListener('visibilitychange', handleVisibilityChange);
 
-        // Auto-focus canvas on mount
-        const focusTimer = setTimeout(() => {
-            if (canvasRef.current) {
-                canvasRef.current.focus();
-            }
-        }, 200);
+        // Auto-focus canvas
+        const focusCanvas = () => canvasRef.current?.focus();
+        focusCanvas();
+        const focusTimer = setTimeout(focusCanvas, 100);
+        const focusTimer2 = setTimeout(focusCanvas, 500);
 
         return () => {
-            document.removeEventListener('keydown', handleKeyDown, { capture: true });
-            document.removeEventListener('keyup', handleKeyUp, { capture: true });
+            window.removeEventListener('keydown', handleKeyDown, { capture: true });
+            window.removeEventListener('keyup', handleKeyUp, { capture: true });
             window.removeEventListener('blur', handleBlur);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             clearTimeout(focusTimer);
+            clearTimeout(focusTimer2);
             keysRef.current.clear();
         };
     }, [isGameStarted, countdown]);
 
-    // УЛУЧШЕННАЯ ФИЗИКА ИГРОКА
+    // ФИЗИКА ИГРОКА - УПРОЩЁННАЯ И РАБОЧАЯ
     const updatePlayer = useCallback((dt: number, now: number) => {
         const player = playerRef.current;
         if (!player) return;
@@ -515,27 +516,11 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         const keys = keysRef.current;
         const prevX = player.x, prevY = player.y;
 
-        // Получаем сырой ввод
-        let rawAccel = 0;
-        let rawTurn = 0;
-
+        // Прямое чтение ввода
         const accelerating = keys.has('arrowup') || keys.has('w');
         const braking = keys.has('arrowdown') || keys.has('s');
         const turnLeft = keys.has('arrowleft') || keys.has('a');
         const turnRight = keys.has('arrowright') || keys.has('d');
-
-        if (accelerating) rawAccel = 1;
-        else if (braking) rawAccel = -1;
-
-        if (turnLeft) rawTurn = -1;
-        else if (turnRight) rawTurn = 1;
-
-        // СГЛАЖИВАНИЕ ВВОДА для стабильности
-        smoothedInputRef.current.accel = lerp(smoothedInputRef.current.accel, rawAccel, INPUT_SMOOTHING);
-        smoothedInputRef.current.turn = lerp(smoothedInputRef.current.turn, rawTurn, INPUT_SMOOTHING);
-
-        const smoothAccel = smoothedInputRef.current.accel;
-        const smoothTurn = smoothedInputRef.current.turn;
 
         // Turbo
         const turboActive = keys.has('shift') && player.turbo > 0;
@@ -547,31 +532,36 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         const maxSpeed = turboActive ? MAX_SPEED * TURBO_MULTIPLIER : MAX_SPEED;
         const damageMultiplier = player.hp > 50 ? 1 : 0.5 + (player.hp / 100);
 
-        // Ускорение с плавным вводом
-        if (smoothAccel > 0.1) {
+        // УСКОРЕНИЕ - прямое без сглаживания
+        if (accelerating) {
             const accelForce = ACCELERATION * dt * damageMultiplier;
             player.vx += Math.cos(player.rotation) * accelForce;
             player.vy += Math.sin(player.rotation) * accelForce;
-        } else if (smoothAccel < -0.1) {
+        } else if (braking) {
             if (speed > 20) {
+                // Торможение
                 const brakeForce = BRAKE_FORCE * dt;
-                player.vx -= Math.cos(player.rotation) * brakeForce;
-                player.vy -= Math.sin(player.rotation) * brakeForce;
+                const velAngle = Math.atan2(player.vy, player.vx);
+                player.vx -= Math.cos(velAngle) * brakeForce;
+                player.vy -= Math.sin(velAngle) * brakeForce;
             } else {
+                // Задний ход
                 const reverseForce = REVERSE_SPEED * dt;
                 player.vx -= Math.cos(player.rotation) * reverseForce;
                 player.vy -= Math.sin(player.rotation) * reverseForce;
             }
         }
 
-        // Поворот только при достаточной скорости
-        if (speed > MIN_TURN_SPEED) {
-            const turnMultiplier = Math.min(speed / 150, 1);
-            player.rotation += smoothTurn * TURN_SPEED * dt * turnMultiplier;
+        // ПОВОРОТ - работает даже на малой скорости
+        const minSpeedForTurn = 5; // Очень низкий порог
+        if (speed > minSpeedForTurn || accelerating || braking) {
+            const turnAmount = TURN_SPEED * dt;
+            if (turnLeft) player.rotation -= turnAmount;
+            if (turnRight) player.rotation += turnAmount;
 
-            // Дрифт
-            if (Math.abs(smoothTurn) > 0.5 && speed > 100) {
-                const driftAmount = Math.abs(smoothTurn) * (speed / MAX_SPEED) * 0.25;
+            // Дрифт при повороте на скорости
+            if ((turnLeft || turnRight) && speed > 100) {
+                const driftAmount = (speed / MAX_SPEED) * 0.25;
                 player.turbo = Math.min(MAX_TURBO, player.turbo + TURBO_GAIN_DRIFT * driftAmount * dt);
 
                 if (Math.random() < 0.25) {
@@ -591,7 +581,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         player.vx *= friction;
         player.vy *= friction;
 
-        // Дрифт-фактор
+        // Дрифт-фактор - машина скользит в направлении движения
         const velAngle = Math.atan2(player.vy, player.vx);
         const angleDiff = normalizeAngle(player.rotation - velAngle);
         const driftFactor = DRIFT_FACTOR + (1 - DRIFT_FACTOR) * Math.abs(Math.cos(angleDiff));
@@ -703,7 +693,6 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
             player.rotation = startPos.rotation;
             player.hp = 100;
             player.checkpoint = 0;
-            smoothedInputRef.current = { turn: 0, accel: 0 };
             hapticFeedback('heavy');
         }
 
@@ -730,13 +719,14 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
 
         prevPosRef.current = { x: player.x, y: player.y };
 
-        if (now - lastUpdateRef.current > 33) {
+        // Обновляем состояние игры периодически (не каждый кадр)
+        if (now - lastUpdateRef.current > 50) {
             lastUpdateRef.current = now;
             updateGameState({
-                carRacePlayers: { ...gameState.carRacePlayers, [user.id]: { ...player } },
+                carRacePlayers: { [user.id]: { ...player } },
             });
         }
-    }, [gameState.carRacePlayers, updateGameState, user.id, raceStartTime, isOnTrack, currentTrack]);
+    }, [updateGameState, user.id, raceStartTime, isOnTrack, currentTrack]);
 
     // AI Physics
     const updateAI = useCallback((dt: number, now: number) => {

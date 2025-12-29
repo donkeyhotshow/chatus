@@ -68,7 +68,7 @@ export const MobileNavigation = memo(function MobileNavigation({
             aria-label="Основная навигация"
         >
             <div
-                className="flex items-center justify-around h-14 px-2 relative"
+                className="flex items-center justify-around h-16 px-2 relative"
                 role="tablist"
                 aria-label="Вкладки навигации"
             >

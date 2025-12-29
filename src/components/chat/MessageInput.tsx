@@ -279,7 +279,7 @@ export function MessageInput({
                     : 'env(safe-area-inset-bottom, 0px)',
             }}
         >
-            <div className="flex items-end gap-2 p-3">
+            <div className="flex items-end gap-1.5 p-2 sm:p-3 sm:gap-2">
                 {/* Sticker Picker - now self-contained with its own button */}
                 <StickerPicker
                     onSelect={(url) => {
@@ -311,16 +311,16 @@ export function MessageInput({
                         aria-describedby={text.length > MAX_MESSAGE_LENGTH * 0.8 ? "message-char-count" : undefined}
                         aria-invalid={text.length > MAX_MESSAGE_LENGTH}
                         className={cn(
-                            "w-full px-4 py-3 bg-[#1A1A1C] border border-white/[0.08] rounded-2xl",
+                            "w-full px-3 py-2.5 sm:px-4 sm:py-3 bg-[#1A1A1C] border border-white/[0.08] rounded-2xl",
                             "text-white placeholder:text-[#727278]",
-                            "resize-none overflow-y-auto max-h-[120px] scrollbar-hide",
+                            "resize-none overflow-y-auto max-h-[100px] sm:max-h-[120px] scrollbar-hide",
                             "focus:outline-none focus:border-[var(--accent-primary)]",
-                            "focus:shadow-[0_0_0_3px_rgba(124,58,237,0.1),0_0_0_1px_rgba(124,58,237,0.3)]",
+                            "focus:shadow-[0_0_0_2px_rgba(124,58,237,0.15)]",
                             "hover:border-[rgba(124,58,237,0.3)] hover:bg-[#212127]",
                             "transition-all duration-200",
                             "disabled:opacity-50"
                         )}
-                        style={{ fontSize: '16px', minHeight: '48px' }}
+                        style={{ fontSize: '16px', minHeight: '42px' }}
                     />
 
                     {/* Character count */}
@@ -328,7 +328,7 @@ export function MessageInput({
                         <span
                             id="message-char-count"
                             className={cn(
-                                "absolute right-3 bottom-2 text-xs",
+                                "absolute right-2 bottom-1.5 text-[10px] sm:text-xs",
                                 text.length > MAX_MESSAGE_LENGTH ? "text-[var(--error)]" : "text-[var(--text-muted)]"
                             )}
                             aria-live="polite"
@@ -347,12 +347,14 @@ export function MessageInput({
                     className="hidden"
                 />
 
-                {/* Attachment button */}
+                {/* Attachment button - 44px touch target */}
                 <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploading || disabled}
                     className={cn(
-                        "p-2 rounded-lg transition-colors touch-target",
+                        "p-2 rounded-xl transition-colors flex-shrink-0",
+                        "min-w-[44px] min-h-[44px]",
+                        "flex items-center justify-center",
                         isUploading
                             ? "text-[var(--info)] bg-blue-50 dark:bg-blue-950/20"
                             : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]",
@@ -368,13 +370,13 @@ export function MessageInput({
                     )}
                 </button>
 
-                {/* Send button - Mobile Audit: Enhanced styling with shadow */}
+                {/* Send button - 44px touch target */}
                 <button
                     ref={sendButtonRef}
                     onClick={handleSend}
                     disabled={!canSend}
                     className={cn(
-                        "rounded-xl transition-all duration-200 touch-target flex-shrink-0",
+                        "rounded-xl transition-all duration-200 flex-shrink-0",
                         "w-[44px] h-[44px] flex items-center justify-center",
                         canSend
                             ? "bg-[var(--accent-primary)] text-white shadow-[0_2px_8px_rgba(124,58,237,0.2)] hover:bg-[#A78BFA] hover:shadow-[0_4px_12px_rgba(124,58,237,0.3)] hover:scale-105 active:scale-95 active:bg-[#6D28D9]"
