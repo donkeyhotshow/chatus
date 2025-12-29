@@ -594,7 +594,7 @@ export default function VibeJet({ onGameEnd }: {
             {/* Exit button removed - using parent GameLobby back button */}
 
             <div className="flex-1 flex items-center justify-center p-2 sm:p-4">
-                <div className="relative" style={{
+                <div className="relative game-container" data-game="vibe-jet" style={{
                     width: CANVAS_WIDTH * canvasScale,
                     height: CANVAS_HEIGHT * canvasScale
                 }}>
@@ -606,6 +606,7 @@ export default function VibeJet({ onGameEnd }: {
                             touchAction: 'none'
                         }}
                         tabIndex={0}
+                        data-game="vibe-jet"
                         onClick={() => { if (gameState === 'playing') handleJump(); canvasRef.current?.focus(); }}
                         onTouchStart={(e) => { e.preventDefault(); if (gameState === 'playing') handleJump(); }}
                     />

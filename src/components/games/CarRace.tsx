@@ -1200,7 +1200,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
 
     // Main game render
     return (
-        <div ref={containerRef} className="flex flex-col items-center justify-center h-full w-full bg-black/95 relative overflow-hidden">
+        <div ref={containerRef} className="game-container flex flex-col items-center justify-center h-full w-full bg-black/95 relative overflow-hidden" data-game="car-race">
             {/* Landscape hint overlay */}
             {showLandscapeHint && isPortrait && (
                 <div
@@ -1229,6 +1229,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
                     height: canvasSize.height
                 }}
                 tabIndex={0}
+                data-game="car-race"
                 onClick={() => canvasRef.current?.focus()}
             />
 

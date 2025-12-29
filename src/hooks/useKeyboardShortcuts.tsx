@@ -101,13 +101,18 @@ export function useKeyboardShortcuts({
         }
 
         // Этап 9: Arrow navigation for messages
-        if (e.key === 'ArrowUp' && onNavigateUp) {
+        // Skip if focus is on canvas or game element (let games handle their own input)
+        const isGameActive = target.tagName === 'CANVAS' ||
+                            target.closest('[data-game]') !== null ||
+                            target.closest('.game-container') !== null;
+
+        if (e.key === 'ArrowUp' && onNavigateUp && !isGameActive) {
             e.preventDefault();
             onNavigateUp();
             return;
         }
 
-        if (e.key === 'ArrowDown' && onNavigateDown) {
+        if (e.key === 'ArrowDown' && onNavigateDown && !isGameActive) {
             e.preventDefault();
             onNavigateDown();
             return;

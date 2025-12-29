@@ -670,12 +670,13 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
       </div>
 
       {/* Canvas */}
-      <div className="relative">
+      <div className="relative game-container" data-game="snake">
         <canvas
           ref={canvasRef}
           width={canvasSize}
           height={canvasSize}
           className="rounded-xl border-2 border-white/10 touch-none"
+          data-game="snake"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         />
