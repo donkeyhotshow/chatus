@@ -102,9 +102,10 @@ export function useKeyboardShortcuts({
 
         // Этап 9: Arrow navigation for messages
         // Skip if focus is on canvas or game element (let games handle their own input)
+        // Check if target has closest method (it might be window/document)
         const isGameActive = target.tagName === 'CANVAS' ||
-                            target.closest('[data-game]') !== null ||
-                            target.closest('.game-container') !== null;
+                            (typeof target.closest === 'function' && target.closest('[data-game]') !== null) ||
+                            (typeof target.closest === 'function' && target.closest('.game-container') !== null);
 
         if (e.key === 'ArrowUp' && onNavigateUp && !isGameActive) {
             e.preventDefault();
