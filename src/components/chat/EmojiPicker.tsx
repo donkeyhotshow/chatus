@@ -1,4 +1,4 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+// EmojiPicker component - currently using inline emoji picker in EnhancedMessageInput
+// This file is kept for potential future expansion with full emoji picker functionality

@@ -306,7 +306,8 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
     const [countdown, setCountdown] = useState<number | null>(null);
     const [raceStartTime, setRaceStartTime] = useState<number>(0);
     const [canvasSize, setCanvasSize] = useState({ width: DESKTOP_WIDTH, height: DESKTOP_HEIGHT });
-    const [, setScale] = useState(1);
+    // scale state is set but not directly used - canvas size is used instead
+    const [, /* scale */ setScale] = useState(1);
     const [showLandscapeHint, setShowLandscapeHint] = useState(false);
     const [isPortrait, setIsPortrait] = useState(false);
     const [selectedTrack, setSelectedTrack] = useState(0);
@@ -463,19 +464,15 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
 
     // Keyboard controls - ПОЛНОСТЬЮ ПЕРЕРАБОТАННЫЕ
     useEffect(() => {
-        console.log('[CarRace] Keyboard effect:', { isGameStarted, countdown });
         if (!isGameStarted || countdown !== null) return;
-        console.log('[CarRace] Registering keyboard handlers');
 
         const handleKeyDown = (e: KeyboardEvent) => {
             const key = e.key.toLowerCase();
             const validKeys = ['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd', ' ', 'shift'];
-            console.log('[CarRace] keydown:', key, 'valid:', validKeys.includes(key));
             if (validKeys.includes(key)) {
                 e.preventDefault();
                 e.stopPropagation();
                 keysRef.current.add(key);
-                console.log('[CarRace] keys:', Array.from(keysRef.current));
             }
         };
 
@@ -1041,7 +1038,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         ctx.textAlign = 'left';
 
         // Finish overlay
-        if (player.finished) {
+        if (playerRef.current?.finished) {
             ctx.fillStyle = 'rgba(0,0,0,0.8)';
             ctx.fillRect(0, 0, DESKTOP_WIDTH, DESKTOP_HEIGHT);
             ctx.fillStyle = '#22c55e';
@@ -1050,7 +1047,7 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
             ctx.fillText('🏁 ФИНИШ!', DESKTOP_WIDTH/2, DESKTOP_HEIGHT/2 - 30);
             ctx.fillStyle = '#fff';
             ctx.font = '24px sans-serif';
-            ctx.fillText(`Время: ${(player.finishTime / 1000).toFixed(2)}s`, DESKTOP_WIDTH/2, DESKTOP_HEIGHT/2 + 20);
+            ctx.fillText(`Время: ${(playerRef.current.finishTime / 1000).toFixed(2)}s`, DESKTOP_WIDTH/2, DESKTOP_HEIGHT/2 + 20);
         }
     };
 
