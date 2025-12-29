@@ -90,7 +90,7 @@ async function cacheFirst(request, cacheName = STATIC_CACHE) {
         fetch(request).then(response => {
             if (response.ok) {
                 caches.open(cacheName).then(cache => {
-                    cache.put(request, response);
+                    cache.put(request, response.clone());
                 });
             }
         }).catch(() => {});

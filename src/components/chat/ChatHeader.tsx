@@ -7,6 +7,7 @@ import { Breadcrumb, BreadcrumbCompact } from '@/components/ui/Breadcrumb';
 import { NavigationState } from '@/lib/navigation-state';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileMenuDrawer } from '@/components/mobile/MobileMenuDrawer';
+import { useScrollDirection } from '@/hooks/useScrollDirection';
 
 interface ChatHeaderProps {
     roomId: string;
@@ -43,6 +44,9 @@ export const ChatHeader = memo(function ChatHeader({
 }: ChatHeaderProps) {
     const isMobile = useIsMobile();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const scrollDirection = useScrollDirection(20);
+    const isHidden = isMobile && scrollDirection === 'down' && window.scrollY > 50;
+    
     const roomName = otherUser?.name || `Комната ${roomId}`;
 
     // Не показываем кнопку назад если пользователь залогинен (есть currentUserName)
@@ -52,9 +56,11 @@ export const ChatHeader = memo(function ChatHeader({
     return (
         <header className={cn(
             "flex items-center justify-between h-14 px-3 sm:px-4",
-            "bg-black/95 backdrop-blur-2xl",
+            "bg-black/80 backdrop-blur-xl",
             "border-b border-white/[0.06]",
-            "safe-top shrink-0 relative z-40",
+            "safe-top shrink-0 fixed top-0 left-0 right-0 z-[100]",
+            "transition-transform duration-300 ease-in-out",
+            isHidden ? "-translate-y-full" : "translate-y-0",
             className
         )}>
             {/* Left section */}
@@ -94,9 +100,9 @@ export const ChatHeader = memo(function ChatHeader({
                             />
                         )
                     ) : (
-                        <div className="flex items-center gap-3">
-                            {/* Avatar placeholder */}
-                            {otherUser?.avatar && (
+                        <div className="flex items-center gap-2 sm:gap-3">
+                            {/* Avatar placeholder - Hidden on mobile to save space */}
+                            {otherUser?.avatar && !isMobile && (
                                 <div
                                     className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 border border-white/10 bg-cover bg-center shrink-0"
                                     style={{ backgroundImage: `url(${otherUser.avatar})` }}
@@ -104,21 +110,29 @@ export const ChatHeader = memo(function ChatHeader({
                             )}
                             <div className="min-w-0">
                                 <div className="flex items-center gap-2">
-                                    <h1 className="text-[15px] font-semibold text-white truncate">
+                                    <h1 className={cn(
+                                        "font-semibold text-white truncate",
+                                        isMobile ? "text-sm" : "text-[15px]"
+                                    )}>
                                         {roomName}
                                     </h1>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                    {isOnline && (
-                                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-lg shadow-emerald-500/50" aria-label="В сети" />
+                                    {isMobile && isOnline && (
+                                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-lg shadow-emerald-500/50 shrink-0" />
                                     )}
-                                    <p className={cn(
-                                        "text-xs truncate",
-                                        isOnline ? "text-emerald-400/80" : "text-white/60"
-                                    )}>
-                                        {isOnline ? 'В сети' : 'Не в сети'}
-                                    </p>
                                 </div>
+                                {!isMobile && (
+                                    <div className="flex items-center gap-1.5">
+                                        {isOnline && (
+                                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-lg shadow-emerald-500/50" aria-label="В сети" />
+                                        )}
+                                        <p className={cn(
+                                            "text-xs truncate",
+                                            isOnline ? "text-emerald-400/80" : "text-white/60"
+                                        )}>
+                                            {isOnline ? 'В сети' : 'Не в сети'}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
@@ -190,6 +204,7 @@ export const ChatHeader = memo(function ChatHeader({
                     onLogout={onLogout}
                     userName={currentUserName}
                     userAvatar={currentUserAvatar}
+                    status={isOnline ? 'online' : 'offline'}
                 />
             )}
         </header>

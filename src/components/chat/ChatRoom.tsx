@@ -3,6 +3,7 @@
 import { useState, useEffect, lazy, Suspense, useMemo, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Room } from '@/lib/types';
+import { MessageCircle, PenTool, Gamepad2, Settings, LogOut } from 'lucide-react';
 import { ChatArea } from './ChatArea';
 import { ProfileCreationDialog } from './ProfileCreationDialog';
 import { MobileNavigation } from '../mobile/MobileNavigation';
@@ -429,29 +430,76 @@ export function ChatRoom({ roomId }: { roomId: string }) {
                 <OnboardingTour onComplete={completeOnboarding} />
             )}
 
-            {/* Desktop Sidebar */}
+            {/* Desktop Sidebar - Global only */}
             {!isMobile && (
                 <ChatSidebar
-                    activeTab={activeTab}
-                    onTabChange={handleTabChange}
                     onLogout={handleLogout}
                     onSettings={handleSettings}
                 />
             )}
 
-            {/* Mobile Navigation - вверху под header */}
-            {isMobile && (
-                <MobileNavigation
-                    activeTab={activeTab}
-                    onTabChange={(tab) => handleTabChange(tab)}
-                />
-            )}
-
             {/* Main Content with swipe support and animations */}
             <main
-                className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden"
+                className={cn(
+                    "flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden",
+                    isMobile && "pb-[calc(60px+env(safe-area-inset-bottom,0px))]"
+                )}
                 {...(isMobile ? swipeHandlers : {})}
             >
+                {/* Desktop Room Topbar - Stage 1.1 */}
+                {!isMobile && (
+                    <div className="h-14 border-b border-white/10 bg-black/40 backdrop-blur-xl flex items-center px-6 gap-8 shrink-0">
+                        <div className="flex items-center gap-2 mr-4">
+                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/20">
+                                <MessageCircle className="w-4 h-4 text-white" />
+                            </div>
+                            <span className="font-bold text-white tracking-tight">Комната</span>
+                        </div>
+
+                        <div className="flex h-full items-center gap-6">
+                            {[
+                                { id: 'chat', label: 'Чат', icon: MessageCircle },
+                                { id: 'canvas', label: 'Холст', icon: PenTool },
+                                { id: 'games', label: 'Игры', icon: Gamepad2 }
+                            ].map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => handleTabChange(tab.id as ChatTab)}
+                                    className={cn(
+                                        "h-full px-1 relative flex items-center gap-2 text-sm font-medium transition-all group",
+                                        activeTab === tab.id 
+                                            ? "text-white" 
+                                            : "text-white/40 hover:text-white/70"
+                                    )}
+                                >
+                                    <tab.icon className={cn(
+                                        "w-4 h-4 transition-transform group-hover:scale-110",
+                                        activeTab === tab.id ? "text-violet-400" : ""
+                                    )} />
+                                    <span>{tab.label}</span>
+                                    {activeTab === tab.id && (
+                                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-violet-500 shadow-[0_0_12px_rgba(139,92,246,0.8)]" />
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="ml-auto flex items-center gap-4">
+                            <div className="flex -space-x-2">
+                                {room?.participantProfiles?.slice(0, 3).map((p, i) => (
+                                    <div key={p.id} className="w-7 h-7 rounded-full border-2 border-black bg-[var(--bg-tertiary)] overflow-hidden" title={p.name}>
+                                        {p.avatar ? <img src={p.avatar} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-[10px]">{p.name[0]}</div>}
+                                    </div>
+                                ))}
+                                {(room?.participantProfiles?.length || 0) > 3 && (
+                                    <div className="w-7 h-7 rounded-full border-2 border-black bg-[var(--bg-tertiary)] flex items-center justify-center text-[10px] text-white/40">
+                                        +{(room?.participantProfiles?.length || 0) - 3}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
                 <AnimatedTabTransition activeTab={activeTab} className="flex-1 flex flex-col min-h-0">
                     {activeTab === 'chat' && (
                         <ChatArea
@@ -493,6 +541,14 @@ export function ChatRoom({ roomId }: { roomId: string }) {
                     )}
                 </AnimatedTabTransition>
             </main>
+
+            {/* Mobile Navigation - Moved to bottom */}
+            {isMobile && (
+                <MobileNavigation
+                    activeTab={activeTab}
+                    onTabChange={(tab) => handleTabChange(tab)}
+                />
+            )}
 
             {/* Desktop Right Panel - Этап 6 */}
             {!isMobile && activeTab === 'chat' && (

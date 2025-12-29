@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Loader2, MessageCircle, Users, Image as ImageIcon, Send, RefreshCw } from 'lucide-react';
+import { Loader2, MessageCircle, Users, Image as ImageIcon, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface LoadingSpinnerProps {

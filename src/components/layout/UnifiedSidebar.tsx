@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useState } from 'react';
-import { MessageCircle, PenTool, Gamepad2, Users, Settings, LogOut, Snowflake } from 'lucide-react';
+import { MessageCircle, Settings, LogOut, Snowflake } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Logo } from '../icons/logo';
 import { SnowEffect } from '../effects/SnowEffect';
@@ -17,10 +17,7 @@ interface UnifiedSidebarProps {
 }
 
 const navItems = [
-    { id: 'chat' as const, label: 'Чат', icon: MessageCircle },
-    { id: 'canvas' as const, label: 'Рисование', icon: PenTool },
-    { id: 'games' as const, label: 'Игры', icon: Gamepad2 },
-    { id: 'users' as const, label: 'Участники', icon: Users },
+    { id: 'rooms' as const, label: 'Комнаты', icon: MessageCircle },
 ];
 
 export const UnifiedSidebar = memo(function UnifiedSidebar({

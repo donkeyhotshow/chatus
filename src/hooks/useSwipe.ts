@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useRef, useState } from 'react';
-rt type SwipeDirection = 'left' | 'right' | 'up' | 'down' | null;
+export type SwipeDirection = 'left' | 'right' | 'up' | 'down' | null;
 
 interface SwipeState {
   direction: SwipeDirection;

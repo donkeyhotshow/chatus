@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
-import { ArrowRight, Plus, MessageCircle, PenTool, Gamepad2, User, Key, Check } from 'lucide-react';
+import { ArrowRight, MessageCircle, PenTool, Gamepad2, Key } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/icons/logo';
 import { useToast } from '@/hooks/use-toast';
@@ -13,14 +13,12 @@ import { isTestMode } from '@/lib/mock-services';
 import { isSafari, safariSafeClick, forceSafariButtonState } from '@/lib/safari-workarounds';
 import { logger } from '@/lib/logger';
 
-
 export function HomeClient() {
     const [roomCode, setRoomCode] = useState('');
     const [username, setUsername] = useState('');
     const [isConnecting, setIsConnecting] = useState(false);
 
     // Refs for Safari button state management
-    const createRoomButtonRef = useRef<HTMLButtonElement>(null);
     const submitButtonRef = useRef<HTMLButtonElement>(null);
 
     const router = useRouter();
@@ -157,21 +155,21 @@ export function HomeClient() {
     return (
         <div className="min-h-screen w-full bg-[var(--bg-primary)]" style={{ background: 'var(--bg-gradient)' }}>
             {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 bg-[var(--bg-primary)]/90 backdrop-blur-2xl border-b border-white/[0.08]">
+            <header className="fixed top-0 left-0 right-0 z-50 bg-[var(--bg-primary)]/90 backdrop-blur-2xl border-b border-[var(--border-subtle)]">
                 <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center">
                             <Logo className="w-4 h-4 text-white" />
                         </div>
-                        <span className="font-semibold text-white">ChatUs</span>
+                        <span className="font-semibold text-[var(--text-primary)]">ChatUs</span>
                     </div>
 
-                    {/* Desktop nav - P2 FIX: убран гамбургер-меню на мобильных */}
-                    <nav className="flex items-center gap-6">
-                        <a href="#features" className="text-sm text-white/50 hover:text-white transition-colors hidden sm:block">
+                    {/* Desktop nav */}
+                    <nav className="flex items-center gap-6" role="navigation" aria-label="Основная навигация">
+                        <a href="#features" className="text-[var(--font-secondary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors hidden sm:block touch-target">
                             Возможности
                         </a>
-                        <a href="#login" className="text-sm text-white/50 hover:text-white transition-colors hidden sm:block">
+                        <a href="#login" className="text-[var(--font-secondary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors hidden sm:block touch-target">
                             Войти
                         </a>
                     </nav>
@@ -188,178 +186,130 @@ export function HomeClient() {
                             <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 bg-gradient-to-br from-violet-600 to-purple-700 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-2 sm:mb-3 animate-float shadow-xl hero-logo" style={{ boxShadow: '0 12px 40px rgba(124, 58, 237, 0.35)' }}>
                                 <Logo className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white" />
                             </div>
-                            <h1 className="text-xl sm:text-2xl md:text-4xl font-bold text-white mb-1 sm:mb-2 leading-tight hero-title">
+                            <h1 className="text-[var(--h1-size)] font-bold text-[var(--text-primary)] mb-2 leading-[var(--h1-lh)] hero-title">
                                 Приватный чат
                             </h1>
-                            <p className="text-xs sm:text-sm md:text-base text-white/70 leading-snug hero-subtitle">
+                            <p className="text-[var(--font-body)] text-[var(--text-secondary)] leading-[var(--lh-body)] hero-subtitle">
                                 Общайтесь, рисуйте и играйте вместе
                             </p>
                         </div>
 
-                        {/* Login Form - Compact */}
-                        <div className="bg-[var(--bg-card)] rounded-xl sm:rounded-2xl border border-white/[0.1] p-3 sm:p-4 md:p-6 shadow-xl backdrop-blur-sm">
-                            <form onSubmit={handleJoinRoom} className="space-y-4 sm:space-y-5">
-                                {/* Username */}
-                                <div className="space-y-1.5">
-                                    <label
-                                        htmlFor="username"
-                                        className="text-[11px] sm:text-xs font-medium text-white/70 flex items-center gap-1.5 px-0.5"
-                                    >
-                                        <User className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                                        Ваш ник
-                                    </label>
-                                    <div className="relative">
+                        {/* Login Form - Redesigned for Stage 1.2 */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl mx-auto">
+                            {/* Join Room Block */}
+                            <div className="bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-xl backdrop-blur-sm flex flex-col">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
+                                        <Key className="w-5 h-5 text-violet-500" />
+                                    </div>
+                                    <h2 className="text-xl font-bold text-[var(--text-primary)]">Войти в комнату</h2>
+                                </div>
+                                
+                                <form onSubmit={handleJoinRoom} className="space-y-4 flex-1 flex flex-col">
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between items-center">
+                                            <label htmlFor="username" className="text-sm font-medium text-[var(--text-secondary)]">Ваше имя</label>
+                                            <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">2–20 символов</span>
+                                        </div>
                                         <input
                                             id="username"
                                             type="text"
                                             value={username}
                                             onChange={(e) => setUsername(e.target.value)}
-                                            placeholder="Ваше имя (2-20 символов)"
-                                            maxLength={20}
-                                            autoComplete="username"
-                                            className={cn(
-                                                "w-full px-3 h-14 bg-[var(--bg-secondary)] border-2 rounded-lg sm:rounded-xl text-sm",
-                                                "text-white placeholder:text-[var(--text-placeholder)]",
-                                                "focus:outline-none focus:border-violet-500/50 focus:bg-[var(--bg-tertiary)]",
-                                                "transition-all duration-200 touch-manipulation",
-                                                isUsernameValid ? "border-emerald-500/50" : "border-white/[0.1]"
-                                            )}
+                                            placeholder="Напр. Александр"
+                                            className="w-full px-4 h-12 bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] rounded-xl text-[var(--text-primary)] placeholder:opacity-40 focus:border-violet-500/50 outline-none transition-all"
                                         />
-                                        {isUsernameValid && (
-                                            <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-400" />
-                                        )}
+                                        <p className="text-[10px] text-[var(--text-muted)] leading-tight">Это имя будут видеть другие участники в чате.</p>
                                     </div>
+
+                                    <div className="space-y-2">
+                                        <label htmlFor="roomCode" className="text-sm font-medium text-[var(--text-secondary)]">Код комнаты</label>
+                                        <input
+                                            id="roomCode"
+                                            type="text"
+                                            value={roomCode}
+                                            onChange={(e) => setRoomCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                                            placeholder="X7Y2Z9"
+                                            maxLength={6}
+                                            className="w-full px-4 h-12 bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] rounded-xl text-center tracking-[0.3em] font-mono text-[var(--text-primary)] placeholder:opacity-20 focus:border-violet-500/50 outline-none transition-all"
+                                        />
+                                    </div>
+
+                                    <div className="mt-auto pt-4">
+                                        <Button
+                                            type="submit"
+                                            disabled={!isFormValid || isConnecting}
+                                            className={cn(
+                                                "w-full h-12 rounded-xl font-bold transition-all",
+                                                isFormValid && !isConnecting
+                                                    ? "bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20"
+                                                    : "bg-[var(--bg-tertiary)] text-[var(--text-disabled)]"
+                                            )}
+                                        >
+                                            {isConnecting ? "Подключение..." : "Войти"}
+                                        </Button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            {/* Create Room Block */}
+                            <div className="bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-xl backdrop-blur-sm flex flex-col">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                                        <PenTool className="w-5 h-5 text-emerald-500" />
+                                    </div>
+                                    <h2 className="text-xl font-bold text-[var(--text-primary)]">Новая комната</h2>
                                 </div>
 
-                                {/* Room Code - P2 FIX: показывается только после ввода ника */}
-                                {username.trim().length >= 2 && (
-                                    <div className="space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
-                                        <div className="flex items-center justify-between px-0.5">
-                                            <label
-                                                htmlFor="roomCode"
-                                                className="text-[11px] sm:text-xs font-medium text-white/70 flex items-center gap-1.5"
-                                            >
-                                                <Key className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                                                Код комнаты
-                                            </label>
-                                            <button
-                                                type="button"
-                                                ref={createRoomButtonRef}
-                                                onClick={handleCreateRoom}
-                                                className="text-[11px] sm:text-xs font-medium text-violet-400 hover:text-violet-300 flex items-center gap-1 py-1 px-2 rounded-md min-h-[28px] touch-manipulation hover:bg-violet-500/10 active:scale-[0.98]"
-                                            >
-                                                <Plus className="w-3 h-3" />
-                                                Создать
-                                            </button>
-                                        </div>
-                                        <div className="relative">
-                                            <input
-                                                id="roomCode"
-                                                type="text"
-                                                value={roomCode}
-                                                onChange={(e) => setRoomCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
-                                                placeholder="ABC123"
-                                                maxLength={6}
-                                                autoComplete="off"
-                                                inputMode="text"
-                                                className={cn(
-                                                    "w-full px-3 h-14 bg-[var(--bg-secondary)] border-2 rounded-lg sm:rounded-xl text-center tracking-[0.25em] font-mono text-sm sm:text-base",
-                                                    "text-white placeholder:text-[var(--text-placeholder)]",
-                                                    "focus:outline-none focus:border-violet-500/50 focus:bg-[var(--bg-tertiary)]",
-                                                    "transition-all duration-200 touch-manipulation uppercase",
-                                                    isRoomCodeValid ? "border-emerald-500/50" : "border-white/[0.1]"
-                                                )}
-                                            />
-                                            {isRoomCodeValid && (
-                                                <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-400" />
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
+                                <div className="flex-1 flex flex-col justify-between">
+                                    <p className="text-[var(--text-secondary)] mb-8">
+                                        Создайте свою приватную комнату для общения, рисования и игр. Ссылка будет доступна только вам и вашим друзьям.
+                                    </p>
 
-                                <Button
-                                    ref={submitButtonRef}
-                                    type="submit"
-                                    disabled={!isFormValid || isConnecting}
-                                    isLoading={isConnecting}
-                                    loadingText="Подключение..."
-                                    className={cn(
-                                        "w-full h-14 text-sm font-semibold touch-manipulation rounded-lg sm:rounded-xl mt-2",
-                                        "bg-gradient-to-r from-violet-600 to-purple-600",
-                                        "hover:shadow-lg hover:shadow-violet-500/30",
-                                        "disabled:opacity-50 disabled:cursor-not-allowed"
-                                    )}
-                                    size="lg"
-                                >
-                                    {isConnecting ? (
-                                        <div className="flex items-center justify-center gap-2">
-                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                            <span>Подключение...</span>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            Войти в чат
-                                            <ArrowRight className="w-4 h-4 ml-1.5" />
-                                        </>
-                                    )}
-                                </Button>
-                            </form>
+                                    <div className="space-y-4">
+                                        <Button
+                                            onClick={handleCreateRoom}
+                                            className="w-full h-14 rounded-xl font-bold text-lg bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <span>Создать комнату</span>
+                                                <ArrowRight className="w-5 h-5" />
+                                            </div>
+                                        </Button>
+                                        <p className="text-center text-xs text-[var(--text-muted)]">Регистрация не требуется</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>
 
-                {/* Features - Improved spacing and typography */}
-                <section id="features" className="py-10 sm:py-16 md:py-24 px-4 bg-gradient-to-b from-[var(--bg-primary)] to-[var(--bg-secondary)]">
-                    <div className="max-w-4xl mx-auto">
-                        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white text-center mb-2 sm:mb-3">
-                            Возможности
-                        </h2>
-                        <p className="text-sm sm:text-base text-[var(--text-tertiary)] text-center mb-8 sm:mb-12 md:mb-16 max-w-md mx-auto leading-relaxed">
-                            Всё для общения в одном месте — без регистрации и сложных настроек
-                        </p>
-
-                        <div className="grid grid-cols-3 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
-                            {[
-                                {
-                                    icon: MessageCircle,
-                                    title: "Чат",
-                                    desc: "Мгновенные сообщения в реальном времени",
-                                    gradient: "from-violet-600 to-purple-700"
-                                },
-                                {
-                                    icon: PenTool,
-                                    title: "Холст",
-                                    desc: "Рисуйте вместе на общем холсте",
-                                    gradient: "from-emerald-500 to-teal-600"
-                                },
-                                {
-                                    icon: Gamepad2,
-                                    title: "Игры",
-                                    desc: "7 мини-игр для компании",
-                                    gradient: "from-purple-500 to-fuchsia-600"
-                                }
-                            ].map((feature, i) => (
-                                <div
-                                    key={i}
-                                    className="group p-4 sm:p-5 md:p-8 bg-[var(--bg-card)] rounded-xl sm:rounded-2xl border border-white/[0.08] transition-all duration-200 hover:bg-[var(--bg-hover)] hover:border-violet-500/30 hover:-translate-y-1 hover:shadow-lg hover:shadow-violet-500/10 text-center cursor-pointer"
-                                >
-                                    <div
-                                        className={cn(
-                                            "w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-xl sm:rounded-2xl flex items-center justify-center mb-3 sm:mb-4 mx-auto",
-                                            "bg-gradient-to-br shadow-lg group-hover:scale-110 transition-transform",
-                                            feature.gradient
-                                        )}
-                                    >
-                                        <feature.icon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white" />
-                                    </div>
-                                    <h3 className="text-sm sm:text-base md:text-lg font-semibold text-white mb-1 sm:mb-2">
-                                        {feature.title}
-                                    </h3>
-                                    <p className="text-xs sm:text-sm text-[var(--text-tertiary)] leading-relaxed hidden sm:block">
-                                        {feature.desc}
-                                    </p>
+                {/* Features - Phase 3 Spacing */}
+                <section id="features" className="py-12 px-4 bg-[var(--bg-primary)]">
+                    <div className="max-w-5xl mx-auto">
+                        <h2 className="text-center mb-8">Возможности</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                            <div className="card-base flex flex-col items-center text-center">
+                                <div className="w-12 h-12 rounded-2xl bg-[var(--accent-chat)]/10 flex items-center justify-center mb-4">
+                                    <MessageCircle className="w-6 h-6 text-[var(--accent-chat)]" />
                                 </div>
-                            ))}
+                                <h3 className="text-[var(--h3-size)] mb-2">Быстрый чат</h3>
+                                <p className="text-[var(--font-secondary)] text-[var(--text-secondary)]">Мгновенный обмен сообщениями в приватных комнатах.</p>
+                            </div>
+                            <div className="card-base flex flex-col items-center text-center">
+                                <div className="w-12 h-12 rounded-2xl bg-[var(--accent-canvas)]/10 flex items-center justify-center mb-4">
+                                    <PenTool className="w-6 h-6 text-[var(--accent-canvas)]" />
+                                </div>
+                                <h3 className="text-[var(--h3-size)] mb-2">Общий холст</h3>
+                                <p className="text-[var(--font-secondary)] text-[var(--text-secondary)]">Рисуйте вместе с друзьями в реальном времени.</p>
+                            </div>
+                            <div className="card-base flex flex-col items-center text-center">
+                                <div className="w-12 h-12 rounded-2xl bg-[var(--accent-games)]/10 flex items-center justify-center mb-4">
+                                    <Gamepad2 className="w-6 h-6 text-[var(--accent-games)]" />
+                                </div>
+                                <h3 className="text-[var(--h3-size)] mb-2">Мини-игры</h3>
+                                <p className="text-[var(--font-secondary)] text-[var(--text-secondary)]">Играйте в классические игры не выходя из чата.</p>
+                            </div>
                         </div>
                     </div>
                 </section>

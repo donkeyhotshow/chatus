@@ -1,10 +1,10 @@
 "use client";
 
-import { memo, useCallback, useRef, useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { memo, useCallback, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import {
-  ChevronUp, ChevronDown, ChevronLeftRight,
-  Zap, RotateCcw, Pause, Play, X,
+  ChevronUp, ChevronDown, ChevronLeft, ChevronRight,
+  Zap, RotateCcw, Pause, Play,
   Maximize2, Minimize2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -327,7 +327,6 @@ const MobileGameControls = memo(function MobileGameControls({
   fullscreen = false,
   onFullscreenToggle,
 }: MobileGameControlsProps) {
-  const sizes = SIZES[size];
   const [isPaused, setIsPaused] = useState(false);
 
   const handlePause = useCallback(() => {

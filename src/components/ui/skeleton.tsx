@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from 'react';
-import { cn }om '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 // Enhanced shimmer animation class
 const shimmerClass = cn(

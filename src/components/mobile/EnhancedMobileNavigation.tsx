@@ -20,7 +20,6 @@ export function EnhancedMobileNavigation({
     activeTab,
     onTabChange,
     isCollabSpaceVisible,
-    onToggleCollabSpace,
     unreadCount = 0,
     isTyping = false,
     connectionStatus = 'connected'
@@ -69,7 +68,6 @@ export function EnhancedMobileNavigation({
         setIsProfileMenuOpen(!isProfileMenuOpen);
         playSound('playColorSelect');
         vibrate([5, 10, 5]);
-        onToggleCollabSpace();
     };
 
     const tabs = [
@@ -130,7 +128,12 @@ export function EnhancedMobileNavigation({
                         {/* Noise texture overlay */}
                         <div className="absolute inset-0 opacity-30 rounded-t-3xl bg-gradient-mesh" />
 
-                        <div className="relative flex items-end justify-around px-3 py-3" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+                        <div 
+                            className="relative flex items-end justify-around px-3 py-3" 
+                            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+                            role="tablist"
+                            aria-label="Мобильная навигация"
+                        >
                             {tabs.map((tab) => {
                                 const isCenter = 'isCenter' in tab && tab.isCenter;
                                 const isActive = activeTab === tab.id;
@@ -139,6 +142,9 @@ export function EnhancedMobileNavigation({
                                     <motion.button
                                         key={tab.id}
                                         onClick={() => handleTabChange(tab.id)}
+                                        role="tab"
+                                        aria-selected={isActive}
+                                        aria-label={tab.label}
                                         className={cn(
                                             "relative flex flex-col items-center justify-center gap-1 transition-all duration-300 touch-manipulation",
                                             isCenter
@@ -170,9 +176,17 @@ export function EnhancedMobileNavigation({
                                         {/* Background for regular buttons */}
                                         {!isCenter && isActive && (
                                             <motion.div
-                                                className="absolute inset-0 bg-gradient-to-t from-cyan-500/30 to-blue-500/30 rounded-2xl"
+                                                className="absolute inset-0 bg-white/[0.05] rounded-2xl"
                                                 layoutId="activeTab"
                                                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                            />
+                                        )}
+
+                                        {/* Active indicator - Bottom border 3px */}
+                                        {!isCenter && isActive && (
+                                            <motion.div
+                                                className="absolute bottom-0 left-1/4 right-1/4 h-[3px] bg-cyan-400 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.5)]"
+                                                layoutId="activeTabBorder"
                                             />
                                         )}
 
@@ -186,10 +200,10 @@ export function EnhancedMobileNavigation({
                                                 )}
                                             />
 
-                                            {/* Notification badge */}
+                                            {/* Notification badge - P2: #EF4444, 20x20px, 12px bold */}
                                             {tab.hasNotification && tab.notificationCount && (
                                                 <motion.div
-                                                    className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center font-bold"
+                                                    className="absolute -top-2 -right-2 bg-[#EF4444] text-white text-[12px] rounded-full min-w-[20px] h-5 flex items-center justify-center font-bold px-1 shadow-lg shadow-red-500/20"
                                                     initial={{ scale: 0 }}
                                                     animate={{ scale: 1 }}
                                                     transition={{ type: "spring", stiffness: 500, damping: 30 }}
@@ -211,7 +225,7 @@ export function EnhancedMobileNavigation({
                                         {/* Label */}
                                         <span className={cn(
                                             "relative z-10 font-medium transition-all duration-300",
-                                            isCenter ? "text-xs font-bold text-black" : "text-xs",
+                                            isCenter ? "text-[10px] font-bold text-black" : "text-[10px]",
                                             isCenter ? "" : isActive ? "text-cyan-300" : "text-neutral-400"
                                         )}>
                                             {tab.label}
@@ -222,9 +236,9 @@ export function EnhancedMobileNavigation({
                                             <motion.div
                                                 className={cn(
                                                     "absolute inset-0 rounded-full blur-lg",
-                                                    isCenter ? "bg-cyan-400/30" : "bg-cyan-500/20"
+                                                    isCenter ? "bg-cyan-400/30" : "bg-cyan-500/10"
                                                 )}
-                                                animate={{ opacity: [0.3, 0.6, 0.3] }}
+                                                animate={{ opacity: [0.2, 0.4, 0.2] }}
                                                 transition={{ duration: 2, repeat: Infinity }}
                                             />
                                         )}

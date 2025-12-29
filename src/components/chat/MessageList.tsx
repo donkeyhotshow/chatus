@@ -3,6 +3,8 @@
 
 import { memo, useEffect, useRef, forwardRef, useImperativeHandle, useCallback, useMemo } from 'react';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
+import { motion } from 'framer-motion';
+import { MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import MessageItem from './MessageItem';
 import type { Message } from '@/lib/types';
@@ -163,39 +165,37 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
 
     return (
       <div className={cn(
-        "px-4 list-item-optimized",
-        // Reduced padding for grouped messages
-        groupPosition === 'first' ? "pt-1.5 pb-0.5" :
-        groupPosition === 'middle' ? "py-0.5" :
-        groupPosition === 'last' ? "pt-0.5 pb-1.5" :
-        "py-1.5"
+        "px-[var(--space-4)] list-item-optimized",
+        // Spacing based on 8px module - Phase 3
+        groupPosition === 'first' ? "pt-[var(--space-2)] pb-[var(--space-1)]" :
+        groupPosition === 'middle' ? "py-[var(--space-1)]" :
+        groupPosition === 'last' ? "pt-[var(--space-1)] pb-[var(--space-2)]" :
+        "py-[var(--space-2)]"
       )}>
-        {isNewDay && (
-          <div className="date-divider flex justify-center my-4 sticky top-2 z-10">
-            <span className="date-divider-text bg-[rgba(124,58,237,0.15)] text-[#A78BFA] text-[11px] font-medium px-4 py-1.5 rounded-full border border-[rgba(124,58,237,0.25)] shadow-[0_2px_8px_rgba(124,58,237,0.1)] uppercase tracking-wider">
-              {msg.createdAt && 'seconds' in msg.createdAt
-                ? (() => {
-                    const msgDate = new Date(msg.createdAt.seconds * 1000);
-                    const today = new Date();
-                    const yesterday = new Date(today);
-                    yesterday.setDate(yesterday.getDate() - 1);
+        {isNewDay && (() => {
+          const msgDate = msg.createdAt && 'seconds' in msg.createdAt
+            ? new Date(msg.createdAt.seconds * 1000)
+            : new Date();
+          const today = new Date();
+          if (msgDate.toDateString() === today.toDateString()) return null;
 
-                    if (msgDate.toDateString() === today.toDateString()) {
-                      return 'Сегодня';
-                    } else if (msgDate.toDateString() === yesterday.toDateString()) {
-                      return 'Вчера';
-                    } else {
-                      return msgDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-                    }
-                  })()
-                : 'Сегодня'}
-            </span>
-          </div>
-        )}
-        {/* Sticky timestamp for gaps > 5 minutes */}
+          const yesterday = new Date(today);
+          yesterday.setDate(yesterday.getDate() - 1);
+          const dateText = msgDate.toDateString() === yesterday.toDateString()
+            ? 'Вчера'
+            : msgDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+
+          return (
+            <div className="date-divider flex justify-center my-[var(--space-4)] sticky top-2 z-10">
+              <span className="date-divider-text bg-[var(--bg-tertiary)] text-[var(--accent-chat)] text-[var(--font-caption)] font-medium px-[var(--space-4)] py-[var(--space-2)] rounded-full border border-[var(--border-subtle)] shadow-lg uppercase tracking-wider">
+                {dateText}
+              </span>
+            </div>
+          );
+        })()}
         {showTimeGap && !isNewDay && msg.createdAt && 'seconds' in msg.createdAt && (
-          <div className="flex justify-center my-3">
-            <span className="text-[10px] text-white/40 font-medium px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.06]">
+          <div className="flex justify-center my-[var(--space-3)]">
+            <span className="text-[var(--font-caption)] text-[var(--text-muted)] font-medium px-[var(--space-3)] py-[var(--space-1)] rounded-full bg-[var(--bg-tertiary)] border border-[var(--border-subtle)]">
               {new Date(msg.createdAt.seconds * 1000).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
@@ -240,13 +240,28 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
 
   return (
     <div
-      className="flex-1 h-full scroll-container contain-layout"
+      className="flex-1 h-full scroll-container contain-layout relative"
       role="log"
       aria-label="Список сообщений чата"
       aria-live="polite"
       aria-relevant="additions"
       data-scroll-container
     >
+      {/* Pull-to-refresh visual - Stage 4.2 */}
+      <motion.div 
+        className="absolute top-0 left-0 right-0 flex justify-center pt-4 pointer-events-none z-20"
+        initial={{ opacity: 0, y: -20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+      >
+        <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-full p-2 shadow-lg">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          >
+            <MessageCircle className="w-4 h-4 text-violet-400" />
+          </motion.div>
+        </div>
+      </motion.div>
       <Virtuoso
         ref={virtuosoRef}
         data={messages}

@@ -2,10 +2,10 @@
 
 import { memo, ReactNode, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RotateCcw, Smartphone, ArrowLeft, Trophy, Clock, Users } from 'lucide-react';
+import { Smartphone, Trophy, Clock, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useGameResponsive, UseGameResponsiveOptions } from '@/hooks/useGameResponsive';
-import { ExitButton } from '../ui/En';
+import { ExitButton } from '../ui/ExitButton';
 
 // ═══════════════════════════════════════════════════════════════
 // ТИПЫ
@@ -205,7 +205,6 @@ const GameLayout = memo(function GameLayout({
     showMobileControls,
     showRotateHint,
     dimensions,
-    orientation,
   } = useGameResponsive({
     ...responsiveOptions,
     preferredOrientation,
@@ -221,18 +220,6 @@ const GameLayout = memo(function GameLayout({
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
-
-  const toggleFullscreen = async () => {
-    try {
-      if (!document.fullscreenElement) {
-        await document.documentElement.requestFullscreen();
-      } else {
-        await document.exitFullscreen();
-      }
-    } catch (e) {
-      console.error('Fullscreen error:', e);
-    }
-  };
 
   // Показываем подсказку о повороте только на мобильных
   const shouldShowRotateHint = showRotateHintProp && showRotateHint && isMobile;

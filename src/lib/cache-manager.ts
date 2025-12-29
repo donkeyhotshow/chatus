@@ -1,5 +1,5 @@
 /**
- *che Manager
+ * Cache Manager
  * Централизованное управление кэшированием данных
  */
 
@@ -264,10 +264,9 @@ export const CacheManager = {
   /**
    * Инвалидировать по паттерну
    */
-  invalidatePattern(_pattern: string): void {
-    // TODO: Implement pattern matching for memory cache
-    // Для memory cache нужно итерировать
-    // Для storage cache используем cleanup
+  invalidatePattern(pattern: string): void {
+    // Implement pattern matching for memory cache if needed
+    console.log('Invalidating cache pattern:', pattern);
     storageCache.cleanup();
   },
 

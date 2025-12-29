@@ -50,7 +50,6 @@ export const ChatArea = memo(function ChatArea({
     const [showDoodlePad, setShowDoodlePad] = useState(false);
     const [imageForView, setImageForView] = useState<string | null>(null);
     const [typingUsers, setTypingUsers] = useState<string[]>([]);
-    const [optimisticMessages, setOptimisticMessages] = useState<Message[]>([]);
     const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
     const [newMessageCount, setNewMessageCount] = useState(0);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -170,8 +169,7 @@ export const ChatArea = memo(function ChatArea({
     const allMessages = useMemo(() => {
         const combined = [
             ...cachedMessages,
-            ...persistedMessages,
-            ...optimisticMessages
+            ...persistedMessages
         ];
 
         const uniqueMap = new Map<string, Message>();
@@ -369,7 +367,7 @@ export const ChatArea = memo(function ChatArea({
     }, []);
 
     return (
-        <section className="flex-1 flex flex-col min-h-0 h-full bg-[var(--bg-primary)] relative">
+        <section className="flex-1 flex flex-col min-h-0 h-full bg-[var(--bg-primary)] relative" role="main" aria-label="Область чата">
             <NetworkConnectionStatus />
             <MobileErrorHandler
                 isOnline={connectionState?.isOnline}
@@ -395,6 +393,8 @@ export const ChatArea = memo(function ChatArea({
                 <div
                     className="flex-1 min-h-0 overflow-hidden relative w-full max-w-[var(--max-chat-width)] mx-auto"
                     onClick={handleBackgroundClick}
+                    role="log"
+                    aria-live="polite"
                 >
                     {allMessages.length === 0 && !isInitialLoad ? (
                         <EmptyState onSend={(text) => {
@@ -432,21 +432,22 @@ export const ChatArea = memo(function ChatArea({
                 </div>
 
                 {/* Input Area */}
-                <div className="shrink-0 border-t border-[var(--border-primary)] bg-[var(--bg-secondary)]">
+                <div className="shrink-0 border-t border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
                     {/* Reply preview */}
                     {replyTo && (
-                        <div className="flex items-center justify-between mx-3 mt-2 px-3 py-2 bg-[var(--bg-tertiary)] border-l-2 border-[var(--accent-primary)] rounded-r-lg">
+                        <div className="flex items-center justify-between mx-[var(--space-3)] mt-[var(--space-2)] px-[var(--space-3)] py-[var(--space-2)] bg-[var(--bg-tertiary)] border-l-2 border-[var(--accent-primary)] rounded-r-lg">
                             <div className="min-w-0 flex-1">
-                                <p className="text-xs font-medium text-[var(--text-primary)]">
+                                <p className="text-[var(--font-caption)] font-medium text-[var(--text-primary)]">
                                     Ответ для {replyTo.user.name}
                                 </p>
-                                <p className="text-xs text-white/60 truncate">
+                                <p className="text-[var(--font-caption)] text-[var(--text-muted)] truncate">
                                     {replyTo.imageUrl && !replyTo.text ? 'Изображение' : replyTo.text}
                                 </p>
                             </div>
                             <button
                                 onClick={() => setReplyTo(null)}
-                                className="p-1 rounded hover:bg-[var(--bg-tertiary)] text-[var(--text-muted)]"
+                                className="p-1 rounded hover:bg-[var(--bg-tertiary)] text-[var(--text-muted)] touch-target"
+                                aria-label="Отменить ответ"
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -504,31 +505,55 @@ export const ChatArea = memo(function ChatArea({
 
 // Empty state component - Premium Dark Theme
 function EmptyState({ onSend }: { onSend: (text: string) => void }) {
-    const suggestions = ['Привет! 👋', 'Как дела?', 'Давай порисуем? 🎨', 'Сыграем? 🎮'];
+    const [suggestions, setSuggestions] = useState<string[]>([]);
+
+    useEffect(() => {
+        const defaultSuggestions = ['Привет! 👋', 'Как дела?', 'Давай порисуем? 🎨', 'Сыграем? 🎮'];
+        const saved = localStorage.getItem('chat_quick_replies');
+        if (saved) {
+            try {
+                setSuggestions(JSON.parse(saved));
+            } catch {
+                setSuggestions(defaultSuggestions);
+            }
+        } else {
+            setSuggestions(defaultSuggestions);
+            localStorage.setItem('chat_quick_replies', JSON.stringify(defaultSuggestions));
+        }
+    }, []);
 
     return (
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center mb-8 shadow-2xl shadow-violet-600/30 animate-float">
+        <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="absolute inset-0 flex flex-col items-center justify-center p-[var(--space-6)] text-center"
+        >
+            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-[var(--accent-chat)] to-[var(--accent-games)] flex items-center justify-center mb-[var(--space-8)] shadow-2xl shadow-violet-600/30 animate-float">
                 <MessageCircle className="w-12 h-12 text-white" />
             </div>
-            <h3 className="text-2xl font-bold text-white mb-3">
+            <h3 className="text-[var(--h3-size)] font-bold text-[var(--text-primary)] mb-[var(--space-3)]">
                 Начните общение
             </h3>
-            <p className="text-sm text-white/60 mb-10 max-w-xs leading-relaxed">
+            <p className="text-[var(--font-secondary)] text-[var(--text-muted)] mb-[var(--space-12)] max-w-xs leading-relaxed">
                 Отправьте первое сообщение или выберите быстрый ответ ниже
             </p>
-            <div className="flex flex-wrap justify-center gap-3 max-w-sm">
+            <div className="flex flex-wrap justify-center gap-[var(--space-3)] max-w-sm" role="group" aria-label="Быстрые ответы">
                 {suggestions.map((text, index) => (
-                    <button
+                    <motion.button
                         key={text}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.2 + index * 0.1 }}
                         onClick={() => onSend(text)}
-                        className="px-5 py-3 min-h-[48px] rounded-2xl bg-white/[0.04] border border-white/[0.08] text-sm text-white/60 hover:text-white hover:bg-white/[0.08] hover:border-violet-500/30 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/10 active:scale-95"
-                        style={{ animationDelay: `${index * 0.1}s` }}
+                        role="button"
+                        aria-label={`Отправить быстрый ответ: ${text}`}
+                        className="px-[var(--space-5)] py-[var(--space-3)] min-h-[48px] rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-[var(--font-secondary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--accent-chat)]/30 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/10 active:scale-95 touch-target"
                     >
                         {text}
-                    </button>
+                    </motion.button>
                 ))}
             </div>
-        </div>
+        </motion.div>
     );
 }

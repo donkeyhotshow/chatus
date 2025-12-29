@@ -65,9 +65,7 @@ const COLLISION_DAMAGE = 12;
 const WALL_DAMAGE = 6;
 
 // Стабилизация управления
-const INPUT_SMOOTHING = 0.35;  // Сглаживание ввода (увеличено для отзывчивости)
 const VELOCITY_DAMPING = 0.99; // Демпфирование скорости
-const MIN_TURN_SPEED = 20;     // Минимальная скорость для поворота (уменьшено)
 
 // 5 КАРТ
 type TrackData = {
@@ -582,14 +580,19 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
         player.vx *= friction;
         player.vy *= friction;
 
+        // Recalculate speed after acceleration/friction for drift logic
+        const speedAfterAccel = Math.sqrt(player.vx ** 2 + player.vy ** 2);
+
         // Дрифт-фактор - машина скользит в направлении движения
-        const velAngle = Math.atan2(player.vy, player.vx);
-        const angleDiff = normalizeAngle(player.rotation - velAngle);
-        const driftFactor = DRIFT_FACTOR + (1 - DRIFT_FACTOR) * Math.abs(Math.cos(angleDiff));
-        const newSpeed = speed * driftFactor;
-        const blendedAngle = velAngle + angleDiff * (1 - DRIFT_FACTOR);
-        player.vx = Math.cos(blendedAngle) * newSpeed * VELOCITY_DAMPING;
-        player.vy = Math.sin(blendedAngle) * newSpeed * VELOCITY_DAMPING;
+        if (speedAfterAccel > 1) {
+            const velAngle = Math.atan2(player.vy, player.vx);
+            const angleDiff = normalizeAngle(player.rotation - velAngle);
+            const driftFactor = DRIFT_FACTOR + (1 - DRIFT_FACTOR) * Math.abs(Math.cos(angleDiff));
+            const newSpeed = speedAfterAccel * driftFactor;
+            const blendedAngle = velAngle + angleDiff * (1 - DRIFT_FACTOR);
+            player.vx = Math.cos(blendedAngle) * newSpeed * VELOCITY_DAMPING;
+            player.vy = Math.sin(blendedAngle) * newSpeed * VELOCITY_DAMPING;
+        }
 
         // Ограничение скорости
         const currentSpeed = Math.sqrt(player.vx ** 2 + player.vy ** 2);

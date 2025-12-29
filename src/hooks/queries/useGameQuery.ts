@@ -16,7 +16,7 @@ export interface GameStats {
 
 export interface LeaderboardEntry {
   rank: number;
-  oderId: string;
+  userId: string;
   displayName: string;
   photoURL?: string;
   score: number;
@@ -46,7 +46,7 @@ function setLocalGameStats(gameId: string, stats: GameStats): void {
 }
 
 // Получение статистики игры
-export function useGameStatsQuery(gameId: string, _userId?: string) {
+export function useGameStatsQuery(gameId: string) {
   return useQuery({
     queryKey: queryKeys.gameStats(gameId),
     queryFn: async () => {
@@ -88,7 +88,7 @@ export function useSaveGameResultMutation(gameId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ score, userId: _userId }: { score: number; userId?: string }) => {
+    mutationFn: async ({ score }: { score: number; userId?: string }) => {
       const currentStats = getLocalGameStats(gameId) || {
         highScore: 0,
         gamesPlayed: 0,

@@ -10,10 +10,11 @@ import { Slider } from '../ui/slider';
 import { LucideIcon, Eraser, PenTool, Trash2, Brush, Tally1, Bot, Pen, Send, ZoomIn, ZoomOut, RotateCcw, Download } from 'lucide-react';
 import { createCanvasBatcher } from '@/lib/canvas-batch';
 import { logger } from '@/lib/logger';
-import { FloatingToolbar } from './FloatingToolbar';
 import { BrushPreview } from './BrushPreview';
 import { ExportDialog } from './ExportDialog';
 import { DrawingHistoryPanel, useDrawingHistory } from './DrawingHistory';
+import { useKeyboardVisible } from '@/hooks/useKeyboardVisible';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   CanvasDrawState,
   Point,
@@ -159,6 +160,12 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
   const lastTouchCenter = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const isPinching = useRef(false);
   const [showZoomHint, setShowZoomHint] = useState(false);
+
+  // Immersive mode & Docking - Stage 2.1
+  const [isImmersive, setIsImmersive] = useState(false);
+  const [paletteDock, setPaletteDock] = useState<'bottom' | 'left' | 'right'>('bottom');
+  const isKeyboardVisible = useKeyboardVisible();
+  const isMobile = useIsMobile();
 
   const { toast } = useToast();
   const { rtdb } = useFirebase()!;
@@ -686,7 +693,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
   }, [handleUndo, handleRedo]);
 
   return (
-    <div className="h-full w-full relative flex flex-col">
+    <div className="h-full w-full relative flex flex-col bg-[#0d0d0d] overflow-hidden">
       {/* Brush Preview - Этап 7 */}
       <BrushPreview
         x={mousePosition?.x || 0}
@@ -722,182 +729,231 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
         />
       </div>
 
-      {/* Desktop toolbar - Dark Minimalism Theme */}
-      <div className="absolute top-3 left-3 z-20 flex-col gap-2 hidden md:flex">
-        <div className="flex flex-col gap-2 p-2 bg-[var(--glass-bg)] backdrop-blur-xl rounded-2xl border border-[var(--glass-border)] w-auto md:w-52 shadow-[var(--shadow-lg)]">
-          <div className="flex gap-1.5">
-            <button
-              onClick={() => setSelectedTool('pen')}
-              className={`p-2.5 rounded-xl transition-all flex-1 flex justify-center min-h-[44px] ${selectedTool === 'pen' ? 'bg-gradient-to-r from-[var(--draw-primary)] to-emerald-600 text-white shadow-[var(--shadow-glow-success)]' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'}`}
-            >
-              <PenTool className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setSelectedTool('eraser')}
-              className={`p-2.5 rounded-xl transition-all flex-1 flex justify-center min-h-[44px] ${selectedTool === 'eraser' ? 'bg-gradient-to-r from-rose-500 to-red-600 text-white shadow-[var(--shadow-glow-error)]' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'}`}
-            >
-              <Eraser className="w-5 h-5" />
-            </button>
-            <button
-              onClick={handleClear}
-              className="p-2.5 rounded-xl bg-[var(--bg-tertiary)] text-rose-400 hover:bg-rose-500/20 transition-all flex-1 flex justify-center min-h-[44px]"
-            >
-              <Trash2 className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setShowExportDialog(true)}
-              className="p-2.5 rounded-xl bg-[var(--bg-tertiary)] text-blue-400 hover:bg-blue-500/20 transition-all flex-1 flex justify-center min-h-[44px]"
-              title="Экспорт"
-            >
-              <Download className="w-5 h-5" />
-            </button>
-            <button
-              onClick={handleSendToChat}
-              className="p-2.5 rounded-xl bg-[var(--bg-tertiary)] text-emerald-400 hover:bg-emerald-500/20 transition-all flex-1 flex justify-center min-h-[44px]"
-            >
-              <Send className="w-5 h-5" />
-            </button>
-          </div>
-
-          {selectedTool === 'pen' && (
-            <>
-              <div className="px-2 py-1">
-                <div className="flex justify-between text-[10px] text-[var(--text-muted)] mb-1 uppercase tracking-wider font-bold">
-                  <span>Толщина</span>
-                  <span>{strokeWidth}px</span>
-                </div>
-                <Slider
-                  value={[strokeWidth]}
-                  min={1}
-                  max={20}
-                  step={1}
-                  onValueChange={(value) => setStrokeWidth(value[0])}
-                />
-              </div>
-              <div className="grid grid-cols-4 gap-1.5 p-1">
-                {BRUSHES.map((b) => (
-                  <button
-                    key={b.id}
-                    onClick={() => setBrushType(b.id)}
-                    title={b.name}
-                    className={`p-2.5 rounded-xl transition-all flex items-center justify-center min-h-[44px]
-                                ${brushType === b.id ? 'bg-gradient-to-r from-[var(--draw-primary)] to-emerald-600 text-white shadow-[var(--shadow-glow-success)]' : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]'}`
-                    }>
-                    <b.icon className="w-4 h-4" />
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
+      {/* Docked Top Toolbar - Stage 2.1 */}
+      {!isImmersive && (
+        <div className="h-12 border-b border-white/10 bg-black/60 backdrop-blur-xl flex items-center px-4 justify-between shrink-0 z-20">
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setSelectedTool('pen')}
+            className={cn(
+              "p-2 rounded-lg transition-all flex items-center gap-2",
+              selectedTool === 'pen' ? "bg-violet-500 text-white shadow-lg shadow-violet-500/20" : "text-white/40 hover:text-white/60 hover:bg-white/5"
+            )}
+            title="Перо"
+          >
+            <PenTool className="w-4 h-4" />
+            <span className="text-xs font-medium hidden sm:inline">Перо</span>
+          </button>
+          <button
+            onClick={() => setSelectedTool('eraser')}
+            className={cn(
+              "p-2 rounded-lg transition-all flex items-center gap-2",
+              selectedTool === 'eraser' ? "bg-rose-500 text-white shadow-lg shadow-rose-500/20" : "text-white/40 hover:text-white/60 hover:bg-white/5"
+            )}
+            title="Ластик"
+          >
+            <Eraser className="w-4 h-4" />
+            <span className="text-xs font-medium hidden sm:inline">Ластик</span>
+          </button>
+          <div className="w-[1px] h-4 bg-white/10 mx-1" />
+          <button
+            onClick={handleUndo}
+            disabled={!drawingHistory.canUndo}
+            className="p-2 rounded-lg text-white/40 hover:text-white/60 hover:bg-white/5 disabled:opacity-20 transition-all"
+            title="Отменить (Ctrl+Z)"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </button>
+          <button
+            onClick={handleClear}
+            className="p-2 rounded-lg text-rose-400 hover:bg-rose-500/10 transition-all"
+            title="Очистить всё"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
         </div>
-        {!isMazeActive && selectedTool === 'pen' && (
-          <div className="grid grid-cols-4 gap-2 p-2.5 bg-[var(--glass-bg)] backdrop-blur-xl rounded-2xl border border-[var(--glass-border)] w-auto md:w-52 shadow-[var(--shadow-lg)]">
+
+        <div className="flex items-center gap-2">
+          {selectedTool === 'pen' && (
+            <div className="hidden sm:flex items-center gap-3 bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
+              <span className="text-[10px] font-bold text-white/20 uppercase tracking-widest">Размер</span>
+              <Slider
+                value={[strokeWidth]}
+                min={1}
+                max={40}
+                step={1}
+                onValueChange={(v) => setStrokeWidth(v[0])}
+                className="w-24"
+              />
+              <span className="text-[10px] font-mono text-white/40 w-6">{strokeWidth}</span>
+            </div>
+          )}
+          <div className="w-[1px] h-4 bg-white/10 mx-1" />
+          <button
+            onClick={() => setShowExportDialog(true)}
+            className="p-2 rounded-lg text-blue-400 hover:bg-blue-500/10 transition-all"
+            title="Экспорт"
+          >
+            <Download className="w-4 h-4" />
+          </button>
+          <button
+            onClick={handleSendToChat}
+            className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold transition-all shadow-lg shadow-emerald-500/20"
+          >
+            <Send className="w-3.5 h-3.5" />
+            <span>В чат</span>
+          </button>
+        </div>
+      </div>
+      )}
+
+      {/* Main Canvas Area - Stage 2.1 (Maximized) */}
+      <div 
+        className="flex-1 relative overflow-hidden touch-none group/canvas"
+        onPointerDown={() => {
+          if (isMobile) {
+            setIsImmersive(true);
+            // Auto-exit immersive mode after 5 seconds of inactivity
+          }
+        }}
+      >
+        <canvas
+          ref={canvasRef}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={() => {
+            handleMouseUp();
+            setIsCanvasHovered(false);
+          }}
+          onMouseEnter={() => setIsCanvasHovered(true)}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onWheel={handleWheel}
+          className="absolute inset-0 w-full h-full cursor-crosshair touch-none"
+          style={{
+            transform: `translate(${translateX}px, ${translateY}px) scale(${scale})`,
+            transformOrigin: '0 0',
+          }}
+        />
+
+        {/* Remote Cursors */}
+        <RemoteCursors cursors={remoteCursors} scale={scale} />
+
+        {/* Zoom/Pan Hint */}
+        {showZoomHint && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/60 backdrop-blur-md rounded-full border border-white/10 text-[10px] text-white/60 pointer-events-none animate-fade-in">
+            Масштаб: {Math.round(scale * 100)}% • Используйте два пальца для перемещения
+          </div>
+        )}
+
+        {/* Immersive Exit Button */}
+        {isImmersive && (
+          <button
+            onClick={() => setIsImmersive(false)}
+            className="absolute top-4 left-1/2 -translate-x-1/2 px-4 py-2 bg-violet-500 text-white rounded-full shadow-lg z-50 animate-bounce"
+          >
+            Выйти из режима рисования
+          </button>
+        )}
+      </div>
+
+      {/* Docked Bottom Palette - Stage 2.1 */}
+      {!isMazeActive && selectedTool === 'pen' && !isKeyboardVisible && (
+        <div className={cn(
+          "bg-black/60 backdrop-blur-xl border-white/10 transition-all duration-300 z-20 flex",
+          paletteDock === 'bottom' ? "h-14 border-t w-full items-center px-4 gap-3 shrink-0 overflow-x-auto no-scrollbar" : 
+          paletteDock === 'left' ? "fixed left-4 top-1/2 -translate-y-1/2 w-14 flex-col py-4 gap-4 rounded-2xl border items-center" :
+          "fixed right-4 top-1/2 -translate-y-1/2 w-14 flex-col py-4 gap-4 rounded-2xl border items-center"
+        )}>
+          <div className={cn(
+            "flex items-center gap-1.5",
+            paletteDock === 'bottom' ? "pr-4 border-r border-white/10" : "flex-col pb-4 border-b border-white/10"
+          )}>
+            {BRUSHES.map((b) => (
+              <button
+                key={b.id}
+                onClick={() => setBrushType(b.id)}
+                className={cn(
+                  "w-9 h-9 rounded-lg flex items-center justify-center transition-all",
+                  brushType === b.id ? "bg-white/10 text-violet-400 border border-violet-500/30" : "text-white/40 hover:text-white/60 hover:bg-white/5"
+                )}
+                title={b.name}
+              >
+                <b.icon className="w-4 h-4" />
+              </button>
+            ))}
+          </div>
+          <div className={cn(
+            "flex items-center gap-2",
+            paletteDock === 'bottom' ? "overflow-x-auto no-scrollbar" : "flex-col overflow-y-auto no-scrollbar"
+          )}>
             {NEON_COLORS.map((c) => (
               <button
                 key={c}
                 onClick={() => setSelectedColor(c)}
-                aria-label={`Цвет ${c}`}
-                className={`w-10 h-10 rounded-full transition-all border-2 touch-feedback
-                                ${selectedColor === c ? 'ring-2 ring-white scale-110 z-10 border-[var(--bg-primary)]' : 'hover:scale-110 opacity-80 hover:opacity-100 border-transparent'}
-                            `}
-                style={{ backgroundColor: c, boxShadow: selectedColor === c ? `0 0 12px ${c}` : `0 0 4px ${c}40` }}
+                className={cn(
+                  "w-8 h-8 rounded-full transition-all border-2 shrink-0",
+                  selectedColor === c ? "border-white scale-110 shadow-lg" : "border-transparent hover:scale-105"
+                )}
+                style={{ 
+                  backgroundColor: c,
+                  boxShadow: selectedColor === c ? `0 0 12px ${c}66` : 'none'
+                }}
               />
             ))}
           </div>
-        )}
-      </div>
-
-      {/* Mobile Toolbar - Floating minimal */}
-      <div className="md:hidden">
-        <FloatingToolbar
-          selectedTool={selectedTool}
-          onToolChange={setSelectedTool}
-          selectedColor={selectedColor}
-          onColorChange={setSelectedColor}
-          strokeWidth={strokeWidth}
-          onStrokeWidthChange={setStrokeWidth}
-          brushType={brushType}
-          onBrushTypeChange={setBrushType}
-          isMazeActive={isMazeActive}
-          onClearSheet={handleClear}
-          onSendToChat={handleSendToChat}
-          onUndo={handleUndo}
-          onRedo={handleRedo}
-          canUndo={drawingHistory.canUndo}
-          canRedo={drawingHistory.canRedo}
-        />
-      </div>
-      <RemoteCursors
-        cursors={remoteCursors}
-        scale={scale}
-        translateX={translateX}
-        translateY={translateY}
-      />
-      <canvas
-        ref={canvasRef}
-        width={800}
-        height={600}
-        className="w-full h-full block"
-        style={{
-          cursor: selectedTool === 'pen' ? 'crosshair' : 'cell',
-          transform: `translate(${translateX}px, ${translateY}px) scale(${scale})`,
-          transformOrigin: '0 0',
-          touchAction: 'none' // Prevent default touch behaviors
-        }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={() => {
-          handleMouseUp();
-          setIsCanvasHovered(false);
-          setMousePosition(null);
-        }}
-        onMouseEnter={() => setIsCanvasHovered(true)}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onWheel={handleWheel}
-      />
-
-      {/* Mobile zoom hint - Dark Minimalism */}
-      {showZoomHint && (
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-[var(--glass-bg)] backdrop-blur-xl text-[var(--text-primary)] px-5 py-3 rounded-xl text-sm font-medium pointer-events-none z-10 animate-in fade-in-0 zoom-in-95 border border-[var(--glass-border)] shadow-[var(--shadow-lg)]">
-          {Math.round(scale * 100)}%
+          
+          {/* Dock Switcher - Desktop only */}
+          {!isMobile && (
+            <button
+              onClick={() => {
+                const positions: ('bottom' | 'left' | 'right')[] = ['bottom', 'left', 'right'];
+                const next = positions[(positions.indexOf(paletteDock) + 1) % positions.length];
+                setPaletteDock(next);
+              }}
+              className={cn(
+                "p-2 rounded-lg text-white/20 hover:text-white/60 transition-all",
+                paletteDock === 'bottom' ? "ml-auto" : "mt-auto"
+              )}
+              title="Изменить положение палитры"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
       )}
-
-      {/* Zoom Controls - Этап 6 */}
-      <div className="absolute bottom-20 right-3 z-20 flex flex-col gap-1.5 md:bottom-3">
-        <button
-          onClick={() => setScale(prev => Math.min(prev * 1.2, 5))}
-          className="w-10 h-10 rounded-xl bg-[var(--glass-bg)] backdrop-blur-xl border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all flex items-center justify-center touch-feedback"
-          title="Увеличить"
-        >
-          <ZoomIn className="w-5 h-5" />
-        </button>
-        <button
-          onClick={() => setScale(prev => Math.max(prev / 1.2, 0.5))}
-          className="w-10 h-10 rounded-xl bg-[var(--glass-bg)] backdrop-blur-xl border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all flex items-center justify-center touch-feedback"
-          title="Уменьшить"
-        >
-          <ZoomOut className="w-5 h-5" />
-        </button>
-        <button
-          onClick={() => {
-            setScale(1);
-            setTranslateX(0);
-            setTranslateY(0);
-          }}
-          className="w-10 h-10 rounded-xl bg-[var(--glass-bg)] backdrop-blur-xl border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] transition-all flex items-center justify-center touch-feedback"
-          title="Сбросить"
-        >
-          <RotateCcw className="w-5 h-5" />
-        </button>
-        {/* Scale indicator */}
-        <div className="text-center text-[10px] text-[var(--text-muted)] font-medium">
-          {Math.round(scale * 100)}%
+      {/* Zoom Controls - Stage 2.1 */}
+      {!isImmersive && (
+        <div className="absolute bottom-20 right-4 z-20 flex flex-col gap-2 md:bottom-20">
+          <button
+            onClick={() => setScale(prev => Math.min(prev * 1.2, 5))}
+            className="w-10 h-10 rounded-xl bg-black/40 backdrop-blur-xl border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center shadow-lg"
+            title="Увеличить"
+          >
+            <ZoomIn className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setScale(prev => Math.max(prev / 1.2, 0.5))}
+            className="w-10 h-10 rounded-xl bg-black/40 backdrop-blur-xl border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center shadow-lg"
+            title="Уменьшить"
+          >
+            <ZoomOut className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => {
+              setScale(1);
+              setTranslateX(0);
+              setTranslateY(0);
+            }}
+            className="w-10 h-10 rounded-xl bg-black/40 backdrop-blur-xl border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center shadow-lg"
+            title="Сбросить"
+          >
+            <RotateCcw className="w-5 h-5" />
+          </button>
         </div>
-      </div>
+      )}
     </div>
   );
 }

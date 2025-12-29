@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 
-type Hapti 'light' | 'medium' | 'heavy' | 'success' | 'error' | 'warning';
+type HapticPattern = 'light' | 'medium' | 'heavy' | 'success' | 'error' | 'warning';
 
 const HAPTIC_PATTERNS: Record<HapticPattern, number[]> = {
   light: [10],

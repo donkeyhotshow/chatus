@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef, useMemo, lazy, Suspense, useCallback } from 'react';
 import type { GameState, UserProfile } from '@/lib/types';
-import { PenTool, Gamepad2, Users, ChevronLeft, ChevronRight, Maximize2, Minimize2, Plus } from 'lucide-react';
+import { PenTool, Gamepad2, Users, ChevronLeft, ChevronRight, Maximize2, Minimize2, Plus, List } from 'lucide-react';
 import { UserList } from './UserList';
 import { useChatService } from '@/hooks/useChatService';
 import { useToast } from '@/hooks/use-toast';
@@ -179,9 +179,9 @@ export function CollaborationSpace({
 
   // Memoize tabs to prevent useCallback recreation on every render
   const tabs = useMemo(() => [
-    { id: 'canvas' as const, label: 'Canvas', icon: PenTool },
-    { id: 'games' as const, label: 'Games', icon: Gamepad2 },
-    { id: 'users' as const, label: 'Users', icon: Users },
+    { id: 'canvas' as const, label: 'Холст', icon: PenTool },
+    { id: 'games' as const, label: 'Игры', icon: Gamepad2 },
+    { id: 'users' as const, label: 'Люди', icon: Users },
   ], []);
 
   // Swipe handling for mobile tab switching - must be before conditional return
@@ -223,49 +223,42 @@ export function CollaborationSpace({
             : 'relative h-full w-full border-l border-[var(--border-primary)] z-40'
       )}
     >
-      {!isFullscreen && !isMobile && (
-        <nav className="flex p-2 gap-1 border-b border-[var(--border-primary)] shrink-0 bg-[var(--bg-secondary)]">
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.id;
-            const color = tab.id === 'canvas' ? 'var(--draw-primary)' : tab.id === 'games' ? 'var(--game-primary)' : 'var(--accent-primary)';
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  "flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-medium transition-all",
-                  isActive
-                    ? "bg-[var(--bg-tertiary)]"
-                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
-                )}
-                style={isActive ? { color } : undefined}
-              >
-                <tab.icon className="w-4 h-4" />
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-      )}
+      {/* Desktop tabs removed - moved to Room Topbar in ChatRoom.tsx */}
 
       <div className="flex-1 flex flex-col overflow-y-auto mobile-scroll-y">
 
         {/* CANVAS TAB */}
-        <div className={`flex-1 flex flex-col h-full ${activeTab === 'canvas' ? 'flex' : 'hidden'}`}>
-          <div className={`p-2 sm:p-4 border-b border-white/[0.06] shrink-0 z-10 bg-black/90 backdrop-blur-xl flex justify-between items-center ${isMobile ? 'gap-2' : ''}`}>
-            <div className="flex items-center gap-1 sm:gap-2 bg-white/[0.03] rounded-xl p-1 border border-white/[0.06]">
-              <button onClick={() => navigateSheet('prev')} disabled={!sheets || sheets.length <= 1 || activeGame?.type === 'maze'} className="p-2 hover:text-white text-white/40 disabled:opacity-30 touch-target rounded-lg hover:bg-white/5 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
+        <div 
+          className={`flex-1 flex flex-col h-full ${activeTab === 'canvas' ? 'flex' : 'hidden'}`}
+          role="tabpanel"
+          id="tabpanel-canvas"
+          aria-labelledby="tab-canvas"
+        >
+          <div className={`p-[var(--space-2)] sm:p-[var(--space-4)] border-b border-[var(--border-subtle)] shrink-0 z-10 bg-[var(--bg-primary)]/90 backdrop-blur-xl flex justify-between items-center ${isMobile ? 'gap-[var(--space-2)]' : ''}`}>
+            <div className="flex items-center gap-[var(--space-2)] bg-[var(--bg-tertiary)] rounded-xl p-1 border border-[var(--border-subtle)]">
+              <button onClick={() => navigateSheet('prev')} disabled={!sheets || sheets.length <= 1 || activeGame?.type === 'maze'} className="p-2 hover:text-[var(--text-primary)] text-[var(--text-muted)] disabled:opacity-30 touch-target rounded-lg hover:bg-white/5 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <span className="text-xs font-mono font-bold w-12 sm:w-16 text-center text-white truncate">
+              <span className="text-[var(--font-caption)] font-mono font-bold w-12 sm:w-16 text-center text-[var(--text-primary)] truncate">
                 {activeGame?.type === 'maze' ? 'MAZE' : (activeSheet?.name || '...')}
               </span>
-              <button onClick={() => navigateSheet('next')} disabled={!sheets || sheets.length <= 1 || activeGame?.type === 'maze'} className="p-2 hover:text-white text-white/40 disabled:opacity-30 touch-target rounded-lg hover:bg-white/5 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
+              <button onClick={() => navigateSheet('next')} disabled={!sheets || sheets.length <= 1 || activeGame?.type === 'maze'} className="p-2 hover:text-[var(--text-primary)] text-[var(--text-muted)] disabled:opacity-30 touch-target rounded-lg hover:bg-white/5 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
                 <ChevronRight className="w-4 h-4" />
               </button>
-              <div className="w-[1px] h-4 bg-white/10 mx-1"></div>
-              <button onClick={handleCreateNewSheet} disabled={activeGame?.type === 'maze'} className="p-2 hover:text-emerald-400 text-white/40 disabled:opacity-30 touch-target rounded-lg hover:bg-emerald-500/10 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center" title="New Sheet">
+              <div className="w-[1px] h-4 bg-[var(--border-subtle)] mx-1"></div>
+              <button 
+                onClick={handleCreateNewSheet} 
+                disabled={activeGame?.type === 'maze'} 
+                className="p-2 hover:text-[var(--success)] text-[var(--text-muted)] disabled:opacity-30 touch-target rounded-lg hover:bg-[var(--success)]/10 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center" 
+                title="Создать новый лист"
+              >
                 <Plus className="w-4 h-4" />
+              </button>
+              <button 
+                className="p-2 hover:text-[var(--accent-chat)] text-[var(--text-muted)] touch-target rounded-lg hover:bg-white/5 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center" 
+                title="Переключить лист"
+              >
+                <List className="w-4 h-4" />
               </button>
             </div>
 
@@ -327,16 +320,26 @@ export function CollaborationSpace({
         </div>
 
         {/* GAMES TAB */}
-        <div className={`flex-1 relative bg-black h-full ${activeTab === 'games' ? 'flex flex-col' : 'hidden'}`}>
+        <div 
+          className={`flex-1 relative bg-black h-full ${activeTab === 'games' ? 'flex flex-col' : 'hidden'}`}
+          role="tabpanel"
+          id="tabpanel-games"
+          aria-labelledby="tab-games"
+        >
           {user && (
-            <Suspense fallback={<div className="h-full w-full flex items-center justify-center"><div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full"></div></div>}>
+            <Suspense fallback={<div className="h-full w-full flex items-center justify-center"><div className="animate-spin w-8 h-8 border-2 border-white border-t-transparent rounded-full" role="status" aria-label="Загрузка игр"></div></div>}>
               <GameLobby roomId={roomId} user={user} otherUser={otherUser} />
             </Suspense>
           )}
         </div>
 
         {/* USERS TAB */}
-        <div className={`flex-1 ${activeTab === 'users' ? 'flex flex-col' : 'hidden'} ${isMobile ? 'pb-4' : ''}`}>
+        <div 
+          className={`flex-1 ${activeTab === 'users' ? 'flex flex-col' : 'hidden'} ${isMobile ? 'pb-4' : ''}`}
+          role="tabpanel"
+          id="tabpanel-users"
+          aria-labelledby="tab-users"
+        >
           <UserList users={allUsers} currentUserId={user?.id || ''} />
         </div>
       </div>

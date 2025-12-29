@@ -1,12 +1,12 @@
 "use client";
 
-import { ReactNode, useState, useCallback } from 'react';
+import { ReactNode, useState, useCallback, useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { UnifiedSidebar } from './UnifiedSidebar';
 import { UnifiedBottomNav } from './UnifiedBottomNav';
 
-export type NavTab = 'chat' | 'canvas' | 'games' | 'users' | 'settings';
+export type NavTab = 'rooms' | 'chat' | 'canvas' | 'games' | 'users' | 'settings';
 
 interface UnifiedLayoutProps {
     children: ReactNode;
@@ -27,6 +27,13 @@ export function UnifiedLayout({
 }: UnifiedLayoutProps) {
     const isMobile = useIsMobile();
     const [sidebarExpanded, setSidebarExpanded] = useState(false);
+
+    useEffect(() => {
+        const isNeon = localStorage.getItem('neon-mode') === 'true';
+        if (isNeon) {
+            document.documentElement.classList.add('neon-mode');
+        }
+    }, []);
 
     const handleTabChange = useCallback((tab: NavTab) => {
         onTabChange(tab);

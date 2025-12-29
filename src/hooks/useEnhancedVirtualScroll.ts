@@ -1,4 +1,4 @@
-"use cl
+"use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 

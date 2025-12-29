@@ -55,6 +55,7 @@ type GameDefinition = {
   gradient: string;
   difficulty: 'easy' | 'medium' | 'hard';
   players: string;
+  isComingSoon?: boolean;
 };
 
 // Список игр для двоих
@@ -66,13 +67,27 @@ const gamesList: GameDefinition[] = [
   { id: 'car-race', name: 'Car Race', description: 'Гонки в реальном времени', icon: Car, gradient: 'from-blue-500 to-cyan-600', difficulty: 'hard', players: '1-2' },
   { id: 'snake', name: 'Змейка', description: 'Классика на двоих', icon: Gamepad, gradient: 'from-emerald-600 to-green-700', difficulty: 'medium', players: '1-2' },
   { id: 'vibe-jet', name: 'Vibe Jet', description: 'Воздушный бой в 3D', icon: Zap, gradient: 'from-violet-500 to-fuchsia-600', difficulty: 'hard', players: '1' },
+  { id: 'minesweeper' as any, name: 'Сапёр', description: 'Скоро...', icon: Gamepad, gradient: 'from-gray-600 to-slate-700', difficulty: 'medium', players: '1', isComingSoon: true },
+  { id: 'sudoku' as any, name: 'Судоку', description: 'Скоро...', icon: Gamepad, gradient: 'from-blue-600 to-indigo-700', difficulty: 'hard', players: '1', isComingSoon: true },
 ];
 
-// Difficulty config
+// Difficulty config - Stage 5.2 Accessibility (Contrast)
 const difficultyConfig = {
-  easy: { label: 'Легко', color: 'bg-green-500/20 text-green-400', dots: 1 },
-  medium: { label: 'Средне', color: 'bg-yellow-500/20 text-yellow-400', dots: 2 },
-  hard: { label: 'Сложно', color: 'bg-red-500/20 text-red-400', dots: 3 },
+  easy: { 
+    label: 'Легко', 
+    color: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30', 
+    pattern: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(16, 185, 129, 0.05) 2px, rgba(16, 185, 129, 0.05) 4px)'
+  },
+  medium: { 
+    label: 'Средне', 
+    color: 'bg-amber-500/20 text-amber-300 border border-amber-500/30', 
+    pattern: 'repeating-linear-gradient(-45deg, transparent, transparent 2px, rgba(245, 158, 11, 0.05) 2px, rgba(245, 158, 11, 0.05) 4px)'
+  },
+  hard: { 
+    label: 'Сложно', 
+    color: 'bg-rose-500/20 text-rose-300 border border-rose-500/30', 
+    pattern: 'repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(239, 68, 68, 0.05) 2px, rgba(239, 68, 68, 0.05) 4px)'
+  },
 };
 
 type GameLobbyProps = {
@@ -180,7 +195,7 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
         <div className="p-2 md:p-3 border-b border-white/10 bg-black/80 backdrop-blur-xl flex items-center justify-between game-header">
           <button
             onClick={handleEndGame}
-            className="flex items-center gap-1.5 md:gap-2 px-3 md:px-4 py-2 min-h-[40px] md:min-h-[44px] text-xs md:text-sm text-white/70 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all hover:-translate-y-0.5"
+            className="flex items-center gap-[var(--space-2)] px-[var(--space-4)] py-[var(--space-2)] min-h-[44px] text-[var(--font-secondary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] rounded-xl transition-all touch-target"
             aria-label="Вернуться к списку игр"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -224,14 +239,14 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
   return (
     <div className="flex flex-col h-full bg-black">
       {/* Header - Glass effect - Mobile optimized */}
-      <div className="p-4 md:p-4 p-3 border-b border-white/10 bg-black/80 backdrop-blur-xl game-lobby-header">
-        <div className="flex items-center gap-3 md:gap-4">
+      <div className="p-[var(--space-4)] border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]/80 backdrop-blur-xl game-lobby-header">
+        <div className="flex items-center gap-[var(--space-4)]">
           <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-purple-600 to-fuchsia-700 shadow-lg shadow-purple-500/25">
             <Gamepad className="w-5 h-5 md:w-6 md:h-6 text-white" />
           </div>
           <div>
-            <h2 className="text-base md:text-lg font-semibold text-white">Игры</h2>
-            <p className="text-[11px] md:text-xs text-white/50">Выберите игру для двоих</p>
+            <h2 className="text-[var(--h2-size)] font-semibold text-[var(--text-primary)]">Игры</h2>
+            <p className="text-[var(--font-caption)] text-[var(--text-muted)]">Выберите игру для двоих</p>
           </div>
         </div>
       </div>
@@ -255,20 +270,25 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
               return (
                 <button
                   key={game.id}
-                  onClick={() => handleStartGame(game.id)}
-                  disabled={isLoading}
+                  onClick={() => !game.isComingSoon && handleStartGame(game.id)}
+                  disabled={isLoading || game.isComingSoon}
                   className={cn(
-                    "flex flex-col items-center gap-2 md:gap-3 p-4 md:p-5 rounded-2xl border transition-all duration-300 min-h-[140px] md:min-h-[160px]",
-                    "bg-white/[0.02] border-white/[0.06]",
-                    "hover:bg-white/[0.05] hover:border-white/10 hover:shadow-xl hover:shadow-purple-500/5",
-                    "hover:-translate-y-1",
-                    "active:scale-[0.98]",
-                    "shine-effect", // Quick Win #2: Shine effect on hover
+                    "flex flex-col items-center gap-[var(--space-3)] p-[var(--space-4)] rounded-2xl border transition-all duration-300 min-h-[160px] relative overflow-hidden",
+                    "bg-[var(--bg-secondary)] border-[var(--border-subtle)]",
+                    !game.isComingSoon && "hover:bg-[var(--bg-tertiary)] hover:border-[var(--accent-games)]/30 hover:shadow-xl hover:-translate-y-1 active:scale-[0.98]",
+                    game.isComingSoon && "opacity-60 grayscale cursor-not-allowed",
+                    "touch-target",
                     isLoading && "opacity-50 pointer-events-none",
                     "animate-fade-in-up"
                   )}
                   style={{ animationDelay: `${index * 0.05}s` }}
+                  aria-label={game.isComingSoon ? `Игра ${game.name} скоро появится` : `Запустить игру ${game.name}`}
                 >
+                  {game.isComingSoon && (
+                    <div className="absolute top-2 right-2 px-2 py-0.5 bg-violet-500 text-[8px] font-bold text-white rounded-full uppercase tracking-tighter z-10">
+                      Soon
+                    </div>
+                  )}
                   <div className={cn(
                     "w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center bg-gradient-to-br shadow-lg transition-transform group-hover:scale-110",
                     game.gradient
@@ -280,28 +300,20 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
                     )}
                   </div>
                   <div className="text-center">
-                    <p className="text-sm font-semibold text-white">{game.name}</p>
-                    <p className="text-[11px] md:text-xs text-white/40 mt-0.5 md:mt-1">{game.description}</p>
-                    {/* Difficulty badge */}
+                    <p className="text-[var(--font-body)] font-semibold text-[var(--text-primary)]">{game.name}</p>
+                    <p className="text-[var(--font-caption)] text-[var(--text-muted)] mt-1">{game.description}</p>
+                    {/* Difficulty badge - Phase 4 Accessibility */}
                     <div className="flex items-center justify-center gap-2 mt-2">
-                      <span className={cn(
-                        "px-2 py-0.5 rounded-full text-[10px] font-medium flex items-center gap-1",
-                        difficultyConfig[game.difficulty].color
-                      )}>
+                      <span 
+                        className={cn(
+                          "px-2 py-0.5 rounded-full text-[var(--font-caption)] font-medium flex items-center gap-1",
+                          difficultyConfig[game.difficulty].color
+                        )}
+                        style={{ backgroundImage: difficultyConfig[game.difficulty].pattern }}
+                      >
                         {difficultyConfig[game.difficulty].label}
-                        <span className="flex gap-0.5">
-                          {[...Array(3)].map((_, i) => (
-                            <span
-                              key={i}
-                              className={cn(
-                                "w-1 h-1 rounded-full",
-                                i < difficultyConfig[game.difficulty].dots ? "bg-current" : "bg-current/30"
-                              )}
-                            />
-                          ))}
-                        </span>
                       </span>
-                      <span className="text-[10px] text-white/30">{game.players} игр.</span>
+                      <span className="text-[var(--font-caption)] text-[var(--text-disabled)]">{game.players} чел.</span>
                     </div>
                   </div>
                 </button>

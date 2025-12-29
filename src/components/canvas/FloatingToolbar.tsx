@@ -5,12 +5,6 @@ import { LucideIcon, PenTool, Eraser, Trash2, Brush, Tally1, Bot, Pen, Send, Und
 import { cn } from '@/lib/utils';
 import { Slider } from '../ui/slider';
 
-const NEON_COLORS = [
-    '#FFFFFF', '#EF4444', '#F97316', '#F59E0B',
-    '#84CC16', '#10B981', '#06B6D4', '#3B82F6',
-    '#8B5CF6', '#D946EF', '#F43F5E', '#64748B'
-];
-
 // Extended color presets with categories
 const COLOR_PRESETS = {
     basic: ['#FFFFFF', '#000000', '#EF4444', '#F97316', '#F59E0B', '#22C55E', '#3B82F6', '#8B5CF6'],

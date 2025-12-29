@@ -302,6 +302,14 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
                             <span>Игра против AI</span>
                         </div>
                     )}
+                    
+                    {/* Turn indicator - Stage 3.1 */}
+                    {!winner && !isDraw && !myTurn && (
+                        <div className="flex items-center gap-2 text-xs text-white/40 animate-pulse">
+                            <div className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-ping" />
+                            <span>Ход противника...</span>
+                        </div>
+                    )}
                     {/* P1 Fix: Адаптивные touch-зоны для мобильных устройств */}
                     <div className="tictactoe-grid">
                         {displayBoard?.map((cell, i) => (

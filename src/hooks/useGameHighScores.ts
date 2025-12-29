@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 're;
+import { useState, useEffect, useCallback } from 'react';
 
 interface GameHighScores {
   vibeJet: number;

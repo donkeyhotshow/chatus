@@ -157,39 +157,61 @@ export default function DoodlePad({ onClose, onSend }: DoodlePadProps) {
   const handleSend = () => {
     if (canvasRef.current) {
       onSend(canvasRef.current.toDataURL("image/png"));
+      toast({ 
+        title: "Рисунок отправлен", 
+        description: "Ваше творчество теперь в чате!",
+        duration: 2000 
+      });
       onClose();
     }
   };
 
   return (
-    <div className="absolute bottom-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[500px] z-50 bg-black/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-4 animate-in slide-in-from-bottom-10 fade-in duration-300 ring-1 ring-white/5">
-
-      {/* Header */}
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg">
-            <PenTool className="w-3.5 h-3.5 text-white" />
+    <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-3xl flex flex-col animate-in fade-in duration-300">
+      {/* Top Bar - Docked */}
+      <div className="h-14 px-4 border-b border-white/10 flex items-center justify-between bg-black/40">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+            <PenTool className="w-4 h-4 text-white" />
           </div>
-          <span className="text-sm font-semibold text-white tracking-wide">Doodle</span>
+          <div>
+            <h2 className="text-sm font-bold text-white leading-none">Холст</h2>
+            <p className="text-[10px] text-white/40 mt-1 uppercase tracking-widest">Рисование</p>
+          </div>
         </div>
-        <div className="flex gap-1">
-          <button onClick={handleUndo} disabled={history.length < 2} className="p-2 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white disabled:opacity-30 transition-all active:scale-95">
-            <Undo2 className="w-4 h-4" />
+
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={handleUndo} 
+            disabled={history.length < 2} 
+            className="p-2.5 rounded-xl hover:bg-white/10 text-white/60 hover:text-white disabled:opacity-20 transition-all active:scale-90"
+            title="Отменить (Ctrl+Z)"
+          >
+            <Undo2 className="w-5 h-5" />
           </button>
-          <button onClick={handleClear} className="p-2 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-red-400 transition-all active:scale-95">
-            <Trash2 className="w-4 h-4" />
+          <button 
+            onClick={handleClear} 
+            className="p-2.5 rounded-xl hover:bg-red-500/10 text-white/60 hover:text-red-400 transition-all active:scale-90"
+            title="Очистить всё"
+          >
+            <Trash2 className="w-5 h-5" />
           </button>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/10 text-neutral-400 hover:text-white transition-all active:scale-95">
-            <X className="w-4 h-4" />
+          <div className="w-px h-6 bg-white/10 mx-1" />
+          <button 
+            onClick={onClose} 
+            className="p-2.5 rounded-xl hover:bg-white/10 text-white/60 hover:text-white transition-all active:scale-90"
+            title="Закрыть"
+          >
+            <X className="w-5 h-5" />
           </button>
         </div>
       </div>
 
-      {/* Canvas Area */}
-      <div className="relative w-full aspect-video bg-[#1a1a1a] rounded-xl border border-white/10 overflow-hidden touch-none shadow-inner">
+      {/* Main Canvas Area - Maximized (85%+) */}
+      <div className="flex-1 relative bg-[#0f0f0f] overflow-hidden touch-none cursor-crosshair">
         <canvas
           ref={canvasRef}
-          className="w-full h-full cursor-crosshair"
+          className="w-full h-full"
           onMouseDown={startDraw}
           onMouseMove={draw}
           onMouseUp={stopDraw}
@@ -198,45 +220,69 @@ export default function DoodlePad({ onClose, onSend }: DoodlePadProps) {
           onTouchMove={draw}
           onTouchEnd={stopDraw}
         />
+        
         {/* Subtle dot grid pattern */}
-        <div className="absolute inset-0 pointer-events-none opacity-20"
-          style={{ backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', backgroundSize: '20px 20px' }}>
-        </div>
-      </div>
-
-      {/* Tools Footer */}
-      <div className="flex items-center justify-between mt-4 gap-4">
-
-        {/* Colors */}
-        <div className="flex gap-2 p-1 bg-white/5 rounded-full border border-white/5">
-          {PALETTE.map(c => (
-            <button
-              key={c}
-              onClick={() => setColor(c)}
-              className={`w-6 h-6 rounded-full transition-all duration-200 ${color === c ? 'scale-110 ring-2 ring-white ring-offset-2 ring-offset-black' : 'hover:scale-105 opacity-70 hover:opacity-100'}`}
-              style={{ backgroundColor: c }}
-            />
-          ))}
+        <div className="absolute inset-0 pointer-events-none opacity-[0.03]"
+          style={{ backgroundImage: 'radial-gradient(circle, #ffffff 1px, transparent 1px)', backgroundSize: '32px 32px' }}>
         </div>
 
-        {/* Line Width */}
-        <div className="flex gap-1 bg-white/5 rounded-lg p-1 border border-white/5">
-          <button onClick={() => setLineWidth(3)} className={`p-1.5 rounded hover:bg-white/10 transition-all ${lineWidth === 3 ? 'text-white bg-white/10' : 'text-neutral-500'}`}>
-            <div className="w-1.5 h-1.5 bg-current rounded-full" />
+        {/* Floating Tools Palette - Docked to bottom for better reach */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6 p-2 bg-black/60 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl ring-1 ring-white/5">
+          {/* Colors */}
+          <div className="flex gap-2 px-2 py-1 bg-white/5 rounded-xl">
+            {PALETTE.map(c => (
+              <button
+                key={c}
+                onClick={() => setColor(c)}
+                className={cn(
+                  "w-8 h-8 rounded-lg transition-all duration-200 relative group",
+                  color === c ? "scale-110 shadow-lg" : "hover:scale-105 opacity-60 hover:opacity-100"
+                )}
+                style={{ backgroundColor: c }}
+              >
+                {color === c && (
+                  <div className="absolute inset-0 border-2 border-white rounded-lg scale-110" />
+                )}
+              </button>
+            ))}
+          </div>
+
+          <div className="w-px h-8 bg-white/10" />
+
+          {/* Line Width */}
+          <div className="flex gap-2 px-2 py-1 bg-white/5 rounded-xl">
+            {[3, 6, 12].map(w => (
+              <button 
+                key={w}
+                onClick={() => setLineWidth(w)} 
+                className={cn(
+                  "w-8 h-8 flex items-center justify-center rounded-lg transition-all",
+                  lineWidth === w ? "bg-white/20 text-white" : "text-white/40 hover:text-white/60 hover:bg-white/5"
+                )}
+              >
+                <div 
+                  className="bg-current rounded-full" 
+                  style={{ width: Math.max(4, w), height: Math.max(4, w) }} 
+                />
+              </button>
+            ))}
+          </div>
+
+          <div className="w-px h-8 bg-white/10" />
+
+          {/* Send Button - Primary Action */}
+          <button
+            onClick={handleSend}
+            className="px-6 h-10 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all duration-200 group"
+            title="Отправить рисунок в чат"
+          >
+            <span>Отправить</span>
+            <Check className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           </button>
-          <button onClick={() => setLineWidth(6)} className={`p-1.5 rounded hover:bg-white/10 transition-all ${lineWidth === 6 ? 'text-white bg-white/10' : 'text-neutral-500'}`}>
-            <div className="w-3 h-3 bg-current rounded-full" />
-          </button>
         </div>
-
-        {/* Send Button */}
-        <button
-          onClick={handleSend}
-          className="ml-auto px-5 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs font-bold rounded-full flex items-center gap-2 hover:shadow-lg hover:shadow-cyan-500/25 hover:scale-105 active:scale-95 transition-all duration-200"
-        >
-          Send <Check className="w-3 h-3" />
-        </button>
       </div>
     </div>
+  );
+}
   );
 }

@@ -4,6 +4,7 @@ import { memo, useCallback, useRef } from 'react';
 import { MessageCircle, Gamepad2, PenTool } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import { useScrollDirection } from '@/hooks/useScrollDirection';
 
 export type MobileTab = 'chat' | 'games' | 'canvas' | 'users' | 'more' | 'stats';
 
@@ -30,6 +31,8 @@ export const MobileNavigation = memo(function MobileNavigation({
     className
 }: MobileNavigationProps) {
     const navRef = useRef<HTMLDivElement>(null);
+    const scrollDirection = useScrollDirection(20);
+    const isHidden = scrollDirection === 'down' && window.scrollY > 100;
 
     const handleKeyDown = useCallback((e: React.KeyboardEvent, currentIndex: number) => {
         let newIndex = currentIndex;
@@ -60,15 +63,21 @@ export const MobileNavigation = memo(function MobileNavigation({
         <nav
             ref={navRef}
             className={cn(
-                "shrink-0 bg-black/95 backdrop-blur-2xl border-b border-white/[0.06]",
-                "shadow-[0_1px_0_0_rgba(255,255,255,0.02)]",
+                "fixed bottom-0 left-0 right-0 z-[100]",
+                "bg-black/80 backdrop-blur-xl border-t border-white/[0.08]",
+                "transition-transform duration-300 ease-in-out",
+                isHidden ? "translate-y-full" : "translate-y-0",
                 className
             )}
+            style={{ 
+                paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+                height: 'calc(60px + env(safe-area-inset-bottom, 0px))'
+            }}
             role="navigation"
             aria-label="Основная навигация"
         >
             <div
-                className="flex items-center justify-around h-16 px-2 relative"
+                className="flex items-center justify-around h-[60px] px-2 relative"
                 role="tablist"
                 aria-label="Вкладки навигации"
             >
@@ -92,26 +101,26 @@ export const MobileNavigation = memo(function MobileNavigation({
                             aria-label={tab.label}
                             aria-current={isActive ? 'page' : undefined}
                             className={cn(
-                                "relative flex flex-col items-center justify-center gap-1 flex-1",
-                                "min-w-[64px] min-h-[52px] py-2 rounded-xl mx-1",
+                                "relative flex flex-col items-center justify-center gap-0.5 flex-1",
+                                "min-w-[64px] h-full rounded-xl mx-0.5",
                                 "transition-all duration-300 ease-out touch-target",
                                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50",
                                 isActive
-                                    ? "bg-white/[0.04]"
-                                    : "text-white/40 hover:text-white/60 hover:bg-white/[0.02]"
+                                    ? "text-white"
+                                    : "text-white/40 hover:text-white/60"
                             )}
                         >
                             <div className="relative">
                                 <motion.div
                                     animate={{
-                                        scale: isActive ? 1 : 0.9,
-                                        y: isActive ? -2 : 0
+                                        scale: isActive ? 1.1 : 1,
+                                        y: isActive ? -1 : 0
                                     }}
                                     transition={{ type: "spring", stiffness: 400, damping: 25 }}
                                 >
                                     <tab.icon
                                         className={cn(
-                                            "w-[22px] h-[22px] transition-colors duration-300",
+                                            "w-5 h-5 transition-colors duration-300",
                                             isActive ? "text-white" : ""
                                         )}
                                         style={isActive ? { color: tab.color } : undefined}
@@ -123,7 +132,7 @@ export const MobileNavigation = memo(function MobileNavigation({
                                     <motion.span
                                         initial={{ scale: 0 }}
                                         animate={{ scale: 1 }}
-                                        className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 bg-gradient-to-r from-red-500 to-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg shadow-red-500/30"
+                                        className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] px-1 bg-gradient-to-r from-red-500 to-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-lg shadow-red-500/30"
                                         aria-label={`${unreadCount} непрочитанных сообщений`}
                                     >
                                         {unreadCount > 99 ? '99+' : unreadCount}
@@ -131,7 +140,7 @@ export const MobileNavigation = memo(function MobileNavigation({
                                 )}
                             </div>
                             <span className={cn(
-                                "text-[10px] font-semibold tracking-wide transition-all duration-300",
+                                "text-[10px] font-medium tracking-tight transition-all duration-300",
                                 isActive ? "opacity-100" : "opacity-60"
                             )}
                             style={isActive ? { color: tab.color } : undefined}
@@ -139,16 +148,16 @@ export const MobileNavigation = memo(function MobileNavigation({
                                 {tab.label}
                             </span>
 
-                            {/* Premium glow indicator */}
+                            {/* Active indicator */}
                             {isActive && (
                                 <motion.div
                                     layoutId="activeTabIndicator"
                                     className={cn(
-                                        "absolute -bottom-[1px] left-1/2 -translate-x-1/2 w-8 h-[3px] rounded-full",
+                                        "absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[2px] rounded-full",
                                         "bg-gradient-to-r", tab.gradient
                                     )}
                                     style={{
-                                        boxShadow: `0 0 12px ${tab.color}60, 0 0 4px ${tab.color}40`
+                                        boxShadow: `0 0 10px ${tab.color}80`
                                     }}
                                     transition={{ type: "spring", stiffness: 500, damping: 35 }}
                                 />

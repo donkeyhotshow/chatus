@@ -156,20 +156,62 @@ export default function RootLayout({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: '#0a0a0a',
+            backgroundColor: '#0D0D0D',
             color: '#ffffff',
             padding: '2rem',
             textAlign: 'center',
-            fontFamily: 'system-ui, sans-serif',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
             zIndex: 9999
           }}>
-            <div>
-              <h1 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>JavaScript Required</h1>
-              <p style={{ color: '#888', marginBottom: '1rem' }}>
-                ChatUs требует JavaScript для работы. Пожалуйста, включите JavaScript в настройках браузера.
+            <div style={{ maxWidth: '400px' }}>
+              <div style={{ 
+                width: '64px', 
+                height: '64px', 
+                background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
+                borderRadius: '16px',
+                margin: '0 auto 1.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 10px 25px rgba(124, 58, 237, 0.3)'
+              }}>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'white' }}>
+                  <path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/>
+                </svg>
+              </div>
+              <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>JavaScript Required</h1>
+              <p style={{ color: '#D1D5DB', marginBottom: '1.5rem', lineHeight: '1.6' }}>
+                ChatUs — это интерактивное приложение, которому требуется JavaScript для работы чата, рисования и игр в реальном времени.
               </p>
-              <p style={{ color: '#666', fontSize: '0.875rem' }}>
-                ChatUs requires JavaScript to function. Please enable JavaScript in your browser settings.
+              <div style={{ 
+                backgroundColor: 'rgba(255,255,255,0.05)', 
+                padding: '1.25rem', 
+                borderRadius: '12px',
+                border: '1px solid rgba(255,255,255,0.1)',
+                marginBottom: '1.5rem'
+              }}>
+                <p style={{ color: '#9CA3AF', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
+                  Нет возможности включить JavaScript?
+                </p>
+                <a 
+                  href="https://chatus-omega.vercel.app/download" 
+                  style={{ 
+                    display: 'inline-block',
+                    backgroundColor: '#7C3AED',
+                    color: 'white',
+                    padding: '0.75rem 1.5rem',
+                    borderRadius: '8px',
+                    textDecoration: 'none',
+                    fontWeight: '600',
+                    fontSize: '0.875rem',
+                    transition: 'background-color 0.2s'
+                  }}
+                >
+                  Скачать мобильное приложение
+                </a>
+              </div>
+              <p style={{ color: '#6B7280', fontSize: '0.75rem' }}>
+                ChatUs requires JavaScript to function. Please enable it in your browser settings or use our mobile app.
               </p>
             </div>
           </div>

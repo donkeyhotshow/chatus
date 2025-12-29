@@ -1,6 +1,6 @@
 /**
  * React Query Client Configuration
- * Централизоварация для кэширования данных
+ * Централизация для кэширования данных
  * Этап 8: Оптимизированные настройки кэширования
  */
 
@@ -52,7 +52,7 @@ export const queryClient = new QueryClient({
     mutations: {
       retry: 1,
       // Этап 8: Оптимистичные обновления по умолчанию
-      onError: (error, _variables, _context) => {
+      onError: (error) => {
         console.error('[Mutation Error]', error);
       },
     },

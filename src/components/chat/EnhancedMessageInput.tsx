@@ -243,7 +243,7 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
         <div
             ref={containerRef}
             className={cn(
-                "p-3 safe-bottom bg-black/95 backdrop-blur-2xl border-t border-white/5 message-input-container",
+                "p-[var(--space-3)] safe-bottom bg-[var(--bg-secondary)]/95 backdrop-blur-2xl border-t border-[var(--border-subtle)] message-input-container",
                 isKeyboardVisible && isIOS() && "ios-keyboard-visible",
                 isKeyboardVisible && isAndroid() && isLandscape() && "android-landscape-keyboard",
                 className
@@ -405,17 +405,17 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                         aria-label="Введите сообщение"
                         aria-describedby={message.length > 800 ? "char-count" : undefined}
                         className={cn(
-                            "w-full px-4 py-3 bg-[#242426] border border-white/[0.1] rounded-2xl",
-                            "text-white placeholder:text-[var(--text-muted)]",
+                            "w-full px-[var(--space-4)] py-[var(--space-3)] bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] rounded-2xl",
+                            "text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
                             "resize-none overflow-y-auto max-h-[120px] scrollbar-hide",
-                            "focus:outline-none focus:border-violet-500/50 focus:bg-[#2a2a2c]",
-                            "focus:ring-2 focus:ring-violet-500/20",
-                            "hover:border-white/15",
+                            "focus:outline-none focus:border-[var(--accent-chat)]/50 focus:bg-[var(--bg-tertiary)]",
+                            "focus:ring-2 focus:ring-[var(--accent-chat)]/20",
+                            "hover:border-[var(--border-subtle)]",
                             "transition-all duration-200",
                             "shadow-sm shadow-black/30",
                             "disabled:opacity-50"
                         )}
-                        style={{ fontSize: '16px', minHeight: '56px' }}
+                        style={{ fontSize: 'var(--font-body)', minHeight: '56px' }}
                     />
 
                     {/* Character count */}
@@ -477,10 +477,10 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                     disabled={!canSend || isSending}
                     aria-label={isSending ? "Отправка..." : (canSend ? "Отправить сообщение" : "Введите сообщение для отправки")}
                     className={cn(
-                        "p-3 rounded-2xl transition-all duration-300 min-w-[48px] min-h-[48px] flex items-center justify-center relative z-[105]",
+                        "p-3 rounded-2xl transition-all duration-300 min-w-[48px] min-h-[48px] flex items-center justify-center relative z-[105] touch-target",
                         canSend && !isSending
-                            ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-[0_4px_15px_rgba(124,58,237,0.3)] hover:shadow-[0_6px_20px_rgba(124,58,237,0.4)]"
-                            : "bg-white/[0.04] text-white/20 cursor-not-allowed"
+                            ? "bg-gradient-to-r from-[var(--accent-chat)] to-[var(--accent-games)] text-white shadow-lg shadow-violet-500/25 hover:shadow-xl hover:shadow-violet-500/40"
+                            : "bg-[var(--bg-tertiary)] text-[var(--text-disabled)] cursor-not-allowed border border-[var(--border-subtle)]"
                     )}
                 >
                     {isSending ? (

@@ -3,7 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { Star, Users, Clock, Play, Trophy } from 'lucide-react';
+import { Star, Users, Clock, Play } from 'lucide-react';
 
 interface GameCardProps {
     title: string;

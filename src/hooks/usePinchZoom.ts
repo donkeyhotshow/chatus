@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from
+import { useCallback, useRef, useState } from 'react';
 
 interface PinchState {
   scale: number;

@@ -25,7 +25,7 @@ type MessageItemProps = {
     groupPosition?: 'first' | 'middle' | 'last' | 'single';
 };
 
-const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDelete, onImageClick, onReply, onCopy, reactions = [], groupPosition = 'single' }: MessageItemProps) {
+const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDelete, onImageClick, onReply, reactions = [], groupPosition = 'single' }: MessageItemProps) {
     const [showEmojiRain, setShowEmojiRain] = useState(false);
     const [rainEmoji, setRainEmoji] = useState('');
     const [showActions, setShowActions] = useState(false);
@@ -123,12 +123,12 @@ const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDe
 
     const handleDoubleClick = () => {
         if (message.id.startsWith('temp_')) return;
-        if (!isOwn) return;
 
         const emoji = '❤️';
         onReaction(message.id, emoji);
         setRainEmoji(emoji);
         setShowEmojiRain(true);
+        if ('vibrate' in navigator) navigator.vibrate([10, 30]);
         setTimeout(() => setShowEmojiRain(false), 2000);
     };
 
@@ -168,18 +168,15 @@ const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDe
         }
 
         if (message.text) {
-            // Dynamic line-height: short messages (1-2 lines ~80 chars) get 1.4, longer get 1.5
             const isLongMessage = message.text.length > 80 || message.text.split('\n').length > 2;
             return (
                 <div className="flex flex-col">
                     {contentNode}
-                    <p style={{
-                        color: '#FFFFFF',
-                        fontSize: '14px',
-                        lineHeight: isLongMessage ? '1.5' : '1.4',
-                        letterSpacing: '0.01em',
-                        whiteSpace: 'pre-wrap',
-                        wordBreak: 'break-word',
+                    <p className={cn(
+                        "text-[var(--font-body)] tracking-wide whitespace-pre-wrap break-words",
+                        isOwn ? "text-white" : "text-[var(--text-primary)]"
+                    )} style={{
+                        lineHeight: isLongMessage ? 'var(--lh-chat)' : 'var(--lh-body)',
                     }}>
                         {message.text}
                     </p>
@@ -205,7 +202,7 @@ const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDe
             role="article"
             aria-label={`${user.name} написал: ${message.text || 'изображение'}. ${formattedTime}`}
             className={cn(
-                "group flex gap-2.5 max-w-[85%] sm:max-w-[75%] md:max-w-[65%] lg:max-w-[55%] mb-3 relative gpu-accelerated",
+                "group flex gap-[var(--space-3)] max-w-[85%] sm:max-w-[75%] md:max-w-[65%] mb-[var(--space-2)] relative gpu-accelerated",
                 isOwn ? "ml-auto flex-row-reverse" : "items-start"
             )}
             onDoubleClick={handleDoubleClick}
@@ -248,14 +245,14 @@ const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDe
             <div className={cn("flex flex-col min-w-0 flex-1", isOwn ? "items-end" : "items-start")}>
                 {/* Name & Time - only show for first message in group or single */}
                 {!isSticker && (groupPosition === 'first' || groupPosition === 'single') && (
-                    <div className="mb-1.5 px-1 flex items-center gap-2">
+                    <div className="mb-[var(--space-1)] px-1 flex items-center gap-[var(--space-2)]">
                         <span className={cn(
-                            "text-sm font-semibold tracking-wide message-username",
-                            isOwn ? "text-white/90" : "text-[#C4B5FD]"
+                            "text-[var(--font-secondary)] font-semibold tracking-wide",
+                            isOwn ? "text-[var(--text-primary)]" : "text-[var(--accent-chat)]"
                         )}>
                             {user.name}
                         </span>
-                        <span className="text-xs text-white/60 message-time font-medium">{formattedTime}</span>
+                        <span className="text-[var(--font-caption)] text-[var(--text-muted)] font-medium">{formattedTime}</span>
                     </div>
                 )}
 
@@ -267,15 +264,15 @@ const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDe
                         onDragEnd={handleDragEnd}
                         style={{
                             x,
-                            // Inline styles for reliable color application
                             ...(isSticker ? {} : isOwn ? {
-                                background: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 50%, #5B21B6 100%)',
+                                background: 'var(--accent-chat)',
                                 borderRadius: '16px 4px 16px 16px',
-                                boxShadow: '0 2px 12px rgba(124,58,237,0.3)',
+                                boxShadow: '0 4px 12px rgba(139, 92, 246, 0.25)',
                             } : {
-                                background: '#1A1A1E',
+                                background: 'rgba(139, 92, 246, 0.1)',
                                 borderRadius: '4px 16px 16px 16px',
-                                border: '1px solid rgba(255,255,255,0.08)',
+                                border: '1px solid var(--border-subtle)',
+                                backdropFilter: 'blur(8px)',
                             })
                         }}
                         onTouchStart={handleTouchStart}

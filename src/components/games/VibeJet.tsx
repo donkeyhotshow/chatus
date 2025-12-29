@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { UserProfile } from '@/lib/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { hapticFeedback } from '@/lib/game-utils';
 import { Button } from '../ui/button';
@@ -62,11 +61,7 @@ interface Building {
 
 type GameState = 'loading' | 'menu' | 'playing' | 'paused' | 'gameover';
 
-export default function VibeJet({ onGameEnd }: {
-    onGameEnd: () => void,
-    user: UserProfile,
-    roomId: string
-}) {
+export default function VibeJet() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const isMobile = useIsMobile();
