@@ -21,6 +21,7 @@ import {
   X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { OptimizedAvatar } from '../ui/OptimizedImage';
 
 // Типы для статистики
 interface GameStatistics {
@@ -275,7 +276,7 @@ const LeaderboardRow = memo(function LeaderboardRow({
 
       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-white/[0.08] to-white/[0.02] border border-white/[0.08] flex items-center justify-center text-sm font-medium text-[var(--text-muted)]">
         {entry.userAvatar ? (
-          <img src={entry.userAvatar} alt="" className="w-full h-full rounded-lg object-cover" />
+          <OptimizedAvatar src={entry.userAvatar} alt="" size={32} className="rounded-lg" />
         ) : (
           entry.userName.charAt(0).toUpperCase()
         )}

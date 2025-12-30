@@ -17,6 +17,7 @@ interface SkeletonProps {
   width?: string | number;
   height?: string | number;
   animation?: 'shimmer' | 'pulse' | 'wave';
+  style?: React.CSSProperties;
 }
 
 export const Skeleton = memo(function Skeleton({
@@ -25,6 +26,7 @@ export const Skeleton = memo(function Skeleton({
   width,
   height,
   animation = 'shimmer',
+  style,
 }: SkeletonProps) {
   const variantClasses = {
     default: 'rounded-md',
@@ -50,6 +52,7 @@ export const Skeleton = memo(function Skeleton({
       style={{
         width: typeof width === 'number' ? `${width}px` : width,
         height: typeof height === 'number' ? `${height}px` : height,
+        ...style,
       }}
       role="status"
       aria-label="Загрузка..."

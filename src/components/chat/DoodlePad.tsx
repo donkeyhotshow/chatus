@@ -4,6 +4,7 @@
 import { useRef, useState, useEffect } from "react";
 import { X, Check, Trash2, Undo2, PenTool } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface DoodlePadProps {
   onClose: () => void;
@@ -25,6 +26,7 @@ export default function DoodlePad({ onClose, onSend }: DoodlePadProps) {
   const [color, setColor] = useState(PALETTE[0]);
   const [lineWidth, setLineWidth] = useState(3);
   const [history, setHistory] = useState<string[]>([]);
+  const { toast } = useToast();
 
   // Init canvas with retina support
   useEffect(() => {

@@ -3,6 +3,7 @@
 import { memo, useEffect, useCallback } from 'react';
 import { X, Settings, LogOut, User, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { OptimizedAvatar } from '../ui/OptimizedImage';
 
 interface MobileMenuDrawerProps {
     isOpen: boolean;
@@ -12,6 +13,7 @@ interface MobileMenuDrawerProps {
     onProfile?: () => void;
     userName?: string;
     userAvatar?: string;
+    status?: 'online' | 'offline';
 }
 
 /**
@@ -26,6 +28,7 @@ export const MobileMenuDrawer = memo(function MobileMenuDrawer({
     onProfile,
     userName,
     userAvatar,
+    status = 'online',
 }: MobileMenuDrawerProps) {
     // Close on escape key
     useEffect(() => {
@@ -93,10 +96,10 @@ export const MobileMenuDrawer = memo(function MobileMenuDrawer({
                     <div className="p-4 border-b border-[var(--border-primary)]">
                         <div className="flex items-center gap-3">
                             {userAvatar ? (
-                                <img
+                                <OptimizedAvatar
                                     src={userAvatar}
                                     alt={userName}
-                                    className="w-12 h-12 rounded-full object-cover"
+                                    size={48}
                                 />
                             ) : (
                                 <div className="w-12 h-12 rounded-full bg-[var(--accent-light)] flex items-center justify-center">
@@ -105,7 +108,9 @@ export const MobileMenuDrawer = memo(function MobileMenuDrawer({
                             )}
                             <div>
                                 <p className="font-medium text-[var(--text-primary)]">{userName}</p>
-                                <p className="text-sm text-[var(--text-muted)]">Онлайн</p>
+                                <p className="text-sm text-[var(--text-muted)]">
+                                    {status === 'online' ? 'Онлайн' : 'Офлайн'}
+                                </p>
                             </div>
                         </div>
                     </div>

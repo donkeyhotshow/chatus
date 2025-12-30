@@ -1,10 +1,9 @@
 "use client";
 
 import { memo, useState, useCallback } from 'react';
-import { MessageCircle, PenTool, Gamepad2, Settings, LogOut, Snowflake, ChevronLeft, ChevronRight, Zap } from 'lucide-react';
+import { MessageCircle, Settings, LogOut, Snowflake, ChevronLeft, ChevronRight, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Logo } from '../icons/logo';
-import { preloadOnHover } from '@/components/lazy/LazyComponents';
 import { SnowEffect } from '../effects/SnowEffect';
 
 export type ChatTab = 'chat' | 'canvas' | 'games' | 'users' | 'stats';

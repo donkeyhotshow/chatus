@@ -225,7 +225,7 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
               {activeGameId === 'dice-roll' && <DiceRoll {...commonProps} gameState={gameState} />}
               {activeGameId === 'car-race' && <CarRace {...commonProps} gameState={gameState} />}
               {activeGameId === 'snake' && <SnakeGame {...commonProps} gameState={gameState} />}
-              {activeGameId === 'vibe-jet' && <VibeJet {...commonProps} />}
+              {activeGameId === 'vibe-jet' && <VibeJet />}
             </Suspense>
           ) : (
             <GameLoading />

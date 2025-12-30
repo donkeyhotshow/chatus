@@ -8,6 +8,7 @@
 import { useState, useRef, useEffect, memo } from 'react';
 import { cn } from '@/lib/utils';
 import { isSlowConnection } from '@/lib/performance-config';
+import NextImage from 'next/image';
 
 interface LazyImageProps {
   src: string;
@@ -51,7 +52,6 @@ export const LazyImage = memo(function LazyImage({
   const [isLoaded, setIsLoaded] = useState(imageCache.has(src));
   const [isInView, setIsInView] = useState(priority);
   const [hasError, setHasError] = useState(false);
-  const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const placeholder = generatePlaceholder(width, height, placeholderColor);
@@ -124,20 +124,19 @@ export const LazyImage = memo(function LazyImage({
 
       {/* Actual Image */}
       {isInView && !hasError && (
-        <img
-          ref={imgRef}
+        <NextImage
           src={optimizedSrc}
           alt={alt}
           width={width}
           height={height}
-          loading={priority ? 'eager' : 'lazy'}
-          decoding="async"
+          priority={priority}
           onLoad={handleLoad}
           onError={handleError}
           className={cn(
             'w-full h-full object-cover transition-opacity duration-300',
             isLoaded ? 'opacity-100' : 'opacity-0'
           )}
+          unoptimized={optimizedSrc.startsWith('data:')}
         />
       )}
 
@@ -163,7 +162,7 @@ export function ImagePreloader({ srcs }: { srcs: string[] }) {
     srcs.forEach(src => {
       if (imageCache.has(src)) return;
 
-      const img = new Image();
+      const img = new window.Image();
       img.src = src;
       img.onload = () => imageCache.add(src);
     });

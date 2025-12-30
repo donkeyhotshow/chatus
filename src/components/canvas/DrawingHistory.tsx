@@ -10,6 +10,7 @@ import { memo, useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Undo2, Redo2, History, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { OptimizedImage } from '../ui/OptimizedImage';
 
 interface HistoryState {
   id: string;
@@ -196,10 +197,13 @@ const HistoryThumbnail = memo(function HistoryThumbnail({
       style={{ width: THUMBNAIL_SIZE, height: THUMBNAIL_SIZE }}
     >
       {state.thumbnail ? (
-        <img
+        <OptimizedImage
           src={state.thumbnail}
           alt={`State ${index + 1}`}
+          width={THUMBNAIL_SIZE}
+          height={THUMBNAIL_SIZE}
           className="w-full h-full object-cover"
+          showBlur={false}
         />
       ) : (
         <div className="w-full h-full bg-[var(--bg-tertiary)] flex items-center justify-center">
