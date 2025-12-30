@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { MessageCircle, ChevronUp, ChevronDown, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';

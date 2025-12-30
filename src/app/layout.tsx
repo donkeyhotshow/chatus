@@ -1,6 +1,13 @@
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import { SafeClientLayout } from '@/components/layout/SafeClientLayout';
+
+const inter = Inter({
+  subsets: ['latin', 'cyrillic'],
+  display: 'swap',
+  variable: '--font-inter',
+});
 
 const APP_NAME = "ChatUs";
 const APP_DESCRIPTION = "Приватный чат 1 на 1 с рисованием и играми";
@@ -86,7 +93,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru">
+    <html lang="ru" className={inter.variable}>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#7C3AED" />
@@ -94,18 +101,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
-        {/* P2 Performance: Preload critical fonts for LCP optimization */}
-        <link
-          rel="preload"
-          href="https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfAZ9hiJ-Ek-_EeA.woff2"
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-        />
-
         {/* Preconnect to critical origins */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://firebasestorage.googleapis.com" />
 
         {/* P0 Performance: Preconnect to Firebase services */}
@@ -117,8 +113,6 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://firebaseio.com" />
         <link rel="dns-prefetch" href="https://firebasestorage.googleapis.com" />
 
-        {/* Load Inter font with display=swap for better LCP */}
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -147,7 +141,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body suppressHydrationWarning>
+      <body suppressHydrationWarning className={inter.className}>
         {/* BUG-014 FIX: Fallback for disabled JavaScript */}
         <noscript>
           <div style={{

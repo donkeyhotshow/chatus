@@ -152,7 +152,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <p className="mt-4 text-[10px] text-[var(--text-disabled)] font-mono">
             Код ошибки: {errorCode}
           </p>
-          {process.env.NODE_ENV === 'development' && this.state.error && (
+          {this.state.error && (
             <details className="mt-4 text-left w-full max-w-md">
               <summary className="text-xs text-[var(--text-muted)] cursor-pointer hover:text-[var(--text-secondary)]">
                 Детали ошибки (dev)

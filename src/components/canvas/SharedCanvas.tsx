@@ -552,7 +552,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
   };
 
   const lastTapRef = useRef<number>(0);
-  const handleDoubleTap = (e: React.TouchEvent) => {
+  const handleDoubleTap = () => {
     const now = Date.now();
     if (now - lastTapRef.current < 300) {
       // Reset zoom and pan
@@ -571,7 +571,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     }
     if (e.touches.length === 0) {
       handleMouseUp();
-      handleDoubleTap(e);
+      handleDoubleTap();
     }
   };
 

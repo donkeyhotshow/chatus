@@ -315,7 +315,7 @@ export const VoiceIcon = memo(function VoiceIcon({ className, size = 16 }: IconP
   );
 });
 
-export default {
+const MessageIcons = {
   ReplyIcon,
   ForwardIcon,
   EditIcon,
@@ -332,3 +332,5 @@ export default {
   EmojiIcon,
   VoiceIcon,
 };
+
+export default MessageIcons;

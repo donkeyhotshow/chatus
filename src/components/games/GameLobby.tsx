@@ -8,7 +8,7 @@ import { UserProfile, GameType, GameState } from '@/lib/types';
 import { useChatService } from '@/hooks/useChatService';
 import { useDoc } from '@/hooks/useDoc';
 import { useFirebase } from '../firebase/FirebaseProvider';
-import { EmptyGames, EmptySearchResults } from '@/components/ui/EmptyState';
+import { EmptyGames, EmptySearch } from '@/components/ui/EmptyState';
 
 // Skeleton component for game cards
 function GameCardSkeleton({ index }: { index: number }) {
@@ -179,6 +179,19 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
     }
   };
 
+  // Лобі state - Moved up to avoid conditional hook call
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterDifficulty, setFilterDifficulty] = useState<'all' | 'easy' | 'medium' | 'hard'>('all');
+
+  const filteredGames = useMemo(() => {
+    return gamesList.filter(game => {
+      const matchesSearch = game.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                           game.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesDifficulty = filterDifficulty === 'all' || game.difficulty === filterDifficulty;
+      return matchesSearch && matchesDifficulty;
+    });
+  }, [searchQuery, filterDifficulty]);
+
   // Активна гра - Dark Minimalism Theme
   if (activeGameId) {
     const currentGame = gamesList.find(g => g.id === activeGameId);
@@ -237,17 +250,8 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
   }
 
   // Лобі - Dark Minimalism Theme
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterDifficulty, setFilterDifficulty] = useState<'all' | 'easy' | 'medium' | 'hard'>('all');
+  // Hooks moved to top level
 
-  const filteredGames = useMemo(() => {
-    return gamesList.filter(game => {
-      const matchesSearch = game.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                           game.description.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesDifficulty = filterDifficulty === 'all' || game.difficulty === filterDifficulty;
-      return matchesSearch && matchesDifficulty;
-    });
-  }, [searchQuery, filterDifficulty]);
 
   return (
     <div className="flex flex-col h-full bg-black">
@@ -366,7 +370,7 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
             })
           ) : (
             <div className="col-span-full flex justify-center py-12">
-               {searchQuery ? <EmptySearchResults /> : <EmptyGames />}
+               {searchQuery ? <EmptySearch query={searchQuery} /> : <EmptyGames />}
             </div>
           )}
         </div>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Smile, Sticker, Gift, Search, X, History, Loader2 } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import { Smile, Sticker, Gift, Search, History, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { StickerPack } from '@/lib/telegram/types';
@@ -31,7 +31,7 @@ export function UnifiedPicker({
     const [selectedPack, setSelectedPack] = useState<string | null>(null);
     const [isLoadingStickers, setIsLoadingStickers] = useState(false);
     const [recentEmojis, setRecentEmojis] = useState<string[]>([]);
-    const containerRef = useRef<HTMLDivElement>(null);
+
 
     // Load recent emojis
     useEffect(() => {
