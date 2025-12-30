@@ -1,0 +1,198 @@
+/* ═══════════════════════════════════════════════════════════════
+   BUTTON STYLES - Premium, Accessible, Performance
+   Обновлено согласно новым требованиям UI/UX
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Base Button - 44-48px height, accessible, премиальный */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0 20px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 120ms cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Primary Button - Яркий, для основных действий */
+.btn-primary {
+    min-height: 48px;
+    background: var(--accent-primary, #7c3aed);
+    color: white;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.25);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--accent-hover, #6d28d9);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(124, 58, 237, 0.35);
+}
+
+.btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.2);
+}
+
+/* Secondary Button - Обводка, 40-44px */
+.btn-secondary {
+    min-height: 44px;
+    background: transparent;
+    color: var(--text-primary);
+    border: 1px solid var(--border-moderate, rgba(255, 255, 255, 0.15));
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: var(--bg-tertiary);
+    border-color: var(--border-strong, rgba(255, 255, 255, 0.25));
+}
+
+.btn-secondary:active:not(:disabled) {
+    background: var(--bg-elevated);
+}
+
+/* Ghost Button - Только текст/иконка */
+.btn-ghost {
+    min-height: 40px;
+    background: transparent;
+    color: var(--text-secondary);
+    padding: 0 12px;
+}
+
+.btn-ghost:hover:not(:disabled) {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.btn-ghost:active:not(:disabled) {
+    background: var(--bg-elevated);
+}
+
+/* Icon Button - 44×44px touch target */
+.btn-icon {
+    min-width: 44px;
+    min-height: 44px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 8px;
+}
+
+.btn-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Large Icon Button for CTA */
+.btn-icon-lg {
+    min-width: 48px;
+    min-height: 48px;
+    width: 48px;
+    height: 48px;
+}
+
+.btn-icon-lg svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* Focus State - WCAG AA compliant */
+.btn:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+/* Disabled State */
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Loading State with Spinner */
+.btn-loading {
+    position: relative;
+    color: transparent;
+    pointer-events: none;
+}
+
+.btn-loading::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: btn-spin 600ms linear infinite;
+}
+
+@keyframes btn-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Size variants */
+.btn-sm {
+    min-height: 36px;
+    padding: 0 12px;
+    font-size: 13px;
+}
+
+.btn-lg {
+    min-height: 52px;
+    padding: 0 24px;
+    font-size: 16px;
+}
+
+/* Micro-animations - disabled via prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+    .btn {
+        transition: none;
+    }
+}
+
+/* Success/Error variants */
+.btn-success {
+    background: var(--success, #10b981);
+    color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+    background: #059669;
+}
+
+.btn-error {
+    background: var(--error, #ef4444);
+    color: white;
+}
+
+.btn-error:hover:not(:disabled) {
+    background: #dc2626;
+}
+
+/* Group - Кнопки рядом */
+.btn-group {
+    display: inline-flex;
+    gap: 8px;
+}
+
+.btn-group .btn:not(:last-child) {
+    margin-right: -1px;
+}
+
+/* Full width на мобиле */
+@media (max-width: 768px) {
+    .btn-mobile-full {
+        width: 100%;
+    }
+}

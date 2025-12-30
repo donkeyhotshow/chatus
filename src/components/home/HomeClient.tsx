@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
-import { ArrowRight, MessageCircle, PenTool, Gamepad2, Key } from 'lucide-react';
+import { ArrowRight, MessageCircle, PenTool, Gamepad2, Key, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/icons/logo';
 import { useToast } from '@/hooks/use-toast';
@@ -247,7 +247,7 @@ export function HomeClient() {
                                             type="text"
                                             value={roomCode}
                                             onChange={(e) => setRoomCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
-                                            placeholder="X7Y2Z9"
+                                            placeholder="_ _ _ _ _ _"
                                             maxLength={6}
                                             className="w-full px-4 h-12 bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] rounded-xl text-center tracking-[0.3em] font-mono text-[var(--text-primary)] placeholder:opacity-20 focus:border-violet-500/50 outline-none transition-all"
                                         />
@@ -264,6 +264,7 @@ export function HomeClient() {
                                                     : "bg-[var(--bg-tertiary)] text-[var(--text-disabled)]"
                                             )}
                                         >
+                                            {isConnecting && <Loader2 className="w-4 h-4 animate-spin" />}
                                             {isConnecting ? "Подключение..." : "Войти"}
                                         </Button>
                                     </div>

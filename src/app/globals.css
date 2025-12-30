@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* P0-01: Tab Navigation */
+@import '../styles/tabs.css';
+
+/* P0-06: 12-Column Grid System */
+@import '../styles/grid.css';
+
+/* Premium Button Styles - Updated */
+@import '../styles/buttons.css';
+
 @layer base {
   :root {
     /* ═══════════════════════════════════════════════════════════════

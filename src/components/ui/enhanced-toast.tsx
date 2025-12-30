@@ -299,7 +299,7 @@ export function ToastContainer({
                     <motion.div
                         key={toast.id}
                         style={{
-                            zIndex: 100 + index
+                            zIndex: 2000 + index /* var(--z-toast) + index */
                         }}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}

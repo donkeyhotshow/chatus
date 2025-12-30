@@ -153,7 +153,7 @@ export const KeyboardAwareInput = forwardRef<HTMLInputElement, KeyboardAwareInpu
                     ...(isKeyboardVisible && orientation === 'landscape' ? {
                         position: 'sticky' as const,
                         bottom: 0,
-                        zIndex: 50,
+                        zIndex: 100 /* var(--z-sticky) */,
                         backgroundColor: 'var(--bg-secondary)',
                     } : {})
                 }}

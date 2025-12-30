@@ -107,7 +107,7 @@ function SnowCanvas() {
             ref={canvasRef}
             className="fixed inset-0 pointer-events-none overflow-hidden"
             style={{ 
-                zIndex: 50,
+                zIndex: 10 /* var(--z-content) - decorative */,
                 background: 'transparent',
                 pointerEvents: 'none',
                 touchAction: 'none',
