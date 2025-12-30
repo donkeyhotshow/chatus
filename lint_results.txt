@@ -1,0 +1,25 @@
+
+> chatus@0.1.0 lint
+> next lint
+
+
+./src/app/layout.tsx
+98:9  Warning: `rel="preconnect"` is missing from Google Font. See: https://nextjs.org/docs/messages/google-font-preconnect  @next/next/google-font-preconnect
+121:9  Warning: Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font  @next/next/no-page-custom-font
+
+./src/components/canvas/SharedCanvas.tsx
+555:28  Error: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/chat/ChatPeek.tsx
+3:20  Error: 'useRef' is defined but never used.  @typescript-eslint/no-unused-vars
+3:28  Error: 'useEffect' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/chat/UnifiedPicker.tsx
+4:18  Error: 'AnimatePresence' is defined but never used.  @typescript-eslint/no-unused-vars
+5:40  Error: 'X' is defined but never used.  @typescript-eslint/no-unused-vars
+34:11  Error: 'containerRef' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/icons/MessageIcons.tsx
+318:1  Warning: Assign object to a variable before exporting as module default  import/no-anonymous-default-export
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules

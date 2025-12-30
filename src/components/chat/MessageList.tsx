@@ -232,7 +232,7 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
 
   return (
     <div
-      className="flex-1 h-full scroll-container contain-layout relative"
+      className="flex-1 h-full scroll-container contain-layout relative pt-4"
       role="log"
       aria-label="Список сообщений чата"
       aria-live="polite"

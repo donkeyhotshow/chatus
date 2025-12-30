@@ -1,23 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import * as Matter from "matter-js";
-import { Square, Circle, MousePointer2, Eraser, RefreshCw, ArrowLeft } from "lucide-react";
+import { Square, Circle, MousePointer2, Eraser, RefreshCw } from "lucide-react";
 import { UserProfile } from "@/lib/types";
 import { useChatService } from "@/hooks/useChatService";
-import { Button } from "../ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
+import GameLayout from "./GameLayout";
+import { PremiumButton } from "../ui/premium-button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-const THEME = {
-  background: "#0d0d0d",
-  walls: "#222222",
-  objects: "#ffffff",
-};
+const THEME = { background: "#0d0d0d", walls: "#222222", objects: "#ffffff" };
 
 interface PhysicsWorldProps {
   roomId: string;
@@ -27,7 +19,6 @@ interface PhysicsWorldProps {
 
 export default function PhysicsWorld({ roomId, user, onGameEnd }: PhysicsWorldProps) {
   const { service } = useChatService(roomId, user);
-  const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<Matter.Engine | null>(null);
   const runnerRef = useRef<Matter.Runner | null>(null);
@@ -37,58 +28,29 @@ export default function PhysicsWorld({ roomId, user, onGameEnd }: PhysicsWorldPr
   const [mouseConstraint, setMouseConstraint] = useState<Matter.MouseConstraint | null>(null);
   const [error, setError] = useState(false);
 
-  useEffect(() => {
-    if (!containerRef.current || !canvasRef.current) return;
-
+  const initPhysics = useCallback((canvas: HTMLCanvasElement, width: number, height: number) => {
     try {
-      const Engine = Matter.Engine,
-        Render = Matter.Render,
-        Runner = Matter.Runner,
-        Bodies = Matter.Bodies,
-        Composite = Matter.Composite,
-        Mouse = Matter.Mouse,
-        MouseConstraint = Matter.MouseConstraint;
-
+      const { Engine, Render, Runner, Bodies, Composite, Mouse, MouseConstraint } = Matter;
       const engine = Engine.create();
       engineRef.current = engine;
       engine.gravity.y = 0.8;
 
       const render = Render.create({
-        element: containerRef.current,
-        canvas: canvasRef.current,
-        engine: engine,
-        options: {
-          width: containerRef.current.clientWidth,
-          height: containerRef.current.clientHeight,
-          background: THEME.background,
-          wireframes: false,
-          pixelRatio: window.devicePixelRatio
-        }
+        canvas,
+        engine,
+        options: { width, height, background: THEME.background, wireframes: false, pixelRatio: window.devicePixelRatio }
       });
       renderRef.current = render;
 
-      const w = render.options.width!;
-      const h = render.options.height!;
-      const wallOpts = {
-        isStatic: true,
-        render: { fillStyle: THEME.walls }
-      };
       const wallThickness = 100;
-
-      const ground = Bodies.rectangle(w / 2, h + wallThickness / 2, w + wallThickness, wallThickness, wallOpts);
-      const leftWall = Bodies.rectangle(0 - wallThickness / 2, h / 2, wallThickness, h * 2, wallOpts);
-      const rightWall = Bodies.rectangle(w + wallThickness / 2, h / 2, wallThickness, h * 2, wallOpts);
-
+      const wallOpts = { isStatic: true, render: { fillStyle: THEME.walls } };
+      const ground = Bodies.rectangle(width / 2, height + wallThickness / 2, width + wallThickness, wallThickness, wallOpts);
+      const leftWall = Bodies.rectangle(-wallThickness / 2, height / 2, wallThickness, height * 2, wallOpts);
+      const rightWall = Bodies.rectangle(width + wallThickness / 2, height / 2, wallThickness, height * 2, wallOpts);
       Composite.add(engine.world, [ground, leftWall, rightWall]);
 
-      const mouse = Mouse.create(render.canvas);
-      const mc = MouseConstraint.create(engine, {
-        mouse: mouse,
-        constraint: {
-          stiffness: 0.2,
-          render: { visible: false }
-        }
-      });
+      const mouse = Mouse.create(canvas);
+      const mc = MouseConstraint.create(engine, { mouse, constraint: { stiffness: 0.2, render: { visible: false } } });
       setMouseConstraint(mc);
       Composite.add(engine.world, mc);
       render.mouse = mouse;
@@ -97,192 +59,97 @@ export default function PhysicsWorld({ roomId, user, onGameEnd }: PhysicsWorldPr
       const runner = Runner.create();
       runnerRef.current = runner;
       Runner.run(runner, engine);
-
-      const handleResize = () => {
-        const render = renderRef.current;
-        const container = containerRef.current;
-        if (!render || !container || !render.canvas) return;
-
-        const oldW = render.options.width!;
-        const oldH = render.options.height!;
-        const newW = container.clientWidth;
-        const newH = container.clientHeight;
-
-        render.canvas.width = newW;
-        render.canvas.height = newH;
-        render.options.width = newW;
-        render.options.height = newH;
-        Render.setPixelRatio(render, window.devicePixelRatio);
-
-        // Update walls
-        const scaleX = newW / oldW;
-        const scaleY = newH / oldH;
-
-        Matter.Body.setPosition(ground, { x: newW / 2, y: newH + wallThickness / 2 });
-        Matter.Body.scale(ground, scaleX, 1);
-
-        Matter.Body.setPosition(rightWall, { x: newW + wallThickness / 2, y: newH / 2 });
-        Matter.Body.scale(rightWall, 1, scaleY);
-
-        Matter.Body.setPosition(leftWall, { x: 0 - wallThickness / 2, y: newH / 2 });
-        Matter.Body.scale(leftWall, 1, scaleY);
-      };
-      window.addEventListener("resize", handleResize);
-
-      return () => {
-        window.removeEventListener("resize", handleResize);
-        if (renderRef.current) Render.stop(renderRef.current);
-        if (runnerRef.current) Runner.stop(runnerRef.current);
-        if (engineRef.current) Engine.clear(engineRef.current);
-        if (renderRef.current?.canvas) renderRef.current.canvas.remove();
-      };
-    } catch (error) {
-      console.error('Failed to initialize Physics World:', error);
-      setError(true);
-    }
+    } catch (e) { setError(true); }
   }, []);
 
-
   useEffect(() => {
-    if (mouseConstraint) {
-      mouseConstraint.collisionFilter.mask = selectedTool === 'drag' ? 0xFFFFFFFF : 0x0000;
-    }
+    if (mouseConstraint) mouseConstraint.collisionFilter.mask = selectedTool === 'drag' ? 0xFFFFFFFF : 0x0000;
   }, [selectedTool, mouseConstraint]);
-
 
   const handleCanvasClick = (e: React.MouseEvent) => {
     if (!engineRef.current || !canvasRef.current || selectedTool === 'drag') return;
-
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-
+    const { Bodies, Composite, Query } = Matter;
     if (selectedTool === 'box') {
       const size = 30 + Math.random() * 30;
-      const box = Matter.Bodies.rectangle(x, y, size, size, {
-        restitution: 0.5,
-        render: { fillStyle: THEME.objects, strokeStyle: '#cccccc', lineWidth: 1 }
-      });
-      Matter.Composite.add(engineRef.current.world, box);
-    }
-    else if (selectedTool === 'circle') {
+      Composite.add(engineRef.current.world, Bodies.rectangle(x, y, size, size, { restitution: 0.5, render: { fillStyle: THEME.objects, strokeStyle: '#ccc', lineWidth: 1 } }));
+    } else if (selectedTool === 'circle') {
       const size = 15 + Math.random() * 20;
-      const circle = Matter.Bodies.circle(x, y, size, {
-        restitution: 0.7,
-        friction: 0.1,
-        render: { fillStyle: THEME.objects, strokeStyle: '#cccccc', lineWidth: 1 }
-      });
-      Matter.Composite.add(engineRef.current.world, circle);
-    }
-    else if (selectedTool === 'erase') {
-      const bodies = Matter.Query.point(engineRef.current.world.bodies, { x, y });
-      const dynamicBodies = bodies.filter(b => !b.isStatic);
-      if (dynamicBodies.length > 0) {
-        Matter.Composite.remove(engineRef.current.world, dynamicBodies[0]);
-      }
+      Composite.add(engineRef.current.world, Bodies.circle(x, y, size, { restitution: 0.7, friction: 0.1, render: { fillStyle: THEME.objects, strokeStyle: '#ccc', lineWidth: 1 } }));
+    } else if (selectedTool === 'erase') {
+      const bodies = Query.point(engineRef.current.world.bodies, { x, y }).filter(b => !b.isStatic);
+      if (bodies.length > 0) Composite.remove(engineRef.current.world, bodies[0]);
     }
   };
 
   const clearWorld = () => {
     if (!engineRef.current) return;
-    const all = Matter.Composite.allBodies(engineRef.current.world);
-    const dynamic = all.filter(b => !b.isStatic);
+    const dynamic = Matter.Composite.allBodies(engineRef.current.world).filter(b => !b.isStatic);
     Matter.Composite.remove(engineRef.current.world, dynamic);
-    service?.sendSystemMessage(`${user.name} cleared the physics sandbox.`);
+    service?.sendSystemMessage(`${user.name} очистил песочницу.`);
   };
 
-  const getCursor = () => {
-    switch (selectedTool) {
-      case 'drag': return 'grab';
-      case 'erase': return 'crosshair';
-      default: return 'copy';
-    }
-  }
-
-  const tools: { id: 'box' | 'circle' | 'drag' | 'erase', icon: React.ComponentType<{ className?: string }>, label: string }[] = [
-    { id: 'box', icon: Square, label: 'Box' },
-    { id: 'circle', icon: Circle, label: 'Ball' },
-    { id: 'drag', icon: MousePointer2, label: 'Drag' },
-    { id: 'erase', icon: Eraser, label: 'Erase' },
+  const tools: { id: 'box' | 'circle' | 'drag' | 'erase', icon: any, label: string }[] = [
+    { id: 'box', icon: Square, label: 'Куб' },
+    { id: 'circle', icon: Circle, label: 'Шар' },
+    { id: 'drag', icon: MousePointer2, label: 'Тянуть' },
+    { id: 'erase', icon: Eraser, label: 'Стереть' },
   ];
 
   return (
-    <TooltipProvider>
-      <div className="flex flex-col h-full bg-neutral-950 select-none">
-        <div className="p-2 border-b border-white/5 flex items-center gap-1 shrink-0 bg-neutral-950 z-10">
+    <GameLayout
+      title="Physics Sandbox"
+      icon={<RefreshCw className="w-5 h-5 text-emerald-400" />}
+      onExit={onGameEnd}
+      score={0}
+      gameTime={0}
+      playerCount={1}
+      responsiveOptions={{ gridCols: 20, gridRows: 15, maxCellSize: 50, padding: 0, accountForNav: true }}
+    >
+      {({ dimensions }) => {
+        useEffect(() => {
+          if (canvasRef.current && !renderRef.current) initPhysics(canvasRef.current, dimensions.width, dimensions.height);
+        }, [dimensions, initPhysics]);
 
-          <Button onClick={onGameEnd} variant="ghost" size="sm" className="text-neutral-400 hover:text-white hover:bg-white/10">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
-          <div className="w-[1px] h-6 bg-white/10 mx-2"></div>
-
-          {tools.map((tool) => (
-            <Tooltip key={tool.id}>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedTool(tool.id)}
-                  className={`
-                    flex items-center gap-2 transition-all
-                    ${selectedTool === tool.id
-                      ? 'bg-white text-black hover:bg-white/90 hover:text-black'
-                      : 'text-neutral-400 hover:text-white hover:bg-white/10'}
-                  `}
-                >
-                  <tool.icon className="w-4 h-4" />
-                  <span className="hidden sm:inline">{tool.label}</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <p>{tool.label}</p>
-              </TooltipContent>
-            </Tooltip>
-          ))}
-
-          <div className="flex-1" />
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                onClick={clearWorld}
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-neutral-400 hover:text-red-500 hover:bg-red-500/10"
-              >
-                <RefreshCw className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <p>Clear World</p>
-            </TooltipContent>
-          </Tooltip>
-
-        </div>
-        <div ref={containerRef} className="flex-1 relative overflow-hidden" style={{ cursor: getCursor() }}>
-          {error ? (
-            <div className="flex flex-col items-center justify-center h-full text-white text-center p-4">
-              <h3 className="text-lg font-semibold mb-2">Physics Engine Failed to Load</h3>
-              <p className="text-sm text-neutral-400 mb-4">There was an error initializing the physics simulation.</p>
-              <Button onClick={() => window.location.reload()} variant="primary">
-                Reload Page
-              </Button>
-            </div>
-          ) : (
-            <>
-              <canvas
-                ref={canvasRef}
-                onClick={handleCanvasClick}
-                className="absolute inset-0 w-full h-full touch-none block"
-              />
-              <div className="absolute bottom-2 left-0 right-0 text-center pointer-events-none opacity-20">
-                <span className="text-[9px] font-mono text-white uppercase tracking-[0.2em]">Physics Sandbox</span>
+        return (
+          <TooltipProvider>
+            <div className="flex flex-col h-full w-full bg-neutral-950">
+              <div className="p-2 border-b border-white/5 flex items-center gap-1 shrink-0 bg-neutral-950/50 backdrop-blur-md z-10">
+                {tools.map((tool) => (
+                  <Tooltip key={tool.id}>
+                    <TooltipTrigger asChild>
+                      <PremiumButton
+                        variant={selectedTool === tool.id ? "default" : "secondary"}
+                        size="sm"
+                        onClick={() => setSelectedTool(tool.id)}
+                        className="h-9 px-3"
+                      >
+                        <tool.icon className="w-4 h-4 mr-2" />
+                        <span className="hidden sm:inline">{tool.label}</span>
+                      </PremiumButton>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom"><p>{tool.label}</p></TooltipContent>
+                  </Tooltip>
+                ))}
+                <div className="flex-1" />
+                <PremiumButton onClick={clearWorld} variant="secondary" size="icon" className="h-9 w-9 text-red-400 hover:text-red-500"><RefreshCw className="w-4 h-4" /></PremiumButton>
               </div>
-            </>
-          )}
-        </div>
-      </div>
-    </TooltipProvider>
+              <div className="flex-1 relative overflow-hidden" style={{ cursor: selectedTool === 'drag' ? 'grab' : 'crosshair' }}>
+                {error ? (
+                  <div className="flex flex-col items-center justify-center h-full text-white p-4">
+                    <p className="mb-4">Ошибка загрузки физики</p>
+                    <PremiumButton onClick={() => window.location.reload()}>Перезагрузить</PremiumButton>
+                  </div>
+                ) : (
+                  <canvas ref={canvasRef} onClick={handleCanvasClick} className="absolute inset-0 w-full h-full touch-none block" />
+                )}
+              </div>
+            </div>
+          </TooltipProvider>
+        );
+      }}
+    </GameLayout>
   );
 }

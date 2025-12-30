@@ -1,14 +1,15 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Swords, ArrowLeft, Trophy, Zap, Bot } from "lucide-react";
+import { Swords, Trophy, Zap, Bot } from "lucide-react";
 import { GameState, UserProfile } from "@/lib/types";
 import { useActionGuard, calculateTimeLeft, hapticFeedback } from "@/lib/game-utils";
 import { createClickLimiter, sanitizeNumber } from "@/lib/game-stability";
 import { cn } from "@/lib/utils";
 import { PremiumButton } from "../ui/premium-button";
-import { PremiumCard, PremiumCardContent, PremiumCardDescription, PremiumCardHeader, PremiumCardTitle, PremiumCardFooter } from "../ui/premium-card";
+import { PremiumCard, PremiumCardContent, PremiumCardDescription, PremiumCardHeader, PremiumCardTitle } from "../ui/premium-card";
 import { Progress } from "../ui/progress";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
+import GameLayout from "./GameLayout";
 
 type ClickWarProps = {
   onGameEnd: () => void;
@@ -18,10 +19,10 @@ type ClickWarProps = {
   otherUser?: UserProfile;
 };
 
-const GAME_DURATION = 10; // seconds
+const GAME_DURATION = 10;
 const AI_PLAYER_ID = '__AI_BOT__';
-const MAX_SCORE = 999999; // Prevent score overflow
-const MAX_CLICKS_PER_SECOND = 30; // Anti-cheat limit
+const MAX_SCORE = 999999;
+const MAX_CLICKS_PER_SECOND = 30;
 
 export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUser }: ClickWarProps) {
   const myScore = gameState.scores?.[user.id] || 0;
@@ -52,11 +53,8 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
   const animationFrameRef = useRef<number | undefined>(undefined);
   const clickLimiterRef = useRef(createClickLimiter(MAX_CLICKS_PER_SECOND));
 
-  // Reset click limiter when game starts
   useEffect(() => {
-    if (isActive) {
-      clickLimiterRef.current.reset();
-    }
+    if (isActive) clickLimiterRef.current.reset();
   }, [isActive]);
 
   useEffect(() => {
@@ -75,24 +73,17 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
         }
         return;
       }
-
       animationFrameRef.current = requestAnimationFrame(updateTimer);
     };
 
     animationFrameRef.current = requestAnimationFrame(updateTimer);
-
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
+    return () => { if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current); };
   }, [isActive, startTime, user.id, gameState.hostId, updateGameState]);
 
   useEffect(() => {
     setOptimisticScore(myScore);
   }, [myScore]);
 
-  // Sync player score
   useEffect(() => {
     if (!isActive) {
       if (clickBufferRef.current > 0) {
@@ -108,81 +99,49 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
       if (clickBufferRef.current > 0) {
         const bufferedClicks = clickBufferRef.current;
         clickBufferRef.current = 0;
-
         const newScore = (gameState.scores?.[user.id] || 0) + bufferedClicks;
         const newScores = { ...gameState.scores, [user.id]: newScore };
         updateGameState({ scores: newScores });
       }
     }, 100);
 
-    return () => {
-      if (syncIntervalRef.current) {
-        clearInterval(syncIntervalRef.current);
-      }
-    };
+    return () => { if (syncIntervalRef.current) clearInterval(syncIntervalRef.current); };
   }, [isActive, gameState.scores, myScore, updateGameState, user.id]);
 
-  // AI Logic
   useEffect(() => {
     if (!isActive || !isVsAI || user.id !== gameState.hostId) {
         if (aiIntervalRef.current) clearInterval(aiIntervalRef.current);
         return;
     }
 
-    // AI clicks 6-10 times per second
     aiIntervalRef.current = setInterval(() => {
-        if (Math.random() > 0.3) { // Randomize a bit
+        if (Math.random() > 0.3) {
             const currentScores = gameState.scores || {};
             const currentAIScore = currentScores[AI_PLAYER_ID] || 0;
             updateGameState({
-                scores: {
-                    ...currentScores,
-                    [AI_PLAYER_ID]: currentAIScore + 1
-                }
+                scores: { ...currentScores, [AI_PLAYER_ID]: currentAIScore + 1 }
             });
         }
     }, 100);
 
-    return () => {
-        if (aiIntervalRef.current) clearInterval(aiIntervalRef.current);
-    };
+    return () => { if (aiIntervalRef.current) clearInterval(aiIntervalRef.current); };
   }, [isActive, isVsAI, gameState.scores, user.id, gameState.hostId, updateGameState]);
 
   const handleStart = guard(() => {
     if (user.id !== gameState.hostId && gameState.hostId) return;
-
     const scores: {[key: string]: number} = {[user.id]: 0};
-    if (otherUser) {
-        scores[otherUser.id] = 0;
-    } else {
-        scores[AI_PLAYER_ID] = 0;
-    }
-
-    const now = Date.now();
-    updateGameState({
-      scores,
-      active: true,
-      startTime: now,
-      hostId: user.id
-    });
-
+    if (otherUser) scores[otherUser.id] = 0; else scores[AI_PLAYER_ID] = 0;
+    updateGameState({ scores, active: true, startTime: Date.now(), hostId: user.id });
     hapticFeedback('medium');
   });
 
-  // Direct click handler with anti-cheat protection
   const handleClickDirect = useCallback((e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (!isActive || timeLeft <= 0) return;
-
-    // Anti-cheat: Check click rate limit
     if (!clickLimiterRef.current.canClick()) return;
     clickLimiterRef.current.recordClick();
-
-    // Prevent score overflow
     if (optimisticScore >= MAX_SCORE) return;
-
-    // Immediate optimistic update with sanitization
     setOptimisticScore(prev => sanitizeNumber(prev + 1, prev, 0, MAX_SCORE));
     clickBufferRef.current += 1;
     hapticFeedback('light');
@@ -190,18 +149,16 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
 
   const displayScore = isActive ? optimisticScore : myScore;
   const totalScore = displayScore + otherScore;
-  // Fix: show 50/50 when no clicks yet, otherwise calculate actual progress
   const myProgress = totalScore > 0 ? (displayScore / totalScore) * 100 : 50;
 
-  const getWinnerId = () => {
+  const winnerId = (() => {
     const finalMyScore = gameState.scores?.[user.id] || 0;
     const finalOtherScore = opponentId ? (gameState.scores?.[opponentId] || 0) : 0;
     if (finalMyScore > finalOtherScore) return user.id;
     if (finalOtherScore > finalMyScore) return opponentId;
     return 'draw';
-  }
+  })();
 
-  const winnerId = getWinnerId();
   const isDraw = winnerId === 'draw';
   const isWinner = winnerId === user.id;
 
@@ -210,152 +167,100 @@ export function ClickWar({ onGameEnd, updateGameState, gameState, user, otherUse
   if(!otherUser && !isVsAI) description = "Ожидание соперника...";
 
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-4">
-      <PremiumCard variant="glass" glow className="w-full max-w-sm overflow-visible">
-        <PremiumCardHeader>
-          <PremiumCardTitle className="flex items-center justify-center gap-2">
-            <Swords className="text-violet-500" />
-            Кликер
-          </PremiumCardTitle>
-          <PremiumCardDescription>{description}</PremiumCardDescription>
-        </PremiumCardHeader>
+    <GameLayout
+      title="Click War"
+      icon={<Swords className="w-5 h-5 text-violet-400" />}
+      onExit={onGameEnd}
+      score={displayScore}
+      gameTime={Math.floor(timeLeft)}
+      playerCount={isVsAI ? 1 : 2}
+    >
+      <div className="flex flex-col items-center justify-center h-full max-w-sm mx-auto p-4">
+        <PremiumCard variant="glass" glow className="w-full overflow-visible">
+          <PremiumCardHeader>
+            <PremiumCardTitle className="flex items-center justify-center gap-2">
+              <Swords className="text-violet-500" />
+              Кликер
+            </PremiumCardTitle>
+            <PremiumCardDescription>{description}</PremiumCardDescription>
+          </PremiumCardHeader>
 
-        <PremiumCardContent className="flex flex-col items-center gap-6">
-          {/* Score Board */}
-          <div className="w-full flex justify-between items-center gap-4 px-2">
-            <motion.div
-              animate={isActive ? { scale: [1, 1.1, 1] } : {}}
-              transition={{ duration: 0.2 }}
-              className="flex flex-col items-center gap-2"
-            >
-              <Avatar className={cn("w-12 h-12 border-2", isWinner && isGameOver ? "border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.5)]" : "border-white/10")}>
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <span className="font-bold text-white text-2xl">{displayScore}</span>
-              <span className="text-[10px] uppercase tracking-widest text-white/40 font-semibold">ВЫ</span>
-            </motion.div>
-
-            <div className="flex flex-col items-center">
-              <div className="text-white/20 font-black text-xl italic">VS</div>
-              {isVsAI && (
-                <div className="mt-1 flex items-center gap-1 text-[8px] text-violet-400 uppercase tracking-tighter font-bold">
-                    <Bot className="w-2 h-2" /> AI
-                </div>
-              )}
-            </div>
-
-            <motion.div
-              animate={isActive ? { scale: [1, 1.05, 1] } : {}}
-              className="flex flex-col items-center gap-2"
-            >
-              <Avatar className={cn("w-12 h-12 border-2", !isWinner && !isDraw && isGameOver ? "border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.5)]" : "border-white/10")}>
-                {isVsAI ? (
-                    <div className="w-full h-full bg-violet-500/20 flex items-center justify-center">
-                        <Bot className="w-6 h-6 text-violet-400" />
-                    </div>
-                ) : (
-                    <>
-                        <AvatarImage src={otherUser?.avatar} alt={otherUser?.name} />
-                        <AvatarFallback>{otherUser ? otherUser.name.charAt(0) : '?'}</AvatarFallback>
-                    </>
-                )}
-              </Avatar>
-              <span className="font-bold text-white/60 text-2xl">{otherScore}</span>
-              <span className="text-[10px] uppercase tracking-widest text-white/40 font-semibold">ОППОНЕНТ</span>
-            </motion.div>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="w-full space-y-2">
-            <Progress
-              value={myProgress}
-              className="h-3 w-full bg-white/5 [&>div]:bg-gradient-to-r [&>div]:from-violet-600 [&>div]:to-purple-600 transition-all duration-300"
-            />
-            <div className="flex justify-between text-[10px] font-bold text-white/30 uppercase tracking-tighter">
-              <span>{Math.round(myProgress)}%</span>
-              <span>{Math.round(100 - myProgress)}%</span>
-            </div>
-          </div>
-
-          {/* Game Over Overlay */}
-          <AnimatePresence>
-            {isGameOver && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md rounded-2xl p-6"
-              >
-                {isDraw ? (
-                  <>
-                    <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mb-4">
-                      <Swords className="w-8 h-8 text-white/60" />
-                    </div>
-                    <h2 className="text-3xl font-black text-white mb-1">НИЧЬЯ!</h2>
-                    <p className="text-white/50 mb-6">Отличная битва, воины!</p>
-                  </>
-                ) : (
-                  <>
-                    <motion.div
-                      animate={{ rotate: [0, -10, 10, -10, 0] }}
-                      transition={{ repeat: Infinity, duration: 2 }}
-                      className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mb-4"
-                    >
-                      <Trophy className="w-8 h-8 text-yellow-500" />
-                    </motion.div>
-                    <h2 className="text-3xl font-black text-white mb-1">
-                      {isWinner ? "ПОБЕДА!" : "ПОРАЖЕНИЕ"}
-                    </h2>
-                    <p className="text-white/50 mb-6">
-                      {isWinner ? "Вы были быстрее молнии!" : (isVsAI ? "Бот оказался быстрее!" : "В следующий раз повезет!")}
-                    </p>
-                  </>
-                )}
-
-                <PremiumButton
-                  onClick={handleStart}
-                  className="w-full"
-                  glow
-                  disabled={user.id !== gameState.hostId && !!gameState.hostId}
-                >
-                  {user.id === gameState.hostId ? "ИГРАТЬ СНОВА" : "ЖДЕМ ХОСТА..."}
-                </PremiumButton>
+          <PremiumCardContent className="flex flex-col items-center gap-6">
+            <div className="w-full flex justify-between items-center gap-4 px-2">
+              <motion.div animate={isActive ? { scale: [1, 1.1, 1] } : {}} className="flex flex-col items-center gap-2">
+                <Avatar className={cn("w-12 h-12 border-2", isWinner && isGameOver ? "border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.5)]" : "border-white/10")}>
+                  <AvatarImage src={user.avatar} alt={user.name} />
+                  <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <span className="font-bold text-white text-2xl">{displayScore}</span>
+                <span className="text-[10px] uppercase tracking-widest text-white/40 font-semibold">ВЫ</span>
               </motion.div>
+
+              <div className="flex flex-col items-center">
+                <div className="text-white/20 font-black text-xl italic">VS</div>
+                {isVsAI && <div className="mt-1 flex items-center gap-1 text-[8px] text-violet-400 uppercase tracking-tighter font-bold"><Bot className="w-2 h-2" /> AI</div>}
+              </div>
+
+              <motion.div animate={isActive ? { scale: [1, 1.05, 1] } : {}} className="flex flex-col items-center gap-2">
+                <Avatar className={cn("w-12 h-12 border-2", !isWinner && !isDraw && isGameOver ? "border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.5)]" : "border-white/10")}>
+                  {isVsAI ? (
+                    <div className="w-full h-full bg-violet-500/20 flex items-center justify-center"><Bot className="w-6 h-6 text-violet-400" /></div>
+                  ) : (
+                    <>
+                      <AvatarImage src={otherUser?.avatar} alt={otherUser?.name} />
+                      <AvatarFallback>{otherUser ? otherUser.name.charAt(0) : '?'}</AvatarFallback>
+                    </>
+                  )}
+                </Avatar>
+                <span className="font-bold text-white/60 text-2xl">{otherScore}</span>
+                <span className="text-[10px] uppercase tracking-widest text-white/40 font-semibold">ОППОНЕНТ</span>
+              </motion.div>
+            </div>
+
+            <div className="w-full space-y-2">
+              <Progress value={myProgress} className="h-3 w-full bg-white/5 [&>div]:bg-gradient-to-r [&>div]:from-violet-600 [&>div]:to-purple-600 transition-all duration-300" />
+              <div className="flex justify-between text-[10px] font-bold text-white/30 uppercase tracking-tighter">
+                <span>{Math.round(myProgress)}%</span>
+                <span>{Math.round(100 - myProgress)}%</span>
+              </div>
+            </div>
+
+            <AnimatePresence>
+              {isGameOver && (
+                <motion.div initial={{ opacity: 0, scale: 0.8, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md rounded-2xl p-6">
+                  {isDraw ? (
+                    <>
+                      <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mb-4"><Swords className="w-8 h-8 text-white/60" /></div>
+                      <h2 className="text-3xl font-black text-white mb-1">НИЧЬЯ!</h2>
+                      <p className="text-white/50 mb-6 text-center">Отличная битва, воины!</p>
+                    </>
+                  ) : (
+                    <>
+                      <motion.div animate={{ rotate: [0, -10, 10, -10, 0] }} transition={{ repeat: Infinity, duration: 2 }} className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mb-4"><Trophy className="w-8 h-8 text-yellow-500" /></motion.div>
+                      <h2 className="text-3xl font-black text-white mb-1">{isWinner ? "ПОБЕДА!" : "ПОРАЖЕНИЕ"}</h2>
+                      <p className="text-white/50 mb-6 text-center">{isWinner ? "Вы были быстрее молнии!" : (isVsAI ? "Бот оказался быстрее!" : "В следующий раз повезет!")}</p>
+                    </>
+                  )}
+                  <PremiumButton onClick={handleStart} className="w-full" glow disabled={user.id !== gameState.hostId && !!gameState.hostId}>
+                    {user.id === gameState.hostId ? "ИГРАТЬ СНОВА" : "ЖДЕМ ХОСТА..."}
+                  </PremiumButton>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {!isActive ? (
+              <PremiumButton onClick={handleStart} className="w-full" disabled={user.id !== gameState.hostId && !!gameState.hostId} glow>
+                {user.id === gameState.hostId ? "НАЧАТЬ ИГРУ" : "ЖДЕМ ХОСТА..."}
+              </PremiumButton>
+            ) : (
+              <motion.button whileTap={{ scale: 0.9 }} onClick={handleClickDirect} onTouchStart={handleClickDirect} onTouchEnd={(e) => e.preventDefault()} onPointerDown={handleClickDirect} className="clickwar-button">
+                <Zap className="w-8 h-8 fill-current" />
+                ЖМИ!
+              </motion.button>
             )}
-          </AnimatePresence>
-
-          {/* Action Button */}
-          {!isActive ? (
-            <PremiumButton
-              onClick={handleStart}
-              className="w-full"
-              disabled={user.id !== gameState.hostId && !!gameState.hostId}
-              glow
-            >
-              {user.id === gameState.hostId ? "НАЧАТЬ ИГРУ" : "ЖДЕМ ХОСТА..."}
-            </PremiumButton>
-          ) : (
-            <motion.button
-              whileTap={{ scale: 0.9 }}
-              onClick={handleClickDirect}
-              onTouchStart={handleClickDirect}
-              onTouchEnd={(e) => e.preventDefault()}
-              onPointerDown={handleClickDirect}
-              className="clickwar-button"
-            >
-              <Zap className="w-8 h-8 fill-current" />
-              ЖМИ!
-            </motion.button>
-          )}
-        </PremiumCardContent>
-
-        <PremiumCardFooter>
-          <PremiumButton onClick={onGameEnd} variant="ghost" size="sm" className="w-full opacity-50 hover:opacity-100">
-            <ArrowLeft className="w-4 h-4" />
-            Вернуться в лобби
-          </PremiumButton>
-        </PremiumCardFooter>
-      </PremiumCard>
-    </div>
+          </PremiumCardContent>
+        </PremiumCard>
+      </div>
+    </GameLayout>
   );
 }

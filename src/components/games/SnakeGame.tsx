@@ -1,16 +1,13 @@
-"use client";
-
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameState, UserProfile } from '@/lib/types';
 import { RealtimeSnakeService, SnakeGameState, SnakeData } from '@/services/RealtimeSnakeService';
 import { db as realtimeDb } from '@/lib/firebase';
 import { PremiumButton } from '../ui/premium-button';
-import { Trophy, Zap, Gamepad2, Star, Clock, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Trophy, Zap, Gamepad2, Star, Clock } from 'lucide-react';
 import { hapticFeedback } from '@/lib/game-utils';
-import { formatGameTime } from '@/utils/time';
-import { ExitButton } from '../ui/ExitButton';
-import { useIsMobile } from '@/hooks/use-mobile';
+import GameLayout from './GameLayout';
+import MobileGameControls from './MobileGameControls';
 
 interface SnakeGameProps {
   onGameEnd: () => void;
@@ -21,7 +18,8 @@ interface SnakeGameProps {
   roomId: string;
 }
 
-const GRID_CELLS = 20;
+const GRID_COLS = 20;
+const GRID_ROWS = 20;
 const INITIAL_SPEED = 140;
 const MIN_SPEED = 50;
 const SPEED_BOOST_DURATION = 3000;
@@ -47,27 +45,8 @@ interface Particle {
 
 export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: SnakeGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const [rtState, setRtState] = useState<SnakeGameState | null>(null);
   const rtServiceRef = useRef<RealtimeSnakeService | null>(null);
-  const isMobile = useIsMobile();
-
-  // Responsive canvas size
-  const [canvasSize, setCanvasSize] = useState(400);
-  const gridSize = canvasSize / GRID_CELLS;
-
-  useEffect(() => {
-    const updateSize = () => {
-      if (!containerRef.current) return;
-      const containerWidth = containerRef.current.clientWidth;
-      const maxSize = isMobile ? Math.min(containerWidth - 32, 340) : Math.min(containerWidth - 32, 480);
-      const size = Math.floor(maxSize / GRID_CELLS) * GRID_CELLS;
-      setCanvasSize(Math.max(260, size));
-    };
-    updateSize();
-    window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
-  }, [isMobile]);
 
   const [mySnake, setMySnake] = useState<Omit<SnakeData, 'userId'>>({
     userName: user.name,
@@ -94,42 +73,9 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
   const speedBoostTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const gameStartTimeRef = useRef(0);
 
-  // Swipe handling for mobile
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
-  }, []);
-
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (!touchStartRef.current) return;
-    const touch = e.changedTouches[0];
-    const dx = touch.clientX - touchStartRef.current.x;
-    const dy = touch.clientY - touchStartRef.current.y;
-    const minSwipe = 30;
-
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > minSwipe) {
-      if (dx > 0 && directionRef.current.x === 0) {
-        nextDirectionRef.current = { x: 1, y: 0 };
-        hapticFeedback('light');
-      } else if (dx < 0 && directionRef.current.x === 0) {
-        nextDirectionRef.current = { x: -1, y: 0 };
-        hapticFeedback('light');
-      }
-    } else if (Math.abs(dy) > minSwipe) {
-      if (dy > 0 && directionRef.current.y === 0) {
-        nextDirectionRef.current = { x: 0, y: 1 };
-        hapticFeedback('light');
-      } else if (dy < 0 && directionRef.current.y === 0) {
-        nextDirectionRef.current = { x: 0, y: -1 };
-        hapticFeedback('light');
-      }
-    }
-    touchStartRef.current = null;
-  }, []);
-
-  // Direction change handler for buttons
+  // Direction change handler
   const changeDirection = useCallback((newDir: { x: number; y: number }) => {
+    if (newDir.x === 0 && newDir.y === 0) return;
     if ((newDir.x !== 0 && directionRef.current.x === 0) ||
         (newDir.y !== 0 && directionRef.current.y === 0)) {
       nextDirectionRef.current = newDir;
@@ -173,7 +119,7 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
         console.error('[SnakeGame] Failed to sync snake:', error);
       }
     }
-  }, [mySnake, rtState?.active]);
+  }, [mySnake, rtState?.active, user.id]);
 
   // Game timer
   useEffect(() => {
@@ -230,8 +176,8 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
   const spawnFood = useCallback(() => {
     let attempts = 0;
     const newFood: Food = {
-      x: Math.floor(Math.random() * GRID_CELLS),
-      y: Math.floor(Math.random() * GRID_CELLS),
+      x: Math.floor(Math.random() * GRID_COLS),
+      y: Math.floor(Math.random() * GRID_ROWS),
       type: 'normal',
       spawnTime: Date.now()
     };
@@ -245,8 +191,8 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
       const onSnake = mySnake.body.some(p => p.x === newFood.x && p.y === newFood.y) ||
                       (aiSnake?.body.some(p => p.x === newFood.x && p.y === newFood.y));
       if (!onSnake) break;
-      newFood.x = Math.floor(Math.random() * GRID_CELLS);
-      newFood.y = Math.floor(Math.random() * GRID_CELLS);
+      newFood.x = Math.floor(Math.random() * GRID_COLS);
+      newFood.y = Math.floor(Math.random() * GRID_ROWS);
       attempts++;
     }
 
@@ -364,15 +310,14 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
         };
 
         // Wall wrapping
-        if (head.x < 0) head.x = GRID_CELLS - 1;
-        if (head.x >= GRID_CELLS) head.x = 0;
-        if (head.y < 0) head.y = GRID_CELLS - 1;
-        if (head.y >= GRID_CELLS) head.y = 0;
+        if (head.x < 0) head.x = GRID_COLS - 1;
+        if (head.x >= GRID_COLS) head.x = 0;
+        if (head.y < 0) head.y = GRID_ROWS - 1;
+        if (head.y >= GRID_ROWS) head.y = 0;
 
         // Self collision
         if (prev.body.some(part => part.x === head.x && part.y === head.y)) {
           hapticFeedback('heavy');
-          addParticles(head.x, head.y, '#ef4444', 15, gridSize);
           return { ...prev, isDead: true };
         }
 
@@ -382,7 +327,6 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
           for (const other of otherSnakes) {
             if (other.body.some(part => part.x === head.x && part.y === head.y)) {
               hapticFeedback('heavy');
-              addParticles(head.x, head.y, '#ef4444', 15, gridSize);
               return { ...prev, isDead: true };
             }
           }
@@ -395,23 +339,17 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
         if (food && head.x === food.x && head.y === food.y) {
           ateFood = true;
           let points = 1;
-          let particleColor = '#22c55e';
 
           switch (food.type) {
-            case 'golden':
-              points = 3;
-              particleColor = '#fbbf24';
-              break;
+            case 'golden': points = 3; break;
             case 'speed':
               points = 1;
-              particleColor = '#3b82f6';
               setSpeedBoost(true);
               if (speedBoostTimeoutRef.current) clearTimeout(speedBoostTimeoutRef.current);
               speedBoostTimeoutRef.current = setTimeout(() => setSpeedBoost(false), SPEED_BOOST_DURATION);
               break;
             case 'shrink':
               points = 2;
-              particleColor = '#a855f7';
               if (newBody.length > 5) {
                 newBody.pop();
                 newBody.pop();
@@ -429,7 +367,6 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
           comboTimeoutRef.current = setTimeout(() => setCombo(0), 2000);
 
           newScore += points;
-          addParticles(head.x, head.y, particleColor, 10, gridSize);
           spawnFood();
           hapticFeedback('light');
         }
@@ -460,7 +397,7 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
             for (const d of possibleDirs) {
               const nextHead = { x: head.x + d.x, y: head.y + d.y };
 
-              if (nextHead.x < 0 || nextHead.x >= GRID_CELLS || nextHead.y < 0 || nextHead.y >= GRID_CELLS) continue;
+              if (nextHead.x < 0 || nextHead.x >= GRID_COLS || nextHead.y < 0 || nextHead.y >= GRID_ROWS) continue;
               if (prev.body.some(p => p.x === nextHead.x && p.y === nextHead.y)) continue;
               if (mySnake.body.some(p => p.x === nextHead.x && p.y === nextHead.y)) continue;
 
@@ -477,10 +414,10 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
 
           const newAiHead = { x: head.x + nextDir.x, y: head.y + nextDir.y };
 
-          if (newAiHead.x < 0) newAiHead.x = GRID_CELLS - 1;
-          if (newAiHead.x >= GRID_CELLS) newAiHead.x = 0;
-          if (newAiHead.y < 0) newAiHead.y = GRID_CELLS - 1;
-          if (newAiHead.y >= GRID_CELLS) newAiHead.y = 0;
+          if (newAiHead.x < 0) newAiHead.x = GRID_COLS - 1;
+          if (newAiHead.x >= GRID_COLS) newAiHead.x = 0;
+          if (newAiHead.y < 0) newAiHead.y = GRID_ROWS - 1;
+          if (newAiHead.y >= GRID_ROWS) newAiHead.y = 0;
 
           if (prev.body.some(part => part.x === newAiHead.x && part.y === newAiHead.y)) {
             return { ...prev, isDead: true };
@@ -507,29 +444,37 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
 
     rafId = requestAnimationFrame(move);
     return () => cancelAnimationFrame(rafId);
-  }, [rtState?.active, rtState?.players, mySnake.isDead, mySnake.score, mySnake.body, aiSnake, food, speedBoost, user.id, gameState.hostId, otherUser, spawnFood, addParticles, gridSize]);
+  }, [rtState?.active, rtState?.players, mySnake.isDead, mySnake.score, mySnake.body, aiSnake, food, speedBoost, user.id, gameState.hostId, otherUser, spawnFood]);
 
-  // Rendering
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+  const isGameOver = rtState?.active && Object.values(rtState.players || {}).every(p => p.isDead);
+  const winner = isGameOver ? Object.values(rtState.players || {}).sort((a, b) => b.score - a.score)[0] : null;
+  const aiScore = Object.values(rtState?.players || {}).find(p => p.userId !== user.id)?.score || 0;
 
-    const gs = gridSize;
+  // Responsive options for GameLayout
+  const responsiveOptions = useMemo(() => ({
+    gridCols: GRID_COLS,
+    gridRows: GRID_ROWS,
+    maxCellSize: 24,
+    padding: 16,
+    accountForNav: true
+  }), []);
 
-    ctx.clearRect(0, 0, canvasSize, canvasSize);
+  // Rendering logic moved to a separate function to be used inside GameLayout
+  const renderCanvas = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number, gs: number) => {
+    ctx.clearRect(0, 0, width, height);
 
     // Background
     ctx.fillStyle = '#0a0a0f';
-    ctx.fillRect(0, 0, canvasSize, canvasSize);
+    ctx.fillRect(0, 0, width, height);
 
     // Grid
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
     ctx.lineWidth = 1;
-    for (let i = 0; i <= canvasSize; i += gs) {
-      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvasSize); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvasSize, i); ctx.stroke();
+    for (let i = 0; i <= width; i += gs) {
+      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, height); ctx.stroke();
+    }
+    for (let i = 0; i <= height; i += gs) {
+      ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(width, i); ctx.stroke();
     }
 
     // Particles
@@ -548,18 +493,9 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
       let glowColor = '#22c55e';
 
       switch (food.type) {
-        case 'golden':
-          foodColor = '#fbbf24';
-          glowColor = '#fbbf24';
-          break;
-        case 'speed':
-          foodColor = '#3b82f6';
-          glowColor = '#3b82f6';
-          break;
-        case 'shrink':
-          foodColor = '#a855f7';
-          glowColor = '#a855f7';
-          break;
+        case 'golden': foodColor = '#fbbf24'; glowColor = '#fbbf24'; break;
+        case 'speed': foodColor = '#3b82f6'; glowColor = '#3b82f6'; break;
+        case 'shrink': foodColor = '#a855f7'; glowColor = '#a855f7'; break;
       }
 
       const pulse = 1 + Math.sin(Date.now() / 200) * 0.15;
@@ -602,7 +538,9 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
         }
 
         ctx.beginPath();
+        // @ts-expect-error - roundRect is experimental
         if (ctx.roundRect) {
+          // @ts-expect-error - roundRect is experimental
           ctx.roundRect(x, y, size, size, isHead ? 6 : 4);
         } else {
           ctx.rect(x, y, size, size);
@@ -626,178 +564,134 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
     if (rtState?.players) {
       Object.values(rtState.players).forEach(drawSnake);
     }
-  }, [rtState, food, particles, canvasSize, gridSize]);
-
-  const isGameOver = rtState?.active && Object.values(rtState.players || {}).every(p => p.isDead);
-  const winner = isGameOver ? Object.values(rtState.players || {}).sort((a, b) => b.score - a.score)[0] : null;
-  const aiScore = Object.values(rtState?.players || {}).find(p => p.userId !== user.id)?.score || 0;
+  }, [rtState, food, particles]);
 
   return (
-    <div ref={containerRef} className="flex flex-col items-center w-full max-w-lg mx-auto px-2">
-      {/* Header */}
-      <div className="w-full flex items-center justify-between mb-3">
-        <ExitButton onExit={onGameEnd} view="game" />
-        <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4 text-[var(--text-muted)]" />
-          <span className="text-sm font-mono text-[var(--text-secondary)]">
-            {formatGameTime(gameTime)}
-          </span>
-        </div>
-      </div>
-
-      {/* Score Display */}
-      <div className="w-full flex justify-between items-center mb-3 px-2">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-[#8B5CF6]" />
-          <span className="text-sm font-semibold text-[var(--text-primary)]">{user.name}</span>
-          <span className="text-lg font-bold text-[var(--accent-primary)]">{mySnake.score}</span>
-          {combo > 1 && (
-            <span className="text-xs px-1.5 py-0.5 rounded bg-[var(--accent-primary)]/20 text-[var(--accent-primary)]">
-              x{combo}
-            </span>
-          )}
-          {speedBoost && (
-            <Zap className="w-4 h-4 text-blue-400 animate-pulse" />
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-bold text-pink-400">{aiScore}</span>
-          <span className="text-sm font-semibold text-[var(--text-secondary)]">
-            {otherUser?.name || 'AI Bot 🤖'}
-          </span>
-          <div className="w-3 h-3 rounded-full bg-pink-500" />
-        </div>
-      </div>
-
-      {/* Canvas */}
-      <div className="relative game-container" data-game="snake">
-        <canvas
-          ref={canvasRef}
-          width={canvasSize}
-          height={canvasSize}
-          className="rounded-xl border-2 border-white/10 touch-none"
-          data-game="snake"
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
+    <GameLayout
+      title="Snake Battle"
+      icon={<Gamepad2 className="w-5 h-5 text-violet-400" />}
+      onExit={onGameEnd}
+      score={mySnake.score}
+      gameTime={gameTime}
+      playerCount={rtState?.players ? Object.keys(rtState.players).length : 1}
+      responsiveOptions={responsiveOptions}
+      preferredOrientation="portrait"
+      mobileControls={
+        <MobileGameControls
+          scheme="dpad"
+          onDirectionChange={changeDirection}
+          size="md"
         />
+      }
+    >
+      {({ dimensions }) => {
+        // Update canvas when dimensions change
+        useEffect(() => {
+          const canvas = canvasRef.current;
+          if (!canvas) return;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return;
+          renderCanvas(ctx, dimensions.width, dimensions.height, dimensions.cellSize);
+        }, [dimensions, renderCanvas]);
 
-        {/* Start Screen */}
-        <AnimatePresence>
-          {!rtState?.active && !isGameOver && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 rounded-xl"
-            >
-              <Gamepad2 className="w-16 h-16 text-[var(--accent-primary)] mb-4" />
-              <h2 className="text-2xl font-bold text-white mb-2">Snake Battle</h2>
-              <p className="text-sm text-[var(--text-muted)] mb-6 text-center px-4">
-                {isMobile ? 'Свайпайте для управления' : 'WASD или стрелки для управления'}
-              </p>
-              <PremiumButton onClick={handleStart} size="lg">
-                <Zap className="w-5 h-5 mr-2" />
-                Начать игру
-              </PremiumButton>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        return (
+          <div className="relative">
+            <canvas
+              ref={canvasRef}
+              width={dimensions.width}
+              height={dimensions.height}
+              className="rounded-xl border-2 border-white/10 shadow-2xl"
+            />
 
-        {/* Game Over Screen */}
-        <AnimatePresence>
-          {isGameOver && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 rounded-xl"
-            >
-              <Trophy className="w-16 h-16 text-yellow-400 mb-4" />
-              <h2 className="text-2xl font-bold text-white mb-2">Игра окончена!</h2>
-              {winner && (
-                <p className="text-lg text-[var(--text-secondary)] mb-2">
-                  Победитель: <span className="text-[var(--accent-primary)] font-semibold">{winner.userName}</span>
-                </p>
+            {/* Start Screen */}
+            <AnimatePresence>
+              {!rtState?.active && !isGameOver && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 rounded-xl z-20"
+                >
+                  <Gamepad2 className="w-16 h-16 text-violet-500 mb-4" />
+                  <h2 className="text-2xl font-bold text-white mb-2">Snake Battle</h2>
+                  <p className="text-sm text-white/40 mb-6 text-center px-4">
+                    Соберите как можно больше еды и не врезайтесь в стены или других змей!
+                  </p>
+                  <PremiumButton onClick={handleStart} size="lg">
+                    <Zap className="w-5 h-5 mr-2" />
+                    Начать игру
+                  </PremiumButton>
+                </motion.div>
               )}
-              <div className="flex items-center gap-4 mb-6">
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-[var(--accent-primary)]">{mySnake.score}</p>
-                  <p className="text-xs text-[var(--text-muted)]">Ваш счёт</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-2xl font-bold text-pink-400">{aiScore}</p>
-                  <p className="text-xs text-[var(--text-muted)]">Противник</p>
-                </div>
-              </div>
-              <div className="flex gap-3">
-                <PremiumButton onClick={handleStart} variant="primary">
-                  <Star className="w-4 h-4 mr-2" />
-                  Играть снова
-                </PremiumButton>
-                <PremiumButton onClick={onGameEnd} variant="secondary">
-                  Выйти
-                </PremiumButton>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+            </AnimatePresence>
 
-      {/* Mobile Controls - Improved touch targets */}
-      {isMobile && rtState?.active && !mySnake.isDead && (
-        <div className="mt-4 snake-controls">
-          <div />
-          <button
-            onTouchStart={(e) => { e.preventDefault(); changeDirection({ x: 0, y: -1 }); }}
-            className="snake-control-button"
-            aria-label="Вверх"
-          >
-            <ChevronUp className="w-8 h-8 text-white" />
-          </button>
-          <div />
-          <button
-            onTouchStart={(e) => { e.preventDefault(); changeDirection({ x: -1, y: 0 }); }}
-            className="snake-control-button"
-            aria-label="Влево"
-          >
-            <ChevronLeft className="w-8 h-8 text-white" />
-          </button>
-          <button
-            onTouchStart={(e) => { e.preventDefault(); changeDirection({ x: 0, y: 1 }); }}
-            className="snake-control-button"
-            aria-label="Вниз"
-          >
-            <ChevronDown className="w-8 h-8 text-white" />
-          </button>
-          <button
-            onTouchStart={(e) => { e.preventDefault(); changeDirection({ x: 1, y: 0 }); }}
-            className="snake-control-button"
-            aria-label="Вправо"
-          >
-            <ChevronRight className="w-8 h-8 text-white" />
-          </button>
-        </div>
-      )}
+            {/* Game Over Screen */}
+            <AnimatePresence>
+              {isGameOver && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 rounded-xl z-30"
+                >
+                  <Trophy className="w-16 h-16 text-yellow-400 mb-4" />
+                  <h2 className="text-2xl font-bold text-white mb-2">Игра окончена!</h2>
+                  {winner && (
+                    <p className="text-lg text-white/60 mb-2">
+                      Победитель: <span className="text-violet-400 font-semibold">{winner.userName}</span>
+                    </p>
+                  )}
+                  <div className="flex items-center gap-8 mb-6">
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-violet-400">{mySnake.score}</p>
+                      <p className="text-xs text-white/30">Ваш счёт</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-pink-400">{aiScore}</p>
+                      <p className="text-xs text-white/30">Противник</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <PremiumButton onClick={handleStart} variant="primary">
+                      <Star className="w-4 h-4 mr-2" />
+                      Играть снова
+                    </PremiumButton>
+                    <PremiumButton onClick={onGameEnd} variant="secondary">
+                      Выйти
+                    </PremiumButton>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-      {/* Legend */}
-      <div className="mt-4 flex flex-wrap justify-center gap-3 text-xs text-[var(--text-muted)]">
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-green-500" />
-          <span>+1</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-yellow-400" />
-          <span>+3 ★</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-blue-500" />
-          <span>⚡ Speed</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-purple-500" />
-          <span>↓ Shrink</span>
-        </div>
-      </div>
-    </div>
+            {/* Combo/Speed Indicators */}
+            <div className="absolute top-4 left-4 flex flex-col gap-2 pointer-events-none">
+              <AnimatePresence>
+                {combo > 1 && (
+                  <motion.div
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ x: -20, opacity: 0 }}
+                    className="px-2 py-1 rounded bg-violet-500/20 border border-violet-500/30 text-violet-400 text-xs font-bold"
+                  >
+                    COMBO x{combo}
+                  </motion.div>
+                )}
+                {speedBoost && (
+                  <motion.div
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ x: -20, opacity: 0 }}
+                    className="px-2 py-1 rounded bg-blue-500/20 border border-blue-500/30 text-blue-400 text-xs font-bold flex items-center gap-1"
+                  >
+                    <Zap className="w-3 h-3" /> SPEED BOOST
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        );
+      }}
+    </GameLayout>
   );
 }

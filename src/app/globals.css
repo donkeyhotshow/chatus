@@ -3,13 +3,13 @@
 @tailwind utilities;
 
 /* P0-01: Tab Navigation */
-@import '../styles/tabs.css';
+@import "../styles/tabs.css";
 
 /* P0-06: 12-Column Grid System */
-@import '../styles/grid.css';
+@import "../styles/grid.css";
 
 /* Premium Button Styles - Updated */
-@import '../styles/buttons.css';
+@import "../styles/buttons.css";
 
 @layer base {
   :root {
@@ -208,6 +208,7 @@
     transform: translateZ(0);
     backface-visibility: hidden;
     perspective: 1000px;
+    will-change: transform, opacity;
   }
 
   /* Content containment for better performance */
@@ -230,6 +231,9 @@
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
+    /* P3: Optimize scrolling performance */
+    scroll-snap-type: y proximity;
+    text-rendering: optimizeSpeed;
   }
 
   /* Reduce repaints for animated elements */
@@ -252,6 +256,8 @@
     contain: layout style;
     content-visibility: auto;
     contain-intrinsic-size: 0 80px;
+    /* P3: Optimize rendering speed for list items */
+    text-rendering: optimizeSpeed;
   }
 
   /* ═══════════════════════════════════════════════════════════════

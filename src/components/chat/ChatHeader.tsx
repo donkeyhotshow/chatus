@@ -55,23 +55,24 @@ export const ChatHeader = memo(function ChatHeader({
 
     return (
         <header className={cn(
-            "flex items-center justify-between h-14 px-3 sm:px-4",
-            "bg-black/80 backdrop-blur-xl",
-            "border-b border-white/[0.06]",
-            "safe-top shrink-0 fixed top-0 left-0 right-0 z-[100]",
-            "transition-transform duration-300 ease-in-out",
+            "flex items-center justify-between h-16 px-4 sm:px-6",
+            "bg-black/40 backdrop-blur-2xl",
+            "border-b border-white/10",
+            "safe-top shrink-0 sticky top-0 z-[100]",
+            "transition-all duration-300 ease-in-out",
+            "shadow-[0_4px_30px_rgba(0,0,0,0.5)]",
             isHidden ? "-translate-y-full" : "translate-y-0",
             className
         )}>
             {/* Left section */}
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
                 {showBackButton && (
                     <button
                         onClick={onBack}
                         className={cn(
-                            "p-2.5 -ml-1 rounded-xl",
+                            "p-2 -ml-2 rounded-xl",
                             "text-white/60 hover:text-white",
-                            "hover:bg-white/[0.06] active:bg-white/[0.08]",
+                            "hover:bg-white/10 active:bg-white/20",
                             "transition-all duration-200 touch-target",
                             "relative z-50"
                         )}
@@ -100,34 +101,35 @@ export const ChatHeader = memo(function ChatHeader({
                             />
                         )
                     ) : (
-                        <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="flex items-center gap-3">
                             {/* Avatar placeholder - Hidden on mobile to save space */}
                             {otherUser?.avatar && !isMobile && (
                                 <div
-                                    className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 border border-white/10 bg-cover bg-center shrink-0"
+                                    className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 border border-white/10 bg-cover bg-center shrink-0 shadow-lg"
                                     style={{ backgroundImage: `url(${otherUser.avatar})` }}
                                 />
                             )}
                             <div className="min-w-0">
                                 <div className="flex items-center gap-2">
                                     <h1 className={cn(
-                                        "font-semibold text-white truncate",
-                                        isMobile ? "text-sm" : "text-[15px]"
+                                        "font-bold text-white truncate tracking-tight",
+                                        isMobile ? "text-base" : "text-lg"
                                     )}>
                                         {roomName}
                                     </h1>
                                     {isMobile && isOnline && (
-                                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-lg shadow-emerald-500/50 shrink-0" />
+                                        <span className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.8)] shrink-0" />
                                     )}
                                 </div>
                                 {!isMobile && (
-                                    <div className="flex items-center gap-1.5">
-                                        {isOnline && (
-                                            <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-lg shadow-emerald-500/50" aria-label="В сети" />
-                                        )}
+                                    <div className="flex items-center gap-2">
+                                        <div className={cn(
+                                            "w-1.5 h-1.5 rounded-full",
+                                            isOnline ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" : "bg-white/20"
+                                        )} />
                                         <p className={cn(
-                                            "text-xs truncate",
-                                            isOnline ? "text-emerald-400/80" : "text-white/60"
+                                            "text-[11px] font-medium uppercase tracking-wider",
+                                            isOnline ? "text-emerald-400" : "text-white/40"
                                         )}>
                                             {isOnline ? 'В сети' : 'Не в сети'}
                                         </p>

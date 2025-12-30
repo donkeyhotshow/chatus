@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 interface TypingIndicatorProps {
@@ -8,11 +9,6 @@ interface TypingIndicatorProps {
     className?: string;
     hideDelay?: number;
 }
-
-/**
- * TypingIndicator - Индикатор "печатает..." с плавной анимацией
- * Этап 2: Улучшенная анимация пульсации точек
- */
 export const TypingIndicator = memo(function TypingIndicator({
     users,
     className,
@@ -45,8 +41,6 @@ export const TypingIndicator = memo(function TypingIndicator({
         };
     }, [users, hideDelay, visibleUsers.length]);
 
-    if (!isVisible || visibleUsers.length === 0) return null;
-
     const getTypingText = () => {
         if (visibleUsers.length === 1) {
             return `${visibleUsers[0]} печатает`;
@@ -58,38 +52,47 @@ export const TypingIndicator = memo(function TypingIndicator({
     };
 
     return (
-        <div
-            className={cn(
-                "flex items-center gap-2 px-4 py-2 transition-all duration-300 ease-out",
-                isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2",
-                className
+        <AnimatePresence>
+            {isVisible && visibleUsers.length > 0 && (
+                <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+                    className={cn(
+                        "flex items-center gap-2 px-6 py-2",
+                        className
+                    )}
+                    role="status"
+                    aria-live="polite"
+                    aria-label={getTypingText()}
+                >
+                    <div className="flex items-center gap-3 px-4 py-2.5 bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl shadow-black/20">
+                        <div className="flex items-center gap-1.5" aria-hidden="true">
+                            {[0, 1, 2].map((i) => (
+                                <motion.span
+                                    key={i}
+                                    animate={{ 
+                                        scale: [1, 1.3, 1],
+                                        opacity: [0.4, 1, 0.4]
+                                    }}
+                                    transition={{ 
+                                        duration: 1, 
+                                        repeat: Infinity, 
+                                        delay: i * 0.2,
+                                        ease: "easeInOut"
+                                    }}
+                                    className="w-1.5 h-1.5 bg-violet-400 rounded-full"
+                                />
+                            ))}
+                        </div>
+                        <span className="text-xs text-white/50 font-bold tracking-tight uppercase">
+                            {getTypingText()}
+                        </span>
+                    </div>
+                </motion.div>
             )}
-            role="status"
-            aria-live="polite"
-            aria-label={getTypingText()}
-        >
-            {/* Typing bubble */}
-            <div className="flex items-center gap-2.5 px-3.5 py-2 bg-[var(--bg-tertiary)] border border-white/[0.08] rounded-2xl shadow-sm">
-                {/* Animated dots - улучшенная пульсирующая анимация */}
-                <div className="flex items-center gap-1" aria-hidden="true">
-                    <span
-                        className="w-2 h-2 bg-[var(--accent-primary)] rounded-full animate-typing-dot"
-                        style={{ animationDelay: '0ms' }}
-                    />
-                    <span
-                        className="w-2 h-2 bg-[var(--accent-primary)] rounded-full animate-typing-dot"
-                        style={{ animationDelay: '160ms' }}
-                    />
-                    <span
-                        className="w-2 h-2 bg-[var(--accent-primary)] rounded-full animate-typing-dot"
-                        style={{ animationDelay: '320ms' }}
-                    />
-                </div>
-                <span className="text-xs text-[var(--text-tertiary)] font-medium">
-                    {getTypingText()}
-                </span>
-            </div>
-        </div>
+        </AnimatePresence>
     );
 });
 
@@ -129,42 +132,48 @@ export const CompactTypingIndicator = memo(function CompactTypingIndicator({
         };
     }, [users, hideDelay, visibleUsers.length]);
 
-    if (!isVisible || visibleUsers.length === 0) return null;
-
     const typingText = visibleUsers.length === 1
         ? `${visibleUsers[0]} печатает`
         : `${visibleUsers.length} печатают`;
 
     return (
-        <div
-            className={cn(
-                "flex items-center justify-center py-1.5 transition-all duration-300 ease-out",
-                isVisible ? "opacity-100" : "opacity-0",
-                className
+        <AnimatePresence>
+            {isVisible && visibleUsers.length > 0 && (
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    className={cn(
+                        "flex items-center justify-center py-1.5",
+                        className
+                    )}
+                    role="status"
+                    aria-live="polite"
+                    aria-label={typingText}
+                >
+                    <div className="flex items-center gap-2 px-3 py-1 bg-white/5 backdrop-blur-md border border-white/10 rounded-full shadow-lg">
+                        <div className="flex gap-1" aria-hidden="true">
+                            {[0, 1, 2].map((i) => (
+                                <motion.span
+                                    key={i}
+                                    animate={{ 
+                                        opacity: [0.3, 1, 0.3]
+                                    }}
+                                    transition={{ 
+                                        duration: 1, 
+                                        repeat: Infinity, 
+                                        delay: i * 0.2 
+                                    }}
+                                    className="w-1 h-1 bg-violet-400 rounded-full"
+                                />
+                            ))}
+                        </div>
+                        <span className="text-[10px] text-white/40 font-black uppercase tracking-tighter">
+                            {typingText}
+                        </span>
+                    </div>
+                </motion.div>
             )}
-            role="status"
-            aria-live="polite"
-            aria-label={typingText}
-        >
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-[var(--bg-tertiary)] border border-white/[0.08] rounded-full">
-                <div className="flex gap-0.5" aria-hidden="true">
-                    <span
-                        className="w-1.5 h-1.5 bg-[var(--accent-primary)] rounded-full animate-typing-dot"
-                        style={{ animationDelay: '0ms' }}
-                    />
-                    <span
-                        className="w-1.5 h-1.5 bg-[var(--accent-primary)] rounded-full animate-typing-dot"
-                        style={{ animationDelay: '160ms' }}
-                    />
-                    <span
-                        className="w-1.5 h-1.5 bg-[var(--accent-primary)] rounded-full animate-typing-dot"
-                        style={{ animationDelay: '320ms' }}
-                    />
-                </div>
-                <span className="text-[11px] text-[var(--text-muted)] font-medium">
-                    {typingText}
-                </span>
-            </div>
-        </div>
+        </AnimatePresence>
     );
 });

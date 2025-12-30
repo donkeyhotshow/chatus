@@ -2,13 +2,13 @@
 
 import { GameState, UserProfile } from "@/lib/types";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Button } from "../ui/button";
 import Confetti from 'react-confetti';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "../ui/card";
-import { ArrowLeft, Circle, X, Bot } from "lucide-react";
+import { Circle, X, Bot } from "lucide-react";
 import { useActionGuard, hapticFeedback } from "@/lib/game-utils";
-import { ExitButton } from "../ui/ExitButton";
 import { useTicTacToeKeyboard } from "@/hooks/useGameKeyboard";
+import GameLayout from "./GameLayout";
+import { PremiumCard, PremiumCardContent, PremiumCardDescription, PremiumCardHeader, PremiumCardTitle } from "../ui/premium-card";
+import { PremiumButton } from "../ui/premium-button";
 
 type TicTacToeProps = {
     onGameEnd: () => void;
@@ -27,69 +27,42 @@ const winningCombos = [
 function calculateWinner(board: (string | null)[]) {
     for (let i = 0; i < winningCombos.length; i++) {
         const [a, b, c] = winningCombos[i];
-        if (board[a] && board[a] === board[b] && board[a] === board[c]) {
-            return board[a];
-        }
+        if (board[a] && board[a] === board[b] && board[a] === board[c]) return board[a];
     }
     return null;
 }
 
-// AI Logic - Minimax algorithm for unbeatable AI
 function getAIMove(board: (string | null)[], aiSymbol: 'X' | 'O'): number {
     const playerSymbol = aiSymbol === 'X' ? 'O' : 'X';
-
-    // Check for winning move
     for (let i = 0; i < 9; i++) {
         if (board[i] === null) {
             const testBoard = [...board];
             testBoard[i] = aiSymbol;
-            if (calculateWinner(testBoard) === aiSymbol) {
-                return i;
-            }
+            if (calculateWinner(testBoard) === aiSymbol) return i;
         }
     }
-
-    // Block player's winning move
     for (let i = 0; i < 9; i++) {
         if (board[i] === null) {
             const testBoard = [...board];
             testBoard[i] = playerSymbol;
-            if (calculateWinner(testBoard) === playerSymbol) {
-                return i;
-            }
+            if (calculateWinner(testBoard) === playerSymbol) return i;
         }
     }
-
-    // Take center if available
     if (board[4] === null) return 4;
-
-    // Take corners
     const corners = [0, 2, 6, 8];
     const availableCorners = corners.filter(i => board[i] === null);
-    if (availableCorners.length > 0) {
-        return availableCorners[Math.floor(Math.random() * availableCorners.length)];
-    }
-
-    // Take any available edge
+    if (availableCorners.length > 0) return availableCorners[Math.floor(Math.random() * availableCorners.length)];
     const edges = [1, 3, 5, 7];
     const availableEdges = edges.filter(i => board[i] === null);
-    if (availableEdges.length > 0) {
-        return availableEdges[Math.floor(Math.random() * availableEdges.length)];
-    }
-
+    if (availableEdges.length > 0) return availableEdges[Math.floor(Math.random() * availableEdges.length)];
     return -1;
 }
 
 const XIcon = () => <X className="w-10 h-10 text-white animate-in fade-in zoom-in-50 duration-300" />;
 const OIcon = () => <Circle className="w-10 h-10 text-violet-400 animate-in fade-in zoom-in-50 duration-300" />;
 
-// AI player constant
 const AI_PLAYER_ID = '__AI__';
-const AI_PLAYER: UserProfile = {
-    id: AI_PLAYER_ID,
-    name: 'AI Bot',
-    avatar: '',
-};
+const AI_PLAYER: UserProfile = { id: AI_PLAYER_ID, name: 'AI Bot', avatar: '' };
 
 export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUser }: TicTacToeProps) {
     const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
@@ -100,8 +73,6 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
 
     const { board, currentPlayer, winner, hostId } = gameState;
     const isDraw = !winner && board?.every(cell => cell !== null);
-
-    // Use AI if no other user
     const isVsAI = !otherUser;
     const opponent = otherUser || AI_PLAYER;
 
@@ -124,7 +95,6 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
         }
     }, []);
 
-    // Синхронизация оптимистичного состояния с реальным
     useEffect(() => {
         if (board) {
             setOptimisticBoard(null);
@@ -132,101 +102,60 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
         }
     }, [board]);
 
-    // AI Move Logic - BUG-001 FIX: Use ref to avoid stale closure
     const boardRef = useRef(board);
     boardRef.current = board;
 
     const makeAIMove = useCallback(() => {
         const currentBoard = boardRef.current;
         if (!currentBoard || winner || !isVsAI || isAIThinking) return;
-
         const aiSymbol = playerSymbols[AI_PLAYER_ID];
         if (!aiSymbol) return;
-
         const moveIndex = getAIMove(currentBoard, aiSymbol);
         if (moveIndex === -1) return;
-
         setIsAIThinking(true);
-
-        // Add delay for better UX
         aiMoveTimeoutRef.current = setTimeout(() => {
-            // Re-check current board state to avoid race conditions
             const latestBoard = boardRef.current;
             if (!latestBoard || latestBoard[moveIndex] !== null) {
                 setIsAIThinking(false);
                 return;
             }
-
             const newBoard = latestBoard.slice();
             newBoard[moveIndex] = aiSymbol;
-
             const newWinner = calculateWinner(newBoard);
-
-            updateGameState({
-                board: newBoard,
-                currentPlayer: user.id,
-                winner: newWinner ? AI_PLAYER_ID : null,
-            });
-
+            updateGameState({ board: newBoard, currentPlayer: user.id, winner: newWinner ? AI_PLAYER_ID : null });
             setLastMoveIndex(moveIndex);
             setIsAIThinking(false);
             hapticFeedback('light');
-        }, 500 + Math.random() * 500); // 500-1000ms delay
+        }, 500 + Math.random() * 500);
     }, [winner, isVsAI, isAIThinking, playerSymbols, updateGameState, user.id]);
 
-    // Trigger AI move when it's AI's turn
     useEffect(() => {
-        // Only trigger if it's AI's turn and game is active
         if (isAITurn && !winner && !isDraw && board && !isAIThinking) {
-            const timeoutId = setTimeout(() => {
-                makeAIMove();
-            }, 100); // Small delay to ensure state is settled
-
+            const timeoutId = setTimeout(() => makeAIMove(), 100);
             return () => clearTimeout(timeoutId);
         }
-
-        return () => {
-            if (aiMoveTimeoutRef.current) {
-                clearTimeout(aiMoveTimeoutRef.current);
-            }
-        };
+        return () => { if (aiMoveTimeoutRef.current) clearTimeout(aiMoveTimeoutRef.current); };
     }, [isAITurn, winner, isDraw, board, isAIThinking, makeAIMove]);
 
     const { guard } = useActionGuard();
 
-    // Keyboard navigation for accessibility
     const handleCellSelect = useCallback((index: number) => {
-        if (!winner && !displayBoard?.[index] && myTurn && !isAIThinking) {
-            handleClick(index);
-        }
+        if (!winner && !displayBoard?.[index] && myTurn && !isAIThinking) handleClick(index);
     }, [winner, displayBoard, myTurn, isAIThinking]);
 
     useTicTacToeKeyboard(handleCellSelect, !winner && myTurn && !isAIThinking);
 
-    const handleClick = guard((...args: unknown[]) => {
-        const i = args[0] as number;
+    const handleClick = guard((i: number) => {
         if (winner || displayBoard?.[i] || !myTurn || isAIThinking) return;
-
-        // Оптимистичное обновление
         const newOptimisticBoard = displayBoard!.slice();
         newOptimisticBoard[i] = playerSymbols[user.id];
         setOptimisticBoard(newOptimisticBoard);
         setLastMoveIndex(i);
-
         const newBoard = board!.slice();
         newBoard[i] = playerSymbols[user.id];
-
         const newWinner = calculateWinner(newBoard);
-
-        // Set next player - AI or other user
         const nextPlayer = isVsAI ? AI_PLAYER_ID : opponent.id;
-
-        updateGameState({
-            board: newBoard,
-            currentPlayer: nextPlayer,
-            winner: newWinner ? user.id : null,
-        });
-
+        updateGameState({ board: newBoard, currentPlayer: nextPlayer, winner: newWinner ? user.id : null });
         hapticFeedback('light');
     });
 
@@ -236,21 +165,11 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
             const playerIds = [user.id, opponent.id];
             newStarterId = playerIds.find(id => id !== gameState.currentPlayer) ?? hostId;
         }
-
         setOptimisticBoard(null);
         setLastMoveIndex(null);
         setIsAIThinking(false);
-
-        if (aiMoveTimeoutRef.current) {
-            clearTimeout(aiMoveTimeoutRef.current);
-        }
-
-        updateGameState({
-            board: Array(9).fill(null),
-            currentPlayer: newStarterId,
-            winner: null
-        });
-
+        if (aiMoveTimeoutRef.current) clearTimeout(aiMoveTimeoutRef.current);
+        updateGameState({ board: Array(9).fill(null), currentPlayer: newStarterId, winner: null });
         hapticFeedback('medium');
     });
 
@@ -271,81 +190,61 @@ export function TicTacToe({ onGameEnd, updateGameState, gameState, user, otherUs
     }
 
     return (
-        <div className="flex flex-col items-center justify-center h-full gap-4 p-4">
-            {winner === user.id && windowSize.width > 0 && (
-                <Confetti
-                    width={windowSize.width}
-                    height={windowSize.height}
-                    recycle={false}
-                    numberOfPieces={200}
-                    gravity={0.3}
-                />
-            )}
-            <Card className="bg-black/90 border-white/[0.06] backdrop-blur-xl w-full max-w-sm">
-                <CardHeader className="text-center relative">
-                    <ExitButton
-                        view="game"
-                        hasUnsavedChanges={!winner && board?.some(cell => cell !== null)}
-                        onExit={onGameEnd}
-                        variant="icon"
-                        size="sm"
-                        className="absolute top-4 left-4 text-white/40 hover:text-white z-10"
-                    />
-                    <CardTitle className="font-headline text-2xl text-white">Крестики-нолики</CardTitle>
-                    <CardTitle className="text-sm font-medium text-white/50 pt-2">{getStatus()}</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col items-center gap-4">
-                    {/* VS AI indicator */}
-                    {isVsAI && (
-                        <div className="flex items-center gap-2 text-sm text-violet-400 bg-violet-500/10 px-3 py-1.5 rounded-full border border-violet-500/20">
-                            <Bot className="w-4 h-4" />
-                            <span>Игра против AI</span>
+        <GameLayout
+            title="Tic Tac Toe"
+            icon={<X className="w-5 h-5 text-violet-400" />}
+            onExit={onGameEnd}
+            score={0}
+            gameTime={0}
+            playerCount={isVsAI ? 1 : 2}
+        >
+            <div className="flex flex-col items-center justify-center h-full max-w-sm mx-auto p-4">
+                {winner === user.id && windowSize.width > 0 && (
+                    <Confetti width={windowSize.width} height={windowSize.height} recycle={false} numberOfPieces={200} gravity={0.3} />
+                )}
+                <PremiumCard variant="glass" glow className="w-full">
+                    <PremiumCardHeader className="text-center">
+                        <PremiumCardTitle className="font-headline text-2xl text-white">Крестики-нолики</PremiumCardTitle>
+                        <PremiumCardDescription className="text-white/50 pt-2">{getStatus()}</PremiumCardDescription>
+                    </PremiumCardHeader>
+                    <PremiumCardContent className="flex flex-col items-center gap-4">
+                        {isVsAI && (
+                            <div className="flex items-center gap-2 text-sm text-violet-400 bg-violet-500/10 px-3 py-1.5 rounded-full border border-violet-500/20">
+                                <Bot className="w-4 h-4" />
+                                <span>Игра против AI</span>
+                            </div>
+                        )}
+                        
+                        {!winner && !isDraw && !myTurn && (
+                            <div className="flex items-center gap-2 text-xs text-white/40 animate-pulse">
+                                <div className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-ping" />
+                                <span>Ход противника...</span>
+                            </div>
+                        )}
+                        
+                        <div className="tictactoe-grid">
+                            {displayBoard?.map((cell, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => handleClick(i)}
+                                    className={`
+                                        tictactoe-cell
+                                        ${lastMoveIndex === i ? 'ring-2 ring-violet-500 ring-offset-2 ring-offset-black' : ''}
+                                        ${!cell && myTurn && !winner && !isAIThinking ? 'active:scale-95' : ''}
+                                    `}
+                                    disabled={!!winner || !!displayBoard[i] || !myTurn || isAIThinking}
+                                >
+                                    {cell === 'X' ? <XIcon /> : cell === 'O' ? <OIcon /> : null}
+                                </button>
+                            ))}
                         </div>
-                    )}
-                    
-                    {/* Turn indicator - Stage 3.1 */}
-                    {!winner && !isDraw && !myTurn && (
-                        <div className="flex items-center gap-2 text-xs text-white/40 animate-pulse">
-                            <div className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-ping" />
-                            <span>Ход противника...</span>
-                        </div>
-                    )}
-                    {/* P1 Fix: Адаптивные touch-зоны для мобильных устройств */}
-                    <div className="tictactoe-grid">
-                        {displayBoard?.map((cell, i) => (
-                            <button
-                                key={i}
-                                onClick={() => handleClick(i)}
-                                data-game-cell={i}
-                                tabIndex={myTurn && !winner && !displayBoard[i] ? 0 : -1}
-                                className={`
-                                    tictactoe-cell
-                                    ${lastMoveIndex === i ? 'ring-2 ring-violet-500 ring-offset-2 ring-offset-black' : ''}
-                                    ${!cell && myTurn && !winner && !isAIThinking ? 'active:scale-95' : ''}
-                                `}
-                                disabled={!!winner || !!displayBoard[i] || !myTurn || isAIThinking}
-                                aria-label={`Ячейка ${i + 1}${cell ? `, занята ${cell}` : ', пустая'}`}
-                            >
-                                {cell === 'X' ? <XIcon /> : cell === 'O' ? <OIcon /> : null}
-                            </button>
-                        ))}
-                    </div>
-                </CardContent>
-                <CardFooter className="flex flex-col gap-2 p-4">
-                    {(winner || isDraw) && (
-                        <Button
-                            onClick={handleReset}
-                            className="w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:shadow-lg hover:shadow-violet-500/25 transition-all min-h-[48px]"
-                        >
-                            Играть снова
-                        </Button>
-                    )}
-                    <Button onClick={onGameEnd} variant="ghost" size="sm" className="w-full text-white/40 hover:text-white min-h-[44px]">
-                        <ArrowLeft className="mr-2 h-4 w-4" />
-                        Вернуться в лобби
-                    </Button>
-                </CardFooter>
-            </Card>
-        </div>
+
+                        {(winner || isDraw) && (
+                            <PremiumButton onClick={handleReset} className="w-full" glow>Играть снова</PremiumButton>
+                        )}
+                    </PremiumCardContent>
+                </PremiumCard>
+            </div>
+        </GameLayout>
     );
 }

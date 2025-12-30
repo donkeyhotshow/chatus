@@ -434,27 +434,6 @@ export const ChatArea = memo(function ChatArea({
 
                 {/* Input Area */}
                 <div className="shrink-0 border-t border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
-                    {/* Reply preview */}
-                    {replyTo && (
-                        <div className="flex items-center justify-between mx-[var(--space-3)] mt-[var(--space-2)] px-[var(--space-3)] py-[var(--space-2)] bg-[var(--bg-tertiary)] border-l-2 border-[var(--accent-primary)] rounded-r-lg">
-                            <div className="min-w-0 flex-1">
-                                <p className="text-[var(--font-caption)] font-medium text-[var(--text-primary)]">
-                                    Ответ для {replyTo.user.name}
-                                </p>
-                                <p className="text-[var(--font-caption)] text-[var(--text-muted)] truncate">
-                                    {replyTo.imageUrl && !replyTo.text ? 'Изображение' : replyTo.text}
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => setReplyTo(null)}
-                                className="p-1 rounded hover:bg-[var(--bg-tertiary)] text-[var(--text-muted)] touch-target"
-                                aria-label="Отменить ответ"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-                    )}
-
                     {showDoodlePad && (
                         <DoodlePad onClose={() => setShowDoodlePad(false)} onSend={handleSendDoodle} />
                     )}
@@ -477,6 +456,8 @@ export const ChatArea = memo(function ChatArea({
                         onTyping={(isTyping) => isTyping ? handleTypingStart() : handleTypingStop()}
                         onFileUpload={handleImageUpload}
                         onStickerSend={handleSendSticker}
+                        replyTo={replyTo}
+                        onCancelReply={() => setReplyTo(null)}
                         placeholder="Сообщение..."
                     />
                 </div>
@@ -525,33 +506,59 @@ function EmptyState({ onSend }: { onSend: (text: string) => void }) {
 
     return (
         <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="absolute inset-0 flex flex-col items-center justify-center p-[var(--space-6)] text-center"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
+            className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center overflow-hidden"
         >
-            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-[var(--accent-chat)] to-[var(--accent-games)] flex items-center justify-center mb-[var(--space-8)] shadow-2xl shadow-violet-600/30 animate-float">
+            {/* Decorative background glow */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-violet-600/10 blur-[120px] rounded-full pointer-events-none" />
+            
+            <motion.div 
+                animate={{ 
+                    y: [0, -10, 0],
+                    rotate: [0, 2, 0, -2, 0]
+                }}
+                transition={{ 
+                    duration: 6, 
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                }}
+                className="w-24 h-24 rounded-[2rem] bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center mb-10 shadow-[0_20px_50px_rgba(124,58,237,0.3)] relative z-10"
+            >
                 <MessageCircle className="w-12 h-12 text-white" />
-            </div>
-            <h3 className="text-[var(--h3-size)] font-bold text-[var(--text-primary)] mb-[var(--space-3)]">
+                <div className="absolute inset-0 rounded-[2rem] bg-white/20 blur-xl opacity-50" />
+            </motion.div>
+
+            <h3 className="text-3xl font-bold text-white mb-4 tracking-tight relative z-10">
                 Начните общение
             </h3>
-            <p className="text-[var(--font-secondary)] text-[var(--text-muted)] mb-[var(--space-12)] max-w-xs leading-relaxed">
+            <p className="text-lg text-white/40 mb-12 max-w-xs leading-relaxed relative z-10">
                 Отправьте первое сообщение или выберите быстрый ответ ниже
             </p>
-            <div className="flex flex-wrap justify-center gap-[var(--space-3)] max-w-sm" role="group" aria-label="Быстрые ответы">
+
+            <div className="flex flex-wrap justify-center gap-3 max-w-md relative z-10" role="group" aria-label="Быстрые ответы">
                 {suggestions.map((text, index) => (
                     <motion.button
                         key={text}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.2 + index * 0.1 }}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ 
+                            delay: 0.3 + index * 0.08,
+                            type: "spring",
+                            stiffness: 200,
+                            damping: 15
+                        }}
                         onClick={() => onSend(text)}
-                        role="button"
-                        aria-label={`Отправить быстрый ответ: ${text}`}
-                        className="px-[var(--space-5)] py-[var(--space-3)] min-h-[48px] rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-[var(--font-secondary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--accent-chat)]/30 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/10 active:scale-95 touch-target"
+                        className={cn(
+                            "px-6 py-3.5 rounded-2xl text-sm font-semibold transition-all duration-300",
+                            "bg-white/[0.03] backdrop-blur-xl border border-white/10",
+                            "text-white/60 hover:text-white hover:bg-white/[0.08] hover:border-violet-500/40",
+                            "hover:-translate-y-1.5 hover:shadow-[0_12px_25px_-10px_rgba(124,58,237,0.4)]",
+                            "active:scale-95 touch-target flex items-center gap-2"
+                        )}
                     >
-                        {text}
+                        <span>{text}</span>
                     </motion.button>
                 ))}
             </div>

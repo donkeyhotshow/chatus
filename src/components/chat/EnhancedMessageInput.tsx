@@ -325,7 +325,7 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                 </div>
 
                 {/* Text input - Premium style */}
-                <div className="flex-1 relative">
+                <div className="flex-1 relative group/input">
                     <textarea
                         ref={textareaRef}
                         value={message}
@@ -342,17 +342,17 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                         aria-label="Введите сообщение"
                         aria-describedby={message.length > 800 ? "char-count" : undefined}
                         className={cn(
-                            "w-full px-[var(--space-4)] py-[var(--space-3)] bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] rounded-2xl",
-                            "text-[var(--text-primary)] placeholder:text-[var(--text-muted)]",
+                            "w-full px-5 py-4 bg-white/[0.03] border border-white/10 rounded-2xl",
+                            "text-white placeholder:text-white/20",
                             "resize-none overflow-y-auto max-h-[120px] scrollbar-hide",
-                            "focus:outline-none focus:border-[var(--accent-chat)]/50 focus:bg-[var(--bg-tertiary)]",
-                            "focus:ring-2 focus:ring-[var(--accent-chat)]/20",
-                            "hover:border-[var(--border-subtle)]",
-                            "transition-all duration-200",
-                            "shadow-sm shadow-black/30",
+                            "focus:outline-none focus:border-violet-500/40 focus:bg-white/[0.05]",
+                            "focus:ring-4 focus:ring-violet-500/10",
+                            "hover:border-white/20 hover:bg-white/[0.04]",
+                            "transition-all duration-300 ease-out",
+                            "shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)]",
                             "disabled:opacity-50"
                         )}
-                        style={{ fontSize: 'var(--font-body)', minHeight: '56px' }}
+                        style={{ fontSize: '16px', minHeight: '56px' }}
                     />
 
                     {/* Character count */}
@@ -360,8 +360,8 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                         <span
                             id="char-count"
                             className={cn(
-                                "absolute right-3 bottom-2 text-xs font-medium",
-                                message.length > 1000 ? "text-red-400" : "text-white/40"
+                                "absolute right-4 bottom-3 text-[10px] font-bold uppercase tracking-wider",
+                                message.length > 1000 ? "text-red-400" : "text-white/30"
                             )}
                             aria-live="polite"
                         >
@@ -402,7 +402,7 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                 {/* Send button - Premium gradient */}
                 <motion.button
                     layout
-                    whileHover={canSend && !isSending ? { scale: 1.05 } : {}}
+                    whileHover={canSend && !isSending ? { scale: 1.05, y: -2 } : {}}
                     whileTap={canSend && !isSending ? { scale: 0.95 } : {}}
                     ref={sendButtonRef}
                     onPointerDown={(e) => {
@@ -416,14 +416,21 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                     className={cn(
                         "p-3 rounded-2xl transition-all duration-300 min-w-[48px] min-h-[48px] flex items-center justify-center relative z-[105] touch-target",
                         canSend && !isSending
-                            ? "bg-gradient-to-r from-[var(--accent-chat)] to-[var(--accent-games)] text-white shadow-lg shadow-violet-500/25 hover:shadow-xl hover:shadow-violet-500/40"
-                            : "bg-[var(--bg-tertiary)] text-[var(--text-disabled)] cursor-not-allowed border border-[var(--border-subtle)]"
+                            ? "bg-gradient-to-br from-violet-500 via-indigo-600 to-blue-600 text-white shadow-[0_10px_25px_-5px_rgba(124,58,237,0.5)] hover:shadow-[0_15px_35px_-5px_rgba(124,58,237,0.6)]"
+                            : "bg-white/[0.03] text-white/20 cursor-not-allowed border border-white/5"
                     )}
                 >
+                    {canSend && !isSending && (
+                        <motion.div
+                            animate={{ opacity: [0.3, 0.6, 0.3] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                            className="absolute inset-0 rounded-2xl bg-white/20 blur-md pointer-events-none"
+                        />
+                    )}
                     {isSending ? (
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
-                        <Send className="w-5 h-5" aria-hidden="true" />
+                        <Send className={cn("w-5 h-5 relative z-10", canSend && "drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]")} aria-hidden="true" />
                     )}
                 </motion.button>
             </div>

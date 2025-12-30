@@ -124,14 +124,12 @@ export const MessageBubble = memo(function MessageBubble({
 
                 {/* Message bubble - Mobile Audit: Enhanced styling */}
                 <div className={cn(
-                    "relative px-4 py-3 rounded-2xl break-words",
-                    "text-[15px] md:text-base leading-relaxed",
-                    "transition-all duration-200",
-                    // Mobile Audit V2 FIX: Better border-radius for long messages
-                    sanitizedText.length > 200 && "message-bubble-long",
+                    "relative px-4 py-2.5 rounded-2xl break-words",
+                    "text-[15px] md:text-[16px] leading-relaxed",
+                    "transition-all duration-300",
                     isOwn
-                        ? "bg-[rgba(124,58,237,0.2)] border border-[rgba(124,58,237,0.4)] text-white rounded-br-md shadow-[0_2px_8px_rgba(124,58,237,0.1)] backdrop-blur-sm"
-                        : "bg-[#2D2D35] text-white border border-white/[0.06] rounded-bl-md shadow-[0_2px_8px_rgba(255,255,255,0.02)]"
+                        ? "bg-gradient-to-br from-violet-600/25 to-indigo-600/20 border border-violet-500/30 text-white rounded-tr-sm shadow-[0_4px_15px_-3px_rgba(124,58,237,0.2)] backdrop-blur-md"
+                        : "bg-white/[0.03] backdrop-blur-xl text-white border border-white/10 rounded-tl-sm shadow-[0_4px_15px_-3px_rgba(0,0,0,0.3)]"
                 )}>
                     {/* Reply indicator */}
                     {message.replyTo && (

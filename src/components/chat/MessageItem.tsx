@@ -299,14 +299,15 @@ const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDe
                         style={{
                             x,
                             ...(isSticker ? {} : isOwn ? {
-                                background: 'var(--accent-chat)',
-                                borderRadius: '16px 4px 16px 16px',
-                                boxShadow: '0 4px 12px rgba(139, 92, 246, 0.25)',
+                                background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
+                                borderRadius: '20px 4px 20px 20px',
+                                boxShadow: '0 10px 25px -5px rgba(124, 58, 237, 0.4), 0 8px 10px -6px rgba(124, 58, 237, 0.4)',
                             } : {
-                                background: 'rgba(139, 92, 246, 0.1)',
-                                borderRadius: '4px 16px 16px 16px',
-                                border: '1px solid var(--border-subtle)',
-                                backdropFilter: 'blur(8px)',
+                                background: 'rgba(255, 255, 255, 0.03)',
+                                borderRadius: '4px 20px 20px 20px',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                backdropFilter: 'blur(12px)',
+                                boxShadow: '0 4px 15px -3px rgba(0, 0, 0, 0.2)',
                             })
                         }}
                         onTouchStart={handleTouchStart}
@@ -320,12 +321,12 @@ const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDe
                             }
                         }}
                         className={cn(
-                            "relative px-4 py-2.5 transition-all duration-150 cursor-pointer select-none contain-paint",
+                            "relative px-4 py-3 transition-all duration-300 cursor-pointer select-none contain-paint",
                             // Desktop hover states
-                            "md:hover:brightness-110",
+                            "hover:brightness-110",
                             isSticker && "!bg-transparent !border-none !shadow-none",
                             message.id.startsWith("temp_") && "opacity-60",
-                            showActions && "ring-2 ring-violet-500/30"
+                            showActions && "ring-2 ring-violet-500/40"
                         )}
                     >
                         {/* Reply quote */}

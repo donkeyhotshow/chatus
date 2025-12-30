@@ -436,6 +436,8 @@ export function ChatRoom({ roomId }: { roomId: string }) {
                 <ChatSidebar
                     onLogout={handleLogout}
                     onSettings={handleSettings}
+                    activeTab={activeTab}
+                    onTabChange={handleTabChange}
                 />
             )}
 
