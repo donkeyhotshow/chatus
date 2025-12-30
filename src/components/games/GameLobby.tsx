@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo, useEffect, lazy, Suspense } from 'react';
 import { doc } from 'firebase/firestore';
-import { Gamepad, ArrowLeft, Dices, Hand, Swords, Car, Zap } from 'lucide-react';
+import { Gamepad, ArrowLeft, Dices, Hand, Swords, Car, Zap, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserProfile, GameType, GameState } from '@/lib/types';
 import { useChatService } from '@/hooks/useChatService';
@@ -236,17 +236,61 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
   }
 
   // Лобі - Dark Minimalism Theme
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterDifficulty, setFilterDifficulty] = useState<'all' | 'easy' | 'medium' | 'hard'>('all');
+
+  const filteredGames = useMemo(() => {
+    return gamesList.filter(game => {
+      const matchesSearch = game.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                           game.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesDifficulty = filterDifficulty === 'all' || game.difficulty === filterDifficulty;
+      return matchesSearch && matchesDifficulty;
+    });
+  }, [searchQuery, filterDifficulty]);
+
   return (
     <div className="flex flex-col h-full bg-black">
       {/* Header - Glass effect - Mobile optimized */}
       <div className="p-[var(--space-4)] border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]/80 backdrop-blur-xl game-lobby-header">
-        <div className="flex items-center gap-[var(--space-4)]">
-          <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-purple-600 to-fuchsia-700 shadow-lg shadow-purple-500/25">
-            <Gamepad className="w-5 h-5 md:w-6 md:h-6 text-white" />
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-[var(--space-4)]">
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-purple-600 to-fuchsia-700 shadow-lg shadow-purple-500/25">
+              <Gamepad className="w-5 h-5 md:w-6 md:h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-[var(--h2-size)] font-semibold text-[var(--text-primary)]">Игры</h2>
+              <p className="text-[var(--font-caption)] text-[var(--text-muted)]">Выберите игру для двоих</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-[var(--h2-size)] font-semibold text-[var(--text-primary)]">Игры</h2>
-            <p className="text-[var(--font-caption)] text-[var(--text-muted)]">Выберите игру для двоих</p>
+
+          {/* Search and Filters */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Поиск игр..."
+                className="w-full pl-10 pr-4 h-10 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder:text-white/20 focus:border-violet-500/50 outline-none transition-all"
+              />
+            </div>
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 sm:pb-0">
+              {(['all', 'easy', 'medium', 'hard'] as const).map((diff) => (
+                <button
+                  key={diff}
+                  onClick={() => setFilterDifficulty(diff)}
+                  className={cn(
+                    "px-4 h-10 rounded-xl text-xs font-medium border transition-all whitespace-nowrap",
+                    filterDifficulty === diff 
+                      ? "bg-violet-500/20 border-violet-500/50 text-violet-300" 
+                      : "bg-white/5 border-white/10 text-white/40 hover:text-white/60"
+                  )}
+                >
+                  {diff === 'all' ? 'Все' : difficultyConfig[diff].label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -263,7 +307,7 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
             </>
           ) : (
             // Actual game cards with stagger animation
-            gamesList.map((game, index) => {
+            filteredGames.map((game, index) => {
               const isLoading = loadingGameId === game.id;
               const Icon = game.icon;
 

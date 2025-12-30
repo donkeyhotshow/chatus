@@ -13,6 +13,8 @@ import { isTestMode } from '@/lib/mock-services';
 import { isSafari, safariSafeClick, forceSafariButtonState } from '@/lib/safari-workarounds';
 import { logger } from '@/lib/logger';
 
+import { HeaderLogin } from './HeaderLogin';
+
 export function HomeClient() {
     const [roomCode, setRoomCode] = useState('');
     const [username, setUsername] = useState('');
@@ -54,8 +56,8 @@ export function HomeClient() {
 
     const { db } = useFirebase();
 
-    const handleJoinRoom = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleJoinRoom = async (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
         if (isConnecting || !isFormValid || !db) return;
 
         const trimmedUsername = username.trim();
@@ -156,22 +158,38 @@ export function HomeClient() {
         <div className="min-h-screen w-full bg-[var(--bg-primary)]" style={{ background: 'var(--bg-gradient)' }}>
             {/* Header */}
             <header className="fixed top-0 left-0 right-0 z-50 bg-[var(--bg-primary)]/90 backdrop-blur-2xl border-b border-[var(--border-subtle)]">
-                <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
+                <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2.5 shrink-0">
                         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center">
                             <Logo className="w-4 h-4 text-white" />
                         </div>
-                        <span className="font-semibold text-[var(--text-primary)]">ChatUs</span>
+                        <span className="font-semibold text-[var(--text-primary)] hidden sm:block">ChatUs</span>
                     </div>
 
-                    {/* Desktop nav */}
-                    <nav className="flex items-center gap-6" role="navigation" aria-label="Основная навигация">
-                        <a href="#features" className="text-[var(--font-secondary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors hidden sm:block touch-target">
+                    {/* Center: Header Login Dropdown */}
+                    <HeaderLogin
+                        username={username}
+                        roomCode={roomCode}
+                        onUsernameChange={setUsername}
+                        onRoomCodeChange={setRoomCode}
+                        onJoin={() => handleJoinRoom()}
+                        isConnecting={isConnecting}
+                        isValid={isFormValid}
+                    />
+
+                    {/* Right: Desktop nav */}
+                    <nav className="flex items-center gap-4 shrink-0" role="navigation" aria-label="Основная навигация">
+                        <a href="#features" className="text-[var(--font-secondary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors hidden lg:block touch-target">
                             Возможности
                         </a>
-                        <a href="#login" className="text-[var(--font-secondary)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors hidden sm:block touch-target">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-white/60 hover:text-white hover:bg-white/5 rounded-full px-4"
+                            onClick={() => document.getElementById('login-section')?.scrollIntoView({ behavior: 'smooth' })}
+                        >
                             Войти
-                        </a>
+                        </Button>
                     </nav>
                 </div>
             </header>
@@ -195,7 +213,7 @@ export function HomeClient() {
                         </div>
 
                         {/* Login Form - Redesigned for Stage 1.2 */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl mx-auto">
+                        <div id="login-section" className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl mx-auto">
                             {/* Join Room Block */}
                             <div className="bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-subtle)] p-6 shadow-xl backdrop-blur-sm flex flex-col">
                                 <div className="flex items-center gap-3 mb-6">

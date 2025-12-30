@@ -190,8 +190,8 @@ export const ChatArea = memo(function ChatArea({
         });
 
         return Array.from(uniqueMap.values()).sort((a, b) => {
-            const aTime = a.createdAt?.toMillis?.() || 0;
-            const bTime = b.createdAt?.toMillis?.() || 0;
+            const aTime = a.createdAt?.toMillis?.() || Date.now();
+            const bTime = b.createdAt?.toMillis?.() || Date.now();
             return aTime - bTime;
         });
     }, [persistedMessages, cachedMessages]);

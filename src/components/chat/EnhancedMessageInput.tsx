@@ -7,10 +7,7 @@ import {
     isIOS,
     createIOSViewportManager,
 } from '@/lib/ios-viewport-manager';
-import { StickerPicker } from './StickerPicker';
-
-// Common emoji list for quick picker
-const QUICK_EMOJIS = ['😀', '😂', '❤️', '👍', '👎', '🎉', '🔥', '😢', '😮', '🤔', '👋', '🙏'];
+import { UnifiedPicker } from './UnifiedPicker';
 
 // BUG-011 FIX: Detect Android device
 function isAndroid(): boolean {
@@ -56,7 +53,7 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
     const [message, setMessage] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
-    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [showPicker, setShowPicker] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const sendButtonRef = useRef<HTMLButtonElement>(null);
@@ -155,23 +152,29 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
 
     const handleEmojiSelect = useCallback((emoji: string) => {
         setMessage(prev => prev + emoji);
-        setShowEmojiPicker(false);
         textareaRef.current?.focus();
     }, []);
 
-    // Close emoji picker on Escape key
+    const handleStickerSelect = useCallback((url: string) => {
+        if (onStickerSend) {
+            onStickerSend(url);
+            setShowPicker(false);
+        }
+    }, [onStickerSend]);
+
+    // Close picker on Escape key
     useEffect(() => {
-        if (!showEmojiPicker) return;
+        if (!showPicker) return;
 
         const handleEscape = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
-                setShowEmojiPicker(false);
+                setShowPicker(false);
             }
         };
 
         document.addEventListener('keydown', handleEscape);
         return () => document.removeEventListener('keydown', handleEscape);
-    }, [showEmojiPicker]);
+    }, [showPicker]);
 
     useEffect(() => {
         if (replyTo && textareaRef.current) textareaRef.current.focus();
@@ -288,7 +291,7 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
 
             {/* Input row */}
             <div className="flex items-end gap-2" role="group" aria-label="Ввод сообщения">
-                {/* Emoji button and picker - P2 UX-3: Added tooltip */}
+                {/* Unified Picker button */}
                 <div className="relative">
                     <motion.button
                         whileHover={{ scale: 1.05 }}
@@ -297,21 +300,15 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                         onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            setShowEmojiPicker(prev => !prev);
-                        }}
-                        onTouchEnd={(e) => {
-                            // BUG #14 FIX: Handle touch events for mobile
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setShowEmojiPicker(prev => !prev);
+                            setShowPicker(prev => !prev);
                         }}
                         disabled={disabled}
-                        aria-label="Открыть эмодзи"
-                        aria-expanded={showEmojiPicker}
-                        title="Добавить эмодзи (E)" /* P2 UX-3: Tooltip */
+                        aria-label="Открыть эмодзи и стикеры"
+                        aria-expanded={showPicker}
+                        title="Эмодзи и стикеры"
                         className={cn(
                             "p-2.5 rounded-xl transition-all duration-200 touch-target disabled:opacity-50 min-w-[44px] min-h-[44px] relative z-[105]",
-                            showEmojiPicker
+                            showPicker
                                 ? "text-violet-400 bg-violet-500/10"
                                 : "text-white/40 hover:text-white/70 hover:bg-white/[0.05]"
                         )}
@@ -319,73 +316,13 @@ export const EnhancedMessageInput = forwardRef<EnhancedMessageInputRef, Enhanced
                         <Smile className="w-5 h-5" aria-hidden="true" />
                     </motion.button>
 
-                    {/* Emoji picker dropdown - Premium glass style with mobile adaptation */}
-                    <AnimatePresence>
-                        {showEmojiPicker && (
-                            <>
-                                {/* Backdrop for both mobile and desktop - closes picker on click outside */}
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    className="fixed inset-0 bg-black/50 md:bg-transparent z-[100]"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setShowEmojiPicker(false);
-                                    }}
-                                    onTouchEnd={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setShowEmojiPicker(false);
-                                    }}
-                                />
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                                    className={cn(
-                                        "bg-black/95 border border-white/10 rounded-2xl shadow-2xl z-[110] backdrop-blur-2xl",
-                                        // Desktop: absolute positioning
-                                        "md:absolute md:bottom-full md:left-0 md:mb-2",
-                                        // Mobile: fixed bottom sheet
-                                        "fixed bottom-0 left-0 right-0 md:bottom-auto md:right-auto",
-                                        "rounded-b-none md:rounded-2xl",
-                                        "p-3 md:p-2"
-                                    )}
-                                    onClick={(e) => e.stopPropagation()}
-                                >
-                                    {/* Mobile drag handle */}
-                                    <div className="md:hidden flex justify-center pb-2">
-                                        <div className="w-10 h-1 bg-neutral-600 rounded-full" />
-                                    </div>
-                                    <div className="grid grid-cols-6 gap-1 md:gap-0.5">
-                                        {QUICK_EMOJIS.map((emoji) => (
-                                            <motion.button
-                                                key={emoji}
-                                                whileHover={{ scale: 1.2 }}
-                                                whileTap={{ scale: 0.8 }}
-                                                type="button"
-                                                onClick={() => handleEmojiSelect(emoji)}
-                                                className="p-3 md:p-2.5 text-2xl md:text-xl hover:bg-white/10 active:bg-white/20 rounded-xl transition-all duration-150 touch-target"
-                                                aria-label={`Вставить ${emoji}`}
-                                            >
-                                                {emoji}
-                                            </motion.button>
-                                        ))}
-                                    </div>
-                                    {/* Safe area for mobile */}
-                                    <div className="h-[env(safe-area-inset-bottom,0px)] md:hidden" />
-                                </motion.div>
-                            </>
-                        )}
-                    </AnimatePresence>
+                    <UnifiedPicker
+                        isOpen={showPicker}
+                        onClose={() => setShowPicker(false)}
+                        onEmojiSelect={handleEmojiSelect}
+                        onStickerSelect={handleStickerSelect}
+                    />
                 </div>
-
-                {/* Sticker Picker */}
-                {onStickerSend && (
-                    <StickerPicker onSelect={onStickerSend} />
-                )}
 
                 {/* Text input - Premium style */}
                 <div className="flex-1 relative">

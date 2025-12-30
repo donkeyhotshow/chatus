@@ -210,9 +210,11 @@ export class MessageService {
             }
         });
 
-        this.messages = Array.from(messageMap.values()).sort((a, b) =>
-            (a.createdAt?.toMillis?.() ?? 0) - (b.createdAt?.toMillis?.() ?? 0)
-        );
+        this.messages = Array.from(messageMap.values()).sort((a, b) => {
+            const timeA = a.createdAt?.toMillis?.() ?? Date.now();
+            const timeB = b.createdAt?.toMillis?.() ?? Date.now();
+            return timeA - timeB;
+        });
 
         this.pendingNewMessages = [];
         this.notifyCallback();

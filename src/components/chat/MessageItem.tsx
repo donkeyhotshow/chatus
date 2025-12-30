@@ -169,17 +169,51 @@ const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDe
 
         if (message.text) {
             const isLongMessage = message.text.length > 80 || message.text.split('\n').length > 2;
+            
+            // Simple Markdown-like renderer
+            const renderMarkdown = (text: string) => {
+                // Escape HTML to prevent XSS
+                let html = text
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+
+                // Code blocks: ```code```
+                html = html.replace(/```([\s\S]*?)```/g, '<pre class="bg-black/40 p-2 rounded-lg my-2 font-mono text-xs overflow-x-auto border border-white/5"><code>$1</code></pre>');
+                
+                // Bold: **text**
+                html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                // Italic: *text*
+                html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                // Strikethrough: ~~text~~
+                html = html.replace(/~~(.*?)~~/g, '<del>$1</del>');
+                // Inline code: `text`
+                html = html.replace(/`(.*?)`/g, '<code class="bg-black/30 px-1 rounded font-mono text-[0.9em]">$1</code>');
+                
+                // Blockquotes: > text
+                html = html.replace(/^&gt;\s+(.*)$/gm, '<blockquote class="border-l-4 border-violet-500/50 pl-3 my-2 text-white/60 italic">$1</blockquote>');
+
+                // Links: [text](url)
+                html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-sky-400 underline hover:text-sky-300">$1</a>');
+                // Auto-links
+                html = html.replace(/(?<!href=")(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-sky-400 underline hover:text-sky-300">$1</a>');
+
+                return <div dangerouslySetInnerHTML={{ __html: html }} />;
+            };
+
             return (
                 <div className="flex flex-col">
                     {contentNode}
-                    <p className={cn(
+                    <div className={cn(
                         "text-[var(--font-body)] tracking-wide whitespace-pre-wrap break-words",
                         isOwn ? "text-white" : "text-[var(--text-primary)]"
                     )} style={{
                         lineHeight: isLongMessage ? 'var(--lh-chat)' : 'var(--lh-body)',
                     }}>
-                        {message.text}
-                    </p>
+                        {renderMarkdown(message.text)}
+                    </div>
                 </div>
             );
         }

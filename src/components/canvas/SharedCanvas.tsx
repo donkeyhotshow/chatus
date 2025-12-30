@@ -551,6 +551,19 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     }
   };
 
+  const lastTapRef = useRef<number>(0);
+  const handleDoubleTap = (e: React.TouchEvent) => {
+    const now = Date.now();
+    if (now - lastTapRef.current < 300) {
+      // Reset zoom and pan
+      setScale(1);
+      setTranslateX(0);
+      setTranslateY(0);
+      toast({ title: "Масштаб сброшен" });
+    }
+    lastTapRef.current = now;
+  };
+
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (e.touches.length < 2) {
       isPinching.current = false;
@@ -558,6 +571,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     }
     if (e.touches.length === 0) {
       handleMouseUp();
+      handleDoubleTap(e);
     }
   };
 

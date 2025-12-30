@@ -7,7 +7,7 @@ import { MessageCircle, PenTool, Gamepad2 } from 'lucide-react';
 import { OptimizedAvatar } from '../ui/OptimizedImage';
 import { ChatArea } from './ChatArea';
 import { ProfileCreationDialog } from './ProfileCreationDialog';
-import { MobileNavigation } from '../mobile/MobileNavigation';
+import { UnifiedBottomNav } from '../layout/UnifiedBottomNav';
 import { ChatSidebar, ChatTab } from './ChatSidebar';
 import { UserList } from './UserList';
 import { ChatStats } from './ChatStats';
@@ -547,11 +547,17 @@ export function ChatRoom({ roomId }: { roomId: string }) {
                 </AnimatedTabTransition>
             </main>
 
-            {/* Mobile Navigation - Moved to bottom */}
+            {/* Mobile Navigation - Unified */}
             {isMobile && (
-                <MobileNavigation
-                    activeTab={activeTab}
-                    onTabChange={(tab) => handleTabChange(tab)}
+                <UnifiedBottomNav
+                    activeTab={activeTab === 'stats' ? 'settings' : activeTab as any}
+                    onTabChange={(tab) => {
+                        if (tab === 'settings') {
+                            handleSettings();
+                        } else {
+                            handleTabChange(tab);
+                        }
+                    }}
                 />
             )}
 

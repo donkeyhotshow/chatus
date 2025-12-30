@@ -30,6 +30,8 @@ type CanvasSheet = {
   createdAt: Timestamp;
 };
 
+import { ChatPeek } from './ChatPeek';
+
 type CollaborationSpaceProps = {
   isVisible: boolean;
   roomId: string;
@@ -47,7 +49,7 @@ export function CollaborationSpace({
   allUsers,
   mobileActiveTab,
 }: CollaborationSpaceProps) {
-  const { service } = useChatService(roomId, user || undefined);
+  const { service, messages } = useChatService(roomId, user || undefined);
   // BUG #15 FIX + P0-1 FIX: Initialize activeTab based on mobileActiveTab prop
   // P0-1: Ensure canvas view renders correctly when navigating via URL or tab
   const [activeTab, setActiveTab] = useState<'games' | 'canvas' | 'users' | 'stats'>(() => {
@@ -343,6 +345,15 @@ export function CollaborationSpace({
           <UserList users={allUsers} currentUserId={user?.id || ''} />
         </div>
       </div>
+
+      {/* Mobile Chat Peek */}
+      {isMobile && !isFullscreen && (
+        <ChatPeek 
+          messages={messages} 
+          user={user} 
+          onSend={(text) => service?.sendMessage({ text, user: user!, senderId: user!.id, reactions: [] })} 
+        />
+      )}
     </aside>
   );
 }
