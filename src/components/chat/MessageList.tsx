@@ -8,6 +8,7 @@ import { MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import MessageItem from './MessageItem';
 import type { Message } from '@/lib/types';
+import { EmptyChat } from '@/components/ui/EmptyState';
 
 type MessageListProps = {
   messages?: Message[] | null;
@@ -223,17 +224,8 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
 
   if (messages.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center h-full px-6 py-8">
-        <div className="flex flex-col items-center gap-6 text-center max-w-sm">
-          <div className="text-7xl opacity-50 mb-2 animate-pulse">💬</div>
-          <div className="space-y-2">
-            <h2 className="text-xl sm:text-2xl font-bold text-[var(--text-primary)]">Начните общение</h2>
-            <p className="text-sm sm:text-base text-[var(--text-secondary)] leading-relaxed">
-              Напишите первое сообщение, чтобы начать диалог
-            </p>
-          </div>
-          <div className="w-16 h-1 bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-hover)] rounded-full opacity-60"></div>
-        </div>
+      <div className="flex-1 flex flex-col h-full">
+         <EmptyChat />
       </div>
     );
   }

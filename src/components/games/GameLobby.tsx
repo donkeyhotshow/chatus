@@ -8,6 +8,7 @@ import { UserProfile, GameType, GameState } from '@/lib/types';
 import { useChatService } from '@/hooks/useChatService';
 import { useDoc } from '@/hooks/useDoc';
 import { useFirebase } from '../firebase/FirebaseProvider';
+import { EmptyGames, EmptySearchResults } from '@/components/ui/EmptyState';
 
 // Skeleton component for game cards
 function GameCardSkeleton({ index }: { index: number }) {
@@ -305,7 +306,7 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
                 <GameCardSkeleton key={index} index={index} />
               ))}
             </>
-          ) : (
+          ) : filteredGames.length > 0 ? (
             // Actual game cards with stagger animation
             filteredGames.map((game, index) => {
               const isLoading = loadingGameId === game.id;
@@ -363,6 +364,10 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
                 </button>
               );
             })
+          ) : (
+            <div className="col-span-full flex justify-center py-12">
+               {searchQuery ? <EmptySearchResults /> : <EmptyGames />}
+            </div>
           )}
         </div>
 
