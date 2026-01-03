@@ -58,7 +58,7 @@
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.4.2",
     "@sentry/nextjs": "^10.31.0",
-    "@tanstack/react-query": "^5.90.13",
+    "@tanstack/react-query": "^5.90.16",
     "@types/three": "^0.182.0",
     "@vercel/analytics": "^1.6.1",
     "canvas-confetti": "^1.6.0",
