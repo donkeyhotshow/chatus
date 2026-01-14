@@ -13,7 +13,7 @@ export interface UIPreferences {
 
 export const defaultPreferences: UIPreferences = {
     theme: 'system',
-    accentColor: 'cyan',
+    accentColor: 'purple',
     density: 'comfortable',
     reducedMotion: false
 };
@@ -26,9 +26,9 @@ export const accentColors = {
         dark: '#0e7490'
     },
     purple: {
-        primary: '#8b5cf6',
-        soft: '#7c3aed',
-        light: '#c4b5fd',
+        primary: '#7c3aed',
+        soft: '#6d28d9',
+        light: '#a78bfa',
         dark: '#5b21b6'
     },
     blue: {

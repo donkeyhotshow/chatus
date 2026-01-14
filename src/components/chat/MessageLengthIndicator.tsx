@@ -28,7 +28,7 @@ export function MessageLengthIndicator({ currentLength, maxLength }: MessageLeng
                             ? 'bg-red-400'
                             : isNearLimit
                                 ? 'bg-yellow-400'
-                                : 'bg-cyan-400'
+                                : 'bg-[var(--accent-primary)]'
                         }`}
                     style={{ width: `${Math.min(percentage, 100)}%` }}
                 />
