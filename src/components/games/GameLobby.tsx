@@ -62,7 +62,7 @@ const gamesList: GameDefinition[] = [
   { id: 'rock-paper-scissors', name: 'Камень-ножницы-бумага', description: 'Кто победит?', icon: Hand, gradient: 'from-pink-600 to-rose-700', difficulty: 'easy', players: '2' },
   { id: 'dice-roll', name: 'Кости', description: 'Бросьте кости', icon: Dices, gradient: 'from-amber-500 to-orange-600', difficulty: 'easy', players: '1-4' },
   { id: 'click-war', name: 'Кликер', description: 'Кто быстрее?', icon: Swords, gradient: 'from-emerald-500 to-teal-600', difficulty: 'medium', players: '2' },
-  { id: 'car-race', name: 'Car Race', description: 'Гонки в реальном времени', icon: Car, gradient: 'from-blue-500 to-cyan-600', difficulty: 'hard', players: '1-2' },
+  { id: 'car-race', name: 'Car Race', description: 'Гонки в реальном времени', icon: Car, gradient: 'from-blue-500 to-indigo-600', difficulty: 'hard', players: '1-2' },
   { id: 'snake', name: 'Змейка', description: 'Классика на двоих', icon: Gamepad, gradient: 'from-emerald-600 to-green-700', difficulty: 'medium', players: '1-2' },
   { id: 'vibe-jet', name: 'Vibe Jet', description: 'Воздушный бой в 3D', icon: Zap, gradient: 'from-violet-500 to-fuchsia-600', difficulty: 'hard', players: '1' },
   { id: 'tower-defense' as any, name: 'Tower Defense', description: 'Защити свою базу', icon: Castle, gradient: 'from-indigo-600 to-blue-700', difficulty: 'hard', players: '1' },
