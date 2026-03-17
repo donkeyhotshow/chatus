@@ -2,14 +2,13 @@
 
 import { useState, useCallback, useMemo, useEffect, lazy, Suspense } from 'react';
 import { doc } from 'firebase/firestore';
-import { Gamepad, ArrowLeft, Dices, Hand, Swords, Car, Zap, Search, Castle, RefreshCw } from 'lucide-react';
+import { Gamepad, Dices, Hand, Swords, Car, Zap, Search, Castle, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserProfile, GameType, GameState } from '@/lib/types';
 import { useChatService } from '@/hooks/useChatService';
 import { useDoc } from '@/hooks/useDoc';
 import { useFirebase } from '../firebase/FirebaseProvider';
-import { EmptyGames, EmptySearch } from '@/components/ui/EmptyState';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 // Skeleton component for game cards
 function GameCardSkeleton({ index }: { index: number }) {
@@ -65,9 +64,15 @@ const gamesList: GameDefinition[] = [
   { id: 'car-race', name: 'Car Race', description: 'Гонки в реальном времени', icon: Car, gradient: 'from-blue-500 to-indigo-600', difficulty: 'hard', players: '1-2' },
   { id: 'snake', name: 'Змейка', description: 'Классика на двоих', icon: Gamepad, gradient: 'from-emerald-600 to-green-700', difficulty: 'medium', players: '1-2' },
   { id: 'vibe-jet', name: 'Vibe Jet', description: 'Воздушный бой в 3D', icon: Zap, gradient: 'from-violet-500 to-fuchsia-600', difficulty: 'hard', players: '1' },
-  { id: 'tower-defense' as any, name: 'Tower Defense', description: 'Защити свою базу', icon: Castle, gradient: 'from-indigo-600 to-blue-700', difficulty: 'hard', players: '1' },
-  { id: 'physics-world' as any, name: 'Физика', description: 'Песочница с физикой', icon: RefreshCw, gradient: 'from-emerald-500 to-green-600', difficulty: 'easy', players: '1' },
+  { id: 'tower-defense', name: 'Tower Defense', description: 'Защити свою базу', icon: Castle, gradient: 'from-indigo-600 to-blue-700', difficulty: 'hard', players: '1' },
+  { id: 'physics-world', name: 'Физика', description: 'Песочница с физикой', icon: RefreshCw, gradient: 'from-emerald-500 to-green-600', difficulty: 'easy', players: '1' },
 ];
+
+interface GameLobbyProps {
+  roomId: string;
+  user: UserProfile;
+  otherUser?: UserProfile | null;
+}
 
 const difficultyConfig = {
   easy: { label: 'Легко', color: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' },
@@ -127,8 +132,8 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
       'car-race': { carRacePlayers: {}, hostId },
       'snake': { snakeActive: false, hostId },
       'vibe-jet': { vibeJetPlayers: {}, hostId },
-      'tower-defense' as any: { tdTowers: [], tdEnemies: [], tdWave: 0, tdBaseHealth: 20, tdResources: 100, tdStatus: 'waiting', hostId },
-      'physics-world' as any: { hostId },
+      'tower-defense': { tdTowers: [], tdEnemies: [], tdWave: 0, tdBaseHealth: 20, tdResources: 100, tdStatus: 'waiting', hostId },
+      'physics-world': { hostId },
     };
 
     const initialState: Partial<GameState> = { type: gameId, ...initialStates[gameId] };

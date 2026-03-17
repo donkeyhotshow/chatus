@@ -227,14 +227,14 @@ describe('MessageList Null-Safety', () => {
      * **Feature: chatus-bug-fixes, Property 11: Unique Key Generation**
      * **Validates: Requirements 11.1, 11.2, 11.3**
      */
-    it('should use message.id as key when available', () => {
+    it('should use message.id as key prefix when available', () => {
       fc.assert(
         fc.property(messageArb, (message) => {
           const key = getMessageKey(message, 0);
 
-          // If message has an id, the key should be that id
+          // If message has an id, key should include it as deterministic prefix
           if (message.id) {
-            expect(key).toBe(message.id);
+            expect(key).toBe(`${message.id}_0`);
           }
         }),
         { numRuns: 100 }

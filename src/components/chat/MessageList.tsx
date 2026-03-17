@@ -55,7 +55,7 @@ export function ensureSafeMessages(messages: Message[] | null | undefined): Mess
 export function getMessageKey(message: Message, index: number): string {
   // Prefer message.id if available
   if (message?.id) {
-    return message.id;
+    return `${message.id}_${index}`;
   }
 
   // Generate stable key from message content

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, memo, useMemo } from 'react';
-import { X, MessageCircle } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { doc } from 'firebase/firestore';
 import { useDebounce } from 'use-debounce';
