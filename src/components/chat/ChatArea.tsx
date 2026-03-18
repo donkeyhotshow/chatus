@@ -10,7 +10,10 @@ import DOMPurify from 'dompurify';
 import type { Message, Room, UserProfile } from '@/lib/types';
 import { DoodlePad, MessageSearch } from '@/components/lazy/LazyComponents';
 import { useFirebase } from '@/components/firebase/FirebaseProvider';
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog';
 import { useChatService } from '@/hooks/useChatService';
 import { usePresence } from '@/hooks/usePresence';
 import { useToast } from '@/hooks/use-toast';
@@ -83,14 +86,18 @@ export const ChatArea = memo(function ChatArea({
     const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
     const [newMessageCount, setNewMessageCount] = useState(0);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [showNicknameDialog, setShowNicknameDialog] = useState(false);
+    const [nicknameInput, setNicknameInput] = useState('');
+    const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
 
     useEffect(() => {
         const savedNick = localStorage.getItem('chat-nickname');
-        const resolvedNickname = resolveNickname(savedNick, window.prompt('Твоё имя в чате?', 'Гость'));
-        if (!savedNick) {
-            localStorage.setItem('chat-nickname', resolvedNickname);
+        if (savedNick) {
+            setNickname(savedNick);
+        } else {
+            setNicknameInput('');
+            setShowNicknameDialog(true);
         }
-        setNickname(resolvedNickname);
     }, []);
 
     const currentUserProfile = useMemo(() => ({
@@ -250,6 +257,13 @@ export const ChatArea = memo(function ChatArea({
     const handleReply = useCallback((message: Message) => setReplyTo(message), []);
     const handleImageClick = useCallback((url: string) => setImageForView(url), []);
 
+    const handleNicknameSubmit = useCallback(() => {
+        const resolved = resolveNickname(nicknameInput.trim() || null, 'Гость');
+        localStorage.setItem('chat-nickname', resolved);
+        setNickname(resolved);
+        setShowNicknameDialog(false);
+    }, [nicknameInput]);
+
     // Sticker Import Logic
     const handleStickerImport = useCallback(async (url: string) => {
         try {
@@ -346,21 +360,23 @@ export const ChatArea = memo(function ChatArea({
         await uploadFile(file);
     }, [uploadFile]);
 
-    const handleDeleteMessage = useCallback(async (messageId: string) => {
+    const handleDeleteMessage = useCallback((messageId: string) => {
         if (!service) return;
+        setMessageToDelete(messageId);
+    }, [service]);
 
-        // Confirmation dialog
-        const confirmed = window.confirm('Удалить это сообщение?');
-        if (!confirmed) return;
-
+    const handleDeleteConfirm = useCallback(async () => {
+        if (!service || !messageToDelete) return;
         try {
-            await service.deleteMessage(messageId);
+            await service.deleteMessage(messageToDelete);
             toast({ title: 'Сообщение удалено' });
         } catch (error) {
-            logger.error('Failed to delete message', error as Error, { messageId });
+            logger.error('Failed to delete message', error as Error, { messageId: messageToDelete });
             toast({ title: 'Ошибка удаления', variant: 'destructive' });
+        } finally {
+            setMessageToDelete(null);
         }
-    }, [service, toast]);
+    }, [service, messageToDelete, toast]);
 
     const handleToggleReaction = useCallback(async (messageId: string, emoji: string) => {
         if (!service) return;
@@ -533,6 +549,41 @@ export const ChatArea = memo(function ChatArea({
                 isOpen={isSearchOpen}
                 onClose={handleSearchClose}
                 onMessageSelect={handleMessageSelect}
+            />
+
+            {/* Nickname dialog — shown on first visit instead of window.prompt */}
+            <Dialog open={showNicknameDialog} onOpenChange={(open) => { if (!open) handleNicknameSubmit(); }}>
+                <DialogContent className="max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle>Твоё имя в чате</DialogTitle>
+                        <DialogDescription>Введи имя, которое увидят другие участники.</DialogDescription>
+                    </DialogHeader>
+                    <Input
+                        autoFocus
+                        value={nicknameInput}
+                        onChange={(e) => setNicknameInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleNicknameSubmit(); }}
+                        placeholder="Гость"
+                        maxLength={40}
+                    />
+                    <DialogFooter>
+                        <Button onClick={handleNicknameSubmit} className="w-full">
+                            Войти в чат
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete confirmation — replaces window.confirm */}
+            <ConfirmationDialog
+                isOpen={!!messageToDelete}
+                onClose={() => setMessageToDelete(null)}
+                onConfirm={handleDeleteConfirm}
+                title="Удалить сообщение?"
+                message="Это действие нельзя отменить."
+                confirmText="Удалить"
+                cancelText="Отмена"
+                type="danger"
             />
         </section>
     );
