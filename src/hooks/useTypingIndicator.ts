@@ -48,12 +48,12 @@ export function useTypingIndicator({
             const now = Date.now();
             const users: TypingUser[] = [];
 
-            Object.entries(data).forEach(([oderId, value]) => {
+            Object.entries(data).forEach(([entryId, value]) => {
                 const typingData = value as { userName: string; timestamp: number };
                 // Only show if typing within last 3 seconds and not current user
-                if (oderId !== oderId && now - typingData.timestamp < TYPING_TIMEOUT) {
+                if (entryId !== oderId && now - typingData.timestamp < TYPING_TIMEOUT) {
                     users.push({
-                        oderId,
+                        oderId: entryId,
                         userName: typingData.userName,
                         timestamp: typingData.timestamp,
                     });
@@ -125,7 +125,9 @@ export function useTypingIndicator({
             }
             if (isTypingRef.current && realtimeDb && roomId) {
                 const userTypingRef = ref(realtimeDb, `rooms/${roomId}/typing/${oderId}`);
-                remove(userTypingRef).catch(() => {});
+                remove(userTypingRef).catch((e: unknown) => {
+                    if (process.env.NODE_ENV === 'development') console.warn('[useTypingIndicator] Failed to remove typing status on unmount:', e);
+                });
             }
         };
     }, [roomId, oderId]);

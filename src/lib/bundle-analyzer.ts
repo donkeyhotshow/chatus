@@ -155,7 +155,8 @@ export function observeLongTasks(callback: (duration: number) => void): () => vo
     observer.observe({ entryTypes: ['longtask'] });
 
     return () => observer.disconnect();
-  } catch {
+  } catch (e) {
+    if (process.env.NODE_ENV === 'development') console.warn('[bundle-analyzer] observeLongTasks unavailable:', e);
     return () => {};
   }
 }
@@ -182,15 +183,19 @@ export async function getCoreWebVitals(): Promise<{
     if (lcpEntries.length > 0) {
       vitals.lcp = lcpEntries[lcpEntries.length - 1].startTime;
     }
-  } catch {}
+  } catch (e) {
+    if (process.env.NODE_ENV === 'development') console.warn('[bundle-analyzer] LCP unavailable:', e);
+  }
 
   // CLS
   try {
-    const clsEntries = performance.getEntriesByType('layout-shift') as any[];
+    const clsEntries = performance.getEntriesByType('layout-shift') as unknown as { hadRecentInput: boolean; value: number }[];
     vitals.cls = clsEntries
       .filter(entry => !entry.hadRecentInput)
       .reduce((sum, entry) => sum + entry.value, 0);
-  } catch {}
+  } catch (e) {
+    if (process.env.NODE_ENV === 'development') console.warn('[bundle-analyzer] CLS unavailable:', e);
+  }
 
   return vitals;
 }

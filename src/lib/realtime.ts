@@ -82,7 +82,9 @@ export class TypingManager {
       // Fallback timeout to ensure typing is cleared even if debounce fails
       this.typingTimeout = setTimeout(() => {
         if (this.isTyping) {
-          set(this.typingRef, false).catch(() => {});
+          set(this.typingRef, false).catch((e: unknown) => {
+            logger.warn('Failed to clear typing status in fallback timeout', e as Error, { userId: this.userId });
+          });
           this.isTyping = false;
         }
       }, 5000); // 5 second hard timeout

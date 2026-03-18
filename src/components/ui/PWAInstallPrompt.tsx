@@ -48,7 +48,7 @@ export function PWAInstallPrompt({
     const handleNotificationToggle = async () => {
         if (notificationPermission === 'granted') {
             // Здесь можно отписаться от уведомлений
-            console.log('Disabling notifications...');
+            if (process.env.NODE_ENV === 'development') console.log('Disabling notifications...');
         } else {
             const granted = await requestNotificationPermission();
             if (granted) {

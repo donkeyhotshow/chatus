@@ -188,13 +188,15 @@ export function PreloadOnVisible({
     preloadFn
 }: {
     children: React.ReactNode;
-    preloadFn: () => Promise<any>;
+    preloadFn: () => Promise<unknown>;
 }) {
     useEffect(() => {
         if (isSlowConnection()) return;
 
         const timer = setTimeout(() => {
-            preloadFn().catch(() => {});
+            preloadFn().catch((e: unknown) => {
+                if (process.env.NODE_ENV === 'development') console.warn('[LazyComponents] Preload failed:', e);
+            });
         }, 500);
 
         return () => clearTimeout(timer);

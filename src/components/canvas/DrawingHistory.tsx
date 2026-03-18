@@ -56,7 +56,7 @@ export function useDrawingHistory(maxHistory: number = 30) {
     }
 
     const newState: HistoryState = {
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
       imageData,
       timestamp: Date.now(),
       thumbnail: thumbnailCanvas.toDataURL('image/png', 0.5),

@@ -36,7 +36,7 @@ export interface RoomState {
 
 // Generate unique tab ID
 function generateTabId(): string {
-  return `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  return `tab_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 }
 
 // Get or create tab ID

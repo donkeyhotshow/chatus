@@ -200,7 +200,7 @@ export function MobileApp({ onDesktopFallback }: MobileAppProps) {
     };
 
     const handleUserAction = (userId: string, action: 'message' | 'mute' | 'kick' | 'promote') => {
-        console.log(`Action ${action} for user ${userId}`);
+        if (process.env.NODE_ENV === 'development') console.log(`Action ${action} for user ${userId}`);
 
         switch (action) {
             case 'mute':
@@ -220,7 +220,7 @@ export function MobileApp({ onDesktopFallback }: MobileAppProps) {
                 break;
             case 'message':
                 // Здесь можно открыть личный чат
-                console.log('Opening private chat with user', userId);
+                if (process.env.NODE_ENV === 'development') console.log('Opening private chat with user', userId);
                 break;
         }
     };
@@ -312,13 +312,13 @@ export function MobileApp({ onDesktopFallback }: MobileAppProps) {
                 onReplyToMessage={(messageId) => {
                     const message = messages.find(m => m.id === messageId);
                     if (message) {
-                        console.log('Replying to message:', message.text);
+                        if (process.env.NODE_ENV === 'development') console.log('Replying to message:', message.text);
                     }
                 }}
                 onForwardMessage={(messageId) => {
                     const message = messages.find(m => m.id === messageId);
                     if (message) {
-                        console.log('Forwarding message:', message.text);
+                        if (process.env.NODE_ENV === 'development') console.log('Forwarding message:', message.text);
                     }
                 }}
             />
@@ -331,7 +331,7 @@ export function MobileApp({ onDesktopFallback }: MobileAppProps) {
                 currentUserId={currentUser.id}
                 onUserAction={handleUserAction}
                 onInviteUsers={() => {
-                    console.log('Inviting users...');
+                    if (process.env.NODE_ENV === 'development') console.log('Inviting users...');
                 }}
             />
 

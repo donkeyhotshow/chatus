@@ -178,8 +178,8 @@ export function useBackgroundSync(
           await (registration as ServiceWorkerRegistration & { sync: { register: (tag: string) => Promise<void> } }).sync.register('sync-messages');
         }
       } catch {
-        // Background sync not supported
-        console.log('[BackgroundSync] Background sync not supported');
+        // Background sync not supported in this browser
+        if (process.env.NODE_ENV === 'development') console.warn('[BackgroundSync] Background sync not supported');
       }
     };
 

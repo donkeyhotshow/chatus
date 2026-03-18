@@ -259,7 +259,7 @@ export class MessageService {
             return;
         }
 
-        const msgId = clientMessageId || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const msgId = clientMessageId || `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
         if (this.sentMessageIds.has(msgId)) return;
         this.sentMessageIds.add(msgId);
 

@@ -33,7 +33,7 @@ class TabSyncService {
   private leaderCheckInterval: NodeJS.Timeout | null = null;
 
   constructor() {
-    this.tabId = `tab-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    this.tabId = `tab-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     this.initChannel();
     this.initLeaderElection();
   }

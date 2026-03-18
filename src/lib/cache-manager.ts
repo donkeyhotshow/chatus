@@ -214,7 +214,9 @@ export const CacheManager = {
       fetcher().then(freshData => {
         memoryCache.set(key, freshData, maxAge);
         storageCache.set(key, freshData, maxAge);
-      }).catch(() => {});
+      }).catch((e: unknown) => {
+        if (process.env.NODE_ENV === 'development') console.warn('[cache-manager] Background revalidation failed:', e);
+      });
 
       return staleData!;
     }
@@ -266,7 +268,7 @@ export const CacheManager = {
    */
   invalidatePattern(pattern: string): void {
     // Implement pattern matching for memory cache if needed
-    console.log('Invalidating cache pattern:', pattern);
+    if (process.env.NODE_ENV === 'development') console.log('Invalidating cache pattern:', pattern);
     storageCache.cleanup();
   },
 

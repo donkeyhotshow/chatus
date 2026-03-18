@@ -236,7 +236,7 @@ export const ChatSidebar = memo(function ChatSidebar({
 
                     <button
                         onClick={() => {
-                            console.log('[ChatSidebar] Logout button clicked');
+                            if (process.env.NODE_ENV === 'development') console.log('[ChatSidebar] Logout button clicked');
                             onLogout();
                         }}
                         className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-white/70 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 touch-target group"

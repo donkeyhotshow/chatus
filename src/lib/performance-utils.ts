@@ -156,7 +156,9 @@ export function useWhyDidYouUpdate<T extends Record<string, unknown>>(
       })
 
       if (Object.keys(changedProps).length) {
-        console.log('[why-did-you-update]', name, changedProps)
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[why-did-you-update]', name, changedProps)
+        }
       }
     }
 
