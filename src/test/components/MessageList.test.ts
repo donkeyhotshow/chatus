@@ -7,7 +7,7 @@
 
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
-import { ensureSafeMessages, getMessageKey } from '@/components/chat/MessageList';
+import { ensureSafeMessages, getMessageKey, getMessageRenderKey } from '@/components/chat/MessageList';
 import type { Message } from '@/lib/types';
 
 // Arbitrary for generating valid Message objects
@@ -211,7 +211,13 @@ describe('MessageList Null-Safety', () => {
     it('should generate unique keys for all messages in a list', () => {
       fc.assert(
         fc.property(messagesArrayArb, (messages) => {
-          const keys = messages.map((msg, index) => getMessageKey(msg, index));
+          const idCounts = new Map<string, number>();
+          for (const msg of messages) {
+            if (msg.id) {
+              idCounts.set(msg.id, (idCounts.get(msg.id) || 0) + 1);
+            }
+          }
+          const keys = messages.map((msg, index) => getMessageRenderKey(msg, index, idCounts));
 
           // All keys should be unique
           const uniqueKeys = new Set(keys);
@@ -232,7 +238,7 @@ describe('MessageList Null-Safety', () => {
         fc.property(messageArb, (message) => {
           const key = getMessageKey(message, 0);
 
-          // If message has an id, the key should be that id
+          // If message has an id, the base key should be that id
           if (message.id) {
             expect(key).toBe(message.id);
           }

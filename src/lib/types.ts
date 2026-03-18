@@ -101,7 +101,7 @@ export interface CanvasState {
 
 export type AppType = 'canvas' | 'games';
 
-export type GameType = 'tic-tac-toe' | 'rock-paper-scissors' | 'click-war' | 'dice-roll' | 'maze' | 'physics-sandbox' | 'tower-defense' | 'car-race' | 'snake' | 'vibe-jet';
+export type GameType = 'tic-tac-toe' | 'rock-paper-scissors' | 'click-war' | 'dice-roll' | 'maze' | 'physics-sandbox' | 'physics-world' | 'tower-defense' | 'car-race' | 'snake' | 'vibe-jet';
 
 // --- Tower Defense Specific Types ---
 export type TDNode = {

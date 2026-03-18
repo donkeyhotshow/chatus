@@ -5,6 +5,7 @@ import { memo, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'framer-motion';
 import { format } from 'date-fns';
 import { Trash2, CornerUpLeft, Smile } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import { cn } from '@/lib/utils';
 import type { Message } from '@/lib/types';
 import { EmojiRain } from './EmojiRain';
@@ -12,6 +13,10 @@ import MessageStatus, { getMessageStatus } from './MessageStatus';
 
 // Quick reaction emojis for long-press menu - Этап 2
 const QUICK_REACTIONS = ['❤️', '😂', '😮', '😢', '👍', '🔥'];
+const MARKDOWN_SANITIZE_OPTIONS = {
+    ALLOWED_TAGS: ['pre', 'code', 'strong', 'em', 'del', 'blockquote', 'a', 'div'],
+    ALLOWED_ATTR: ['class', 'href', 'target', 'rel'],
+};
 
 type MessageItemProps = {
     message: Message;
@@ -168,7 +173,8 @@ const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDe
         }
 
         if (message.text) {
-            const isLongMessage = message.text.length > 80 || message.text.split('\n').length > 2;
+            const safeText = DOMPurify.sanitize(message.text, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
+            const isLongMessage = safeText.length > 80 || safeText.split('\n').length > 2;
             
             // Simple Markdown-like renderer
             const renderMarkdown = (text: string) => {
@@ -200,7 +206,8 @@ const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDe
                 // Auto-links
                 html = html.replace(/(?<!href=")(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-sky-400 underline hover:text-sky-300">$1</a>');
 
-                return <div dangerouslySetInnerHTML={{ __html: html }} />;
+                const sanitizedHtml = DOMPurify.sanitize(html, MARKDOWN_SANITIZE_OPTIONS);
+                return <div dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />;
             };
 
             return (
@@ -212,7 +219,7 @@ const MessageItem = memo(function MessageItem({ message, isOwn, onReaction, onDe
                     )} style={{
                         lineHeight: isLongMessage ? 'var(--lh-chat)' : 'var(--lh-body)',
                     }}>
-                        {renderMarkdown(message.text)}
+                        {renderMarkdown(safeText)}
                     </div>
                 </div>
             );

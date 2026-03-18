@@ -68,6 +68,13 @@ export function getMessageKey(message: Message, index: number): string {
   return `msg_${timestamp}_${senderId}_${index}_${textHash}`;
 }
 
+export function getMessageRenderKey(message: Message, index: number, idCounts?: Map<string, number>): string {
+  if (message?.id && idCounts && (idCounts.get(message.id) || 0) > 1) {
+    return `${message.id}_${index}`;
+  }
+  return getMessageKey(message, index);
+}
+
 const LoadingSpinner = () => (
   <div className="flex-1 flex flex-col items-center justify-center">
     <div className="animate-pulse flex flex-col items-center gap-4">
@@ -108,6 +115,17 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
       }, 100);
     }
   }, [messages.length, isLoading]);
+
+  // Must be before conditional returns to follow React hooks rules
+  const idCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const msg of messages) {
+      if (msg?.id) {
+        counts.set(msg.id, (counts.get(msg.id) || 0) + 1);
+      }
+    }
+    return counts;
+  }, [messages]);
 
   // Must be before conditional returns to follow React hooks rules
   const renderItem = useCallback((index: number, msg: Message) => {
@@ -162,7 +180,7 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
       !isGroupedWithPrev && isGroupedWithNext ? 'first' : 'single';
 
     // Generate stable unique key for the message
-    const messageKey = getMessageKey(msg, index);
+    const messageKey = getMessageRenderKey(msg, index, idCounts);
 
     return (
       <div className={cn(
@@ -216,7 +234,7 @@ const MessageList = memo(forwardRef<VirtuosoHandle, MessageListProps>(({
         />
       </div>
     );
-  }, [messages, currentUserId, onDeleteMessage, onReaction, onImageClick, onReply]);
+  }, [messages, currentUserId, onDeleteMessage, onReaction, onImageClick, onReply, idCounts]);
 
   if (isLoading && messages.length === 0) {
     return <LoadingSpinner />;

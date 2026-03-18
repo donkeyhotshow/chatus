@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, memo, useMemo } from 'react';
-import { X, MessageCircle } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { doc } from 'firebase/firestore';
 import { useDebounce } from 'use-debounce';
 import Image from 'next/image';
+import DOMPurify from 'dompurify';
 import type { Message, Room, UserProfile } from '@/lib/types';
 import { DoodlePad, MessageSearch } from '@/components/lazy/LazyComponents';
 import { useFirebase } from '@/components/firebase/FirebaseProvider';
@@ -38,6 +39,32 @@ interface ChatAreaProps {
     onLogout?: () => void;
 }
 
+const MESSAGE_SANITIZE_OPTIONS = { ALLOWED_TAGS: [], ALLOWED_ATTR: [] };
+
+export function resolveNickname(savedNick: string | null, promptedNick: string | null): string {
+    return savedNick || promptedNick || 'Гость';
+}
+
+export function sanitizeMessageText(text: string): string {
+    return DOMPurify.sanitize(text.trim(), MESSAGE_SANITIZE_OPTIONS);
+}
+
+export function applyNicknameToOwnMessages(messages: Message[], userId: string, nickname: string): Message[] {
+    if (!nickname) return messages;
+    return messages.map((msg) => {
+        if (msg.senderId !== userId || msg.user?.name === nickname) {
+            return msg;
+        }
+        return {
+            ...msg,
+            user: {
+                ...msg.user,
+                name: nickname,
+            },
+        };
+    });
+}
+
 export const ChatArea = memo(function ChatArea({
     user,
     roomId,
@@ -48,12 +75,27 @@ export const ChatArea = memo(function ChatArea({
     onLogout,
 }: ChatAreaProps) {
     const [replyTo, setReplyTo] = useState<Message | null>(null);
+    const [nickname, setNickname] = useState(user.name || 'Гость');
     const [showDoodlePad, setShowDoodlePad] = useState(false);
     const [imageForView, setImageForView] = useState<string | null>(null);
     const [typingUsers, setTypingUsers] = useState<string[]>([]);
     const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
     const [newMessageCount, setNewMessageCount] = useState(0);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+    useEffect(() => {
+        const savedNick = localStorage.getItem('chat-nickname');
+        const resolvedNickname = resolveNickname(savedNick, window.prompt('Твоё имя в чате?', 'Гость'));
+        if (!savedNick) {
+            localStorage.setItem('chat-nickname', resolvedNickname);
+        }
+        setNickname(resolvedNickname);
+    }, []);
+
+    const currentUserProfile = useMemo(() => ({
+        ...user,
+        name: nickname || user.name,
+    }), [user, nickname]);
 
     // File upload with progress - Этап 4
     const {
@@ -70,7 +112,7 @@ export const ChatArea = memo(function ChatArea({
                 await service.sendMessage({
                     text: '',
                     imageUrl: url,
-                    user,
+                    user: currentUserProfile,
                     senderId: user.id,
                     type: 'image',
                 });
@@ -106,7 +148,7 @@ export const ChatArea = memo(function ChatArea({
         service,
         hasMoreMessages,
         connectionState,
-    } = useChatService(roomId, user);
+    } = useChatService(roomId, currentUserProfile);
 
     const { isOnline } = usePresence(roomId, user?.id || null);
 
@@ -196,6 +238,10 @@ export const ChatArea = memo(function ChatArea({
         });
     }, [persistedMessages, cachedMessages]);
 
+    const messagesForDisplay = useMemo(() => {
+        return applyNicknameToOwnMessages(allMessages, user.id, nickname);
+    }, [allMessages, user.id, nickname]);
+
     const otherUser = useMemo(() => {
         return room?.participantProfiles?.find(p => p.id !== user?.id);
     }, [room, user]);
@@ -235,18 +281,22 @@ export const ChatArea = memo(function ChatArea({
 
     const handleSend = useCallback(async (text: string) => {
         if (!service || !text.trim()) return;
+        const trimmedText = text.trim();
 
         // Check for Telegram sticker pack links
         const stickerRegex = /https?:\/\/(?:t\.me|telegram\.me)\/addstickers\/([a-zA-Z0-9_]+)/;
-        if (stickerRegex.test(text)) {
-            handleStickerImport(text.trim());
+        if (stickerRegex.test(trimmedText)) {
+            handleStickerImport(trimmedText);
             return; // Don't send the link as a message if it's an import command
         }
 
+        const cleanText = sanitizeMessageText(trimmedText);
+        if (!cleanText) return;
+
         try {
             await service.sendMessage({
-                text: text.trim(),
-                user,
+                text: cleanText,
+                user: currentUserProfile,
                 senderId: user.id,
                 type: 'text',
                 replyTo: replyTo ? { id: replyTo.id, text: replyTo.text || 'Image', senderName: replyTo.user.name } : null
@@ -256,7 +306,7 @@ export const ChatArea = memo(function ChatArea({
             logger.error('Failed to send message', error as Error, { roomId });
             toast({ title: 'Ошибка отправки', variant: 'destructive' });
         }
-    }, [service, user, replyTo, roomId, toast, handleStickerImport]);
+    }, [service, currentUserProfile, user.id, replyTo, roomId, toast, handleStickerImport]);
 
     const handleSearchOpen = useCallback(() => setIsSearchOpen(true), []);
     const handleSearchClose = useCallback(() => setIsSearchOpen(false), []);
@@ -276,19 +326,19 @@ export const ChatArea = memo(function ChatArea({
     const handleSendDoodle = useCallback(async (imageUrl: string) => {
         if (!service) return;
         try {
-            await service.sendMessage({ text: '', imageUrl, user, senderId: user.id, type: 'doodle' });
+            await service.sendMessage({ text: '', imageUrl, user: currentUserProfile, senderId: user.id, type: 'doodle' });
             setShowDoodlePad(false);
         } catch {
             toast({ title: 'Ошибка', variant: 'destructive' });
         }
-    }, [service, user, toast]);
+    }, [service, currentUserProfile, user.id, toast]);
 
     const handleSendSticker = useCallback(async (imageUrl: string) => {
         if (!service) return;
         try {
-            await service.sendMessage({ text: 'Sticker', imageUrl, user, senderId: user.id, type: 'sticker' });
+            await service.sendMessage({ text: 'Sticker', imageUrl, user: currentUserProfile, senderId: user.id, type: 'sticker' });
         } catch { }
-    }, [service, user]);
+    }, [service, currentUserProfile, user.id]);
 
     // Используем useFileUpload с progress bar
     const handleImageUpload = useCallback(async (file: File) => {
@@ -386,8 +436,8 @@ export const ChatArea = memo(function ChatArea({
                     onLogout={onLogout}
                     navigationState={navigationState}
                     showBreadcrumb={true}
-                    currentUserName={user.name}
-                    currentUserAvatar={user.avatar}
+                    currentUserName={currentUserProfile.name}
+                    currentUserAvatar={currentUserProfile.avatar}
                 />
 
                 {/* Messages */}
@@ -397,13 +447,15 @@ export const ChatArea = memo(function ChatArea({
                     role="log"
                     aria-live="polite"
                 >
-                    {allMessages.length === 0 && !isInitialLoad ? (
-                        <EmptyState onSend={(text) => {
-                            try {
-                                service?.sendMessage({ text, user, senderId: user.id, type: 'text' }).catch((error) => {
-                                    logger.warn('Failed to send quick message', error as Error);
-                                    toast({ title: 'Ошибка отправки', variant: 'destructive' });
-                                });
+                     {allMessages.length === 0 && !isInitialLoad ? (
+                         <EmptyState onSend={(text) => {
+                             try {
+                                const cleanText = sanitizeMessageText(text);
+                                if (!cleanText) return;
+                                service?.sendMessage({ text: cleanText, user: currentUserProfile, senderId: user.id, type: 'text' }).catch((error) => {
+                                     logger.warn('Failed to send quick message', error as Error);
+                                     toast({ title: 'Ошибка отправки', variant: 'destructive' });
+                                 });
                             } catch (error) {
                                 logger.warn('Sync error sending quick message', error as Error);
                                 toast({ title: 'Ошибка отправки', variant: 'destructive' });
@@ -412,7 +464,7 @@ export const ChatArea = memo(function ChatArea({
                     ) : (
                         <MessageList
                             ref={messageListRef}
-                            messages={allMessages}
+                            messages={messagesForDisplay}
                             isLoading={isInitialLoad && allMessages.length === 0}
                             currentUserId={user.id}
                             onReaction={handleToggleReaction}
@@ -475,7 +527,7 @@ export const ChatArea = memo(function ChatArea({
 
             {/* Search */}
             <MessageSearch
-                messages={allMessages}
+                messages={messagesForDisplay}
                 users={room?.participantProfiles || []}
                 isOpen={isSearchOpen}
                 onClose={handleSearchClose}
