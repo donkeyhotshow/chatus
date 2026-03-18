@@ -395,7 +395,7 @@ const MobileGameControls = memo(function MobileGameControls({
       label: action.label,
       onPress: () => {
         onActionStart?.(action.id);
-        setTimeout(() => onActionEnd?.(action.id), 120);
+        onActionEnd?.(action.id);
       },
     })),
   ];

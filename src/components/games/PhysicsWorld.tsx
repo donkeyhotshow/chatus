@@ -59,7 +59,10 @@ export default function PhysicsWorld({ roomId, user, onGameEnd }: PhysicsWorldPr
       const runner = Runner.create();
       runnerRef.current = runner;
       Runner.run(runner, engine);
-    } catch { setError(true); }
+    } catch (error) {
+      console.error('[PhysicsWorld] Failed to initialize physics:', error);
+      setError(true);
+    }
   }, []);
 
   useEffect(() => {

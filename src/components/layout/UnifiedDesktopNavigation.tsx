@@ -47,6 +47,8 @@ const iconMap = {
   Home,
 } as const
 
+const getNavIcon = (iconName: string) => iconMap[iconName as keyof typeof iconMap] ?? MessageCircle
+
 const SIDEBAR_WIDTH_EXPANDED = 240
 const SIDEBAR_WIDTH_COLLAPSED = 72
 
@@ -173,10 +175,9 @@ export const UnifiedDesktopNavigation = memo(function UnifiedDesktopNavigation({
           <div className="px-4 py-2 text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">
             {isExpanded ? "Основное" : "•••"}
           </div>
-          {navItems.map((item) => (
-            (() => {
-              const Icon = iconMap[item.icon as keyof typeof iconMap] ?? MessageCircle
-              return (
+          {navItems.map((item) => {
+            const Icon = getNavIcon(item.icon)
+            return (
             <button
               key={item.id}
               onClick={() => onTabChange(item.id)}
@@ -219,19 +220,17 @@ export const UnifiedDesktopNavigation = memo(function UnifiedDesktopNavigation({
                 />
               )}
             </button>
-              )
-            })()
-          ))}
+            )
+          })}
         </nav>
 
         <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-hidden">
           <div className="px-3 py-2 text-[10px] font-bold text-white/20 uppercase tracking-widest">
             {isExpanded ? "Глобальное" : "•••"}
           </div>
-          {globalItems.map((item, index) => (
-            (() => {
-              const Icon = iconMap[item.icon as keyof typeof iconMap] ?? MessageCircle
-              return (
+          {globalItems.map((item, index) => {
+            const Icon = getNavIcon(item.icon)
+            return (
             <button
               key={`${item.id}-${index}`}
               onClick={() => onTabChange(item.id)}
@@ -254,9 +253,8 @@ export const UnifiedDesktopNavigation = memo(function UnifiedDesktopNavigation({
                 {item.label}
               </span>
             </button>
-              )
-            })()
-          ))}
+            )
+          })}
         </nav>
 
         <div className="px-3 py-4 space-y-1.5 border-t border-white/[0.06]">
