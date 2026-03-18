@@ -977,7 +977,6 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
           </button>
         </div>
       )}
-    </div>
 
       <ConfirmationDialog
         isOpen={showClearConfirm}
