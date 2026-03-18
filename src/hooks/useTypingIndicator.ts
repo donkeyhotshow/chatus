@@ -48,12 +48,12 @@ export function useTypingIndicator({
             const now = Date.now();
             const users: TypingUser[] = [];
 
-            Object.entries(data).forEach(([oderId, value]) => {
+            Object.entries(data).forEach(([entryId, value]) => {
                 const typingData = value as { userName: string; timestamp: number };
                 // Only show if typing within last 3 seconds and not current user
-                if (oderId !== oderId && now - typingData.timestamp < TYPING_TIMEOUT) {
+                if (entryId !== oderId && now - typingData.timestamp < TYPING_TIMEOUT) {
                     users.push({
-                        oderId,
+                        oderId: entryId,
                         userName: typingData.userName,
                         timestamp: typingData.timestamp,
                     });

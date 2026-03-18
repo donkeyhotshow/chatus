@@ -218,7 +218,7 @@ export function useCurrentUser(roomId: string) {
 
     // In demo mode, create user profile using localStorage only
     if (isDemoMode()) {
-      const demoUserId = `demo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const demoUserId = `demo_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
       const newUser: UserProfile = {
         id: demoUserId,
         name: name.trim(),

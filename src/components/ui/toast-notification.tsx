@@ -139,7 +139,7 @@ export function useToastNotifications() {
     const [toasts, setToasts] = useState<ToastNotification[]>([]);
 
     const addToast = (toast: Omit<ToastNotification, 'id'>) => {
-        const id = Math.random().toString(36).substr(2, 9);
+        const id = Math.random().toString(36).substring(2, 11);
         const newToast: ToastNotification = {
             ...toast,
             id,
