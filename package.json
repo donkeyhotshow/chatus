@@ -26,6 +26,7 @@
     "bundle:check": "node scripts/bundle-check.js",
     "bundle:analyze": "npm run build && npm run bundle:check",
     "quality:check": "npm run type-check && npm run lint && npm run test:clean",
+    "audit:full": "sh -c 'status=0; npm run test || status=1; npm run lint || status=1; npm run type-check || status=1; npm audit || status=1; exit $status'",
     "pwa:icons": "node scripts/generate-pwa-icons.js",
     "pwa:build": "npm run pwa:icons && npm run build"
   },
