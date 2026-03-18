@@ -125,7 +125,9 @@ export function useTypingIndicator({
             }
             if (isTypingRef.current && realtimeDb && roomId) {
                 const userTypingRef = ref(realtimeDb, `rooms/${roomId}/typing/${oderId}`);
-                remove(userTypingRef).catch(() => {});
+                remove(userTypingRef).catch((e: unknown) => {
+                    if (process.env.NODE_ENV === 'development') console.warn('[useTypingIndicator] Failed to remove typing status on unmount:', e);
+                });
             }
         };
     }, [roomId, oderId]);

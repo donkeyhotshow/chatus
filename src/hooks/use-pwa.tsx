@@ -42,7 +42,7 @@ export function usePWA() {
                     scope: '/'
                 });
 
-                console.log('[PWA] Service Worker registered:', registration);
+                if (process.env.NODE_ENV === 'development') console.log('[PWA] Service Worker registered:', registration);
 
                 // Проверяем обновления
                 registration.addEventListener('updatefound', () => {
@@ -51,7 +51,7 @@ export function usePWA() {
                         newWorker.addEventListener('statechange', () => {
                             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                                 // Новая версия доступна
-                                console.log('[PWA] New version available');
+                                if (process.env.NODE_ENV === 'development') console.log('[PWA] New version available');
                                 // Можно показать уведомление пользователю
                             }
                         });
@@ -141,7 +141,7 @@ export function usePWA() {
             const choiceResult = await state.installPrompt.userChoice;
 
             if (choiceResult.outcome === 'accepted') {
-                console.log('[PWA] User accepted the install prompt');
+                if (process.env.NODE_ENV === 'development') console.log('[PWA] User accepted the install prompt');
                 setState(prev => ({
                     ...prev,
                     isInstallable: false,
@@ -149,7 +149,7 @@ export function usePWA() {
                 }));
                 return true;
             } else {
-                console.log('[PWA] User dismissed the install prompt');
+                if (process.env.NODE_ENV === 'development') console.log('[PWA] User dismissed the install prompt');
                 return false;
             }
         } catch (error) {
@@ -208,7 +208,7 @@ export function usePWA() {
                 });
             }
 
-            console.log('[PWA] Push subscription:', subscription);
+            if (process.env.NODE_ENV === 'development') console.log('[PWA] Push subscription:', subscription);
             return subscription;
         } catch (error) {
             console.error('[PWA] Push subscription failed:', error);
@@ -228,7 +228,7 @@ export function usePWA() {
 
             if (subscription) {
                 await subscription.unsubscribe();
-                console.log('[PWA] Push unsubscribed');
+                if (process.env.NODE_ENV === 'development') console.log('[PWA] Push unsubscribed');
                 return true;
             }
 

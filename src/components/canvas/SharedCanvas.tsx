@@ -46,6 +46,7 @@ const generateCursorColor = (userId: string) => {
  * Palm rejection - определяет, является ли касание ладонью
  * Этап 6: Canvas improvements
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const isPalmTouch = (touch: any): boolean => {
   const radiusX = touch.radiusX || 0;
   const radiusY = touch.radiusY || 0;
@@ -68,11 +69,12 @@ const isPalmTouch = (touch: any): boolean => {
 /**
  * Фильтрует касания, убирая ладони
  */
-const filterPalmTouches = (touches: any): any[] => {
-  const validTouches: any[] = [];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const filterPalmTouches = (touches: any): Touch[] => {
+  const validTouches: Touch[] = [];
   for (let i = 0; i < touches.length; i++) {
     if (!isPalmTouch(touches[i])) {
-      validTouches.push(touches[i]);
+      validTouches.push(touches[i] as Touch);
     }
   }
   return validTouches;

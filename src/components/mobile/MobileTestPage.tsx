@@ -89,12 +89,12 @@ export function MobileTestPage() {
 
     const handleSendMessage = (text: string) => {
         // eslint-disable-next-line no-console
-        console.log('Отправка сообщения:', text);
+        if (process.env.NODE_ENV === 'development') console.log('Отправка сообщения:', text);
     };
 
     const handleAvatarSave = (dataUrl: string) => {
         // eslint-disable-next-line no-console
-        console.log('Аватар сохранен:', dataUrl);
+        if (process.env.NODE_ENV === 'development') console.log('Аватар сохранен:', dataUrl);
     };
 
     if (currentView === 'profile') {

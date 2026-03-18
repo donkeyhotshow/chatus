@@ -65,10 +65,10 @@ class PushNotificationService {
             const permission = await Notification.requestPermission();
 
             if (permission === 'granted') {
-                console.log('Push notification permission granted');
+                if (process.env.NODE_ENV === 'development') console.log('Push notification permission granted');
                 return true;
             } else {
-                console.log('Push notification permission denied');
+                if (process.env.NODE_ENV === 'development') console.log('Push notification permission denied');
                 return false;
             }
         } catch (error) {
@@ -88,7 +88,7 @@ class PushNotificationService {
                 scope: '/'
             });
 
-            console.log('Service Worker registered successfully');
+            if (process.env.NODE_ENV === 'development') console.log('Service Worker registered successfully');
 
             // Ждем активации Service Worker
             await navigator.serviceWorker.ready;
@@ -112,7 +112,7 @@ class PushNotificationService {
             this.subscription = await this.registration.pushManager.getSubscription();
 
             if (this.subscription) {
-                console.log('Already subscribed to push notifications');
+                if (process.env.NODE_ENV === 'development') console.log('Already subscribed to push notifications');
                 return this.subscription;
             }
 
@@ -122,7 +122,7 @@ class PushNotificationService {
                 applicationServerKey: this.urlBase64ToUint8Array(this.vapidPublicKey) as any
             });
 
-            console.log('Subscribed to push notifications');
+            if (process.env.NODE_ENV === 'development') console.log('Subscribed to push notifications');
 
             // Отправляем подписку на сервер
             await this.sendSubscriptionToServer(this.subscription);
@@ -147,7 +147,7 @@ class PushNotificationService {
             // Уведомляем сервер об отписке
             await this.removeSubscriptionFromServer();
 
-            console.log('Unsubscribed from push notifications');
+            if (process.env.NODE_ENV === 'development') console.log('Unsubscribed from push notifications');
             return true;
         } catch (error) {
             console.error('Failed to unsubscribe from push notifications:', error);
@@ -220,7 +220,7 @@ class PushNotificationService {
             // Проверяем разрешения
             const { granted } = this.getPermissionStatus();
             if (!granted) {
-                console.log('Push notification permission not granted');
+                if (process.env.NODE_ENV === 'development') console.log('Push notification permission not granted');
                 return false;
             }
 
@@ -252,7 +252,7 @@ class PushNotificationService {
                 throw new Error('Failed to send subscription to server');
             }
 
-            console.log('Subscription sent to server successfully');
+            if (process.env.NODE_ENV === 'development') console.log('Subscription sent to server successfully');
         } catch (error) {
             console.error('Failed to send subscription to server:', error);
         }
@@ -275,7 +275,7 @@ class PushNotificationService {
                 throw new Error('Failed to remove subscription from server');
             }
 
-            console.log('Subscription removed from server successfully');
+            if (process.env.NODE_ENV === 'development') console.log('Subscription removed from server successfully');
         } catch (error) {
             console.error('Failed to remove subscription from server:', error);
         }
