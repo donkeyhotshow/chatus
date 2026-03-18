@@ -43,6 +43,39 @@ interface Particle {
   size: number;
 }
 
+type SnakeCanvasDimensions = {
+  width: number;
+  height: number;
+  cellSize: number;
+};
+
+function SnakeCanvas({
+  canvasRef,
+  dimensions,
+  renderCanvas,
+}: {
+  canvasRef: { current: HTMLCanvasElement | null };
+  dimensions: SnakeCanvasDimensions;
+  renderCanvas: (ctx: CanvasRenderingContext2D, width: number, height: number, cellSize: number) => void;
+}) {
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (ctx) {
+      renderCanvas(ctx, dimensions.width, dimensions.height, dimensions.cellSize);
+    }
+  }, [canvasRef, dimensions.width, dimensions.height, dimensions.cellSize, renderCanvas]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      width={dimensions.width}
+      height={dimensions.height}
+      className="rounded-xl border-2 border-white/10 shadow-2xl"
+    />
+  );
+}
+
 export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: SnakeGameProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [rtState, setRtState] = useState<SnakeGameState | null>(null);
@@ -566,20 +599,9 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
       }
     >
       {({ dimensions }) => {
-        const canvas = canvasRef.current;
-        const ctx = canvas?.getContext('2d');
-        if (ctx) {
-          renderCanvas(ctx, dimensions.width, dimensions.height, dimensions.cellSize);
-        }
-
         return (
           <div className="relative">
-            <canvas
-              ref={canvasRef}
-              width={dimensions.width}
-              height={dimensions.height}
-              className="rounded-xl border-2 border-white/10 shadow-2xl"
-            />
+            <SnakeCanvas canvasRef={canvasRef} dimensions={dimensions} renderCanvas={renderCanvas} />
 
             {/* Start Screen */}
             <AnimatePresence>

@@ -16,6 +16,38 @@ type CarRaceProps = {
     roomId: string;
 };
 
+type CarCanvasDimensions = {
+    width: number;
+    height: number;
+};
+
+function CarRaceCanvas({
+    canvasRef,
+    dimensions,
+    renderCanvas,
+}: {
+    canvasRef: { current: HTMLCanvasElement | null };
+    dimensions: CarCanvasDimensions;
+    renderCanvas: (ctx: CanvasRenderingContext2D, width: number, height: number) => void;
+}) {
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        const ctx = canvas?.getContext('2d');
+        if (ctx) {
+            renderCanvas(ctx, dimensions.width, dimensions.height);
+        }
+    }, [canvasRef, dimensions.width, dimensions.height, renderCanvas]);
+
+    return (
+        <canvas
+            ref={canvasRef}
+            width={dimensions.width}
+            height={dimensions.height}
+            className="rounded-xl shadow-2xl"
+        />
+    );
+}
+
 type PlayerState = {
     id: string;
     name: string;
@@ -527,20 +559,9 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
             }
         >
             {({ dimensions }) => {
-                const canvas = canvasRef.current;
-                const ctx = canvas?.getContext('2d');
-                if (ctx) {
-                    renderCanvas(ctx, dimensions.width, dimensions.height);
-                }
-
                 return (
                     <div className="relative w-full h-full flex items-center justify-center">
-                        <canvas
-                            ref={canvasRef}
-                            width={dimensions.width}
-                            height={dimensions.height}
-                            className="rounded-xl shadow-2xl"
-                        />
+                        <CarRaceCanvas canvasRef={canvasRef} dimensions={dimensions} renderCanvas={renderCanvas} />
 
                         <AnimatePresence>
                             {!isGameStarted && (
