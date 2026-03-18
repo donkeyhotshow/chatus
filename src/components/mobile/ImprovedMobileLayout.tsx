@@ -51,7 +51,6 @@ export function ImprovedMobileLayout({ user, roomId, otherUser, allUsers, onBack
   }
 
   const handleTabChange = (tab: AppTab) => {
-    if (tab === "more") return
     triggerHaptic("light")
     setActiveTab(tab)
     setIsSearchOpen(false)

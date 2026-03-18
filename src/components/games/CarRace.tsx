@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { GameState, UserProfile } from '@/lib/types';
-import { Trophy, Zap, Gamepad2, Star, Clock, Car } from 'lucide-react';
+import { Trophy, Zap, Star, Car } from 'lucide-react';
 import { hapticFeedback } from '@/lib/game-utils';
 import GameLayout from './GameLayout';
 import MobileGameControls from './MobileGameControls';
@@ -36,10 +36,6 @@ type PlayerState = {
     isTurboActive: boolean;
 };
 
-type TireTrack = { x: number; y: number; rotation: number; alpha: number };
-type Particle = { x: number; y: number; vx: number; vy: number; life: number; color: string; size: number };
-type Spark = { x: number; y: number; vx: number; vy: number; life: number };
-
 // Game constants
 const DESKTOP_WIDTH = 900;
 const DESKTOP_HEIGHT = 600;
@@ -53,15 +49,11 @@ const REVERSE_SPEED = 100;
 const TURN_SPEED = 2.8;
 const FRICTION = 0.985;
 const GRASS_FRICTION = 0.94;
-const DRIFT_FACTOR = 0.92;
 const TURBO_MULTIPLIER = 1.4;
 const TURBO_DRAIN = 25;
-const TURBO_GAIN_DRIFT = 12;
 const MAX_TURBO = 100;
 const TOTAL_LAPS = 3;
-const COLLISION_DAMAGE = 12;
 const WALL_DAMAGE = 6;
-const VELOCITY_DAMPING = 0.99;
 
 type TrackData = {
     name: string;
@@ -170,10 +162,6 @@ function checkCheckpoint(
     return lineIntersection(prevX, prevY, x, y, checkpoint.x1, checkpoint.y1, checkpoint.x2, checkpoint.y2);
 }
 
-function distance(x1: number, y1: number, x2: number, y2: number): number {
-    return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
-}
-
 function normalizeAngle(angle: number): number {
     while (angle > Math.PI) angle -= 2 * Math.PI;
     while (angle < -Math.PI) angle += 2 * Math.PI;
@@ -187,10 +175,6 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
     const playerRef = useRef<PlayerState | null>(null);
     const otherPlayersRef = useRef<Map<string, PlayerState>>(new Map());
     const aiPlayersRef = useRef<Map<string, PlayerState>>(new Map());
-    const tireTracksRef = useRef<TireTrack[]>([]);
-    const particlesRef = useRef<Particle[]>([]);
-    const sparksRef = useRef<Spark[]>([]);
-
     const [isGameStarted, setIsGameStarted] = useState(false);
     const [countdown, setCountdown] = useState<number | null>(null);
     const [raceStartTime, setRaceStartTime] = useState<number>(0);
@@ -543,13 +527,11 @@ export function CarRace({ onGameEnd, updateGameState, gameState, user, otherUser
             }
         >
             {({ dimensions }) => {
-                useEffect(() => {
-                    const canvas = canvasRef.current;
-                    if (!canvas) return;
-                    const ctx = canvas.getContext('2d');
-                    if (!ctx) return;
+                const canvas = canvasRef.current;
+                const ctx = canvas?.getContext('2d');
+                if (ctx) {
                     renderCanvas(ctx, dimensions.width, dimensions.height);
-                }, [dimensions, renderCanvas]);
+                }
 
                 return (
                     <div className="relative w-full h-full flex items-center justify-center">

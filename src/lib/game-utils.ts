@@ -109,10 +109,10 @@ export function useActionGuard() {
   const isProcessingRef = useRef(false);
 
   const guard = useCallback(
-    <T extends (...args: unknown[]) => unknown>(action: T): T => {
-      return ((...args: Parameters<T>) => {
+    <Args extends unknown[], R>(action: (...args: Args) => R): ((...args: Args) => R) => {
+      return ((...args: Args) => {
         if (isProcessingRef.current) {
-          return;
+          return undefined as unknown as R;
         }
         isProcessingRef.current = true;
         try {
@@ -131,7 +131,7 @@ export function useActionGuard() {
           isProcessingRef.current = false;
           throw error;
         }
-      }) as T;
+      }) as (...args: Args) => R;
     },
     []
   );

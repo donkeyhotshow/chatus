@@ -4,15 +4,17 @@ import { memo, useState, useCallback, useEffect } from "react"
 import { motion } from "framer-motion"
 import {
   MessageCircle,
+  PenTool,
+  Gamepad2,
+  Users,
+  Settings as SettingsIcon,
+  Home,
   Settings,
   LogOut,
   Snowflake,
   ChevronLeft,
   ChevronRight,
   Zap,
-  PenTool,
-  Gamepad2,
-  Home,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Logo } from "../icons/logo"
@@ -35,6 +37,15 @@ interface UnifiedDesktopNavigationProps {
 const navItems = NAV_ITEMS.filter(item => item.id !== 'settings')
 
 const globalItems = NAV_ITEMS.filter(item => item.id === 'chat')
+
+const iconMap = {
+  MessageCircle,
+  PenTool,
+  Gamepad2,
+  Users,
+  Settings: SettingsIcon,
+  Home,
+} as const
 
 const SIDEBAR_WIDTH_EXPANDED = 240
 const SIDEBAR_WIDTH_COLLAPSED = 72
@@ -163,6 +174,9 @@ export const UnifiedDesktopNavigation = memo(function UnifiedDesktopNavigation({
             {isExpanded ? "Основное" : "•••"}
           </div>
           {navItems.map((item) => (
+            (() => {
+              const Icon = iconMap[item.icon as keyof typeof iconMap] ?? MessageCircle
+              return (
             <button
               key={item.id}
               onClick={() => onTabChange(item.id)}
@@ -182,7 +196,7 @@ export const UnifiedDesktopNavigation = memo(function UnifiedDesktopNavigation({
                   activeTab === item.id && "ring-1 ring-white/20",
                 )}
               >
-                <item.icon
+                <Icon
                   className={cn(
                     "w-5 h-5 transition-all duration-500 group-hover:scale-110",
                     activeTab === item.id ? item.color : "text-white/30 group-hover:text-white/60",
@@ -205,6 +219,8 @@ export const UnifiedDesktopNavigation = memo(function UnifiedDesktopNavigation({
                 />
               )}
             </button>
+              )
+            })()
           ))}
         </nav>
 
@@ -213,6 +229,9 @@ export const UnifiedDesktopNavigation = memo(function UnifiedDesktopNavigation({
             {isExpanded ? "Глобальное" : "•••"}
           </div>
           {globalItems.map((item, index) => (
+            (() => {
+              const Icon = iconMap[item.icon as keyof typeof iconMap] ?? MessageCircle
+              return (
             <button
               key={`${item.id}-${index}`}
               onClick={() => onTabChange(item.id)}
@@ -224,7 +243,7 @@ export const UnifiedDesktopNavigation = memo(function UnifiedDesktopNavigation({
               )}
             >
               <div className="w-10 h-10 rounded-xl bg-white/[0.03] group-hover:bg-white/[0.08] flex items-center justify-center shrink-0 transition-colors">
-                <item.icon className="w-5 h-5 text-white/40 group-hover:text-white/70" />
+                <Icon className="w-5 h-5 text-white/40 group-hover:text-white/70" />
               </div>
               <span
                 className={cn(
@@ -235,6 +254,8 @@ export const UnifiedDesktopNavigation = memo(function UnifiedDesktopNavigation({
                 {item.label}
               </span>
             </button>
+              )
+            })()
           ))}
         </nav>
 

@@ -4,7 +4,7 @@ import { GameState, UserProfile } from '@/lib/types';
 import { RealtimeSnakeService, SnakeGameState, SnakeData } from '@/services/RealtimeSnakeService';
 import { db as realtimeDb } from '@/lib/firebase';
 import { PremiumButton } from '../ui/premium-button';
-import { Trophy, Zap, Gamepad2, Star, Clock } from 'lucide-react';
+import { Trophy, Zap, Gamepad2, Star } from 'lucide-react';
 import { hapticFeedback } from '@/lib/game-utils';
 import GameLayout from './GameLayout';
 import MobileGameControls from './MobileGameControls';
@@ -205,23 +205,6 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
       }
     }
   }, [mySnake.body, aiSnake?.body]);
-
-  // Add particles
-  const addParticles = useCallback((x: number, y: number, color: string, count: number, gs: number) => {
-    const newParticles: Particle[] = [];
-    for (let i = 0; i < count; i++) {
-      newParticles.push({
-        x: x * gs + gs / 2,
-        y: y * gs + gs / 2,
-        vx: (Math.random() - 0.5) * 8,
-        vy: (Math.random() - 0.5) * 8,
-        life: 1,
-        color,
-        size: 3 + Math.random() * 3
-      });
-    }
-    setParticles(prev => [...prev.slice(-30), ...newParticles]);
-  }, []);
 
   const handleStart = useCallback(() => {
     const isHost = user.id === gameState.hostId || !gameState.hostId;
@@ -538,9 +521,7 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
         }
 
         ctx.beginPath();
-        // @ts-expect-error - roundRect is experimental
-        if (ctx.roundRect) {
-          // @ts-expect-error - roundRect is experimental
+        if ('roundRect' in ctx && typeof ctx.roundRect === 'function') {
           ctx.roundRect(x, y, size, size, isHead ? 6 : 4);
         } else {
           ctx.rect(x, y, size, size);
@@ -585,14 +566,11 @@ export function SnakeGame({ onGameEnd, gameState, user, otherUser, roomId }: Sna
       }
     >
       {({ dimensions }) => {
-        // Update canvas when dimensions change
-        useEffect(() => {
-          const canvas = canvasRef.current;
-          if (!canvas) return;
-          const ctx = canvas.getContext('2d');
-          if (!ctx) return;
+        const canvas = canvasRef.current;
+        const ctx = canvas?.getContext('2d');
+        if (ctx) {
           renderCanvas(ctx, dimensions.width, dimensions.height, dimensions.cellSize);
-        }, [dimensions, renderCanvas]);
+        }
 
         return (
           <div className="relative">

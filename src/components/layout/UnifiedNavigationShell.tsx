@@ -4,6 +4,7 @@ import { memo, type ReactNode } from "react"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { UnifiedBottomNav } from "../layout/UnifiedBottomNav"
 import { cn } from "@/lib/utils"
+import type { AppTab } from "@/lib/navigation-types"
 
 interface UnifiedNavigationShellProps {
   children: ReactNode
