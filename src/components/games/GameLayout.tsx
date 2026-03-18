@@ -29,7 +29,7 @@ export interface GameLayoutProps {
   /** Дополнительные элементы в header */
   headerExtra?: ReactNode;
   /** Контент игры */
-  children: ReactNode;
+  children: ReactNode | ((args: { dimensions: ReturnType<typeof useGameResponsive>["dimensions"] }) => ReactNode);
   /** Мобильные контролы (рендерятся внизу) */
   mobileControls?: ReactNode;
   /** Опции адаптивности */
@@ -265,7 +265,7 @@ const GameLayout = memo(function GameLayout({
             maxHeight: dimensions.height,
           }}
         >
-          {children}
+          {typeof children === 'function' ? children({ dimensions }) : children}
         </div>
       </main>
 

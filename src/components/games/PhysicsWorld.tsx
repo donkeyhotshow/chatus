@@ -19,7 +19,7 @@ interface PhysicsWorldProps {
 
 export default function PhysicsWorld({ roomId, user, onGameEnd }: PhysicsWorldProps) {
   const { service } = useChatService(roomId, user);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<Matter.Engine | null>(null);
   const runnerRef = useRef<Matter.Runner | null>(null);
   const renderRef = useRef<Matter.Render | null>(null);
@@ -59,7 +59,10 @@ export default function PhysicsWorld({ roomId, user, onGameEnd }: PhysicsWorldPr
       const runner = Runner.create();
       runnerRef.current = runner;
       Runner.run(runner, engine);
-    } catch (e) { setError(true); }
+    } catch (error) {
+      console.error('[PhysicsWorld] Failed to initialize physics:', error);
+      setError(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -109,10 +112,6 @@ export default function PhysicsWorld({ roomId, user, onGameEnd }: PhysicsWorldPr
       responsiveOptions={{ gridCols: 20, gridRows: 15, maxCellSize: 50, padding: 0, accountForNav: true }}
     >
       {({ dimensions }) => {
-        useEffect(() => {
-          if (canvasRef.current && !renderRef.current) initPhysics(canvasRef.current, dimensions.width, dimensions.height);
-        }, [dimensions, initPhysics]);
-
         return (
           <TooltipProvider>
             <div className="flex flex-col h-full w-full bg-neutral-950">
@@ -121,7 +120,7 @@ export default function PhysicsWorld({ roomId, user, onGameEnd }: PhysicsWorldPr
                   <Tooltip key={tool.id}>
                     <TooltipTrigger asChild>
                       <PremiumButton
-                        variant={selectedTool === tool.id ? "default" : "secondary"}
+                        variant={selectedTool === tool.id ? "primary" : "secondary"}
                         size="sm"
                         onClick={() => setSelectedTool(tool.id)}
                         className="h-9 px-3"
@@ -134,7 +133,7 @@ export default function PhysicsWorld({ roomId, user, onGameEnd }: PhysicsWorldPr
                   </Tooltip>
                 ))}
                 <div className="flex-1" />
-                <PremiumButton onClick={clearWorld} variant="secondary" size="icon" className="h-9 w-9 text-red-400 hover:text-red-500"><RefreshCw className="w-4 h-4" /></PremiumButton>
+                <PremiumButton onClick={clearWorld} variant="secondary" size="sm" className="h-9 w-9 text-red-400 hover:text-red-500 px-0"><RefreshCw className="w-4 h-4" /></PremiumButton>
               </div>
               <div className="flex-1 relative overflow-hidden" style={{ cursor: selectedTool === 'drag' ? 'grab' : 'crosshair' }}>
                 {error ? (
@@ -143,7 +142,16 @@ export default function PhysicsWorld({ roomId, user, onGameEnd }: PhysicsWorldPr
                     <PremiumButton onClick={() => window.location.reload()}>Перезагрузить</PremiumButton>
                   </div>
                 ) : (
-                  <canvas ref={canvasRef} onClick={handleCanvasClick} className="absolute inset-0 w-full h-full touch-none block" />
+                  <canvas
+                    ref={(el) => {
+                      canvasRef.current = el;
+                      if (el && !renderRef.current) {
+                        initPhysics(el, dimensions.width, dimensions.height);
+                      }
+                    }}
+                    onClick={handleCanvasClick}
+                    className="absolute inset-0 w-full h-full touch-none block"
+                  />
                 )}
               </div>
             </div>

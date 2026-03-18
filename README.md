@@ -27,6 +27,14 @@ npm install
 npm run dev
 ```
 
+## ✅ Полный аудит
+
+```bash
+npm run audit:full
+```
+
+Команда последовательно запускает unit-тесты, lint, type-check и `npm audit`.
+
 ## 🔧 Переменные окружения
 
 Создайте `.env.local` на основе `.env.example`

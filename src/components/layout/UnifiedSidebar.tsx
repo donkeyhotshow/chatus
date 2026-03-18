@@ -1,7 +1,7 @@
 "use client"
 
 import { memo, useState } from "react"
-import { Settings, LogOut, Snowflake, Home } from "lucide-react"
+import { Settings, LogOut, Snowflake, MessageCircle, PenTool, Gamepad2, Users, Settings as SettingsIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Logo } from "../icons/logo"
 import { SnowEffect } from "../effects/SnowEffect"
@@ -18,6 +18,13 @@ interface UnifiedSidebarProps {
 }
 
 const navItems = NAV_ITEMS.filter(item => item.id !== 'settings')
+const iconMap = {
+  MessageCircle,
+  PenTool,
+  Gamepad2,
+  Users,
+  Settings: SettingsIcon,
+} as const
 
 export const UnifiedSidebar = memo(function UnifiedSidebar({
   activeTab,
@@ -72,17 +79,18 @@ export const UnifiedSidebar = memo(function UnifiedSidebar({
         {/* Navigation */}
         <nav className="flex-1 px-2 py-4 space-y-1 overflow-hidden">
           {navItems.map((item) => {
+            const Icon = iconMap[item.icon as keyof typeof iconMap] ?? MessageCircle
             return (
               <button
                 key={item.id}
-                onClick={() => (window.location.href = "/")}
+                onClick={() => onTabChange(item.id)}
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 touch-target",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50",
                   "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]",
                 )}
               >
-                <item.icon className="w-5 h-5 shrink-0" />
+                <Icon className="w-5 h-5 shrink-0" />
                 {expanded && (
                   <span className="text-sm font-medium whitespace-nowrap animate-fade-in">{item.label}</span>
                 )}

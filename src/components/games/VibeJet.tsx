@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Trophy, Zap, Gamepad2, Star } from 'lucide-react';
 import { hapticFeedback } from '@/lib/game-utils';
 import GameLayout from './GameLayout';
@@ -143,7 +143,7 @@ export default function VibeJet({ onGameEnd }: VibeJetProps) {
         <GameLayout
             title="Vibe Jet" icon={<Zap className="w-5 h-5 text-violet-400" />} onExit={onGameEnd} score={score} gameTime={Math.floor(frameRef.current / 60)} playerCount={1}
             responsiveOptions={{ gridCols: 30, gridRows: 20, maxCellSize: 30, padding: 16, accountForNav: true }} preferredOrientation="landscape"
-            mobileControls={<MobileGameControls scheme="tap" onActionStart={handleJump} />}
+            mobileControls={<MobileGameControls scheme="tap" onAction={handleJump} />}
         >
             {({ dimensions }) => (
                 <div className="relative w-full h-full flex items-center justify-center">

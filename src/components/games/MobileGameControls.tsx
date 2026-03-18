@@ -28,6 +28,10 @@ export interface MobileGameControlsProps {
   onDirectionChange?: (direction: Direction) => void;
   /** Callback при нажатии основной кнопки (для tap/buttons) */
   onAction?: () => void;
+  /** Backward-compatible callback for action start */
+  onActionStart?: (action: string) => void;
+  /** Backward-compatible callback for action end */
+  onActionEnd?: (action: string) => void;
   /** Callback при паузе */
   onPause?: () => void;
   /** Callback при рестарте */
@@ -43,6 +47,12 @@ export interface MobileGameControlsProps {
     label: string;
     onPress: () => void;
     color?: string;
+  }>;
+  /** Backward-compatible action list */
+  actions?: Array<{
+    id: string;
+    icon: React.ReactNode;
+    label: string;
   }>;
   /** Отключить управление */
   disabled?: boolean;
@@ -314,11 +324,14 @@ const MobileGameControls = memo(function MobileGameControls({
   scheme,
   onDirectionChange,
   onAction,
+  onActionStart,
+  onActionEnd,
   onPause,
   onRestart,
   showPause = true,
   showRestart = false,
   actionButtons = [],
+  actions = [],
   disabled = false,
   opacity = 1,
   size = 'md',
@@ -367,6 +380,25 @@ const MobileGameControls = memo(function MobileGameControls({
 
     touchStartRef.current = null;
   }, [scheme, onDirectionChange]);
+
+  const mergedActionButtons: Array<{
+    id: string;
+    icon: React.ReactNode;
+    label: string;
+    onPress: () => void;
+    color?: string;
+  }> = [
+    ...actionButtons,
+    ...actions.map((action) => ({
+      id: action.id,
+      icon: action.icon,
+      label: action.label,
+      onPress: () => {
+        onActionStart?.(action.id);
+        onActionEnd?.(action.id);
+      },
+    })),
+  ];
 
   return (
     <div
@@ -457,7 +489,7 @@ const MobileGameControls = memo(function MobileGameControls({
           )}
 
           {/* Action buttons */}
-          {(scheme === 'tap' || scheme === 'buttons' || actionButtons.length > 0) && (
+          {(scheme === 'tap' || scheme === 'buttons' || mergedActionButtons.length > 0) && (
             <div className="pointer-events-auto flex gap-3">
               {scheme === 'tap' && onAction && (
                 <ActionButton
@@ -466,7 +498,7 @@ const MobileGameControls = memo(function MobileGameControls({
                   disabled={disabled}
                 />
               )}
-              {actionButtons.map(btn => (
+              {mergedActionButtons.map(btn => (
                 <ActionButton
                   key={btn.id}
                   onPress={btn.onPress}

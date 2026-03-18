@@ -160,7 +160,7 @@ export function GameLobby({ roomId, user, otherUser }: GameLobbyProps) {
   }, [searchQuery, filterDifficulty]);
 
   if (activeGameId) {
-    const commonProps = { onGameEnd: handleEndGame, updateGameState: handleUpdateGameState, user, otherUser, roomId };
+    const commonProps = { onGameEnd: handleEndGame, updateGameState: handleUpdateGameState, user, otherUser: otherUser ?? undefined, roomId };
     return (
       <div className="flex flex-col h-full bg-black">
         <div className="flex-1 overflow-hidden">

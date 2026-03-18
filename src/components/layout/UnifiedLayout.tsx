@@ -5,8 +5,9 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { UnifiedSidebar } from './UnifiedSidebar';
 import { UnifiedBottomNav } from './UnifiedBottomNav';
+import type { AppTab } from '@/lib/navigation-types';
 
-export type NavTab = 'rooms' | 'chat' | 'canvas' | 'games' | 'users' | 'settings';
+export type NavTab = AppTab;
 
 interface UnifiedLayoutProps {
     children: ReactNode;

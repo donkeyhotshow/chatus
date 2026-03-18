@@ -205,11 +205,11 @@ export function MessageSearch({
                     {/* Search Type Filters */}
                     <div className="flex gap-3 overflow-x-auto pb-2 max-w-4xl mx-auto w-full no-scrollbar">
                         {[
-                            { key: 'all', label: 'Все', icon: Search, color: 'violet' },
-                            { key: 'content', label: 'Текст', icon: MessageCircle, color: 'emerald' },
-                            { key: 'user', label: 'Пользователи', icon: User, color: 'blue' },
-                            { key: 'date', label: 'Дата', icon: Calendar, color: 'amber' }
-                        ].map(({ key, label, icon: Icon, color }) => (
+                            { key: 'all', label: 'Все', icon: Search },
+                            { key: 'content', label: 'Текст', icon: MessageCircle },
+                            { key: 'user', label: 'Пользователи', icon: User },
+                            { key: 'date', label: 'Дата', icon: Calendar }
+                        ].map(({ key, label, icon: Icon }) => (
                             <button
                                 key={key}
                                 onClick={() => setSearchType(key as 'all' | 'content' | 'user' | 'date')}

@@ -1,10 +1,10 @@
 "use client";
 
 import { GameState, UserProfile, TDTower, TDEnemy } from "@/lib/types";
-import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { Castle, Heart, Coins, GitCommitHorizontal, Skull, TrendingUp, Users, Zap, Target } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Castle, Heart, Coins, GitCommitHorizontal, Skull, Zap } from "lucide-react";
 import GameLayout from "./GameLayout";
-import { PremiumCard, PremiumCardContent, PremiumCardHeader, PremiumCardTitle } from "../ui/premium-card";
+import { PremiumCard, PremiumCardContent } from "../ui/premium-card";
 import { PremiumButton } from "../ui/premium-button";
 
 type TowerDefenseProps = {
@@ -34,7 +34,7 @@ const ENEMY_SPECS = {
 const PATHS_Y = [3, 5, 7];
 function isPath(_x: number, y: number): boolean { return PATHS_Y.includes(y); }
 
-export function TowerDefense({ onGameEnd, updateGameState, gameState, user, otherUser }: TowerDefenseProps) {
+export function TowerDefense({ onGameEnd, updateGameState, gameState, user }: TowerDefenseProps) {
   const {
     tdTowers = [],
     tdEnemies = [],
@@ -278,10 +278,10 @@ export function TowerDefense({ onGameEnd, updateGameState, gameState, user, othe
 
           <div className="flex gap-2 flex-wrap justify-center">
             {(['basic', 'fast', 'heavy'] as const).map(type => (
-              <PremiumButton
-                key={type}
-                variant={towerTypeToBuild === type ? "default" : "secondary"}
-                size="sm"
+                <PremiumButton
+                  key={type}
+                  variant={towerTypeToBuild === type ? "primary" : "secondary"}
+                  size="sm"
                 onClick={() => setTowerTypeToBuild(type)}
                 disabled={tdResources < TOWER_SPECS[type].cost}
                 className="text-xs"

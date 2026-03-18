@@ -1,13 +1,6 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import './globals.css';
 import { SafeClientLayout } from '@/components/layout/SafeClientLayout';
-
-const inter = Inter({
-  subsets: ['latin', 'cyrillic'],
-  display: 'swap',
-  variable: '--font-inter',
-});
 
 const APP_NAME = "ChatUs";
 const APP_DESCRIPTION = "Приватный чат 1 на 1 с рисованием и играми";
@@ -93,7 +86,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru" className={inter.variable}>
+    <html lang="ru">
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#7C3AED" />
@@ -141,7 +134,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body suppressHydrationWarning className={inter.className}>
+      <body suppressHydrationWarning className="font-sans">
         {/* BUG-014 FIX: Fallback for disabled JavaScript */}
         <noscript>
           <div style={{

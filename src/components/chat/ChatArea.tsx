@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useDoc } from '@/hooks/useDoc';
 import { useChatPersistence, useUserPreferences } from '@/hooks/use-chat-persistence';
 import { logger } from '@/lib/logger';
+import { cn } from '@/lib/utils';
 import { NetworkConnectionStatus } from '@/components/ui/connection-status';
 import { getNotificationSound } from '@/lib/notification-sound';
 import { MobileErrorHandler } from '../mobile/MobileErrorHandler';
