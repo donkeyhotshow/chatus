@@ -1,54 +1,71 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest';
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
+import { useState } from 'react';
+import { MotionGlobalConfig } from 'framer-motion';
 import {
   ConfirmationDialog,
   ConfirmationProvider,
   useConfirmation,
 } from '@/components/ui/ConfirmationDialog';
 
+// ---------------------------------------------------------------------------
+// Test environment setup – minimal stubs, real implementations
+// ---------------------------------------------------------------------------
 
-// Framer-motion renders animated elements with opacity:0 initially and
-// transitions them, which is irrelevant in jsdom. Mock it so elements render
-// synchronously and with no animation side-effects.
-vi.mock('framer-motion', () => {
-  const React = require('react');
-  const AnimatePresence = ({ children }: { children: React.ReactNode }) => <>{children}</>;
-  AnimatePresence.displayName = 'AnimatePresence';
+// Stub animation TIMING only: the real framer-motion code runs but every
+// animation has duration 0, so AnimatePresence exits are synchronous.
+// This is NOT a full mock – module code is unchanged.
+beforeAll(() => {
+  MotionGlobalConfig.skipAnimations = true;
 
-  const motion = new Proxy(
-    {},
-    {
-      get: (_target, tag: string) => {
-        const Component = ({ children, ...props }: React.HTMLAttributes<HTMLElement> & { [key: string]: unknown }) => {
-          const filtered: Record<string, unknown> = {};
-          for (const key of Object.keys(props)) {
-            // Drop framer-specific props so they don't end up on DOM nodes
-            if (!['initial', 'animate', 'exit', 'transition', 'whileHover', 'whileTap', 'whileFocus', 'layout', 'layoutId'].includes(key)) {
-              filtered[key] = props[key as keyof typeof props];
-            }
-          }
-          return React.createElement(tag, filtered, children);
-        };
-        Component.displayName = `motion.${tag}`;
-        return Component;
-      },
-    }
-  );
-
-  return { AnimatePresence, motion };
+  // FocusTrap filters focusable elements by `el.offsetParent !== null`.
+  // jsdom has no layout engine, so offsetParent is always null, which makes
+  // FocusTrap find zero focusable elements and skip all focus management.
+  // Stub it so FocusTrap operates the same way it does in a real browser.
+  Object.defineProperty(HTMLElement.prototype, 'offsetParent', {
+    get() {
+      return document.body;
+    },
+    configurable: true,
+  });
 });
 
-// FocusTrap uses DOM measurements (offsetParent) that don't work in jsdom;
-// replace it with a simple pass-through so it doesn't break rendering.
-vi.mock('@/components/accessibility/FocusTrap', () => {
-  const React = require('react');
-  return {
-    FocusTrap: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  };
+afterAll(() => {
+  MotionGlobalConfig.skipAnimations = false;
 });
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Stateful wrapper – simulates real usage (trigger button + controlled dialog)
+// ---------------------------------------------------------------------------
+
+function StatefulDialog({
+  onConfirm,
+  title = 'Test title',
+  message = 'Test message',
+}: {
+  onConfirm?: () => void;
+  title?: string;
+  message?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <>
+      <button data-testid="trigger" onClick={() => setIsOpen(true)}>
+        Open dialog
+      </button>
+      <ConfirmationDialog
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        onConfirm={onConfirm ?? (() => {})}
+        title={title}
+        message={message}
+      />
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Shared props for static-rendering tests
 // ---------------------------------------------------------------------------
 
 const defaultProps = {
@@ -64,152 +81,463 @@ beforeEach(() => {
 });
 
 // ---------------------------------------------------------------------------
-// ConfirmationDialog – direct usage
+// ConfirmationDialog – DOM rendering
 // ---------------------------------------------------------------------------
 
 describe('ConfirmationDialog', () => {
   describe('DOM rendering', () => {
-    it('renders title and message when open', () => {
+    it('renders title and message when isOpen=true', () => {
       render(<ConfirmationDialog {...defaultProps} />);
-
       expect(screen.getByText('Delete item')).toBeInTheDocument();
       expect(screen.getByText('Are you sure you want to delete this item?')).toBeInTheDocument();
     });
 
-    it('renders with role="alertdialog" and aria-modal="true"', () => {
+    it('has role="alertdialog" and aria-modal="true"', () => {
       render(<ConfirmationDialog {...defaultProps} />);
-
       const dialog = screen.getByRole('alertdialog');
       expect(dialog).toBeInTheDocument();
       expect(dialog).toHaveAttribute('aria-modal', 'true');
     });
 
-    it('dialog is labelled and described via aria attributes', () => {
+    it('aria-labelledby and aria-describedby are present', () => {
       render(<ConfirmationDialog {...defaultProps} />);
-
       const dialog = screen.getByRole('alertdialog');
       expect(dialog).toHaveAttribute('aria-labelledby', 'dialog-title');
       expect(dialog).toHaveAttribute('aria-describedby', 'dialog-description');
     });
 
+    it('aria-labelledby target contains the title text', () => {
+      render(<ConfirmationDialog {...defaultProps} />);
+      const labelEl = document.getElementById('dialog-title');
+      expect(labelEl).toBeInTheDocument();
+      expect(labelEl).toHaveTextContent('Delete item');
+    });
+
+    it('aria-describedby target contains the message text', () => {
+      render(<ConfirmationDialog {...defaultProps} />);
+      const descEl = document.getElementById('dialog-description');
+      expect(descEl).toBeInTheDocument();
+      expect(descEl).toHaveTextContent('Are you sure you want to delete this item?');
+    });
+
     it('renders default confirm and cancel button text', () => {
       render(<ConfirmationDialog {...defaultProps} />);
-
       expect(screen.getByText('Подтвердить')).toBeInTheDocument();
       expect(screen.getByText('Отмена')).toBeInTheDocument();
     });
 
     it('renders custom confirm and cancel button text', () => {
       render(
-        <ConfirmationDialog
-          {...defaultProps}
-          confirmText="Yes, delete"
-          cancelText="No, keep"
-        />
+        <ConfirmationDialog {...defaultProps} confirmText="Yes, delete" cancelText="No, keep" />
       );
-
       expect(screen.getByText('Yes, delete')).toBeInTheDocument();
       expect(screen.getByText('No, keep')).toBeInTheDocument();
     });
+
+    it('FocusTrap renders its container with data-focus-trap="active"', () => {
+      render(<ConfirmationDialog {...defaultProps} />);
+      expect(document.querySelector('[data-focus-trap="active"]')).toBeInTheDocument();
+    });
+
+    it('overlay has aria-hidden="true" to hide it from screen readers', () => {
+      const { container } = render(<ConfirmationDialog {...defaultProps} />);
+      expect(container.querySelector('[aria-hidden="true"]')).toBeInTheDocument();
+    });
   });
 
-  describe('conditional rendering', () => {
-    it('does not render dialog content when isOpen is false', () => {
-      render(<ConfirmationDialog {...defaultProps} isOpen={false} />);
+  // ---------------------------------------------------------------------------
+  // Conditional rendering
+  // ---------------------------------------------------------------------------
 
+  describe('conditional rendering', () => {
+    it('does not render dialog content when isOpen=false', () => {
+      render(<ConfirmationDialog {...defaultProps} isOpen={false} />);
       expect(screen.queryByRole('alertdialog')).toBeNull();
       expect(screen.queryByText('Delete item')).toBeNull();
     });
 
-    it('renders dialog content when isOpen changes to true', () => {
+    it('dialog appears when isOpen changes from false → true', async () => {
       const { rerender } = render(<ConfirmationDialog {...defaultProps} isOpen={false} />);
       expect(screen.queryByRole('alertdialog')).toBeNull();
 
       rerender(<ConfirmationDialog {...defaultProps} isOpen={true} />);
+      await waitFor(() => {
+        expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+      });
+    });
+
+    it('dialog is removed from DOM when isOpen changes from true → false', async () => {
+      const { rerender } = render(<ConfirmationDialog {...defaultProps} isOpen={true} />);
       expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+
+      rerender(<ConfirmationDialog {...defaultProps} isOpen={false} />);
+      await waitFor(() => {
+        expect(screen.queryByRole('alertdialog')).toBeNull();
+      });
     });
   });
 
-  describe('no duplication', () => {
-    it('renders exactly one dialog element', () => {
-      render(<ConfirmationDialog {...defaultProps} />);
+  // ---------------------------------------------------------------------------
+  // No duplication
+  // ---------------------------------------------------------------------------
 
-      const dialogs = screen.getAllByRole('alertdialog');
-      expect(dialogs).toHaveLength(1);
+  describe('no duplication', () => {
+    it('renders exactly one alertdialog', () => {
+      render(<ConfirmationDialog {...defaultProps} />);
+      expect(screen.getAllByRole('alertdialog')).toHaveLength(1);
     });
 
     it('renders exactly one title element', () => {
       render(<ConfirmationDialog {...defaultProps} />);
+      expect(screen.getAllByText('Delete item')).toHaveLength(1);
+    });
 
-      const titles = screen.getAllByText('Delete item');
-      expect(titles).toHaveLength(1);
+    it('rapid open/close/open leaves exactly one dialog in DOM', async () => {
+      const { rerender } = render(<ConfirmationDialog {...defaultProps} isOpen={false} />);
+      rerender(<ConfirmationDialog {...defaultProps} isOpen={true} />);
+      rerender(<ConfirmationDialog {...defaultProps} isOpen={false} />);
+      rerender(<ConfirmationDialog {...defaultProps} isOpen={true} />);
+
+      await waitFor(() => {
+        expect(screen.getAllByRole('alertdialog')).toHaveLength(1);
+      });
     });
   });
 
-  describe('user interactions – confirm', () => {
-    it('calls onConfirm when confirm button is clicked', () => {
-      render(<ConfirmationDialog {...defaultProps} />);
+  // ---------------------------------------------------------------------------
+  // Flow 1: open → confirm
+  // ---------------------------------------------------------------------------
 
-      fireEvent.click(screen.getByText('Подтвердить'));
-      expect(defaultProps.onConfirm).toHaveBeenCalledTimes(1);
+  describe('Flow 1 – open → confirm', () => {
+    it('dialog is visible after trigger click', async () => {
+      render(<StatefulDialog />);
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('trigger'));
+      });
+      await waitFor(() => {
+        expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+      });
     });
 
-    it('calls onClose after confirm button is clicked', () => {
-      render(<ConfirmationDialog {...defaultProps} />);
+    it('clicking confirm calls onConfirm once', async () => {
+      const onConfirm = vi.fn();
+      render(<ConfirmationDialog {...defaultProps} onConfirm={onConfirm} />);
+      await act(async () => {
+        fireEvent.click(screen.getByText('Подтвердить'));
+      });
+      expect(onConfirm).toHaveBeenCalledTimes(1);
+    });
 
-      fireEvent.click(screen.getByText('Подтвердить'));
-      expect(defaultProps.onClose).toHaveBeenCalledTimes(1);
+    it('clicking confirm calls onClose', async () => {
+      const onClose = vi.fn();
+      render(<ConfirmationDialog {...defaultProps} onClose={onClose} />);
+      await act(async () => {
+        fireEvent.click(screen.getByText('Подтвердить'));
+      });
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('dialog is removed from DOM after confirm (stateful)', async () => {
+      render(<StatefulDialog />);
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('trigger'));
+      });
+      await waitFor(() => expect(screen.getByRole('alertdialog')).toBeInTheDocument());
+
+      await act(async () => {
+        fireEvent.click(screen.getByText('Подтвердить'));
+      });
+      await waitFor(() => {
+        expect(screen.queryByRole('alertdialog')).toBeNull();
+      });
+    });
+
+    it('focus returns to trigger element after confirm', async () => {
+      render(<StatefulDialog />);
+      const trigger = screen.getByTestId('trigger');
+      trigger.focus();
+      expect(document.activeElement).toBe(trigger);
+
+      await act(async () => {
+        fireEvent.click(trigger);
+      });
+      await waitFor(() => expect(screen.getByRole('alertdialog')).toBeInTheDocument());
+
+      await act(async () => {
+        fireEvent.click(screen.getByText('Подтвердить'));
+      });
+      await waitFor(() => {
+        expect(document.activeElement).toBe(trigger);
+      });
     });
   });
 
-  describe('user interactions – cancel', () => {
-    it('calls onClose when cancel button is clicked', () => {
-      render(<ConfirmationDialog {...defaultProps} />);
+  // ---------------------------------------------------------------------------
+  // Flow 2: open → cancel
+  // ---------------------------------------------------------------------------
 
-      fireEvent.click(screen.getByText('Отмена'));
-      expect(defaultProps.onClose).toHaveBeenCalledTimes(1);
+  describe('Flow 2 – open → cancel', () => {
+    it('clicking cancel does NOT call onConfirm', async () => {
+      const onConfirm = vi.fn();
+      render(<ConfirmationDialog {...defaultProps} onConfirm={onConfirm} />);
+      await act(async () => {
+        fireEvent.click(screen.getByText('Отмена'));
+      });
+      expect(onConfirm).not.toHaveBeenCalled();
     });
 
-    it('does not call onConfirm when cancel button is clicked', () => {
-      render(<ConfirmationDialog {...defaultProps} />);
-
-      fireEvent.click(screen.getByText('Отмена'));
-      expect(defaultProps.onConfirm).not.toHaveBeenCalled();
+    it('clicking cancel calls onClose', async () => {
+      const onClose = vi.fn();
+      render(<ConfirmationDialog {...defaultProps} onClose={onClose} />);
+      await act(async () => {
+        fireEvent.click(screen.getByText('Отмена'));
+      });
+      expect(onClose).toHaveBeenCalledTimes(1);
     });
 
-    it('calls onClose when the X close button is clicked', () => {
-      render(<ConfirmationDialog {...defaultProps} />);
+    it('dialog is removed from DOM after cancel (stateful)', async () => {
+      render(<StatefulDialog />);
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('trigger'));
+      });
+      await waitFor(() => expect(screen.getByRole('alertdialog')).toBeInTheDocument());
 
-      fireEvent.click(screen.getByLabelText('Закрыть'));
-      expect(defaultProps.onClose).toHaveBeenCalledTimes(1);
+      await act(async () => {
+        fireEvent.click(screen.getByText('Отмена'));
+      });
+      await waitFor(() => {
+        expect(screen.queryByRole('alertdialog')).toBeNull();
+      });
     });
 
-    it('calls onClose when the overlay backdrop is clicked', () => {
-      const { container } = render(<ConfirmationDialog {...defaultProps} />);
+    it('focus returns to trigger element after cancel', async () => {
+      render(<StatefulDialog />);
+      const trigger = screen.getByTestId('trigger');
+      trigger.focus();
 
-      // The overlay is the element with aria-hidden="true"
-      const overlay = container.querySelector('[aria-hidden="true"]');
-      expect(overlay).not.toBeNull();
-      fireEvent.click(overlay!);
-      expect(defaultProps.onClose).toHaveBeenCalledTimes(1);
+      await act(async () => {
+        fireEvent.click(trigger);
+      });
+      await waitFor(() => expect(screen.getByRole('alertdialog')).toBeInTheDocument());
+
+      await act(async () => {
+        fireEvent.click(screen.getByText('Отмена'));
+      });
+      await waitFor(() => {
+        expect(document.activeElement).toBe(trigger);
+      });
     });
 
-    it('calls onClose when Escape key is pressed on the dialog', () => {
-      render(<ConfirmationDialog {...defaultProps} />);
+    it('clicking close (X) button calls onClose and not onConfirm', async () => {
+      const onClose = vi.fn();
+      const onConfirm = vi.fn();
+      render(<ConfirmationDialog {...defaultProps} onClose={onClose} onConfirm={onConfirm} />);
+      await act(async () => {
+        fireEvent.click(screen.getByLabelText('Закрыть'));
+      });
+      expect(onClose).toHaveBeenCalledTimes(1);
+      expect(onConfirm).not.toHaveBeenCalled();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Flow 3: open → Escape key
+  // ---------------------------------------------------------------------------
+
+  describe('Flow 3 – open → Escape key', () => {
+    it('pressing Escape calls onClose', async () => {
+      const onClose = vi.fn();
+      render(<ConfirmationDialog {...defaultProps} onClose={onClose} />);
+      const dialog = screen.getByRole('alertdialog');
+      await act(async () => {
+        fireEvent.keyDown(dialog, { key: 'Escape' });
+      });
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('dialog is removed from DOM after Escape (stateful)', async () => {
+      render(<StatefulDialog />);
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('trigger'));
+      });
+      await waitFor(() => expect(screen.getByRole('alertdialog')).toBeInTheDocument());
 
       const dialog = screen.getByRole('alertdialog');
-      fireEvent.keyDown(dialog, { key: 'Escape' });
-      expect(defaultProps.onClose).toHaveBeenCalledTimes(1);
+      await act(async () => {
+        fireEvent.keyDown(dialog, { key: 'Escape' });
+      });
+      await waitFor(() => {
+        expect(screen.queryByRole('alertdialog')).toBeNull();
+      });
     });
 
-    it('does not call onClose for other key presses', () => {
-      render(<ConfirmationDialog {...defaultProps} />);
-
+    it('other keys do NOT call onClose', () => {
+      const onClose = vi.fn();
+      render(<ConfirmationDialog {...defaultProps} onClose={onClose} />);
       const dialog = screen.getByRole('alertdialog');
       fireEvent.keyDown(dialog, { key: 'Enter' });
-      expect(defaultProps.onClose).not.toHaveBeenCalled();
+      fireEvent.keyDown(dialog, { key: ' ' });
+      expect(onClose).not.toHaveBeenCalled();
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Flow 4: open → overlay click
+  // ---------------------------------------------------------------------------
+
+  describe('Flow 4 – open → overlay click', () => {
+    it('clicking overlay calls onClose', async () => {
+      const onClose = vi.fn();
+      const { container } = render(<ConfirmationDialog {...defaultProps} onClose={onClose} />);
+      const overlay = container.querySelector('[aria-hidden="true"]');
+      expect(overlay).not.toBeNull();
+      await act(async () => {
+        fireEvent.click(overlay!);
+      });
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('dialog is removed from DOM after overlay click (stateful)', async () => {
+      render(<StatefulDialog />);
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('trigger'));
+      });
+      await waitFor(() => expect(screen.getByRole('alertdialog')).toBeInTheDocument());
+
+      const overlay = document.querySelector('[aria-hidden="true"]');
+      await act(async () => {
+        fireEvent.click(overlay!);
+      });
+      await waitFor(() => {
+        expect(screen.queryByRole('alertdialog')).toBeNull();
+      });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Focus behavior (real FocusTrap with offsetParent stub)
+  // ---------------------------------------------------------------------------
+
+  describe('focus behavior', () => {
+    it('first focusable element receives focus when dialog opens', async () => {
+      render(<StatefulDialog />);
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('trigger'));
+      });
+      await waitFor(() => expect(screen.getByRole('alertdialog')).toBeInTheDocument());
+
+      // FocusTrap focuses the first focusable element (X close button in DOM order)
+      await waitFor(() => {
+        const firstFocusable = document.querySelector<HTMLElement>(
+          '[data-focus-trap="active"] button'
+        );
+        expect(document.activeElement).toBe(firstFocusable);
+      });
+    });
+
+    it('FocusTrap container is in the DOM with active state while dialog is open', async () => {
+      render(<StatefulDialog />);
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('trigger'));
+      });
+      await waitFor(() => {
+        expect(document.querySelector('[data-focus-trap="active"]')).toBeInTheDocument();
+      });
+    });
+
+    it('FocusTrap container is removed when dialog closes', async () => {
+      render(<StatefulDialog />);
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('trigger'));
+      });
+      await waitFor(() =>
+        expect(document.querySelector('[data-focus-trap="active"]')).toBeInTheDocument()
+      );
+
+      await act(async () => {
+        fireEvent.click(screen.getByText('Отмена'));
+      });
+      await waitFor(() => {
+        expect(document.querySelector('[data-focus-trap="active"]')).toBeNull();
+      });
+    });
+
+    it('Tab key cycles focus back to first button when on the last button', () => {
+      render(<ConfirmationDialog {...defaultProps} />);
+
+      const buttons = screen.getAllByRole('button');
+      const firstButton = buttons[0]; // X close button
+      const lastButton = buttons[buttons.length - 1]; // Confirm button
+
+      // Focus the last button to set document.activeElement
+      lastButton.focus();
+      expect(document.activeElement).toBe(lastButton);
+
+      // FocusTrap listens on document; Tab from last element should wrap to first
+      fireEvent.keyDown(document, { key: 'Tab' });
+      expect(document.activeElement).toBe(firstButton);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Animation edge cases
+  // ---------------------------------------------------------------------------
+
+  describe('animation edge cases', () => {
+    it('rapid open/close leaves no ghost dialogs in DOM', async () => {
+      const { rerender } = render(<ConfirmationDialog {...defaultProps} isOpen={false} />);
+      for (let i = 0; i < 5; i++) {
+        rerender(<ConfirmationDialog {...defaultProps} isOpen={true} />);
+        rerender(<ConfirmationDialog {...defaultProps} isOpen={false} />);
+      }
+      await waitFor(() => {
+        expect(screen.queryByRole('alertdialog')).toBeNull();
+      });
+    });
+
+    it('multiple consecutive opens leave exactly one dialog visible', async () => {
+      const { rerender } = render(<ConfirmationDialog {...defaultProps} isOpen={false} />);
+      rerender(<ConfirmationDialog {...defaultProps} isOpen={true} />);
+      rerender(<ConfirmationDialog {...defaultProps} isOpen={true} />);
+      rerender(<ConfirmationDialog {...defaultProps} isOpen={true} />);
+      await waitFor(() => {
+        expect(screen.getAllByRole('alertdialog')).toHaveLength(1);
+      });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // DOM correctness
+  // ---------------------------------------------------------------------------
+
+  describe('DOM correctness', () => {
+    it('no orphan alertdialog nodes remain after close', async () => {
+      const { rerender } = render(<ConfirmationDialog {...defaultProps} isOpen={true} />);
+      rerender(<ConfirmationDialog {...defaultProps} isOpen={false} />);
+      await waitFor(() => {
+        expect(document.querySelectorAll('[role="alertdialog"]')).toHaveLength(0);
+      });
+    });
+
+    it('dialog renders inside the component tree (no React portal to document.body)', () => {
+      // ConfirmationDialog uses CSS fixed positioning, NOT a React portal.
+      // The element should be a descendant of the render container, not appended
+      // directly to document.body.
+      const { container } = render(<ConfirmationDialog {...defaultProps} />);
+      expect(container.querySelector('[role="alertdialog"]')).toBeInTheDocument();
+    });
+
+    it('no duplicate dialogs after re-renders with the same isOpen=true', () => {
+      const { rerender } = render(<ConfirmationDialog {...defaultProps} />);
+      rerender(<ConfirmationDialog {...defaultProps} />);
+      rerender(<ConfirmationDialog {...defaultProps} />);
+      expect(screen.getAllByRole('alertdialog')).toHaveLength(1);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Dialog types
+  // ---------------------------------------------------------------------------
 
   describe('dialog types', () => {
     it('renders without error for type="danger"', () => {
@@ -240,7 +568,6 @@ describe('ConfirmationProvider', () => {
         <span data-testid="child">Hello</span>
       </ConfirmationProvider>
     );
-
     expect(screen.getByTestId('child')).toBeInTheDocument();
   });
 
@@ -250,7 +577,6 @@ describe('ConfirmationProvider', () => {
         <span>child</span>
       </ConfirmationProvider>
     );
-
     expect(screen.queryByRole('alertdialog')).toBeNull();
   });
 
@@ -258,9 +584,7 @@ describe('ConfirmationProvider', () => {
     function Trigger() {
       const { confirm } = useConfirmation();
       return (
-        <button onClick={() => confirm({ title: 'Open?', message: 'Really?' })}>
-          Open
-        </button>
+        <button onClick={() => confirm({ title: 'Open?', message: 'Really?' })}>Open</button>
       );
     }
 
@@ -270,15 +594,14 @@ describe('ConfirmationProvider', () => {
       </ConfirmationProvider>
     );
 
-    expect(screen.queryByRole('alertdialog')).toBeNull();
-
     await act(async () => {
       fireEvent.click(screen.getByText('Open'));
     });
-
-    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
-    expect(screen.getByText('Open?')).toBeInTheDocument();
-    expect(screen.getByText('Really?')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+      expect(screen.getByText('Open?')).toBeInTheDocument();
+      expect(screen.getByText('Really?')).toBeInTheDocument();
+    });
   });
 
   it('confirm() resolves with true when confirm button is clicked', async () => {
@@ -306,13 +629,12 @@ describe('ConfirmationProvider', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Open'));
     });
-
     await act(async () => {
       fireEvent.click(screen.getByText('Подтвердить'));
     });
 
     expect(result).toBe(true);
-    expect(screen.queryByRole('alertdialog')).toBeNull();
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
   });
 
   it('confirm() resolves with false when cancel button is clicked', async () => {
@@ -340,13 +662,12 @@ describe('ConfirmationProvider', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Open'));
     });
-
     await act(async () => {
       fireEvent.click(screen.getByText('Отмена'));
     });
 
     expect(result).toBe(false);
-    expect(screen.queryByRole('alertdialog')).toBeNull();
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
   });
 
   it('confirm() resolves with false when close (X) button is clicked', async () => {
@@ -374,13 +695,12 @@ describe('ConfirmationProvider', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Open'));
     });
-
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Закрыть'));
     });
 
     expect(result).toBe(false);
-    expect(screen.queryByRole('alertdialog')).toBeNull();
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
   });
 
   it('renders only one dialog even when provider wraps multiple children', async () => {
@@ -399,12 +719,12 @@ describe('ConfirmationProvider', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Open'));
     });
-
-    expect(screen.getAllByRole('alertdialog')).toHaveLength(1);
+    await waitFor(() => {
+      expect(screen.getAllByRole('alertdialog')).toHaveLength(1);
+    });
   });
 
-  it('throws when useConfirmation is used outside provider', () => {
-    // Suppress the expected React error boundary output
+  it('throws when useConfirmation is used outside ConfirmationProvider', () => {
     const originalError = console.error;
     console.error = vi.fn();
 
