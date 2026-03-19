@@ -3,7 +3,7 @@ name: PR Checks
 on:
   pull_request:
     branches: ["main"]
-    types: [nchronize, reopened]
+    types: [synchronize, reopened]
 
 jobs:
   build-and-test:
