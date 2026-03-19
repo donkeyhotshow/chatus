@@ -44,7 +44,7 @@ export function SettingsPanel({ isOpen, onClose, onClearChat }: SettingsPanelPro
 
     return (
         <div
-            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in"
+            className="fixed inset-0 z-[1000] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in"
             onClick={(e) => {
                 // Close on backdrop click
                 if (e.target === e.currentTarget) {

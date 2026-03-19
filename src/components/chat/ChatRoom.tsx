@@ -45,9 +45,13 @@ import { RoomState } from '@/lib/session-manager';
 // Lazy load heavy components
 const CollaborationSpace = lazy(() => import('./CollaborationSpace').then(m => ({ default: m.CollaborationSpace })));
 
+// Delay before showing skeleton to avoid layout jumps on fast loads
+const SKELETON_DISPLAY_DELAY_MS = 500;
+
 // Skeleton-based loading з fallback - Dark Minimalism Theme
 function LoadingScreen({ text, showSkeleton = false, isSlow = false }: { text: string; showSkeleton?: boolean; isSlow?: boolean }) {
     const [showFallback, setShowFallback] = useState(false);
+    const [skeletonVisible, setSkeletonVisible] = useState(false);
 
     useEffect(() => {
         // Show fallback sooner if connection is slow
@@ -55,6 +59,13 @@ function LoadingScreen({ text, showSkeleton = false, isSlow = false }: { text: s
         const timer = setTimeout(() => setShowFallback(true), timeout);
         return () => clearTimeout(timer);
     }, [isSlow]);
+
+    // Delay skeleton display by 500ms to avoid layout jumps for fast loads
+    useEffect(() => {
+        if (!showSkeleton) return;
+        const timer = setTimeout(() => setSkeletonVisible(true), SKELETON_DISPLAY_DELAY_MS);
+        return () => clearTimeout(timer);
+    }, [showSkeleton]);
 
     // Safari-safe reload handler
     const handleReload = safariSafeClick(() => {
@@ -85,9 +96,18 @@ function LoadingScreen({ text, showSkeleton = false, isSlow = false }: { text: s
         );
     }
 
-    // Використовуємо skeleton для чату
+    // Використовуємо skeleton для чату з затримкою 500мс та плавним переходом
     if (showSkeleton) {
-        return <ChatSkeleton />;
+        return (
+            <div
+                className={cn(
+                    "transition-opacity duration-300",
+                    skeletonVisible ? "opacity-100" : "opacity-0"
+                )}
+            >
+                <ChatSkeleton />
+            </div>
+        );
     }
 
     return (
