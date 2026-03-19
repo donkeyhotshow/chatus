@@ -31,6 +31,7 @@ import { RealtimeCanvasService } from '@/services/RealtimeCanvasService';
 import { RemoteCursors } from './RemoteCursors';
 import { RemoteCursor } from '@/lib/types';
 import throttle from 'lodash.throttle';
+import { ConfirmationDialog } from '@/components/ui/ConfirmationDialog';
 
 // Helper to generate a consistent color for a user ID
 const generateCursorColor = (userId: string) => {
@@ -167,6 +168,7 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
   // Immersive mode & Docking - Stage 2.1
   const [isImmersive, setIsImmersive] = useState(false);
   const [paletteDock, setPaletteDock] = useState<'bottom' | 'left' | 'right'>('bottom');
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const isKeyboardVisible = useKeyboardVisible();
   const isMobile = useIsMobile();
 
@@ -590,9 +592,13 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
     }
   };
 
-  const handleClear = async () => {
-    if (!service || !window.confirm("Вы уверены, что хотите очистить холст?")) return;
+  const handleClear = () => {
+    if (!service) return;
+    setShowClearConfirm(true);
+  };
 
+  const handleClearConfirm = async () => {
+    if (!service) return;
     try {
       // Clear RTDB first
       if (realtimeServiceRef.current) {
@@ -971,6 +977,17 @@ export function SharedCanvas({ roomId, sheetId, user, isMazeActive }: SharedCanv
           </button>
         </div>
       )}
+
+      <ConfirmationDialog
+        isOpen={showClearConfirm}
+        onClose={() => setShowClearConfirm(false)}
+        onConfirm={handleClearConfirm}
+        title="Очистить холст?"
+        message="Это действие нельзя отменить. Холст будет очищен для всех участников."
+        confirmText="Очистить"
+        cancelText="Отмена"
+        type="danger"
+      />
     </div>
   );
 }

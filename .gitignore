@@ -108,3 +108,8 @@ Thumbs.db
 .DS_Store
 Desktop.ini
 .env*.local
+
+# Playwright
+/playwright-report/
+/blob-report/
+/playwright/.cache/

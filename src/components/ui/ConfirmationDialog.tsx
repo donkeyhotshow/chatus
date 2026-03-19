@@ -146,7 +146,6 @@ export const ConfirmationDialog = memo(function ConfirmationDialog({
                   <button
                     onClick={handleConfirm}
                     className={`flex-1 h-11 px-4 rounded-xl ${config.confirmBg} text-white font-medium transition-colors`}
-                    autoFocus
                   >
                     {confirmText}
                   </button>
