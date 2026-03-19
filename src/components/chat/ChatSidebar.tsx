@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState, useCallback } from 'react';
+import { memo, useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { MessageCircle, Settings, LogOut, Snowflake, ChevronLeft, ChevronRight, Zap, PenTool, Gamepad2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -35,6 +35,12 @@ export const ChatSidebar = memo(function ChatSidebar({
     // По умолчанию развёрнут
     const [isExpanded, setIsExpanded] = useState(true);
     const [snowEnabled, setSnowEnabled] = useState(false);
+    const [neonEnabled, setNeonEnabled] = useState(false);
+
+    // Sync neon mode state with actual DOM/localStorage on mount
+    useEffect(() => {
+        setNeonEnabled(document.documentElement.classList.contains('neon-mode'));
+    }, []);
 
     const toggleSidebar = useCallback(() => {
         setIsExpanded(prev => !prev);
@@ -100,12 +106,14 @@ export const ChatSidebar = memo(function ChatSidebar({
                                     const isNeon = !document.documentElement.classList.contains('neon-mode');
                                     document.documentElement.classList.toggle('neon-mode', isNeon);
                                     localStorage.setItem('neon-mode', isNeon ? 'true' : 'false');
+                                    setNeonEnabled(isNeon);
                                 }}
                                 className={cn(
                                     "p-2 rounded-lg transition-all duration-200 touch-target shrink-0",
                                     "text-violet-400 hover:bg-violet-500/10"
                                 )}
-                                title="Neon Mode"
+                                title={neonEnabled ? "Выключить неоновый режим" : "Включить неоновый режим"}
+                                aria-label={neonEnabled ? "Выключить неоновый режим" : "Включить неоновый режим"}
                             >
                                 <Zap className={cn("w-5 h-5", "animate-pulse")} />
                             </button>
@@ -139,6 +147,8 @@ export const ChatSidebar = memo(function ChatSidebar({
                             <button
                                 key={item.id}
                                 onClick={() => onTabChange(item.id)}
+                                aria-label={item.label}
+                                aria-current={activeTab === item.id ? 'page' : undefined}
                                 className={cn(
                                     "w-full flex items-center gap-3 px-3 py-3 rounded-2xl transition-all duration-300 touch-target group relative",
                                     activeTab === item.id
@@ -181,6 +191,7 @@ export const ChatSidebar = memo(function ChatSidebar({
                     </div>
                     <button
                         onClick={() => window.location.href = '/'}
+                        aria-label="Все комнаты"
                         className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/[0.06] transition-all duration-200 touch-target group"
                     >
                         <div className="w-10 h-10 rounded-xl bg-white/[0.03] group-hover:bg-white/[0.08] flex items-center justify-center shrink-0 transition-colors">
@@ -221,6 +232,7 @@ export const ChatSidebar = memo(function ChatSidebar({
 
                     <button
                         onClick={onSettings}
+                        aria-label="Открыть настройки"
                         className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/[0.06] transition-all duration-200 touch-target group"
                     >
                         <div className="w-10 h-10 rounded-xl bg-white/[0.04] group-hover:bg-white/[0.08] flex items-center justify-center shrink-0 transition-colors">
@@ -239,6 +251,7 @@ export const ChatSidebar = memo(function ChatSidebar({
                             if (process.env.NODE_ENV === 'development') console.log('[ChatSidebar] Logout button clicked');
                             onLogout();
                         }}
+                        aria-label="Выйти из комнаты"
                         className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-white/70 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 touch-target group"
                     >
                         <div className="w-10 h-10 rounded-xl bg-white/[0.04] group-hover:bg-red-500/10 flex items-center justify-center shrink-0 transition-colors">
